@@ -1,0 +1,199 @@
+package eventstore.client.proto;
+
+enum OperationResult
+{
+	Success = 0;
+	PrepareTimeout = 1;
+	CommitTimeout = 2;
+	ForwardTimeout = 3;
+	WrongExpectedVersion = 4;
+	StreamDeleted = 5;
+	InvalidTransaction = 6;
+}
+
+message NewEvent {
+	required bytes event_id = 1;
+	optional string event_type = 2;
+	required bool is_json = 3;
+	required bytes data = 4;
+	optional bytes metadata = 5;
+}
+
+message EventRecord {
+	required string event_stream_id = 1;
+	required int32 event_number = 2;
+	required bytes event_id = 3;
+	optional string event_type = 4;
+	required bytes data = 5;
+	optional bytes metadata = 6;
+}
+
+message ResolvedIndexedEvent {
+	required EventRecord event = 1;
+	optional EventRecord link = 2;
+}
+
+message ResolvedEvent {
+	required EventRecord event = 1;
+	optional EventRecord link = 2;
+	required int64 commit_position = 3;
+	required int64 prepare_position = 4;
+}
+
+message DeniedToRoute {
+	required string external_tcp_address = 1;
+	required int32 external_tcp_port = 2;
+	required string external_http_address = 3;
+	required int32 external_http_port = 4;
+}
+
+message CreateStream {
+	required string event_stream_id = 1;
+	required bytes request_id = 2;
+	optional bytes metadata = 3;
+	required bool allow_forwarding = 4;
+	required bool is_json = 5;
+}
+
+message CreateStreamCompleted {
+	required OperationResult result = 1;
+	optional string message = 2;
+}
+
+message WriteEvents {
+	required string event_stream_id = 1;
+	required int32 expected_version = 2;
+	repeated NewEvent events = 3;
+	required bool allow_forwarding = 4;
+}
+
+message WriteEventsCompleted {
+	required OperationResult result = 1;
+	optional string message = 2;
+	required int32 first_event_number = 3;
+}
+
+message DeleteStream {
+	required string event_stream_id = 1;
+	required int32 expected_version = 2;
+	required bool allow_forwarding = 3;
+}
+
+message DeleteStreamCompleted {
+	required OperationResult result = 1;
+	optional string message = 2;
+}
+
+message ReadEvent {
+	required string event_stream_id = 1;
+	required int32 event_number = 2;
+	required bool resolve_link_tos = 3;
+}
+
+message ReadEventCompleted {
+
+	enum ReadEventResult {
+		Success = 0;
+		NotFound = 1;
+		NoStream = 2;
+		StreamDeleted = 3;
+	}
+
+	required ReadEventResult result = 1;
+	required ResolvedIndexedEvent event = 2;
+}
+
+message ReadStreamEvents {
+	required string event_stream_id = 1;
+	required int32 from_event_number = 2;
+	required int32 max_count = 3;
+	required bool resolve_link_tos = 4;
+}
+
+message ReadStreamEventsCompleted {
+
+	enum ReadStreamResult {
+		Success = 0;
+		NoStream = 1;
+		StreamDeleted = 2;
+		NotModified = 3;
+		Error = 4;
+	}
+
+	repeated ResolvedIndexedEvent events = 1;
+	required ReadStreamResult result = 2;
+	required int32 next_event_number = 3;
+	required int32 last_event_number = 4;
+	required bool is_end_of_stream = 5;
+	required int64 last_commit_position = 6;
+}
+
+message ReadAllEvents {
+	required int64 commit_position = 1;
+	required int64 prepare_position = 2;
+	required int32 max_count = 3;
+	required bool resolve_link_tos = 4;
+}
+
+message ReadAllEventsCompleted {
+	required int64 commit_position = 1;
+	required int64 prepare_position = 2;
+	repeated ResolvedEvent events = 3;
+	required int64 next_commit_position = 4;
+	required int64 next_prepare_position = 5;
+}
+
+message TransactionStart {
+	required string event_stream_id = 1;
+	required int32 expected_version = 2;
+	required bool allow_forwarding = 3;
+}
+
+message TransactionStartCompleted {
+	required int64 transaction_id = 1;
+	required OperationResult result = 2;
+	optional string message = 3;
+}
+
+message TransactionWrite {
+	required int64 transaction_id = 1;
+	repeated NewEvent events = 2;
+	required bool allow_forwarding = 3;
+}
+
+message TransactionWriteCompleted {
+	required int64 transaction_id = 1;
+	required OperationResult result = 2;
+	optional string message = 3;
+}
+
+message TransactionCommit {
+	required int64 transaction_id = 1;
+	required bool allow_forwarding = 2;
+}
+
+message TransactionCommitCompleted {
+	required int64 transaction_id = 1;
+	required OperationResult result = 2;
+	optional string message = 3;
+}
+
+message SubscribeToStream {
+	required string event_stream_id = 1;
+	required bool resolve_link_tos = 2;
+}
+
+message SubscriptionConfirmation {
+	required int64 last_commit_position = 1;
+	optional int32 last_event_number = 2;
+}
+
+message StreamEventAppeared {
+	required ResolvedEvent event = 1;
+}
+
+message UnsubscribeFromStream {
+}
+
+message SubscriptionDropped {
+}

@@ -1,0 +1,36 @@
+# Maven
+target
+
+#JRebel
+rebel.xml
+
+# Idea
+.idea/
+*.iml
+*.ipr
+*.iws
+.buildpath
+*.ids
+
+# Eclipse
+.project
+.classpath
+.settings
+.scala_dependencies
+
+# Emacs
+*~
+*#
+.#*
+.ensime
+.ensime_lucene
+TAGS
+
+# Scala
+*.sc
+
+# Mac
+.DS_Store
+
+# Vim
+.*.swp

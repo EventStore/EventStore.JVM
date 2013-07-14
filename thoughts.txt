@@ -1,0 +1,33 @@
+Install mono on MAC OS X
+
+brew install https://gist.github.com/raw/4696903/243c2f92961a285bb721aa67954c1efee4cd6a84/mono.rb
+
+
+
+resolveLinkTos ???
+
+
+format [frame length 4bytes] [messageByte 1byte] [correlationId 16bytes] [payload]
+
+1) checkout .proto
+2) generate scala case classes
+3) compile scala case class (if format changed won't compile)
+4) compile eventstore library
+
+
+why CreateStream.metaData is optional ?
+
+63168,14,16:44:55.926] Error while processing message EventStore.Core.Messages.ClientMessage+CreateStream in queued handler 'MainQueue'.
+Argument cannot be null.
+Parameter name: metadata
+
+
+the same with 
+
+
+NewEvent - eventType: Option[String]
+
+
+
+
+why I'm receiving so many HeartbeatRequestCommand in a row after I read a tons of event when subscribed
