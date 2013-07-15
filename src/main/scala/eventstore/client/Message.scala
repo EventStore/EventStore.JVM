@@ -115,6 +115,7 @@ case class ReadStreamEvents(streamId: String,
                             resolveLinkTos: Boolean,
                             direction: ReadDirection.Value) extends Out
 
+// TODO simplify
 case class ReadStreamEventsCompleted(events: List[ResolvedIndexedEvent],
                                      result: ReadStreamResult.Value,
                                      nextEventNumber: Int,
