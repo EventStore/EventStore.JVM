@@ -1,4 +1,4 @@
-package eventstore.client
+package eventstore
 
 import akka.testkit.TestProbe
 import OperationResult._

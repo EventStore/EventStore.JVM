@@ -1,4 +1,4 @@
-package eventstore.client
+package eventstore
 
 import org.specs2.mutable.SpecificationWithJUnit
 

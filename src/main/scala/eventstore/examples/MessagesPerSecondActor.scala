@@ -1,4 +1,4 @@
-package eventstore.client.examples
+package eventstore.examples
 
 import akka.actor.Actor
 import scala.concurrent.duration._

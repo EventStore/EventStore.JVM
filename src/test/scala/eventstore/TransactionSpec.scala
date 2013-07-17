@@ -1,4 +1,4 @@
-package eventstore.client
+package eventstore
 
 import OperationResult._
 import akka.testkit.TestProbe
@@ -176,14 +176,14 @@ class TransactionSpec extends TestConnectionSpec {
   }
 
   trait TransactionScope extends TestConnectionScope {
-    def transactionStart(expVer: ExpectedVersion) = TransactionStart(streamId, expVer, allowForwarding = true)
+    def transactionStart(expVer: ExpectedVersion) = TransactionStart(streamId, expVer, requireMaster = true)
 
     def transactionWrite(events: NewEvent*)(implicit transactionId: Long) =
-      TransactionWrite(transactionId, events.toList, allowForwarding = true)
+      TransactionWrite(transactionId, events.toList, requireMaster = true)
 
     def transactionWriteCompleted(implicit transactionId: Long) = TransactionWriteCompleted(transactionId, Success, None)
 
-    def transactionCommit(implicit transactionId: Long) = TransactionCommit(transactionId, allowForwarding = true)
+    def transactionCommit(implicit transactionId: Long) = TransactionCommit(transactionId, requireMaster = true)
 
     def transactionCommitCompleted(implicit transactionId: Long) = TransactionCommitCompleted(transactionId, Success, None)
   }

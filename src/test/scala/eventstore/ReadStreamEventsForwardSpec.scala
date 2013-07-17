@@ -1,4 +1,4 @@
-package eventstore.client
+package eventstore
 
 import OperationResult._
 
@@ -53,7 +53,7 @@ class ReadStreamEventsForwardSpec extends TestConnectionSpec {
       // ReadStreamEventsCompleted(List(ResolvedIndexedEvent(EventRecord(ReadStreamForwardSpec-b5ba01e8-90fb-4847-a86b-8c3e372e870f,0,ByteString(15, 74, 115, 94, -45, 124, -85, 48, 81, -77, 28, 13, 7, 25, -47, -101),Some($stream-created),ByteString(),Some(ByteString(82, 101, 97, 100, 83, 116, 114, 101, 97, 109, 70, 111, 114, 119, 97, 114, 100, 83, 112, 101, 99))),None)),Success,1,0,true,433833,Forward)
 
       expectMsgPF() {
-        case ReadStreamEventsCompleted(List(ResolvedIndexedEvent(EventRecord(`streamId`, 0, _, Some("$stream-created"), ByteString.empty, Some(_)), None)), ReadStreamResult.Success, 1, 0, true, _, Forward) => true
+        case ReadStreamEventsCompleted(List(ResolvedIndexedEvent(EventRecord(`streamId`, 0, _, "$stream-created", ByteString.empty, Some(_)), None)), ReadStreamResult.Success, 1, 0, true, _, Forward) => true
       }
 
     }

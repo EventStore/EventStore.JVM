@@ -1,7 +1,7 @@
-package eventstore.client
+package eventstore
 
 import OperationResult._
-import eventstore.client.tcp.UuidSerializer
+import eventstore.tcp.UuidSerializer
 import akka.testkit.TestProbe
 
 /**
@@ -45,11 +45,11 @@ class SubscribeSpec extends TestConnectionSpec {
       val event = newEvent
 
       val probe = TestProbe()
-      actor.receive(WriteEvents(streamId, AnyVersion, List(event), allowForwarding = true), probe.ref)
+      actor.receive(WriteEvents(streamId, AnyVersion, List(event), requireMaster = true), probe.ref)
       probe.expectMsg(WriteEventsCompleted(Success, None, 0))
 
       expectMsgPF() {
-        case StreamEventAppeared(ResolvedEvent(EventRecord(`streamId`, 0, _, Some("$stream-created-implicit"), ByteString.empty, Some(ByteString.empty)), None, _, _)) => true
+        case StreamEventAppeared(ResolvedEvent(EventRecord(`streamId`, 0, _, "$stream-created-implicit", ByteString.empty, Some(ByteString.empty)), None, _, _)) => true
       }
 
       val er = eventRecord(1, event)
@@ -95,14 +95,14 @@ class SubscribeSpec extends TestConnectionSpec {
       probe.expectMsg(createStreamCompleted)
 
       expectMsgPF() {
-        case StreamEventAppeared(ResolvedEvent(EventRecord(`streamId`, 0, _, Some("$stream-created"), ByteString.empty, Some(_)), None, _, _)) =>
+        case StreamEventAppeared(ResolvedEvent(EventRecord(`streamId`, 0, _, "$stream-created", ByteString.empty, Some(_)), None, _, _)) =>
       }
 
       actor.!(deleteStream())(probe.ref)
       probe.expectMsg(deleteStreamCompleted)
 
       expectMsgPF() {
-        case StreamEventAppeared(ResolvedEvent(EventRecord(`streamId`, _, _, Some("$stream-deleted"), ByteString.empty, Some(ByteString.empty)), None, _, _)) => true
+        case StreamEventAppeared(ResolvedEvent(EventRecord(`streamId`, _, _, "$stream-deleted", ByteString.empty, Some(ByteString.empty)), None, _, _)) => true
       }
 
       expectNoMsg()

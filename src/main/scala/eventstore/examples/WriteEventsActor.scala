@@ -1,4 +1,4 @@
-package eventstore.client
+package eventstore
 package examples
 
 import akka.actor.{ActorLogging, Actor}
@@ -7,7 +7,7 @@ import scala.concurrent.duration._
 
 
 import scala.util.Random
-import eventstore.client.tcp.UuidSerializer
+import eventstore.tcp.UuidSerializer
 
 /**
  * @author Yaroslav Klymko
@@ -19,7 +19,7 @@ class WriteEventsActor extends Actor with ActorLogging {
   def  eventId  = UuidSerializer.serialize(newUuid)
 
 //  def version = Random.nextInt(Int.MaxValue)
-//  val writeEvents = WriteEvents(testStreamId, Version(version), List(NewEvent(eventId, Some("ChatMessage"), isJson = false, eventId, None)), allowForwarding = false)
+//  val writeEvents = WriteEvents(testStreamId, Version(version), List(NewEvent(eventId, Some("ChatMessage"), isJson = false, eventId, None)), requireMaster = false)
 
   def receive = {
     case x =>

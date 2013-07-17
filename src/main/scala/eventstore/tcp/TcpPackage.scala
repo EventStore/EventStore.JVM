@@ -1,8 +1,8 @@
-package eventstore.client.tcp
+package eventstore.tcp
 
 
 
-import eventstore.client._
+import eventstore._
 import java.nio.ByteOrder
 
 /**

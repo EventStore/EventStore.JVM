@@ -1,4 +1,4 @@
-package eventstore.client.examples
+package eventstore.examples
 
 import akka.actor.{ActorLogging, Actor}
 import akka.io.Tcp
@@ -6,8 +6,8 @@ import scala.concurrent.duration._
 
 
 import scala.util.Random
-import eventstore.client._
-import eventstore.client.OperationResult._
+import eventstore._
+import eventstore.OperationResult._
 import scala.Some
 import scala.Some
 import scala.Some
@@ -16,18 +16,18 @@ import scala.Some
 import scala.Some
 import scala.Some
 import scala.Some
-import eventstore.client.TransactionWrite
-import eventstore.client.TransactionCommit
-import eventstore.client.TransactionCommitCompleted
-import eventstore.client.DeleteStream
-import eventstore.client.NewEvent
-import eventstore.client.TransactionWriteCompleted
-import eventstore.client.TransactionStart
-import eventstore.client.CreateStream
-import eventstore.client.CreateStreamCompleted
+import eventstore.TransactionWrite
+import eventstore.TransactionCommit
+import eventstore.TransactionCommitCompleted
+import eventstore.DeleteStream
+import eventstore.NewEvent
+import eventstore.TransactionWriteCompleted
+import eventstore.TransactionStart
+import eventstore.CreateStream
+import eventstore.CreateStreamCompleted
 import scala.Some
-import eventstore.client.TransactionStartCompleted
-import eventstore.client.tcp.UuidSerializer
+import eventstore.TransactionStartCompleted
+import eventstore.tcp.UuidSerializer
 
 
 /**
@@ -42,7 +42,7 @@ class TransactionCommitActor extends Actor with ActorLogging {
 
   def eventId = UuidSerializer.serialize(newUuid)
 
-  def newEvent = NewEvent(eventId, Some("test"), isJson = false, ByteString.empty, None)
+  def newEvent = NewEvent(eventId, "test", isJson = false, ByteString.empty, None)
 
 
   def receive = {
@@ -53,27 +53,27 @@ class TransactionCommitActor extends Actor with ActorLogging {
         newUuid,
 //        ByteString("la"),
         eventId,
-        allowForwarding = true,
+        requireMaster = true,
         isJson = false)
 
-//      sender ! TransactionStart(testStreamId, 0, allowForwarding = false)
+//      sender ! TransactionStart(testStreamId, 0, requireMaster = false)
 
       /*context.become {
         case CreateStreamCompleted(Success, _) =>
           sender ! ScavengeDatabase
 
-          sender ! TransactionStart(streamId, 0, allowForwarding = false)
+          sender ! TransactionStart(streamId, 0, requireMaster = false)
 
           context.become {
             case TransactionStartCompleted(transactionId, Success, _) =>
-              sender ! TransactionWrite(transactionId, List(newEvent, newEvent, newEvent), allowForwarding = false)
+              sender ! TransactionWrite(transactionId, List(newEvent, newEvent, newEvent), requireMaster = false)
 
               context.become {
                 case x: TransactionWriteCompleted =>
-                  sender ! TransactionCommit(transactionId, allowForwarding = false)
+                  sender ! TransactionCommit(transactionId, requireMaster = false)
 
                 case TransactionCommitCompleted(_, Success, _) =>
-                  sender ! DeleteStream(streamId, 3, allowForwarding = false)
+                  sender ! DeleteStream(streamId, 3, requireMaster = false)
 
                 case HeartbeatRequestCommand => sender ! HeartbeatResponseCommand
               }

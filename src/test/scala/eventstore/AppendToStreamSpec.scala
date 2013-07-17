@@ -1,4 +1,4 @@
-package eventstore.client
+package eventstore
 
 import OperationResult._
 
@@ -51,7 +51,7 @@ class AppendToStreamSpec extends TestConnectionSpec {
       actor ! deleteStream()
       expectMsg(deleteStreamCompleted)
 
-      actor ! WriteEvents(streamId, EmptyStream, List(newEvent), allowForwarding = true)
+      actor ! WriteEvents(streamId, EmptyStream, List(newEvent), requireMaster = true)
       expectMsgPF() {
         case WriteEventsCompleted(StreamDeleted, Some(_), _) => true
       }

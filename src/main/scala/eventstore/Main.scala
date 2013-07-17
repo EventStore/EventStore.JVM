@@ -1,9 +1,9 @@
-package eventstore.client
+package eventstore
 
 import akka.actor.{Actor, Props, ActorSystem}
 import java.net.InetSocketAddress
 import scala.reflect.ClassTag
-import eventstore.client.tcp.ConnectionActor
+import tcp.ConnectionActor
 
 
 /**

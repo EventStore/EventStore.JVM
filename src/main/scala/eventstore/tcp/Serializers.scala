@@ -1,4 +1,4 @@
-package eventstore.client
+package eventstore
 package tcp
 
 
@@ -26,8 +26,6 @@ object Serializers {
       //    PhysicalChunkBulk = 0x12,
       //    LogicalChunkBulk = 0x 13,
       //
-      case x: CreateStream => createStream(0x80, x)
-
       case x: WriteEvents => writeEvents(0x82, x)
 
       case x: TransactionStart => transactionStart(0x84, x)
@@ -85,18 +83,6 @@ object Serializers {
       `resolveLinkTos` = x.resolveLinkTos))
   }
 
-
-  def createStream(markerByte: Byte, x: CreateStream) = {
-    >>(markerByte, proto.CreateStream(
-      `eventStreamId` = x.streamId,
-      `requestId` = pbyteString(UuidSerializer.serialize(x.requestId)),
-      `metadata` = Some(pbyteString(x.metadata)),
-      `allowForwarding` = x.allowForwarding,
-      `isJson` = x.isJson))
-  }
-
-
-
   def pbyteString(bs: ByteString): PByteString = PByteString.copyFrom(bs.toByteBuffer)
 
   def byteBuffer(bs: PByteString): ByteString = ByteString(bs.asReadOnlyByteBuffer())
@@ -124,7 +110,7 @@ object Serializers {
       `eventStreamId` = x.streamId,
       `expectedVersion` = x.expVer.value,
       `events` = x.events.map(newEvent).toVector,
-      `allowForwarding` = x.allowForwarding))
+      `requireMaster` = x.requireMaster))
   }
 
 
@@ -139,7 +125,7 @@ object Serializers {
     >>(markerByte, proto.DeleteStream(
       `eventStreamId` = x.streamId,
       `expectedVersion` = x.expVer.value,
-      `allowForwarding` = x.allowForwarding))
+      `requireMaster` = x.requireMaster))
   }
 
 
@@ -147,20 +133,20 @@ object Serializers {
     >>(markerByte, proto.TransactionStart(
       `eventStreamId` = x.streamId,
       `expectedVersion` = x.expVer.value,
-      `allowForwarding` = x.allowForwarding))
+      `requireMaster` = x.requireMaster))
   }
 
   def transactionWrite(markerByte: Byte, x: TransactionWrite) = {
     >>(markerByte, proto.TransactionWrite(
       `transactionId` = x.transactionId,
       `events` = x.events.map(newEvent).toVector,
-      `allowForwarding` = x.allowForwarding))
+      `requireMaster` = x.requireMaster))
   }
 
   def transactionCommit(markerByte: Byte, x: TransactionCommit) = {
     >>(markerByte, proto.TransactionCommit(
       `transactionId` = x.transactionId,
-      `allowForwarding` = x.allowForwarding))
+      `requireMaster` = x.requireMaster))
   }
 
 

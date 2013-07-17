@@ -1,4 +1,4 @@
-package eventstore.client
+package eventstore
 
 import scala.concurrent.Future
 

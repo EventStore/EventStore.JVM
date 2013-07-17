@@ -1,9 +1,9 @@
-package eventstore.client
+package eventstore
 
 import akka.actor.{Props, ActorLogging, Actor}
 import akka.io.Tcp
 import scala.concurrent.duration._
-import eventstore.client.examples.MessagesPerSecondActor
+import eventstore.examples.MessagesPerSecondActor
 
 /**
  * @author Yaroslav Klymko

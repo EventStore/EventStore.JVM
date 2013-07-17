@@ -1,4 +1,4 @@
-package eventstore.client
+package eventstore
 package examples
 
 import akka.actor.{ActorLogging, Actor}

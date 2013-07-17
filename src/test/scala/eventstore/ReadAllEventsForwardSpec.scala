@@ -1,4 +1,4 @@
-package eventstore.client
+package eventstore
 
 import OperationResult._
 import ReadDirection.Forward
@@ -88,9 +88,9 @@ class ReadAllEventsForwardSpec extends TestConnectionSpec {
       val events = expectMsgPF() {
         case ReadAllEventsCompleted(_, _, xs, _, _, Forward) => xs.map(_.event)
       }
-      //      events.last.eventType mustEqual Some("$stream-created")
+      //      events.last.eventType mustEqual "$stream-created"
       events.last must beLike {
-        case EventRecord(`streamId`, _, _, Some("$stream-created"), _, _) => ok
+        case EventRecord(`streamId`, _, _, "$stream-created", _, _) => ok
       }
     }
 
@@ -106,9 +106,9 @@ class ReadAllEventsForwardSpec extends TestConnectionSpec {
         case ReadAllEventsCompleted(_, _, xs, _, _, Forward) => xs.map(_.event)
       }
       events.last must beLike {
-        case EventRecord(`streamId`, _, _, Some("$stream-deleted"), _, _) => ko
+        case EventRecord(`streamId`, _, _, "$stream-deleted", _, _) => ko
       }
-      //      events.last.eventType mustEqual Some("$stream-deleted")
+      //      events.last.eventType mustEqual "$stream-deleted"
     }
 
     "not read events from deleted streams" in new ReadAllEventsForwardScope {

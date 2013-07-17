@@ -1,4 +1,4 @@
-package eventstore.client
+package eventstore
 
 import OperationResult._
 import ReadDirection.Backward
@@ -48,7 +48,7 @@ class ReadStreamEventsBackwardSpec extends TestConnectionSpec {
 
 
       expectMsgPF() {
-        case ReadStreamEventsCompleted(List(ResolvedIndexedEvent(EventRecord(`streamId`, 0, _, Some("$stream-created"), ByteString.empty, Some(_)), None)), ReadStreamResult.Success, -1, 0, true, _, Backward) => true
+        case ReadStreamEventsCompleted(List(ResolvedIndexedEvent(EventRecord(`streamId`, 0, _, "$stream-created", ByteString.empty, Some(_)), None)), ReadStreamResult.Success, -1, 0, true, _, Backward) => true
       }
 
     }

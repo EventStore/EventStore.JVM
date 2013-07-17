@@ -1,11 +1,11 @@
-package eventstore.client.examples
+package eventstore.examples
 
 import akka.actor.{ActorLogging, Actor}
 import akka.io.Tcp
 import scala.concurrent.duration._
-import eventstore.client._
-import eventstore.client.ReadStreamEventsCompleted
-import eventstore.client.ReadStreamEvents
+import eventstore._
+import eventstore.ReadStreamEventsCompleted
+import eventstore.ReadStreamEvents
 
 /**
  * @author Yaroslav Klymko

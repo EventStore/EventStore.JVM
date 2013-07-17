@@ -1,4 +1,4 @@
-package eventstore.client
+package eventstore
 
 import ReadDirection.Backward
 
@@ -56,7 +56,7 @@ class ReadAllEventsBackwardSpec extends TestConnectionSpec {
       val events = expectMsgPF() {
         case ReadAllEventsCompleted(_, _, x :: Nil, _, _, Backward) => x.event
       } must beLike {
-        case EventRecord(`streamId`, _, _, Some("$stream-created"), _, _) => ok
+        case EventRecord(`streamId`, _, _, "$stream-created", _, _) => ok
       }
     }
 
@@ -106,7 +106,7 @@ class ReadAllEventsBackwardSpec extends TestConnectionSpec {
         case ReadAllEventsCompleted(_, _, xs, _, _, Backward) => xs.map(_.event)
       }
       events.last must beLike {
-        case EventRecord(`streamId`, _, _, Some("$stream-deleted"), _, _) => ko
+        case EventRecord(`streamId`, _, _, "$stream-deleted", _, _) => ko
       }
     }
 

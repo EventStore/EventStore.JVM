@@ -1,10 +1,8 @@
-package eventstore
-
 /**
  * @author Yaroslav Klymko
  */
 
-package object client {
+package object eventstore {
   type Bytes = Array[Byte]
   type ByteBuffer = java.nio.ByteBuffer
   type Uuid = java.util.UUID

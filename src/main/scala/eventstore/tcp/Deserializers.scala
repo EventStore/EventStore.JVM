@@ -1,8 +1,8 @@
-package eventstore.client
+package eventstore
 package tcp
 
 import akka.util.ByteString
-import eventstore.client.proto
+import eventstore.proto
 import com.google.protobuf.{ByteString => PByteString, MessageLite}
 import net.sandrogrzicic.scalabuff.MessageBuilder
 import scala.reflect.ClassTag
@@ -43,18 +43,6 @@ object Deserializers {
     val instance = ev.runtimeClass.getDeclaredMethod("defaultInstance").invoke(ev.runtimeClass).asInstanceOf[P]
     def apply(bs: ByteString) = apply(instance.mergeFrom(bs.toArray[Byte]))
     def apply(x: P): T
-  }
-
-  implicit val createStreamCompletedDeserializer = new DeserializeProto[CreateStreamCompleted, proto.CreateStreamCompleted] {
-    import OperationResult._
-
-    /*def apply(x: proto.CreateStreamCompleted) = operationResult(x.`result`) match {
-      case Success => CreateStreamSucceed
-      case result@WrongExpectedVersion => CreateStreamFailed(x.`message`.getOrElse(
-        sys.error(s"CreateStreamCompleted.message is not given, however operation result: $result")))
-      case result => sys.error(s"invalid operation result: $x")
-    }*/
-    def apply(x: proto.CreateStreamCompleted) = CreateStreamCompleted(operationResult(x.`result`), x.`message`)
   }
 
   implicit val writeEventsCompletedDeserializer = new DeserializeProto[WriteEventsCompleted, proto.WriteEventsCompleted] {
@@ -227,7 +215,7 @@ object Deserializers {
     //    PhysicalChunkBulk = 0x12,
     //    LogicalChunkBulk = 0x13,
     //
-    0x81 -> deserializer[CreateStreamCompleted],
+//    0x81 -> deserializer[CreateStreamCompleted],
     0x83 -> deserializer[WriteEventsCompleted],
     0x85 -> deserializer[TransactionStartCompleted],
     0x87 -> deserializer[TransactionWriteCompleted],

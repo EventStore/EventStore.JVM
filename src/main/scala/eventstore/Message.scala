@@ -1,4 +1,4 @@
-package eventstore.client
+package eventstore
 
 
 /**
@@ -65,7 +65,7 @@ object ImproveByteString {
 }
 
 case class NewEvent(eventId: ByteString,
-                    eventType: Option[String], // TODO Optional? wtf ?
+                    eventType: String,
                     isJson: Boolean,
                     data: ByteString,
                     metadata: Option[ByteString]) extends BetterToString
@@ -73,7 +73,7 @@ case class NewEvent(eventId: ByteString,
 case class EventRecord(streamId: String,
                        eventNumber: Int,
                        eventId: ByteString,
-                       eventType: Option[String],
+                       eventType: String,
                        data: ByteString,
                        metadata: Option[ByteString]) extends BetterToString
 
@@ -95,7 +95,7 @@ case class DeniedToRoute(externalTcpAddress: String,
 case class CreateStream(streamId: String,
                         requestId: Uuid, // change type to Uuid
                         metadata: ByteString, // TODO
-                        allowForwarding: Boolean,
+                        requireMaster: Boolean,
                         isJson: Boolean) extends Out with BetterToString
 
 // TODO depends on metadata
@@ -107,7 +107,7 @@ case class CreateStreamCompleted(result: OperationResult.Value, message: Option[
 case class WriteEvents(streamId: String,
                        expVer: ExpectedVersion,
                        events: List[NewEvent],
-                       allowForwarding: Boolean) extends Out
+                       requireMaster: Boolean) extends Out
 
 case class WriteEventsCompleted(result: OperationResult.Value,
                                 message: Option[String],
@@ -116,7 +116,7 @@ case class WriteEventsCompleted(result: OperationResult.Value,
 
 case class DeleteStream(streamId: String,
                         expVer: ExpectedVersion, // TODO disallow NoVersion
-                        allowForwarding: Boolean) extends Out
+                        requireMaster: Boolean) extends Out
 
 
 case class DeleteStreamCompleted(result: OperationResult.Value, message: Option[String]) extends In
@@ -174,7 +174,7 @@ object ReadDirection extends Enumeration {
 
 case class TransactionStart(streamId: String,
                             expVer: ExpectedVersion,
-                            allowForwarding: Boolean) extends Out
+                            requireMaster: Boolean) extends Out
 
 case class TransactionStartCompleted(transactionId: Long,
                                      result: OperationResult.Value,
@@ -182,14 +182,14 @@ case class TransactionStartCompleted(transactionId: Long,
 
 case class TransactionWrite(transactionId: Long,
                             events: List[NewEvent],
-                            allowForwarding: Boolean) extends Out
+                            requireMaster: Boolean) extends Out
 
 case class TransactionWriteCompleted(transactionId: Long,
                                      result: OperationResult.Value,
                                      message: Option[String]) extends In
 
 case class TransactionCommit(transactionId: Long,
-                             allowForwarding: Boolean) extends Out
+                             requireMaster: Boolean) extends Out
 
 case class TransactionCommitCompleted(transactionId: Long,
                                       result: OperationResult.Value,

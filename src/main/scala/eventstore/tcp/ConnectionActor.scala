@@ -1,4 +1,4 @@
-package eventstore.client
+package eventstore
 package tcp
 
 import java.net.InetSocketAddress

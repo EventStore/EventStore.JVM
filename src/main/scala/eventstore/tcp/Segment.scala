@@ -1,8 +1,8 @@
-package eventstore.client.tcp
+package eventstore.tcp
 
 
 import java.nio.ByteOrder.LITTLE_ENDIAN
-import eventstore.client._
+import eventstore._
 
 
 /**
