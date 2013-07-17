@@ -1,4 +1,4 @@
-package eventstore.client.proto;
+package eventstore.proto
 
 enum OperationResult
 {
