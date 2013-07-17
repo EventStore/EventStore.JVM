@@ -2,11 +2,6 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <groupId>ua.t3hnar</groupId>
-        <artifactId>scala-parent-pom_2.10</artifactId>
-        <version>2.2</version>
-    </parent>
 
     <groupId>com.geteventstore</groupId>
     <artifactId>eventstore-client_2.10</artifactId>
@@ -14,11 +9,54 @@
 
     <name>Event Store Client</name>
 
+    <url>https://github.com/EventStore/eventstorejvmclient</url>
+    <inceptionYear>2013</inceptionYear>
+
+    <developers>
+        <developer>
+            <name>Yaroslav Klymko</name>
+            <email>t3hnar@gmail.com</email>
+        </developer>
+    </developers>
+
+    <scm>
+        <url>https://github.com/EventStore/eventstorejvmclient</url>
+        <connection>scm:git:ssh://git@github.com/EventStore/eventstorejvmclient</connection>
+        <developerConnection>scm:git:ssh://git@github.com/EventStore/eventstorejvmclient</developerConnection>
+    </scm>
+
     <properties>
         <akka.version>2.2.0</akka.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>${project.build.sourceEncoding}</project.reporting.outputEncoding>
+        <scala.version>2.10</scala.version>
+        <scala.lang.version>2.10.2</scala.lang.version>
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+            <version>${scala.lang.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-compiler</artifactId>
+            <version>${scala.lang.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.11</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.specs2</groupId>
+            <artifactId>specs2_${scala.version}</artifactId>
+            <version>2.1</version>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>com.typesafe.akka</groupId>
             <artifactId>akka-actor_${scala.version}</artifactId>
@@ -34,29 +72,8 @@
             <artifactId>akka-testkit_${scala.version}</artifactId>
             <version>${akka.version}</version>
         </dependency>
-
-        <dependency>
-            <groupId>net.sandrogrzicic</groupId>
-            <artifactId>scalabuff-runtime_${scala.version}</artifactId>
-            <version>1.3.1</version>
-        </dependency>
-        <dependency>
-            <groupId>net.sandrogrzicic</groupId>
-            <artifactId>scalabuff-compiler_${scala.version}</artifactId>
-            <version>1.3.1</version>
-        </dependency>
     </dependencies>
 
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.specs2</groupId>
-                <artifactId>specs2_${scala.version}</artifactId>
-                <version>2.1</version>
-                <scope>test</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
 
     <pluginRepositories>
         <pluginRepository>
@@ -67,11 +84,60 @@
     </pluginRepositories>
 
     <build>
+        <!--suppress MavenModelInspection -->
+        <sourceDirectory>src/main/scala</sourceDirectory>
+        <!--suppress MavenModelInspection -->
+        <testSourceDirectory>src/test/scala</testSourceDirectory>
+
         <plugins>
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
+                <version>3.1.3</version>
+                <configuration>
+                    <scalaVersion>${scala.version}</scalaVersion>
+                    <args>
+                        <arg>-unchecked</arg>
+                        <arg>-deprecation</arg>
+                    </args>
+                    <charset>${project.build.sourceEncoding}</charset>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>compile</goal>
+                            <goal>testCompile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.12</version>
+                <configuration>
+                    <includes>
+                        <include>**/*Spec.class</include>
+                    </includes>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.5.1</version>
+                <configuration>
+                    <source>1.6</source>
+                    <target>1.6</target>
+                </configuration>
             </plugin>
         </plugins>
     </build>
+
+    <repositories>
+        <repository>
+            <id>typesafe</id>
+            <name>Typesafe Repository</name>
+            <url>http://repo.typesafe.com/typesafe/releases/</url>
+        </repository>
+    </repositories>
 </project>
