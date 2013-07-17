@@ -1,26 +1,26 @@
 package eventstore.client
 
 
-
-
-
 /**
  * @author Yaroslav Klymko
  */
 
 sealed trait Message
-
 sealed trait In extends Message
 sealed trait Out extends Message
 
 case object HeartbeatRequestCommand extends In
 case object HeartbeatResponseCommand extends Out
+
 case object Ping extends Out
 case object Pong extends In
+
 case object PrepareAck extends Message
 case object CommitAck extends Message
+
 case object SlaveAssignment extends Message
 case object CloneAssignment extends Message
+
 case object SubscribeReplica extends Message
 case object CreateChunk extends Message
 case object PhysicalChunkBulk extends Message
@@ -37,18 +37,45 @@ object OperationResult extends Enumeration {
 }
 
 
+trait BetterToString {
+  self: Product =>
+  override def toString = ImproveByteString(self)
+}
+
+object ImproveByteString {
+  def apply(x: Product): String = {
+    val name = x.productPrefix
+    def isByteString(x: Any): Boolean = x match {
+      case _: ByteString => true
+      case Some(z) => isByteString(z)
+      case _ => false
+    }
+
+    def byteStringToString(x: ByteString) = {
+      if (x.isEmpty) x.toString() else "ByteString(..)"
+    }
+
+    val fields = x.productIterator.map {
+      case x: ByteString => byteStringToString(x)
+      case Some(x: ByteString) => byteStringToString(x)
+      case x => x
+    }
+    s"$name(${fields.mkString(",")}})"
+  }
+}
+
 case class NewEvent(eventId: ByteString,
                     eventType: Option[String], // TODO Optional? wtf ?
                     isJson: Boolean,
                     data: ByteString,
-                    metadata: Option[ByteString])
+                    metadata: Option[ByteString]) extends BetterToString
 
 case class EventRecord(streamId: String,
                        eventNumber: Int,
                        eventId: ByteString,
                        eventType: Option[String],
                        data: ByteString,
-                       metadata: Option[ByteString])
+                       metadata: Option[ByteString]) extends BetterToString
 
 case class ResolvedIndexedEvent(event: EventRecord,
                                 link: Option[EventRecord])
@@ -69,7 +96,9 @@ case class CreateStream(streamId: String,
                         requestId: Uuid, // change type to Uuid
                         metadata: ByteString, // TODO
                         allowForwarding: Boolean,
-                        isJson: Boolean) extends Out
+                        isJson: Boolean) extends Out with BetterToString
+
+// TODO depends on metadata
 
 
 case class CreateStreamCompleted(result: OperationResult.Value, message: Option[String]) extends In
@@ -85,15 +114,12 @@ case class WriteEventsCompleted(result: OperationResult.Value,
                                 firstEventNumber: Int) extends In
 
 
-
 case class DeleteStream(streamId: String,
                         expVer: ExpectedVersion, // TODO disallow NoVersion
                         allowForwarding: Boolean) extends Out
 
 
-
 case class DeleteStreamCompleted(result: OperationResult.Value, message: Option[String]) extends In
-
 
 
 case class ReadEvent(streamId: String,
@@ -102,7 +128,6 @@ case class ReadEvent(streamId: String,
 
 case class ReadEventCompleted(result: ReadEventResult.Value,
                               event: ResolvedIndexedEvent) extends In
-
 
 
 object ReadEventResult extends Enumeration {
@@ -147,7 +172,6 @@ object ReadDirection extends Enumeration {
 }
 
 
-
 case class TransactionStart(streamId: String,
                             expVer: ExpectedVersion,
                             allowForwarding: Boolean) extends Out
@@ -172,16 +196,13 @@ case class TransactionCommitCompleted(transactionId: Long,
                                       message: Option[String]) extends In
 
 
-
 case class SubscribeToStream(streamId: String, resolveLinkTos: Boolean) extends Out
 case class SubscriptionConfirmation(lastCommitPosition: Long, lastEventNumber: Option[Int]) extends In
 case class StreamEventAppeared(event: ResolvedEvent) extends In
 
 
-
 case object UnsubscribeFromStream extends Out
 case object SubscriptionDropped extends In
-
 
 
 case object ScavengeDatabase extends Out
@@ -191,5 +212,6 @@ case object BadRequest extends In
 
 object Message {
   def deserialize(in: ByteString)(implicit deserializer: ByteString => In): In = deserializer(in)
+
   def serialize[T <: Out](out: T)(implicit serializer: T => ByteString): ByteString = serialize(out)
 }

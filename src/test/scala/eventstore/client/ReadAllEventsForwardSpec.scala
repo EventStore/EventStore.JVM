@@ -1,107 +1,131 @@
 package eventstore.client
 
-import org.specs2.mutable.Specification
+import OperationResult._
+import ReadDirection.Forward
+
 
 /**
  * @author Yaroslav Klymko
  */
-class ReadAllEventsForwardSpec extends Specification {
+class ReadAllEventsForwardSpec extends TestConnectionSpec {
+  sequential
+
   "read all events forward" should {
-    "return empty slice if asked to read from end" in todo
-    "return events in same order as written" in todo
-    "be able to read all one by one until end of stream" in todo
-    "be able to read events slice at time" in todo
-    "return partial slice if not enough events" in todo
-    
-    /*[TestFixture, Category("LongRunning")]
-    public class read all events forward should: SpecificationWithDirectoryPerTestFixture
-    {
-        private MiniNode  node;
-        private IEventStoreConnection  conn;
-        private EventData[]  testEvents;
+    "return empty slice if asked to read from end" in new ReadAllEventsForwardScope {
+      val events = (1 to 10).map(_ => newEvent)
+      actor ! writeEvents(AnyVersion, events: _ *)
+      expectMsg(writeEventsCompleted())
 
-        [TestFixtureSetUp]
-        public override void TestFixtureSetUp()
-        {
-            base.TestFixtureSetUp();
-             node = new MiniNode(PathName, skipInitializeStandardUsersCheck: false);
-             node.Start();
-             conn = TestConnection.Create( node.TcpEndPoint);
-             conn.Connect();
-             conn.SetStreamMetadata("$all", -1,
-                                    StreamMetadata.Build().SetReadRole(SystemUserGroups.All),
-                                    new UserCredentials(SystemUsers.Admin, SystemUsers.DefaultAdminPassword));
 
-             testEvents = Enumerable.Range(0, 20).Select(x => TestEvent.NewTestEvent(x.ToString())).ToArray();
-             conn.AppendToStream("stream", ExpectedVersion.EmptyStream,  testEvents);
+      actor ! ReadAllEvents(-1, -1, 1, resolveLinkTos = false, Forward)
+      expectMsgPF() {
+        case x@ReadAllEventsCompleted(-1, -1, Nil, -1, -1, Forward) =>
+          println(x)
+          true
+      }
+    }
+
+    "return events in same order as written" in new ReadAllEventsForwardScope {
+      val size = 10
+      val events = (1 to size).map(_ => newEvent)
+      actor ! writeEvents(AnyVersion, events: _ *)
+      expectMsg(writeEventsCompleted())
+
+
+      val expectedRecords = events.zipWithIndex.map {
+        case (x, idx) => eventRecord(idx + 1, x)
+      }
+
+      //      ReadAllEventsCompleted(-1,-1,List(),-1,-1,Forward)
+      actor ! ReadAllEvents(0, 0, Int.MaxValue, resolveLinkTos = false, Forward)
+      // TODO describe READ ALL
+      val actualRecords = expectMsgPF() {
+        case ReadAllEventsCompleted(0, 0, xs, _, _, Forward) => xs.takeRight(size).map(_.event)
+      }
+      actualRecords mustEqual expectedRecords
+    }
+
+    "be able to read all one by one until end of stream" in new ReadAllEventsForwardScope {
+      val size = 1
+
+      def read(commitPosition: Long, preparePosition: Long) {
+        actor ! ReadAllEvents(commitPosition, preparePosition, size, resolveLinkTos = false, Forward)
+        val (events, nextCommitPosition, nextPreparePosition) = expectMsgPF() {
+          case ReadAllEventsCompleted(_, _, xs, c, p, Forward) => (xs, c, p)
         }
-
-        [TestFixtureTearDown]
-        public override void TestFixtureTearDown()
-        {
-             conn.Close();
-             node.Shutdown();
-            base.TestFixtureTearDown();
+        if (events.nonEmpty) {
+          events must haveSize(size)
+          read(nextCommitPosition, nextPreparePosition)
         }
+      }
 
-        [Test, Category("LongRunning")]
-        public void return empty slice if asked to read from end()
-        {
-            var read =  conn.ReadAllEventsForward(Position.End, 1, false);
-            Assert.That(read.IsEndOfStream, Is.True);
-            Assert.That(read.Events.Length, Is.EqualTo(0));
+      read(0, 0)
+    }
+
+    "be able to read all slice by slice"  in new ReadAllEventsForwardScope {
+      val size = 5
+
+      def read(commitPosition: Long, preparePosition: Long) {
+        actor ! ReadAllEvents(commitPosition, preparePosition, size, resolveLinkTos = false, Forward)
+        val (events, nextCommitPosition, nextPreparePosition) = expectMsgPF() {
+          case ReadAllEventsCompleted(_, _, xs, c, p, Forward) => (xs, c, p)
         }
-
-        [Test, Category("LongRunning")]
-        public void return events in same order as written()
-        {
-            var read =  conn.ReadAllEventsForward(Position.Start,  testEvents.Length + 10, false);
-            Assert.That(EventDataComparer.Equal(
-                 testEvents.ToArray(),
-                read.Events.Skip(read.Events.Length -  testEvents.Length).Select(x => x.Event).ToArray()));
+        if (events.nonEmpty) {
+          events.size must beLessThanOrEqualTo(size)
+          read(nextCommitPosition, nextPreparePosition)
         }
+      }
 
-        [Test, Category("LongRunning")]
-        public void be able to read all one by one until end of stream()
-        {
-            var all = new List<RecordedEvent>();
-            var position = Position.Start;
-            AllEventsSlice slice;
+      read(0, 0)
+    }
 
-            while (!(slice =  conn.ReadAllEventsForward(position, 1, false)).IsEndOfStream)
-            {
-                all.Add(slice.Events.Single().Event);
-                position = slice.NextPosition;
-            }
 
-            Assert.That(EventDataComparer.Equal( testEvents, all.Skip(all.Count -  testEvents.Length).ToArray()));
-        }
+    "be able to read 'stream created' events" in new ReadAllEventsForwardScope {
+      actor ! createStream
+      expectMsg(createStreamCompleted)
 
-        [Test, Category("LongRunning")]
-        public void be able to read events slice at time()
-        {
-            var all = new List<RecordedEvent>();
-            var position = Position.Start;
-            AllEventsSlice slice;
+      actor ! ReadAllEvents(0, 0, Int.MaxValue, resolveLinkTos = false, Forward)
+      val events = expectMsgPF() {
+        case ReadAllEventsCompleted(_, _, xs, _, _, Forward) => xs.map(_.event)
+      }
+      //      events.last.eventType mustEqual Some("$stream-created")
+      events.last must beLike {
+        case EventRecord(`streamId`, _, _, Some("$stream-created"), _, _) => ok
+      }
+    }
 
-            while (!(slice =  conn.ReadAllEventsForward(position, 5, false)).IsEndOfStream)
-            {
-                all.AddRange(slice.Events.Select(x => x.Event));
-                position = slice.NextPosition;
-            }
+    "not read 'stream-deleted' events" in new ReadAllEventsForwardScope {
+      actor ! createStream
+      expectMsg(createStreamCompleted)
 
-            Assert.That(EventDataComparer.Equal( testEvents, all.Skip(all.Count -  testEvents.Length).ToArray()));
-        }
+      actor ! deleteStream()
+      expectMsg(deleteStreamCompleted)
 
-        [Test, Category("LongRunning")]
-        public void return partial slice if not enough events()
-        {
-            var read =  conn.ReadAllEventsForward(Position.Start, 30, false);
-            Assert.That(read.Events.Length, Is.LessThan(30));
-            Assert.That(EventDataComparer.Equal(
-                 testEvents,
-                read.Events.Skip(read.Events.Length -  testEvents.Length).Select(x => x.Event).ToArray()));
-        }
-    }*/
+      actor ! ReadAllEvents(0, 0, Int.MaxValue, resolveLinkTos = false, Forward)
+      val events = expectMsgPF() {
+        case ReadAllEventsCompleted(_, _, xs, _, _, Forward) => xs.map(_.event)
+      }
+      events.last must beLike {
+        case EventRecord(`streamId`, _, _, Some("$stream-deleted"), _, _) => ko
+      }
+      //      events.last.eventType mustEqual Some("$stream-deleted")
+    }
+
+    "not read events from deleted streams" in new ReadAllEventsForwardScope {
+      actor ! writeEvents(AnyVersion, newEvent)
+      expectMsg(writeEventsCompleted())
+
+      actor ! deleteStream()
+      expectMsg(deleteStreamCompleted)
+
+      actor ! ReadAllEvents(0, 0, Int.MaxValue, resolveLinkTos = false, Forward)
+      val events = expectMsgPF() {
+        case ReadAllEventsCompleted(_, _, xs, _, _, Forward) => xs.map(_.event)
+      }
+      events.filter(_.streamId == streamId) must haveSize(1)
+    }
   }
+
+  trait ReadAllEventsForwardScope extends TestConnectionScope
+
 }
