@@ -1,115 +1,68 @@
 package eventstore
 
-import OperationResult._
-import eventstore.tcp.UuidSerializer
-import akka.testkit.TestProbe
+import akka.testkit.{TestKitBase, TestProbe}
 
 /**
  * @author Yaroslav Klymko
  */
 class SubscribeSpec extends TestConnectionSpec {
   "subscribe" should {
-    "succeed for existing stream" in new SubscribeScope {
-      actor ! createStream
-      expectMsg(createStreamCompleted)
-
-      actor ! subscribeToStream
-      expectMsgType[SubscriptionConfirmation]
-    }
-
-    "succeed for not existing stream" in new SubscribeScope {
-      actor ! subscribeToStream
-      expectMsgType[SubscriptionConfirmation]
-    }
-
     "succeed for deleted stream but should not receive any events" in new SubscribeScope {
-      actor ! createStream
-      expectMsg(createStreamCompleted)
-
-      actor ! deleteStream()
-      expectMsg(deleteStreamCompleted)
-
-      actor ! subscribeToStream
-      expectMsgType[SubscriptionConfirmation]
-
-      expectNoMsg()
+      createStream()
+      deleteStream()
+      subscribeToStream()
     }
 
     "be able to subscribe to non existing stream and then catch new event" in new SubscribeScope {
-      actor ! subscribeToStream
-      //      expectMsg(SubscriptionConfirmation(0, None))
-      // TODO why SubscriptionConfirmation(94956,Some(-1)) ?
-
-      expectMsgType[SubscriptionConfirmation]
+      subscribeToStream()
 
       val event = newEvent
-
       val probe = TestProbe()
-      actor.receive(WriteEvents(streamId, AnyVersion, List(event), requireMaster = true), probe.ref)
-      probe.expectMsg(WriteEventsCompleted(Success, None, 0))
+      actor.!(appendToStream(AnyVersion, event))(probe.ref)
+      probe.expectMsg(appendToStreamCompleted())
 
-      expectMsgPF() {
-        case StreamEventAppeared(ResolvedEvent(EventRecord(`streamId`, 0, _, "$stream-created-implicit", ByteString.empty, Some(ByteString.empty)), None, _, _)) => true
-      }
-
-      val er = eventRecord(1, event)
+      val er = eventRecord(0, event)
       expectMsgPF() {
         case StreamEventAppeared(ResolvedEvent(`er`, None, _, _)) =>
       }
     }
 
     "allow multiple subscriptions to the same stream" in new SubscribeScope {
-      val client1 = TestProbe()
-      actor.!(subscribeToStream)(client1.ref)
-      client1.expectMsgType[SubscriptionConfirmation]
-
-      val client2 = TestProbe()
-      actor.!(subscribeToStream)(client2.ref)
-      client2.expectMsgType[SubscriptionConfirmation]
+      subscribeToStream(TestProbe())
+      subscribeToStream(TestProbe())
     }
+
     "be able to unsubscribe from existing stream" in new SubscribeScope {
-      actor ! createStream
-      expectMsg(createStreamCompleted)
-
-      actor ! subscribeToStream
-      expectMsgType[SubscriptionConfirmation]
-
-      actor ! UnsubscribeFromStream
-      expectMsg(SubscriptionDropped)
+      createStream()
+      subscribeToStream()
+      unsubscribeFromStream()
     }
 
     "be able to unsubscribe from not existing stream" in new SubscribeScope {
-      actor ! subscribeToStream
-      expectMsgType[SubscriptionConfirmation]
-
-      actor ! UnsubscribeFromStream
-      expectMsg(SubscriptionDropped)
+      subscribeToStream()
+      unsubscribeFromStream()
     }
 
-    "catch created and deleted but not dropped" in new SubscribeScope {
-      actor ! subscribeToStream
-      expectMsgType[SubscriptionConfirmation]
-
-      val probe = TestProbe()
-      actor.!(createStream)(probe.ref)
-      probe.expectMsg(createStreamCompleted)
-
+    "catch stream deleted events" in new SubscribeScope {
+      subscribeToStream()
+      createStream()
+      expectMsgType[StreamEventAppeared]
+      deleteStream()
       expectMsgPF() {
-        case StreamEventAppeared(ResolvedEvent(EventRecord(`streamId`, 0, _, "$stream-created", ByteString.empty, Some(_)), None, _, _)) =>
+        case StreamEventAppeared(ResolvedEvent(EventRecord(`streamId`, _, Event.StreamDeleted(_)), None, _, _)) => true
       }
-
-      actor.!(deleteStream())(probe.ref)
-      probe.expectMsg(deleteStreamCompleted)
-
-      expectMsgPF() {
-        case StreamEventAppeared(ResolvedEvent(EventRecord(`streamId`, _, _, "$stream-deleted", ByteString.empty, Some(ByteString.empty)), None, _, _)) => true
-      }
-
-      expectNoMsg()
     }
   }
 
   trait SubscribeScope extends TestConnectionScope {
-    def subscribeToStream = SubscribeToStream(streamId, resolveLinkTos = false)
+    def subscribeToStream(testKit: TestKitBase = this) {
+      actor.!(SubscribeToStream(streamId, resolveLinkTos = false))(testKit.testActor)
+      testKit.expectMsgType[SubscriptionConfirmation]
+    }
+
+    def unsubscribeFromStream() {
+      actor ! UnsubscribeFromStream
+      expectMsg(SubscriptionDropped(SubscriptionDropped.Reason.Unsubscribed))
+    }
   }
 }

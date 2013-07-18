@@ -9,8 +9,7 @@ class ReadAllEventsBackwardSpec extends TestConnectionSpec {
   sequential
   "read all events backward" should {
     "return empty slice if asked to read from start" in new ReadAllEventsBackwardScope {
-      //      actor ! createStream
-      //      expectMsg(createStreamCompleted)
+      //      prepareStream
 
       actor ! ReadAllEvents(0, 0, 1, resolveLinkTos = false, Backward)
       expectMsgPF() {
@@ -30,8 +29,8 @@ class ReadAllEventsBackwardSpec extends TestConnectionSpec {
     "return events in reversed order compared to written" in new ReadAllEventsBackwardScope {
       val size = 10
       val events = (1 to size).map(_ => newEvent)
-      actor ! writeEvents(AnyVersion, events: _ *)
-      expectMsg(writeEventsCompleted())
+      actor ! appendToStream(AnyVersion, events: _ *)
+      expectMsg(appendToStreamCompleted())
 
 
       val expectedRecords = events.zipWithIndex.map {
@@ -48,9 +47,8 @@ class ReadAllEventsBackwardSpec extends TestConnectionSpec {
 
     }
 
-    "be able to read 'stream created' events" in new ReadAllEventsBackwardScope {
-      actor ! createStream
-      expectMsg(createStreamCompleted)
+    /* TODO "be able to read 'stream created' events" in new ReadAllEventsBackwardScope {
+      createStream
 
       actor ! ReadAllEvents(-1, -1, 1, resolveLinkTos = false, Backward)
       val events = expectMsgPF() {
@@ -58,7 +56,7 @@ class ReadAllEventsBackwardSpec extends TestConnectionSpec {
       } must beLike {
         case EventRecord(`streamId`, _, _, "$stream-created", _, _) => ok
       }
-    }
+    }*/
 
     "be able to read all one by one until end of stream" in new ReadAllEventsBackwardScope {
       val size = 1
@@ -94,28 +92,25 @@ class ReadAllEventsBackwardSpec extends TestConnectionSpec {
       read(-1, -1)
     }
 
-    "not read 'stream-deleted' events" in new ReadAllEventsBackwardScope {
-      actor ! createStream
-      expectMsg(createStreamCompleted)
+   "not read 'stream-deleted' events" in new ReadAllEventsBackwardScope {
+      createStream()
 
-      actor ! deleteStream()
-      expectMsg(deleteStreamCompleted)
+      deleteStream()
 
       actor ! ReadAllEvents(-1, -1, Int.MaxValue, resolveLinkTos = false, Backward)
       val events = expectMsgPF() {
         case ReadAllEventsCompleted(_, _, xs, _, _, Backward) => xs.map(_.event)
       }
       events.last must beLike {
-        case EventRecord(`streamId`, _, _, "$stream-deleted", _, _) => ko
+        case EventRecord(`streamId`, _, Event.StreamDeleted(_)) => ko
       }
     }
 
     "not read events from deleted streams" in new ReadAllEventsBackwardScope {
-      actor ! writeEvents(AnyVersion, newEvent)
-      expectMsg(writeEventsCompleted())
+      actor ! appendToStream(AnyVersion, newEvent)
+      expectMsg(appendToStreamCompleted())
 
-      actor ! deleteStream()
-      expectMsg(deleteStreamCompleted)
+      deleteStream()
 
       actor ! ReadAllEvents(-1, -1, Int.MaxValue, resolveLinkTos = false, Backward)
       val events = expectMsgPF() {

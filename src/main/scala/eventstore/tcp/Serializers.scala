@@ -26,7 +26,8 @@ object Serializers {
       //    PhysicalChunkBulk = 0x12,
       //    LogicalChunkBulk = 0x 13,
       //
-      case x: WriteEvents => writeEvents(0x82, x)
+
+      case x: AppendToStream => appendToStream(0x82, x)
 
       case x: TransactionStart => transactionStart(0x84, x)
       case x: TransactionWrite => transactionWrite(0x86, x)
@@ -85,27 +86,21 @@ object Serializers {
 
   def pbyteString(bs: ByteString): PByteString = PByteString.copyFrom(bs.toByteBuffer)
 
-  def byteBuffer(bs: PByteString): ByteString = ByteString(bs.asReadOnlyByteBuffer())
+  def pbyteString(uuid: Uuid): PByteString = PByteString.copyFrom(UuidSerializer.serialize(uuid).toByteBuffer) // TODO PERF
 
-  def newEventX(x: proto.NewEvent) = {
-    NewEvent(
-      eventId = byteBuffer(x.`eventId`),
-      eventType = x.`eventType`,
-      isJson = x.`isJson`,
-      data = byteBuffer(x.`data`),
-      metadata = x.`metadata`.map(byteBuffer))
-  }
+  def pbyteStringOption(bs: ByteString): Option[PByteString] = if (bs.isEmpty) None else Some(pbyteString(bs))
 
-  def newEvent(x: NewEvent) = {
+
+  def newEvent(x: Event) = {
     proto.NewEvent(
       `eventId` = pbyteString(x.eventId),
       `eventType` = x.eventType,
-      `isJson` = x.isJson,
+      `isJson` = false, // TODO will be fixed with new .proto
       `data` = pbyteString(x.data),
-      `metadata` = x.metadata.map(pbyteString))
+      `metadata` = pbyteStringOption(x.metadata))
   }
 
-  def writeEvents(markerByte: Byte, x: WriteEvents) = {
+  def appendToStream(markerByte: Byte, x: AppendToStream) = {
     >>(markerByte, proto.WriteEvents(
       `eventStreamId` = x.streamId,
       `expectedVersion` = x.expVer.value,

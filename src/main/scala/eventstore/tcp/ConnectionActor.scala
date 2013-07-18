@@ -55,7 +55,7 @@ class ConnectionActor(address: InetSocketAddress) extends Actor with ActorLoggin
         x
       }
 
-      val segment = TcpPackage(correlationId, message)
+      val segment = TcpPackage(correlationId, message,Some(AuthData("admin", "changeit")))
       log.warning(s"received $message in disconnected state, adding to stash")
       context.become(receiveWhenConnecting(stash.enqueue(segment)))
 
@@ -95,7 +95,8 @@ class ConnectionActor(address: InetSocketAddress) extends Actor with ActorLoggin
           x
         }
 
-        val segment = TcpPackage(correlationId, message)
+        val segment = TcpPackage(correlationId, message, Some(AuthData("admin", "changeit")))
+//        val segment = TcpPackage(correlationId, message)
 
         val data = serialize(segment)
 

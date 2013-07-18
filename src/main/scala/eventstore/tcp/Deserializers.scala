@@ -3,7 +3,7 @@ package tcp
 
 import akka.util.ByteString
 import eventstore.proto
-import com.google.protobuf.{ByteString => PByteString, MessageLite}
+import com.google.protobuf.{ByteString => PByteString}
 import net.sandrogrzicic.scalabuff.MessageBuilder
 import scala.reflect.ClassTag
 
@@ -25,7 +25,8 @@ object Deserializers {
       case WrongExpectedVersion => OperationResult.WrongExpectedVersion
       case StreamDeleted => OperationResult.StreamDeleted
       case InvalidTransaction => OperationResult.InvalidTransaction
-      case _ => ???
+      case AccessDenied => OperationResult.AccessDenied
+      case enum => sys.error(s"$enum is not supported")
     }
   }
 
@@ -45,8 +46,8 @@ object Deserializers {
     def apply(x: P): T
   }
 
-  implicit val writeEventsCompletedDeserializer = new DeserializeProto[WriteEventsCompleted, proto.WriteEventsCompleted] {
-    def apply(x: proto.WriteEventsCompleted) = WriteEventsCompleted(
+  implicit val writeEventsCompletedDeserializer = new DeserializeProto[AppendToStreamCompleted, proto.WriteEventsCompleted] {
+    def apply(x: proto.WriteEventsCompleted) = AppendToStreamCompleted(
       result = operationResult(x.`result`),
       message = x.`message`,
       firstEventNumber = x.`firstEventNumber`)
@@ -146,37 +147,36 @@ object Deserializers {
     def apply(x: proto.StreamEventAppeared) = StreamEventAppeared(event = resolvedEvent(x.`event`))
   }
 
-  implicit val subscriptionDroppedDeserialize = new DeserializeProto[SubscriptionDropped.type, proto.SubscriptionDropped] {
-    def apply(x: proto.SubscriptionDropped) = SubscriptionDropped
+  implicit val subscriptionDroppedDeserialize = new DeserializeProto[SubscriptionDropped, proto.SubscriptionDropped] {
+
+    import SubscriptionDropped.Reason
+    import proto.SubscriptionDropped.SubscriptionDropReason._
+
+    def reason(x: EnumVal): Reason.Value = x match {
+      case Unsubscribed => Reason.Unsubscribed
+      case AccessDenied => Reason.AccessDenied
+      case _ => Reason.Default
+    }
+
+    def apply(x: proto.SubscriptionDropped) =
+      SubscriptionDropped(reason = x.`reason`.fold(Reason.Default)(reason))
   }
-
-
-
-
-
-
-
-
 
 
 
   def deserialize(markerByte: Byte): DeserializeMessage = markerBytes.get(markerByte).getOrElse(
     sys.error(s"wrong marker byte: ${"0x" + Integer.toHexString(markerByte).drop(6).toUpperCase}"))
 
-
-
-
-
-
   def noBytes(message: In): DeserializeMessage = _ => message
 
   def eventRecord(x: proto.EventRecord): EventRecord = EventRecord(
     streamId = x.`eventStreamId`,
     eventNumber = x.`eventNumber`,
-    eventId = byteBuffer(x.`eventId`),
-    eventType = x.`eventType`,
-    data = byteBuffer(x.`data`),
-    metadata = x.`metadata`.map(byteBuffer))
+    event = Event(
+      eventId = uuid(x.`eventId`),
+      eventType = x.`eventType`,
+      data = byteString(x.`data`),
+      metadata = byteString(x.`metadata`)))
 
   def resolvedEvent(x: proto.ResolvedEvent): ResolvedEvent = ResolvedEvent(
     event = eventRecord(x.`event`),
@@ -216,7 +216,7 @@ object Deserializers {
     //    LogicalChunkBulk = 0x13,
     //
 //    0x81 -> deserializer[CreateStreamCompleted],
-    0x83 -> deserializer[WriteEventsCompleted],
+    0x83 -> deserializer[AppendToStreamCompleted],
     0x85 -> deserializer[TransactionStartCompleted],
     0x87 -> deserializer[TransactionWriteCompleted],
     0x89 -> deserializer[TransactionCommitCompleted],
@@ -231,7 +231,7 @@ object Deserializers {
 
     0xC1 -> deserializer[SubscriptionConfirmation],
     0xC2 -> deserializer[StreamEventAppeared],
-    0xC4 -> deserializer[SubscriptionDropped.type],
+    0xC4 -> deserializer[SubscriptionDropped],
 
     //    ScavengeDatabase = 0xD0,
     0xF0 -> deserializeX(BadRequest)
@@ -242,8 +242,9 @@ object Deserializers {
   } // TODO
 
 
-  def byteBuffer(bs: PByteString): ByteString = ByteString(bs.asReadOnlyByteBuffer())
+  def byteString(bs: PByteString): ByteString = ByteString(bs.asReadOnlyByteBuffer())
 
+  def byteString(bs: Option[PByteString]): ByteString = bs.fold(ByteString.empty)(x => ByteString(x.asReadOnlyByteBuffer()))
 
-
+  def uuid(bs: PByteString): Uuid = UuidSerializer.deserialize(byteString(bs))
 }

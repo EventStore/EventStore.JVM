@@ -28,11 +28,9 @@ class ReadStreamEventsForwardSpec extends TestConnectionSpec {
     }
 
     "fail if stream has been deleted" in new ReadStreamForwardScope {
-      actor ! createStream
-      expectMsg(createStreamCompleted)
+      createStream()
 
-      actor ! deleteStream(EmptyStream)
-      expectMsg(deleteStreamCompleted)
+      deleteStream()
 
       actor ! ReadStreamEvents(streamId, 0, 1000, resolveLinkTos = false, Forward)
 
@@ -45,22 +43,20 @@ class ReadStreamEventsForwardSpec extends TestConnectionSpec {
       }
     }
 
-    "get single event if stream is empty" in new ReadStreamForwardScope {
-      actor ! createStream
-      expectMsg(createStreamCompleted)
+    /*TODO "get single event if stream is empty" in new ReadStreamForwardScope {
+      createStream
 
       actor ! ReadStreamEvents(streamId, 0, 1000, resolveLinkTos = false, Forward)
       // ReadStreamEventsCompleted(List(ResolvedIndexedEvent(EventRecord(ReadStreamForwardSpec-b5ba01e8-90fb-4847-a86b-8c3e372e870f,0,ByteString(15, 74, 115, 94, -45, 124, -85, 48, 81, -77, 28, 13, 7, 25, -47, -101),Some($stream-created),ByteString(),Some(ByteString(82, 101, 97, 100, 83, 116, 114, 101, 97, 109, 70, 111, 114, 119, 97, 114, 100, 83, 112, 101, 99))),None)),Success,1,0,true,433833,Forward)
 
       expectMsgPF() {
-        case ReadStreamEventsCompleted(List(ResolvedIndexedEvent(EventRecord(`streamId`, 0, _, "$stream-created", ByteString.empty, Some(_)), None)), ReadStreamResult.Success, 1, 0, true, _, Forward) => true
+        case ReadStreamEventsCompleted(List(ResolvedIndexedEvent(EventRecord(`streamId`, 0, _, "$stream-created", ByteString.empty, _), None)), ReadStreamResult.Success, 1, 0, true, _, Forward) => true
       }
 
-    }
+    }*/
 
     "get empty slice if stream is empty and start from 1" in new ReadStreamForwardScope {
-      actor ! createStream
-      expectMsg(createStreamCompleted)
+      createStream
 
       actor ! ReadStreamEvents(streamId, 1, 1000, resolveLinkTos = false, Forward)
 
@@ -71,11 +67,10 @@ class ReadStreamEventsForwardSpec extends TestConnectionSpec {
     }
 
     "get empty slice if called with non existing range" in new ReadStreamForwardScope {
-      actor ! createStream
-      expectMsg(createStreamCompleted)
+      createStream
 
-      actor ! writeEvents(AnyVersion, newEvent, newEvent)
-      expectMsg(writeEventsCompleted(1))
+      actor ! appendToStream(AnyVersion, newEvent, newEvent)
+      expectMsg(appendToStreamCompleted(1))
 
       actor ! ReadStreamEvents(streamId, 10, 1000, resolveLinkTos = false, Forward)
 
@@ -86,11 +81,10 @@ class ReadStreamEventsForwardSpec extends TestConnectionSpec {
     }
 
     "get partial slice if not enough events in stream" in new ReadStreamForwardScope {
-      actor ! createStream
-      expectMsg(createStreamCompleted)
+      createStream
 
-      actor ! writeEvents(AnyVersion, newEvent, newEvent)
-      expectMsg(writeEventsCompleted(1))
+      actor ! appendToStream(AnyVersion, newEvent, newEvent)
+      expectMsg(appendToStreamCompleted(1))
 
       actor ! ReadStreamEvents(streamId, 0, 1000, resolveLinkTos = false, Forward)
 
@@ -101,11 +95,10 @@ class ReadStreamEventsForwardSpec extends TestConnectionSpec {
     }
 
     "get partial slice if not enough events in stream and called with Int.Max count" in new ReadStreamForwardScope {
-      actor ! createStream
-      expectMsg(createStreamCompleted)
+      createStream
 
-      actor ! writeEvents(AnyVersion, newEvent, newEvent)
-      expectMsg(writeEventsCompleted(1))
+      actor ! appendToStream(AnyVersion, newEvent, newEvent)
+      expectMsg(appendToStreamCompleted(1))
 
       actor ! ReadStreamEvents(streamId, 0, Int.MaxValue, resolveLinkTos = false, Forward)
 
@@ -116,12 +109,11 @@ class ReadStreamEventsForwardSpec extends TestConnectionSpec {
     }
 
     "get events in same order as written" in new ReadStreamForwardScope {
-      actor ! createStream
-      expectMsg(createStreamCompleted)
+      createStream
 
       val events = (0 to 10).map(_ => newEvent).toList
-      actor ! writeEvents(AnyVersion, events: _*)
-      expectMsg(writeEventsCompleted(1))
+      actor ! appendToStream(AnyVersion, events: _*)
+      expectMsg(appendToStreamCompleted(1))
 
       actor ! ReadStreamEvents(streamId, 1, Int.MaxValue, resolveLinkTos = false, Forward)
 
@@ -138,12 +130,11 @@ class ReadStreamEventsForwardSpec extends TestConnectionSpec {
     }
 
     "be able to read single event from arbitrary position" in new ReadStreamForwardScope {
-      actor ! createStream
-      expectMsg(createStreamCompleted)
+      createStream
 
       val events = (0 to 10).map(_ => newEvent).toList
-      actor ! writeEvents(AnyVersion, events: _*)
-      expectMsg(writeEventsCompleted(1))
+      actor ! appendToStream(AnyVersion, events: _*)
+      expectMsg(appendToStreamCompleted(1))
 
       val event = ResolvedIndexedEvent(eventRecord(5, events(4)), None)
 
@@ -163,12 +154,11 @@ class ReadStreamEventsForwardSpec extends TestConnectionSpec {
     }
 
     "be able to read slice from arbitrary position" in new ReadStreamForwardScope {
-      actor ! createStream
-      expectMsg(createStreamCompleted)
+      createStream
 
       val events = (0 to 10).map(_ => newEvent).toList
-      actor ! writeEvents(AnyVersion, events: _*)
-      expectMsg(writeEventsCompleted(1))
+      actor ! appendToStream(AnyVersion, events: _*)
+      expectMsg(appendToStreamCompleted(1))
 
       val event1 = ResolvedIndexedEvent(eventRecord(5, events(4)), None)
       val event2 = ResolvedIndexedEvent(eventRecord(6, events(5)), None)

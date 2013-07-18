@@ -8,81 +8,46 @@ import OperationResult._
 class DeleteStreamSpec extends TestConnectionSpec {
   "delete stream" should {
     "succeed if doesn't exist when passed ANY for expected version" in new DeleteStreamScope {
-      actor ! deleteStream(AnyVersion)
-      expectMsg(deleteStreamCompleted)
+      deleteStream(AnyVersion)
     }
 
     "fail if doesn't exist and invalid expect version" in new DeleteStreamScope {
-      actor ! deleteStream(EmptyStream)
-      expectMsgPF() {
-        case DeleteStreamCompleted(WrongExpectedVersion, Some(_)) => true
-      }
-
-      actor ! deleteStream(Version(1))
-      expectMsgPF() {
-        case DeleteStreamCompleted(WrongExpectedVersion, Some(_)) => true
-      }
+      failDeleteStream(EmptyStream, WrongExpectedVersion)
+      failDeleteStream(Version(1), WrongExpectedVersion)
     }
 
     "succeed if correct expected version" in new DeleteStreamScope {
-      actor ! createStream
-      expectMsg(createStreamCompleted)
-
-      actor ! deleteStream(EmptyStream)
-      expectMsg(deleteStreamCompleted)
+      createStream()
+      deleteStream(EmptyStream)
     }
 
     "succeed if any expected version" in new DeleteStreamScope {
-      actor ! createStream
-      expectMsg(createStreamCompleted)
-
-      actor ! deleteStream(AnyVersion)
-      expectMsg(deleteStreamCompleted)
+      createStream()
+      deleteStream(AnyVersion)
     }
 
     "fail if invalid expected version" in new DeleteStreamScope {
-      actor ! createStream
-      expectMsg(createStreamCompleted)
-
-      actor ! deleteStream(NoStream)
-      expectMsgPF() {
-        case DeleteStreamCompleted(WrongExpectedVersion, Some(_)) => true
-      }
-
-      actor ! deleteStream(Version(1))
-      expectMsgPF() {
-        case DeleteStreamCompleted(WrongExpectedVersion, Some(_)) => true
-      }
+      createStream()
+      failDeleteStream(NoStream, WrongExpectedVersion)
+      failDeleteStream(Version(1), WrongExpectedVersion)
     }
 
     "fail if already deleted" in new DeleteStreamScope {
-      actor ! createStream
-      expectMsg(createStreamCompleted)
-
-      actor ! deleteStream(EmptyStream)
-      expectMsg(deleteStreamCompleted)
-
-      actor ! deleteStream(EmptyStream)
-      expectMsgPF() {
-        case DeleteStreamCompleted(StreamDeleted, Some(_)) => true
-      }
-
-      actor ! deleteStream(NoStream)
-      expectMsgPF() {
-        case DeleteStreamCompleted(StreamDeleted, Some(_)) => true
-      }
-
-      actor ! deleteStream(AnyVersion)
-      expectMsgPF() {
-        case DeleteStreamCompleted(StreamDeleted, Some(_)) => true
-      }
-
-      actor ! deleteStream(Version(1))
-      expectMsgPF() {
-        case DeleteStreamCompleted(StreamDeleted, Some(_)) => true
-      }
+      createStream()
+      deleteStream(EmptyStream)
+      failDeleteStream(EmptyStream, StreamDeleted)
+      failDeleteStream(NoStream, StreamDeleted)
+      failDeleteStream(AnyVersion, StreamDeleted)
+      failDeleteStream(Version(1), StreamDeleted)
     }
   }
 
-  abstract class DeleteStreamScope extends TestConnectionScope
+  abstract class DeleteStreamScope extends TestConnectionScope {
+    def failDeleteStream(expVer: ExpectedVersion = AnyVersion, result: Value) {
+      actor ! DeleteStream(streamId, expVer, requireMaster = true)
+      expectMsgPF() {
+        case DeleteStreamCompleted(`result`, Some(_)) => true
+      }
+    }
+  }
 }

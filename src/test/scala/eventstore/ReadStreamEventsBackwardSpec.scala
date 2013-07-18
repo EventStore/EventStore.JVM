@@ -23,11 +23,9 @@ class ReadStreamEventsBackwardSpec extends TestConnectionSpec {
     }
 
     "fail if stream has been deleted" in new ReadStreamBackwardScope {
-      actor ! createStream
-      expectMsg(createStreamCompleted)
+      createStream()
 
-      actor ! deleteStream(EmptyStream)
-      expectMsg(deleteStreamCompleted)
+      deleteStream()
 
       actor ! ReadStreamEvents(streamId, 0, 1000, resolveLinkTos = false, Backward)
 
@@ -40,25 +38,23 @@ class ReadStreamEventsBackwardSpec extends TestConnectionSpec {
       }
     }
 
-    "get single event if stream is empty" in new ReadStreamBackwardScope {
-      actor ! createStream
-      expectMsg(createStreamCompleted)
+    /* TODO "get single event if stream is empty" in new ReadStreamBackwardScope {
+      createStream
 
       actor ! ReadStreamEvents(streamId, 0, 1000, resolveLinkTos = false, Backward)
 
 
       expectMsgPF() {
-        case ReadStreamEventsCompleted(List(ResolvedIndexedEvent(EventRecord(`streamId`, 0, _, "$stream-created", ByteString.empty, Some(_)), None)), ReadStreamResult.Success, -1, 0, true, _, Backward) => true
+        case ReadStreamEventsCompleted(List(ResolvedIndexedEvent(EventRecord(`streamId`, 0, _, "$stream-created", ByteString.empty, _), None)), ReadStreamResult.Success, -1, 0, true, _, Backward) => true
       }
 
-    }
+    }*/
 
     "get empty slice if called with non existing range" in new ReadStreamBackwardScope {
-      actor ! createStream
-      expectMsg(createStreamCompleted)
+      createStream
 
-      actor ! writeEvents(AnyVersion, newEvent, newEvent)
-      expectMsg(writeEventsCompleted(1))
+      actor ! appendToStream(AnyVersion, newEvent, newEvent)
+      expectMsg(appendToStreamCompleted(1))
 
       actor ! ReadStreamEvents(streamId, 1000, 10, resolveLinkTos = false, Backward)
 
@@ -69,11 +65,10 @@ class ReadStreamEventsBackwardSpec extends TestConnectionSpec {
     }
 
     "get partial slice if not enough events in stream" in new ReadStreamBackwardScope {
-      actor ! createStream
-      expectMsg(createStreamCompleted)
+      createStream
 
-      actor ! writeEvents(AnyVersion, newEvent, newEvent)
-      expectMsg(writeEventsCompleted(1))
+      actor ! appendToStream(AnyVersion, newEvent, newEvent)
+      expectMsg(appendToStreamCompleted(1))
 
       actor ! ReadStreamEvents(streamId, 1, 1000, resolveLinkTos = false, Backward)
 
@@ -84,12 +79,11 @@ class ReadStreamEventsBackwardSpec extends TestConnectionSpec {
     }
 
     "get events in reversed order as written" in new ReadStreamBackwardScope {
-      actor ! createStream
-      expectMsg(createStreamCompleted)
+      createStream
 
       val events = (1 to 10).map(_ => newEvent).toList
-      actor ! writeEvents(AnyVersion, events: _*)
-      expectMsg(writeEventsCompleted(1))
+      actor ! appendToStream(AnyVersion, events: _*)
+      expectMsg(appendToStreamCompleted(1))
 
       actor ! ReadStreamEvents(streamId, -1, 10, resolveLinkTos = false, Backward)
 
@@ -106,12 +100,11 @@ class ReadStreamEventsBackwardSpec extends TestConnectionSpec {
     }
 
     "be able to read single event from arbitrary position" in new ReadStreamBackwardScope {
-      actor ! createStream
-      expectMsg(createStreamCompleted)
+      createStream
 
       val events = (1 to 10).map(_ => newEvent).toList
-      actor ! writeEvents(AnyVersion, events: _*)
-      expectMsg(writeEventsCompleted(1))
+      actor ! appendToStream(AnyVersion, events: _*)
+      expectMsg(appendToStreamCompleted(1))
 
       val event = ResolvedIndexedEvent(eventRecord(5, events(4)), None)
 
@@ -131,12 +124,11 @@ class ReadStreamEventsBackwardSpec extends TestConnectionSpec {
     }
 
     "be able to read slice from arbitrary position" in new ReadStreamBackwardScope {
-      actor ! createStream
-      expectMsg(createStreamCompleted)
+      createStream
 
       val events = (1 to 10).map(_ => newEvent).toList
-      actor ! writeEvents(AnyVersion, events: _*)
-      expectMsg(writeEventsCompleted(1))
+      actor ! appendToStream(AnyVersion, events: _*)
+      expectMsg(appendToStreamCompleted(1))
 
       val event5 = ResolvedIndexedEvent(eventRecord(5, events(4)), None)
       val event4 = ResolvedIndexedEvent(eventRecord(4, events(3)), None)
@@ -155,12 +147,11 @@ class ReadStreamEventsBackwardSpec extends TestConnectionSpec {
     }
 
     "be able to read first event" in new ReadStreamBackwardScope {
-      actor ! createStream
-      expectMsg(createStreamCompleted)
+      createStream
 
       val events = (1 to 10).map(_ => newEvent).toList
-      actor ! writeEvents(AnyVersion, events: _*)
-      expectMsg(writeEventsCompleted(1))
+      actor ! appendToStream(AnyVersion, events: _*)
+      expectMsg(appendToStreamCompleted(1))
 
 
 
@@ -177,12 +168,11 @@ class ReadStreamEventsBackwardSpec extends TestConnectionSpec {
 
 
     "be able to read last event" in new ReadStreamBackwardScope {
-      actor ! createStream
-      expectMsg(createStreamCompleted)
+      createStream
 
       val events = (1 to 10).map(_ => newEvent).toList
-      actor ! writeEvents(AnyVersion, events: _*)
-      expectMsg(writeEventsCompleted(1))
+      actor ! appendToStream(AnyVersion, events: _*)
+      expectMsg(appendToStreamCompleted(1))
 
       actor ! ReadStreamEvents(streamId, 10, 1, resolveLinkTos = false, Backward)
 

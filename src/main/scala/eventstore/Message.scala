@@ -1,5 +1,6 @@
 package eventstore
 
+import util.BetterToString
 
 /**
  * @author Yaroslav Klymko
@@ -33,52 +34,37 @@ object OperationResult extends Enumeration {
   ForwardTimeout,
   WrongExpectedVersion,
   StreamDeleted,
-  InvalidTransaction = Value
+  InvalidTransaction,
+  AccessDenied = Value
 }
 
 
-trait BetterToString {
-  self: Product =>
-  override def toString = ImproveByteString(self)
-}
+case class Event(eventId: Uuid,
+                 eventType: String,
+                 data: ByteString,
+                 metadata: ByteString) extends BetterToString
 
-object ImproveByteString {
-  def apply(x: Product): String = {
-    val name = x.productPrefix
-    def isByteString(x: Any): Boolean = x match {
-      case _: ByteString => true
-      case Some(z) => isByteString(z)
-      case _ => false
-    }
+object Event {
 
-    def byteStringToString(x: ByteString) = {
-      if (x.isEmpty) x.toString() else "ByteString(..)"
-    }
+  def apply(eventId: Uuid, eventType: String): Event = Event(eventId, eventType, ByteString.empty, ByteString.empty)
 
-    val fields = x.productIterator.map {
-      case x: ByteString => byteStringToString(x)
-      case Some(x: ByteString) => byteStringToString(x)
-      case x => x
+  object StreamDeleted {
+    def unapply(x: Event): Option[Uuid] = PartialFunction.condOpt(x) {
+      case Event(eventId, EvenType.streamDeleted, ByteString.empty, ByteString.empty) =>
+        println(eventId)
+        eventId
     }
-    s"$name(${fields.mkString(",")}})"
   }
 }
 
-case class NewEvent(eventId: ByteString,
-                    eventType: String,
-                    isJson: Boolean,
-                    data: ByteString,
-                    metadata: Option[ByteString]) extends BetterToString
+object EvenType {
+  val streamDeleted = "$streamDeleted"
+  val streamCreated = "$streamCreated"
+}
 
-case class EventRecord(streamId: String,
-                       eventNumber: Int,
-                       eventId: ByteString,
-                       eventType: String,
-                       data: ByteString,
-                       metadata: Option[ByteString]) extends BetterToString
+case class EventRecord(streamId: String, eventNumber: Int, event: Event)
 
-case class ResolvedIndexedEvent(event: EventRecord,
-                                link: Option[EventRecord])
+case class ResolvedIndexedEvent(eventRecord: EventRecord, link: Option[EventRecord])
 
 case class ResolvedEvent(event: EventRecord,
                          link: Option[EventRecord],
@@ -92,24 +78,20 @@ case class DeniedToRoute(externalTcpAddress: String,
                          externalHttpPort: Int) extends Message
 
 
-case class CreateStream(streamId: String,
-                        requestId: Uuid, // change type to Uuid
-                        metadata: ByteString, // TODO
-                        requireMaster: Boolean,
-                        isJson: Boolean) extends Out with BetterToString
+case class AppendToStream(streamId: String,
+                          expVer: ExpectedVersion,
+                          events: List[Event],
+                          requireMaster: Boolean) extends Out
 
-// TODO depends on metadata
+object AppendToStream {
+  def apply(streamId: String, expVer: ExpectedVersion, events: List[Event]): AppendToStream = AppendToStream(
+    streamId = streamId,
+    expVer = expVer,
+    events = events,
+    requireMaster = true)
+}
 
-
-case class CreateStreamCompleted(result: OperationResult.Value, message: Option[String]) extends In
-
-
-case class WriteEvents(streamId: String,
-                       expVer: ExpectedVersion,
-                       events: List[NewEvent],
-                       requireMaster: Boolean) extends Out
-
-case class WriteEventsCompleted(result: OperationResult.Value,
+case class AppendToStreamCompleted(result: OperationResult.Value,
                                 message: Option[String],
                                 firstEventNumber: Int) extends In
 
@@ -181,7 +163,7 @@ case class TransactionStartCompleted(transactionId: Long,
                                      message: Option[String]) extends In
 
 case class TransactionWrite(transactionId: Long,
-                            events: List[NewEvent],
+                            events: List[Event],
                             requireMaster: Boolean) extends Out
 
 case class TransactionWriteCompleted(transactionId: Long,
@@ -197,12 +179,31 @@ case class TransactionCommitCompleted(transactionId: Long,
 
 
 case class SubscribeToStream(streamId: String, resolveLinkTos: Boolean) extends Out
+
+object SubscribeToStream {
+  def apply(streamId: String): SubscribeToStream = SubscribeToStream(
+    streamId = streamId,
+    resolveLinkTos = false)
+}
 case class SubscriptionConfirmation(lastCommitPosition: Long, lastEventNumber: Option[Int]) extends In
 case class StreamEventAppeared(event: ResolvedEvent) extends In
 
 
 case object UnsubscribeFromStream extends Out
-case object SubscriptionDropped extends In
+
+case class SubscriptionDropped(reason: SubscriptionDropped.Reason.Value) extends In
+
+
+object SubscriptionDropped {
+
+//  def apply(): SubscriptionDropped = SubscriptionDropped(Reason.Unsubscribed)
+
+  object Reason extends Enumeration {
+    val Unsubscribed, AccessDenied = Value
+    val Default = Unsubscribed
+  }
+
+}
 
 
 case object ScavengeDatabase extends Out

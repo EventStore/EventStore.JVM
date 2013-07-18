@@ -1,6 +1,6 @@
 package eventstore
 
-import akka.testkit.{TestActorRef, ImplicitSender, TestKit}
+import akka.testkit.{TestProbe, TestActorRef, ImplicitSender, TestKit}
 import akka.actor.ActorSystem
 import tcp.{UuidSerializer, ConnectionActor}
 import java.net.InetSocketAddress
@@ -20,26 +20,42 @@ abstract class TestConnectionSpec extends SpecificationWithJUnit {
     val streamMetadata = ByteString(getClass.getEnclosingClass.getSimpleName)
     val actor = TestActorRef(new ConnectionActor(new InetSocketAddress("127.0.0.1", 1113)))
 
+    def deleteStream(expVer: ExpectedVersion = AnyVersion) {
+      val probe = TestProbe()
+      actor.!(DeleteStream(streamId, expVer, requireMaster = true))(probe.ref)
+      probe.expectMsg(DeleteStreamCompleted(Success, None))
+    }
 
-    def createStream = CreateStream(streamId, newUuid, streamMetadata, requireMaster = true, isJson = false)
+    def createStream() {
+      val probe = TestProbe()
+      actor.!(appendToStream(NoStream, Event(newUuid, "create stream")))(probe.ref)
+      probe.expectMsg(AppendToStreamCompleted(Success, None, 0))
+      //            actor ! createStream
+      //      expectMsg(createStreamCompleted)
+    }
 
-    def createStreamCompleted = CreateStreamCompleted(Success, None)
-
-    def deleteStream(expVer: ExpectedVersion = AnyVersion) = DeleteStream(streamId, expVer, requireMaster = true)
-
-    def deleteStreamCompleted = DeleteStreamCompleted(Success, None)
-
-    def eventRecord(eventNumber: Int, event: NewEvent) =
-      EventRecord(streamId, eventNumber, event.eventId, event.eventType, event.data, event.metadata)
+    def eventRecord(eventNumber: Int, event: Event) = EventRecord(streamId, eventNumber, event)
 
     def readStreamEvents = ReadStreamEvents(streamId, 0, 1000, resolveLinkTos = false, ReadDirection.Forward)
 
-    def newEvent = NewEvent(UuidSerializer.serialize(newUuid), "test", isJson = false, ByteString.empty, Some(ByteString("test")))
+    def newEvent = Event(newUuid, "test")
 
-    def writeEvents(expVer: ExpectedVersion, events: NewEvent*) =
-      WriteEvents(streamId, expVer, events.toList, requireMaster = true)
+    def appendToStream(expVer: ExpectedVersion, events: Event*) = AppendToStream(streamId, expVer, events.toList)
 
-    def writeEventsCompleted(firstEventNumber: Int = 0) = WriteEventsCompleted(Success, None, firstEventNumber)
+    def appendToStreamCompleted(firstEventNumber: Int = 0) = AppendToStreamCompleted(Success, None, firstEventNumber)
+
+    def doAppendToStream(event: Event, expVer: ExpectedVersion = AnyVersion, firstEventNumber: Int = 0) {
+      actor ! appendToStream(expVer, event)
+      expectMsg(appendToStreamCompleted(firstEventNumber))
+    }
+
+    def streamEvents: List[Event] = {
+      actor ! readStreamEvents
+      expectMsgPF() {
+        case ReadStreamEventsCompleted(events, ReadStreamResult.Success, _, _, _, _, _) => events.map(_.eventRecord.event)
+        case ReadStreamEventsCompleted(Nil, ReadStreamResult.NoStream, _, _, _, _, _) => Nil
+      }
+    }
 
 
     def after = {
