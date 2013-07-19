@@ -17,23 +17,23 @@ class DeleteStreamSpec extends TestConnectionSpec {
     }
 
     "succeed if correct expected version" in new DeleteStreamScope {
-      createStream()
+      appendEventToCreateStream()
       deleteStream(EmptyStream)
     }
 
     "succeed if any expected version" in new DeleteStreamScope {
-      createStream()
+      appendEventToCreateStream()
       deleteStream(AnyVersion)
     }
 
     "fail if invalid expected version" in new DeleteStreamScope {
-      createStream()
+      appendEventToCreateStream()
       failDeleteStream(NoStream, WrongExpectedVersion)
       failDeleteStream(Version(1), WrongExpectedVersion)
     }
 
     "fail if already deleted" in new DeleteStreamScope {
-      createStream()
+      appendEventToCreateStream()
       deleteStream(EmptyStream)
       failDeleteStream(EmptyStream, StreamDeleted)
       failDeleteStream(NoStream, StreamDeleted)

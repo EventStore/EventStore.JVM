@@ -46,7 +46,7 @@ class TransactionSpec extends TestConnectionSpec {
     }
 
     "commit when writing with exp ver ANY even while someone is writing in parallel" in new TransactionScope {
-      createStream()
+      appendEventToCreateStream()
 
       implicit val transactionId = doTransactionStart(AnyVersion)
 
@@ -70,7 +70,7 @@ class TransactionSpec extends TestConnectionSpec {
     }
 
     "fail to commit if started with correct ver but committing with bad" in new TransactionScope {
-      createStream()
+      appendEventToCreateStream()
       implicit val transactionId = doTransactionStart(EmptyStream)
       doAppendToStream(newEvent, EmptyStream, 1)
       doTransactionWrite(newEvent)
@@ -78,7 +78,7 @@ class TransactionSpec extends TestConnectionSpec {
     }
 
     "succeed to commit if started with wrong ver but committing with correct ver" in new TransactionScope {
-      createStream()
+      appendEventToCreateStream()
       implicit val transactionId = doTransactionStart(Version(1))
       doAppendToStream(newEvent, EmptyStream, 1)
       doTransactionWrite()
@@ -86,7 +86,7 @@ class TransactionSpec extends TestConnectionSpec {
     }
 
     "fail to commit if stream has been deleted during transaction" in new TransactionScope {
-      createStream()
+      appendEventToCreateStream()
       implicit val transactionId = doTransactionStart(EmptyStream)
       deleteStream()
       failTransactionCommit(StreamDeleted)

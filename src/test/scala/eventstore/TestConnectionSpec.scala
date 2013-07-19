@@ -1,8 +1,8 @@
 package eventstore
 
-import akka.testkit.{TestProbe, TestActorRef, ImplicitSender, TestKit}
+import akka.testkit._
 import akka.actor.ActorSystem
-import tcp.{UuidSerializer, ConnectionActor}
+import tcp.ConnectionActor
 import java.net.InetSocketAddress
 import org.specs2.mutable.{SpecificationWithJUnit, After}
 import eventstore.OperationResult._
@@ -26,12 +26,10 @@ abstract class TestConnectionSpec extends SpecificationWithJUnit {
       probe.expectMsg(DeleteStreamCompleted(Success, None))
     }
 
-    def createStream() {
+    def appendEventToCreateStream() {
       val probe = TestProbe()
-      actor.!(appendToStream(NoStream, Event(newUuid, "create stream")))(probe.ref)
+      actor.!(appendToStream(NoStream, Event(newUuid, "first event")))(probe.ref)
       probe.expectMsg(AppendToStreamCompleted(Success, None, 0))
-      //            actor ! createStream
-      //      expectMsg(createStreamCompleted)
     }
 
     def eventRecord(eventNumber: Int, event: Event) = EventRecord(streamId, eventNumber, event)
@@ -56,6 +54,18 @@ abstract class TestConnectionSpec extends SpecificationWithJUnit {
         case ReadStreamEventsCompleted(Nil, ReadStreamResult.NoStream, _, _, _, _, _) => Nil
       }
     }
+
+
+    def append(events: Event*) {
+      actor ! AppendToStream(streamId, AnyVersion, events.toList)
+      expectMsg(appendToStreamCompleted(0))
+    }
+
+    def appendMany(events: Seq[Event], kit: TestKitBase = this) {
+      actor.!(AppendToStream(streamId, AnyVersion, events.toList))(kit.testActor)
+      kit.expectMsg(appendToStreamCompleted(0))
+    }
+
 
 
     def after = {

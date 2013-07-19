@@ -8,7 +8,7 @@ import akka.testkit.{TestKitBase, TestProbe}
 class SubscribeSpec extends TestConnectionSpec {
   "subscribe" should {
     "succeed for deleted stream but should not receive any events" in new SubscribeScope {
-      createStream()
+      appendEventToCreateStream()
       deleteStream()
       subscribeToStream()
     }
@@ -17,9 +17,7 @@ class SubscribeSpec extends TestConnectionSpec {
       subscribeToStream()
 
       val event = newEvent
-      val probe = TestProbe()
-      actor.!(appendToStream(AnyVersion, event))(probe.ref)
-      probe.expectMsg(appendToStreamCompleted())
+      appendMany(List(event), TestProbe())
 
       val er = eventRecord(0, event)
       expectMsgPF() {
@@ -33,7 +31,7 @@ class SubscribeSpec extends TestConnectionSpec {
     }
 
     "be able to unsubscribe from existing stream" in new SubscribeScope {
-      createStream()
+      appendEventToCreateStream()
       subscribeToStream()
       unsubscribeFromStream()
     }
@@ -45,7 +43,7 @@ class SubscribeSpec extends TestConnectionSpec {
 
     "catch stream deleted events" in new SubscribeScope {
       subscribeToStream()
-      createStream()
+      appendEventToCreateStream()
       expectMsgType[StreamEventAppeared]
       deleteStream()
       expectMsgPF() {

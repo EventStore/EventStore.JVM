@@ -11,7 +11,7 @@ class SubscribeToAllSpec extends TestConnectionSpec {
 
   "subscribe to all" should {
     "allow multiple subscriptions" in new SubscribeToAll {
-      createStream()
+      appendEventToCreateStream()
 
       val clients = List(TestProbe(), TestProbe(), TestProbe())
       clients.foreach(subscribeToAll(_))
@@ -30,7 +30,7 @@ class SubscribeToAllSpec extends TestConnectionSpec {
 
     "catch created and deleted events as well" in new SubscribeToAll {
       subscribeToAll()
-      createStream()
+      appendEventToCreateStream()
       expectMsgType[StreamEventAppeared]
       deleteStream()
       expectMsgPF() {

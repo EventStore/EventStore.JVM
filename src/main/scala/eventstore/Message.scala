@@ -50,9 +50,7 @@ object Event {
 
   object StreamDeleted {
     def unapply(x: Event): Option[Uuid] = PartialFunction.condOpt(x) {
-      case Event(eventId, EvenType.streamDeleted, ByteString.empty, ByteString.empty) =>
-        println(eventId)
-        eventId
+      case Event(eventId, EvenType.streamDeleted, ByteString.empty, ByteString.empty) => eventId
     }
   }
 }
@@ -214,5 +212,5 @@ case object BadRequest extends In
 object Message {
   def deserialize(in: ByteString)(implicit deserializer: ByteString => In): In = deserializer(in)
 
-  def serialize[T <: Out](out: T)(implicit serializer: T => ByteString): ByteString = serialize(out)
+  def serialize[T <: Out](out: T)(implicit serializer: T => ByteString): ByteString = serializer(out)
 }
