@@ -41,7 +41,9 @@ object OperationResult extends Enumeration {
 
 case class Event(eventId: Uuid,
                  eventType: String,
+//                 dataContentType: Int,
                  data: ByteString,
+//                 metadataContentType: Int,
                  metadata: ByteString) extends BetterToString
 
 object Event {

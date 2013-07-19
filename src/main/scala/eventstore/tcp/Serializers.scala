@@ -95,7 +95,8 @@ object Serializers {
     proto.NewEvent(
       `eventId` = pbyteString(x.eventId),
       `eventType` = x.eventType,
-      `isJson` = false, // TODO will be fixed with new .proto
+      `dataContentType` = 0,
+      `metadataContentType` = 0,
       `data` = pbyteString(x.data),
       `metadata` = pbyteStringOption(x.metadata))
   }

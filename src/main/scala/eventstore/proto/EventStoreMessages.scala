@@ -4,2267 +4,2291 @@
 package eventstore.proto
 
 object OperationResult extends net.sandrogrzicic.scalabuff.Enum {
-	sealed trait EnumVal extends Value
-	val _UNINITIALIZED = new EnumVal { val name = "UNINITIALIZED ENUM VALUE"; val id = -1 }
+  sealed trait EnumVal extends Value
+  val _UNINITIALIZED = new EnumVal { val name = "UNINITIALIZED ENUM VALUE"; val id = -1 }
 
-	val Success = new EnumVal { val name = "Success"; val id = 0 }
-	val PrepareTimeout = new EnumVal { val name = "PrepareTimeout"; val id = 1 }
-	val CommitTimeout = new EnumVal { val name = "CommitTimeout"; val id = 2 }
-	val ForwardTimeout = new EnumVal { val name = "ForwardTimeout"; val id = 3 }
-	val WrongExpectedVersion = new EnumVal { val name = "WrongExpectedVersion"; val id = 4 }
-	val StreamDeleted = new EnumVal { val name = "StreamDeleted"; val id = 5 }
-	val InvalidTransaction = new EnumVal { val name = "InvalidTransaction"; val id = 6 }
-	val AccessDenied = new EnumVal { val name = "AccessDenied"; val id = 7 }
+  val Success = new EnumVal { val name = "Success"; val id = 0 }
+  val PrepareTimeout = new EnumVal { val name = "PrepareTimeout"; val id = 1 }
+  val CommitTimeout = new EnumVal { val name = "CommitTimeout"; val id = 2 }
+  val ForwardTimeout = new EnumVal { val name = "ForwardTimeout"; val id = 3 }
+  val WrongExpectedVersion = new EnumVal { val name = "WrongExpectedVersion"; val id = 4 }
+  val StreamDeleted = new EnumVal { val name = "StreamDeleted"; val id = 5 }
+  val InvalidTransaction = new EnumVal { val name = "InvalidTransaction"; val id = 6 }
+  val AccessDenied = new EnumVal { val name = "AccessDenied"; val id = 7 }
 
-	val Success_VALUE = 0
-	val PrepareTimeout_VALUE = 1
-	val CommitTimeout_VALUE = 2
-	val ForwardTimeout_VALUE = 3
-	val WrongExpectedVersion_VALUE = 4
-	val StreamDeleted_VALUE = 5
-	val InvalidTransaction_VALUE = 6
-	val AccessDenied_VALUE = 7
+  val Success_VALUE = 0
+  val PrepareTimeout_VALUE = 1
+  val CommitTimeout_VALUE = 2
+  val ForwardTimeout_VALUE = 3
+  val WrongExpectedVersion_VALUE = 4
+  val StreamDeleted_VALUE = 5
+  val InvalidTransaction_VALUE = 6
+  val AccessDenied_VALUE = 7
 
-	def valueOf(id: Int) = id match {
-		case 0 => Success
-		case 1 => PrepareTimeout
-		case 2 => CommitTimeout
-		case 3 => ForwardTimeout
-		case 4 => WrongExpectedVersion
-		case 5 => StreamDeleted
-		case 6 => InvalidTransaction
-		case 7 => AccessDenied
-		case _default => throw new net.sandrogrzicic.scalabuff.UnknownEnumException(_default)
-	}
-	val internalGetValueMap = new com.google.protobuf.Internal.EnumLiteMap[EnumVal] {
-		def findValueByNumber(id: Int): EnumVal = valueOf(id)
-	}
+  def valueOf(id: Int) = id match {
+    case 0 => Success
+    case 1 => PrepareTimeout
+    case 2 => CommitTimeout
+    case 3 => ForwardTimeout
+    case 4 => WrongExpectedVersion
+    case 5 => StreamDeleted
+    case 6 => InvalidTransaction
+    case 7 => AccessDenied
+    case _default => throw new net.sandrogrzicic.scalabuff.UnknownEnumException(_default)
+  }
+  val internalGetValueMap = new com.google.protobuf.Internal.EnumLiteMap[EnumVal] {
+    def findValueByNumber(id: Int): EnumVal = valueOf(id)
+  }
 }
 final case class NewEvent (
-	`eventId`: com.google.protobuf.ByteString = com.google.protobuf.ByteString.EMPTY,
-	`eventType`: String = "",
-	`isJson`: Boolean = false,
-	`data`: com.google.protobuf.ByteString = com.google.protobuf.ByteString.EMPTY,
-	`metadata`: Option[com.google.protobuf.ByteString] = None
-) extends com.google.protobuf.GeneratedMessageLite
-	 with com.google.protobuf.MessageLite.Builder
-	with net.sandrogrzicic.scalabuff.Message[NewEvent] {
+                            `eventId`: com.google.protobuf.ByteString = com.google.protobuf.ByteString.EMPTY,
+                            `eventType`: String = "",
+                            `dataContentType`: Int = 0,
+                            `metadataContentType`: Int = 0,
+                            `data`: com.google.protobuf.ByteString = com.google.protobuf.ByteString.EMPTY,
+                            `metadata`: Option[com.google.protobuf.ByteString] = None
+                            ) extends com.google.protobuf.GeneratedMessageLite
+with com.google.protobuf.MessageLite.Builder
+with net.sandrogrzicic.scalabuff.Message[NewEvent] {
 
-	def setMetadata(_f: com.google.protobuf.ByteString) = copy(`metadata` = _f)
+  def setMetadata(_f: com.google.protobuf.ByteString) = copy(`metadata` = _f)
 
-	def clearMetadata = copy(`metadata` = None)
+  def clearMetadata = copy(`metadata` = None)
 
-	def writeTo(output: com.google.protobuf.CodedOutputStream) {
-		output.writeBytes(1, `eventId`)
-		output.writeString(2, `eventType`)
-		output.writeBool(3, `isJson`)
-		output.writeBytes(4, `data`)
-		if (`metadata`.isDefined) output.writeBytes(5, `metadata`.get)
-	}
+  def writeTo(output: com.google.protobuf.CodedOutputStream) {
+    output.writeBytes(1, `eventId`)
+    output.writeString(2, `eventType`)
+    output.writeInt32(3, `dataContentType`)
+    output.writeInt32(4, `metadataContentType`)
+    output.writeBytes(5, `data`)
+    if (`metadata`.isDefined) output.writeBytes(6, `metadata`.get)
+  }
 
-	lazy val getSerializedSize = {
-		import com.google.protobuf.CodedOutputStream._
-		var size = 0
-		size += computeBytesSize(1, `eventId`)
-		size += computeStringSize(2, `eventType`)
-		size += computeBoolSize(3, `isJson`)
-		size += computeBytesSize(4, `data`)
-		if (`metadata`.isDefined) size += computeBytesSize(5, `metadata`.get)
+  lazy val getSerializedSize = {
+    import com.google.protobuf.CodedOutputStream._
+    var size = 0
+    size += computeBytesSize(1, `eventId`)
+    size += computeStringSize(2, `eventType`)
+    size += computeInt32Size(3, `dataContentType`)
+    size += computeInt32Size(4, `metadataContentType`)
+    size += computeBytesSize(5, `data`)
+    if (`metadata`.isDefined) size += computeBytesSize(6, `metadata`.get)
 
-		size
-	}
+    size
+  }
 
-	def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): NewEvent = {
-		import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
-		var __eventId: com.google.protobuf.ByteString = com.google.protobuf.ByteString.EMPTY
-		var __eventType: String = ""
-		var __isJson: Boolean = false
-		var __data: com.google.protobuf.ByteString = com.google.protobuf.ByteString.EMPTY
-		var __metadata: Option[com.google.protobuf.ByteString] = `metadata`
+  def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): NewEvent = {
+    import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
+    var __eventId: com.google.protobuf.ByteString = com.google.protobuf.ByteString.EMPTY
+    var __eventType: String = ""
+    var __dataContentType: Int = 0
+    var __metadataContentType: Int = 0
+    var __data: com.google.protobuf.ByteString = com.google.protobuf.ByteString.EMPTY
+    var __metadata: Option[com.google.protobuf.ByteString] = `metadata`
 
-		def __newMerged = NewEvent(
-			__eventId,
-			__eventType,
-			__isJson,
-			__data,
-			__metadata
-		)
-		while (true) in.readTag match {
-			case 0 => return __newMerged
-			case 10 => __eventId = in.readBytes()
-			case 18 => __eventType = in.readString()
-			case 24 => __isJson = in.readBool()
-			case 34 => __data = in.readBytes()
-			case 42 => __metadata = in.readBytes()
-			case default => if (!in.skipField(default)) return __newMerged
-		}
-		null
-	}
+    def __newMerged = NewEvent(
+      __eventId,
+      __eventType,
+      __dataContentType,
+      __metadataContentType,
+      __data,
+      __metadata
+    )
+    while (true) in.readTag match {
+      case 0 => return __newMerged
+      case 10 => __eventId = in.readBytes()
+      case 18 => __eventType = in.readString()
+      case 24 => __dataContentType = in.readInt32()
+      case 32 => __metadataContentType = in.readInt32()
+      case 42 => __data = in.readBytes()
+      case 50 => __metadata = in.readBytes()
+      case default => if (!in.skipField(default)) return __newMerged
+    }
+    null
+  }
 
-	def mergeFrom(m: NewEvent) = {
-		NewEvent(
-			m.`eventId`,
-			m.`eventType`,
-			m.`isJson`,
-			m.`data`,
-			m.`metadata`.orElse(`metadata`)
-		)
-	}
+  def mergeFrom(m: NewEvent) = {
+    NewEvent(
+      m.`eventId`,
+      m.`eventType`,
+      m.`dataContentType`,
+      m.`metadataContentType`,
+      m.`data`,
+      m.`metadata`.orElse(`metadata`)
+    )
+  }
 
-	def getDefaultInstanceForType = NewEvent.defaultInstance
-	def clear = getDefaultInstanceForType
-	def isInitialized = true
-	def build = this
-	def buildPartial = this
-	def newBuilderForType = this
-	def toBuilder = this
+  def getDefaultInstanceForType = NewEvent.defaultInstance
+  def clear = getDefaultInstanceForType
+  def isInitialized = true
+  def build = this
+  def buildPartial = this
+  def newBuilderForType = this
+  def toBuilder = this
 }
 
 object NewEvent {
-	@reflect.BeanProperty val defaultInstance = new NewEvent()
+  @reflect.BeanProperty val defaultInstance = new NewEvent()
 
-	val EVENT_ID_FIELD_NUMBER = 1
-	val EVENT_TYPE_FIELD_NUMBER = 2
-	val IS_JSON_FIELD_NUMBER = 3
-	val DATA_FIELD_NUMBER = 4
-	val METADATA_FIELD_NUMBER = 5
+  val EVENT_ID_FIELD_NUMBER = 1
+  val EVENT_TYPE_FIELD_NUMBER = 2
+  val DATA_CONTENT_TYPE_FIELD_NUMBER = 3
+  val METADATA_CONTENT_TYPE_FIELD_NUMBER = 4
+  val DATA_FIELD_NUMBER = 5
+  val METADATA_FIELD_NUMBER = 6
 
 }
 final case class EventRecord (
-	`eventStreamId`: String = "",
-	`eventNumber`: Int = 0,
-	`eventId`: com.google.protobuf.ByteString = com.google.protobuf.ByteString.EMPTY,
-	`eventType`: String = "",
-	`data`: com.google.protobuf.ByteString = com.google.protobuf.ByteString.EMPTY,
-	`metadata`: Option[com.google.protobuf.ByteString] = None
-) extends com.google.protobuf.GeneratedMessageLite
-	 with com.google.protobuf.MessageLite.Builder
-	with net.sandrogrzicic.scalabuff.Message[EventRecord] {
+                               `eventStreamId`: String = "",
+                               `eventNumber`: Int = 0,
+                               `eventId`: com.google.protobuf.ByteString = com.google.protobuf.ByteString.EMPTY,
+                               `eventType`: String = "",
+                               `dataContentType`: Int = 0,
+                               `metadataContentType`: Int = 0,
+                               `data`: com.google.protobuf.ByteString = com.google.protobuf.ByteString.EMPTY,
+                               `metadata`: Option[com.google.protobuf.ByteString] = None
+                               ) extends com.google.protobuf.GeneratedMessageLite
+with com.google.protobuf.MessageLite.Builder
+with net.sandrogrzicic.scalabuff.Message[EventRecord] {
 
-	def setMetadata(_f: com.google.protobuf.ByteString) = copy(`metadata` = _f)
+  def setMetadata(_f: com.google.protobuf.ByteString) = copy(`metadata` = _f)
 
-	def clearMetadata = copy(`metadata` = None)
+  def clearMetadata = copy(`metadata` = None)
 
-	def writeTo(output: com.google.protobuf.CodedOutputStream) {
-		output.writeString(1, `eventStreamId`)
-		output.writeInt32(2, `eventNumber`)
-		output.writeBytes(3, `eventId`)
-		output.writeString(4, `eventType`)
-		output.writeBytes(5, `data`)
-		if (`metadata`.isDefined) output.writeBytes(6, `metadata`.get)
-	}
+  def writeTo(output: com.google.protobuf.CodedOutputStream) {
+    output.writeString(1, `eventStreamId`)
+    output.writeInt32(2, `eventNumber`)
+    output.writeBytes(3, `eventId`)
+    output.writeString(4, `eventType`)
+    output.writeInt32(5, `dataContentType`)
+    output.writeInt32(6, `metadataContentType`)
+    output.writeBytes(7, `data`)
+    if (`metadata`.isDefined) output.writeBytes(8, `metadata`.get)
+  }
 
-	lazy val getSerializedSize = {
-		import com.google.protobuf.CodedOutputStream._
-		var size = 0
-		size += computeStringSize(1, `eventStreamId`)
-		size += computeInt32Size(2, `eventNumber`)
-		size += computeBytesSize(3, `eventId`)
-		size += computeStringSize(4, `eventType`)
-		size += computeBytesSize(5, `data`)
-		if (`metadata`.isDefined) size += computeBytesSize(6, `metadata`.get)
+  lazy val getSerializedSize = {
+    import com.google.protobuf.CodedOutputStream._
+    var size = 0
+    size += computeStringSize(1, `eventStreamId`)
+    size += computeInt32Size(2, `eventNumber`)
+    size += computeBytesSize(3, `eventId`)
+    size += computeStringSize(4, `eventType`)
+    size += computeInt32Size(5, `dataContentType`)
+    size += computeInt32Size(6, `metadataContentType`)
+    size += computeBytesSize(7, `data`)
+    if (`metadata`.isDefined) size += computeBytesSize(8, `metadata`.get)
 
-		size
-	}
+    size
+  }
 
-	def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): EventRecord = {
-		import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
-		var __eventStreamId: String = ""
-		var __eventNumber: Int = 0
-		var __eventId: com.google.protobuf.ByteString = com.google.protobuf.ByteString.EMPTY
-		var __eventType: String = ""
-		var __data: com.google.protobuf.ByteString = com.google.protobuf.ByteString.EMPTY
-		var __metadata: Option[com.google.protobuf.ByteString] = `metadata`
+  def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): EventRecord = {
+    import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
+    var __eventStreamId: String = ""
+    var __eventNumber: Int = 0
+    var __eventId: com.google.protobuf.ByteString = com.google.protobuf.ByteString.EMPTY
+    var __eventType: String = ""
+    var __dataContentType: Int = 0
+    var __metadataContentType: Int = 0
+    var __data: com.google.protobuf.ByteString = com.google.protobuf.ByteString.EMPTY
+    var __metadata: Option[com.google.protobuf.ByteString] = `metadata`
 
-		def __newMerged = EventRecord(
-			__eventStreamId,
-			__eventNumber,
-			__eventId,
-			__eventType,
-			__data,
-			__metadata
-		)
-		while (true) in.readTag match {
-			case 0 => return __newMerged
-			case 10 => __eventStreamId = in.readString()
-			case 16 => __eventNumber = in.readInt32()
-			case 26 => __eventId = in.readBytes()
-			case 34 => __eventType = in.readString()
-			case 42 => __data = in.readBytes()
-			case 50 => __metadata = in.readBytes()
-			case default => if (!in.skipField(default)) return __newMerged
-		}
-		null
-	}
+    def __newMerged = EventRecord(
+      __eventStreamId,
+      __eventNumber,
+      __eventId,
+      __eventType,
+      __dataContentType,
+      __metadataContentType,
+      __data,
+      __metadata
+    )
+    while (true) in.readTag match {
+      case 0 => return __newMerged
+      case 10 => __eventStreamId = in.readString()
+      case 16 => __eventNumber = in.readInt32()
+      case 26 => __eventId = in.readBytes()
+      case 34 => __eventType = in.readString()
+      case 40 => __dataContentType = in.readInt32()
+      case 48 => __metadataContentType = in.readInt32()
+      case 58 => __data = in.readBytes()
+      case 66 => __metadata = in.readBytes()
+      case default => if (!in.skipField(default)) return __newMerged
+    }
+    null
+  }
 
-	def mergeFrom(m: EventRecord) = {
-		EventRecord(
-			m.`eventStreamId`,
-			m.`eventNumber`,
-			m.`eventId`,
-			m.`eventType`,
-			m.`data`,
-			m.`metadata`.orElse(`metadata`)
-		)
-	}
+  def mergeFrom(m: EventRecord) = {
+    EventRecord(
+      m.`eventStreamId`,
+      m.`eventNumber`,
+      m.`eventId`,
+      m.`eventType`,
+      m.`dataContentType`,
+      m.`metadataContentType`,
+      m.`data`,
+      m.`metadata`.orElse(`metadata`)
+    )
+  }
 
-	def getDefaultInstanceForType = EventRecord.defaultInstance
-	def clear = getDefaultInstanceForType
-	def isInitialized = true
-	def build = this
-	def buildPartial = this
-	def newBuilderForType = this
-	def toBuilder = this
+  def getDefaultInstanceForType = EventRecord.defaultInstance
+  def clear = getDefaultInstanceForType
+  def isInitialized = true
+  def build = this
+  def buildPartial = this
+  def newBuilderForType = this
+  def toBuilder = this
 }
 
 object EventRecord {
-	@reflect.BeanProperty val defaultInstance = new EventRecord()
+  @reflect.BeanProperty val defaultInstance = new EventRecord()
 
-	val EVENT_STREAM_ID_FIELD_NUMBER = 1
-	val EVENT_NUMBER_FIELD_NUMBER = 2
-	val EVENT_ID_FIELD_NUMBER = 3
-	val EVENT_TYPE_FIELD_NUMBER = 4
-	val DATA_FIELD_NUMBER = 5
-	val METADATA_FIELD_NUMBER = 6
+  val EVENT_STREAM_ID_FIELD_NUMBER = 1
+  val EVENT_NUMBER_FIELD_NUMBER = 2
+  val EVENT_ID_FIELD_NUMBER = 3
+  val EVENT_TYPE_FIELD_NUMBER = 4
+  val DATA_CONTENT_TYPE_FIELD_NUMBER = 5
+  val METADATA_CONTENT_TYPE_FIELD_NUMBER = 6
+  val DATA_FIELD_NUMBER = 7
+  val METADATA_FIELD_NUMBER = 8
 
 }
 final case class ResolvedIndexedEvent (
-	`event`: EventRecord = EventRecord.defaultInstance,
-	`link`: Option[EventRecord] = None
-) extends com.google.protobuf.GeneratedMessageLite
-	 with com.google.protobuf.MessageLite.Builder
-	with net.sandrogrzicic.scalabuff.Message[ResolvedIndexedEvent] {
+                                        `event`: EventRecord = EventRecord.defaultInstance,
+                                        `link`: Option[EventRecord] = None
+                                        ) extends com.google.protobuf.GeneratedMessageLite
+with com.google.protobuf.MessageLite.Builder
+with net.sandrogrzicic.scalabuff.Message[ResolvedIndexedEvent] {
 
-	def setLink(_f: EventRecord) = copy(`link` = _f)
+  def setLink(_f: EventRecord) = copy(`link` = _f)
 
-	def clearLink = copy(`link` = None)
+  def clearLink = copy(`link` = None)
 
-	def writeTo(output: com.google.protobuf.CodedOutputStream) {
-		output.writeMessage(1, `event`)
-		if (`link`.isDefined) output.writeMessage(2, `link`.get)
-	}
+  def writeTo(output: com.google.protobuf.CodedOutputStream) {
+    output.writeMessage(1, `event`)
+    if (`link`.isDefined) output.writeMessage(2, `link`.get)
+  }
 
-	lazy val getSerializedSize = {
-		import com.google.protobuf.CodedOutputStream._
-		var size = 0
-		size += computeMessageSize(1, `event`)
-		if (`link`.isDefined) size += computeMessageSize(2, `link`.get)
+  lazy val getSerializedSize = {
+    import com.google.protobuf.CodedOutputStream._
+    var size = 0
+    size += computeMessageSize(1, `event`)
+    if (`link`.isDefined) size += computeMessageSize(2, `link`.get)
 
-		size
-	}
+    size
+  }
 
-	def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): ResolvedIndexedEvent = {
-		import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
-		var __event: EventRecord = EventRecord.defaultInstance
-		var __link: Option[EventRecord] = `link`
+  def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): ResolvedIndexedEvent = {
+    import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
+    var __event: EventRecord = EventRecord.defaultInstance
+    var __link: Option[EventRecord] = `link`
 
-		def __newMerged = ResolvedIndexedEvent(
-			__event,
-			__link
-		)
-		while (true) in.readTag match {
-			case 0 => return __newMerged
-			case 10 => __event = readMessage[EventRecord](in, __event, _emptyRegistry)
-			case 18 => __link = readMessage[EventRecord](in, __link.orElse({
-				__link = EventRecord.defaultInstance
-				__link
-			}).get, _emptyRegistry)
-			case default => if (!in.skipField(default)) return __newMerged
-		}
-		null
-	}
+    def __newMerged = ResolvedIndexedEvent(
+      __event,
+      __link
+    )
+    while (true) in.readTag match {
+      case 0 => return __newMerged
+      case 10 => __event = readMessage[EventRecord](in, __event, _emptyRegistry)
+      case 18 => __link = readMessage[EventRecord](in, __link.orElse({
+        __link = EventRecord.defaultInstance
+        __link
+      }).get, _emptyRegistry)
+      case default => if (!in.skipField(default)) return __newMerged
+    }
+    null
+  }
 
-	def mergeFrom(m: ResolvedIndexedEvent) = {
-		ResolvedIndexedEvent(
-			m.`event`,
-			m.`link`.orElse(`link`)
-		)
-	}
+  def mergeFrom(m: ResolvedIndexedEvent) = {
+    ResolvedIndexedEvent(
+      m.`event`,
+      m.`link`.orElse(`link`)
+    )
+  }
 
-	def getDefaultInstanceForType = ResolvedIndexedEvent.defaultInstance
-	def clear = getDefaultInstanceForType
-	def isInitialized = true
-	def build = this
-	def buildPartial = this
-	def newBuilderForType = this
-	def toBuilder = this
+  def getDefaultInstanceForType = ResolvedIndexedEvent.defaultInstance
+  def clear = getDefaultInstanceForType
+  def isInitialized = true
+  def build = this
+  def buildPartial = this
+  def newBuilderForType = this
+  def toBuilder = this
 }
 
 object ResolvedIndexedEvent {
-	@reflect.BeanProperty val defaultInstance = new ResolvedIndexedEvent()
+  @reflect.BeanProperty val defaultInstance = new ResolvedIndexedEvent()
 
-	val EVENT_FIELD_NUMBER = 1
-	val LINK_FIELD_NUMBER = 2
+  val EVENT_FIELD_NUMBER = 1
+  val LINK_FIELD_NUMBER = 2
 
 }
 final case class ResolvedEvent (
-	`event`: EventRecord = EventRecord.defaultInstance,
-	`link`: Option[EventRecord] = None,
-	`commitPosition`: Long = 0L,
-	`preparePosition`: Long = 0L
-) extends com.google.protobuf.GeneratedMessageLite
-	 with com.google.protobuf.MessageLite.Builder
-	with net.sandrogrzicic.scalabuff.Message[ResolvedEvent] {
+                                 `event`: EventRecord = EventRecord.defaultInstance,
+                                 `link`: Option[EventRecord] = None,
+                                 `commitPosition`: Long = 0L,
+                                 `preparePosition`: Long = 0L
+                                 ) extends com.google.protobuf.GeneratedMessageLite
+with com.google.protobuf.MessageLite.Builder
+with net.sandrogrzicic.scalabuff.Message[ResolvedEvent] {
 
-	def setLink(_f: EventRecord) = copy(`link` = _f)
+  def setLink(_f: EventRecord) = copy(`link` = _f)
 
-	def clearLink = copy(`link` = None)
+  def clearLink = copy(`link` = None)
 
-	def writeTo(output: com.google.protobuf.CodedOutputStream) {
-		output.writeMessage(1, `event`)
-		if (`link`.isDefined) output.writeMessage(2, `link`.get)
-		output.writeInt64(3, `commitPosition`)
-		output.writeInt64(4, `preparePosition`)
-	}
+  def writeTo(output: com.google.protobuf.CodedOutputStream) {
+    output.writeMessage(1, `event`)
+    if (`link`.isDefined) output.writeMessage(2, `link`.get)
+    output.writeInt64(3, `commitPosition`)
+    output.writeInt64(4, `preparePosition`)
+  }
 
-	lazy val getSerializedSize = {
-		import com.google.protobuf.CodedOutputStream._
-		var size = 0
-		size += computeMessageSize(1, `event`)
-		if (`link`.isDefined) size += computeMessageSize(2, `link`.get)
-		size += computeInt64Size(3, `commitPosition`)
-		size += computeInt64Size(4, `preparePosition`)
+  lazy val getSerializedSize = {
+    import com.google.protobuf.CodedOutputStream._
+    var size = 0
+    size += computeMessageSize(1, `event`)
+    if (`link`.isDefined) size += computeMessageSize(2, `link`.get)
+    size += computeInt64Size(3, `commitPosition`)
+    size += computeInt64Size(4, `preparePosition`)
 
-		size
-	}
+    size
+  }
 
-	def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): ResolvedEvent = {
-		import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
-		var __event: EventRecord = EventRecord.defaultInstance
-		var __link: Option[EventRecord] = `link`
-		var __commitPosition: Long = 0L
-		var __preparePosition: Long = 0L
+  def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): ResolvedEvent = {
+    import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
+    var __event: EventRecord = EventRecord.defaultInstance
+    var __link: Option[EventRecord] = `link`
+    var __commitPosition: Long = 0L
+    var __preparePosition: Long = 0L
 
-		def __newMerged = ResolvedEvent(
-			__event,
-			__link,
-			__commitPosition,
-			__preparePosition
-		)
-		while (true) in.readTag match {
-			case 0 => return __newMerged
-			case 10 => __event = readMessage[EventRecord](in, __event, _emptyRegistry)
-			case 18 => __link = readMessage[EventRecord](in, __link.orElse({
-				__link = EventRecord.defaultInstance
-				__link
-			}).get, _emptyRegistry)
-			case 24 => __commitPosition = in.readInt64()
-			case 32 => __preparePosition = in.readInt64()
-			case default => if (!in.skipField(default)) return __newMerged
-		}
-		null
-	}
+    def __newMerged = ResolvedEvent(
+      __event,
+      __link,
+      __commitPosition,
+      __preparePosition
+    )
+    while (true) in.readTag match {
+      case 0 => return __newMerged
+      case 10 => __event = readMessage[EventRecord](in, __event, _emptyRegistry)
+      case 18 => __link = readMessage[EventRecord](in, __link.orElse({
+        __link = EventRecord.defaultInstance
+        __link
+      }).get, _emptyRegistry)
+      case 24 => __commitPosition = in.readInt64()
+      case 32 => __preparePosition = in.readInt64()
+      case default => if (!in.skipField(default)) return __newMerged
+    }
+    null
+  }
 
-	def mergeFrom(m: ResolvedEvent) = {
-		ResolvedEvent(
-			m.`event`,
-			m.`link`.orElse(`link`),
-			m.`commitPosition`,
-			m.`preparePosition`
-		)
-	}
+  def mergeFrom(m: ResolvedEvent) = {
+    ResolvedEvent(
+      m.`event`,
+      m.`link`.orElse(`link`),
+      m.`commitPosition`,
+      m.`preparePosition`
+    )
+  }
 
-	def getDefaultInstanceForType = ResolvedEvent.defaultInstance
-	def clear = getDefaultInstanceForType
-	def isInitialized = true
-	def build = this
-	def buildPartial = this
-	def newBuilderForType = this
-	def toBuilder = this
+  def getDefaultInstanceForType = ResolvedEvent.defaultInstance
+  def clear = getDefaultInstanceForType
+  def isInitialized = true
+  def build = this
+  def buildPartial = this
+  def newBuilderForType = this
+  def toBuilder = this
 }
 
 object ResolvedEvent {
-	@reflect.BeanProperty val defaultInstance = new ResolvedEvent()
+  @reflect.BeanProperty val defaultInstance = new ResolvedEvent()
 
-	val EVENT_FIELD_NUMBER = 1
-	val LINK_FIELD_NUMBER = 2
-	val COMMIT_POSITION_FIELD_NUMBER = 3
-	val PREPARE_POSITION_FIELD_NUMBER = 4
+  val EVENT_FIELD_NUMBER = 1
+  val LINK_FIELD_NUMBER = 2
+  val COMMIT_POSITION_FIELD_NUMBER = 3
+  val PREPARE_POSITION_FIELD_NUMBER = 4
 
 }
 final case class WriteEvents (
-	`eventStreamId`: String = "",
-	`expectedVersion`: Int = 0,
-	`events`: Vector[NewEvent] = Vector.empty[NewEvent],
-	`requireMaster`: Boolean = false
-) extends com.google.protobuf.GeneratedMessageLite
-	 with com.google.protobuf.MessageLite.Builder
-	with net.sandrogrzicic.scalabuff.Message[WriteEvents] {
+                               `eventStreamId`: String = "",
+                               `expectedVersion`: Int = 0,
+                               `events`: Vector[NewEvent] = Vector.empty[NewEvent],
+                               `requireMaster`: Boolean = false
+                               ) extends com.google.protobuf.GeneratedMessageLite
+with com.google.protobuf.MessageLite.Builder
+with net.sandrogrzicic.scalabuff.Message[WriteEvents] {
 
-	def setEvents(_i: Int, _v: NewEvent) = copy(`events` = `events`.updated(_i, _v))
-	def addEvents(_f: NewEvent) = copy(`events` = `events` :+ _f)
-	def addAllEvents(_f: NewEvent*) = copy(`events` = `events` ++ _f)
-	def addAllEvents(_f: TraversableOnce[NewEvent]) = copy(`events` = `events` ++ _f)
+  def setEvents(_i: Int, _v: NewEvent) = copy(`events` = `events`.updated(_i, _v))
+  def addEvents(_f: NewEvent) = copy(`events` = `events` :+ _f)
+  def addAllEvents(_f: NewEvent*) = copy(`events` = `events` ++ _f)
+  def addAllEvents(_f: TraversableOnce[NewEvent]) = copy(`events` = `events` ++ _f)
 
-	def clearEvents = copy(`events` = Vector.empty[NewEvent])
+  def clearEvents = copy(`events` = Vector.empty[NewEvent])
 
-	def writeTo(output: com.google.protobuf.CodedOutputStream) {
-		output.writeString(1, `eventStreamId`)
-		output.writeInt32(2, `expectedVersion`)
-		for (_v <- `events`) output.writeMessage(3, _v)
-		output.writeBool(4, `requireMaster`)
-	}
+  def writeTo(output: com.google.protobuf.CodedOutputStream) {
+    output.writeString(1, `eventStreamId`)
+    output.writeInt32(2, `expectedVersion`)
+    for (_v <- `events`) output.writeMessage(3, _v)
+    output.writeBool(4, `requireMaster`)
+  }
 
-	lazy val getSerializedSize = {
-		import com.google.protobuf.CodedOutputStream._
-		var size = 0
-		size += computeStringSize(1, `eventStreamId`)
-		size += computeInt32Size(2, `expectedVersion`)
-		for (_v <- `events`) size += computeMessageSize(3, _v)
-		size += computeBoolSize(4, `requireMaster`)
+  lazy val getSerializedSize = {
+    import com.google.protobuf.CodedOutputStream._
+    var size = 0
+    size += computeStringSize(1, `eventStreamId`)
+    size += computeInt32Size(2, `expectedVersion`)
+    for (_v <- `events`) size += computeMessageSize(3, _v)
+    size += computeBoolSize(4, `requireMaster`)
 
-		size
-	}
+    size
+  }
 
-	def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): WriteEvents = {
-		import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
-		var __eventStreamId: String = ""
-		var __expectedVersion: Int = 0
-		val __events: collection.mutable.Buffer[NewEvent] = `events`.toBuffer
-		var __requireMaster: Boolean = false
+  def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): WriteEvents = {
+    import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
+    var __eventStreamId: String = ""
+    var __expectedVersion: Int = 0
+    val __events: collection.mutable.Buffer[NewEvent] = `events`.toBuffer
+    var __requireMaster: Boolean = false
 
-		def __newMerged = WriteEvents(
-			__eventStreamId,
-			__expectedVersion,
-			Vector(__events: _*),
-			__requireMaster
-		)
-		while (true) in.readTag match {
-			case 0 => return __newMerged
-			case 10 => __eventStreamId = in.readString()
-			case 16 => __expectedVersion = in.readInt32()
-			case 26 => __events += readMessage[NewEvent](in, NewEvent.defaultInstance, _emptyRegistry)
-			case 32 => __requireMaster = in.readBool()
-			case default => if (!in.skipField(default)) return __newMerged
-		}
-		null
-	}
+    def __newMerged = WriteEvents(
+      __eventStreamId,
+      __expectedVersion,
+      Vector(__events: _*),
+      __requireMaster
+    )
+    while (true) in.readTag match {
+      case 0 => return __newMerged
+      case 10 => __eventStreamId = in.readString()
+      case 16 => __expectedVersion = in.readInt32()
+      case 26 => __events += readMessage[NewEvent](in, NewEvent.defaultInstance, _emptyRegistry)
+      case 32 => __requireMaster = in.readBool()
+      case default => if (!in.skipField(default)) return __newMerged
+    }
+    null
+  }
 
-	def mergeFrom(m: WriteEvents) = {
-		WriteEvents(
-			m.`eventStreamId`,
-			m.`expectedVersion`,
-			`events` ++ m.`events`,
-			m.`requireMaster`
-		)
-	}
+  def mergeFrom(m: WriteEvents) = {
+    WriteEvents(
+      m.`eventStreamId`,
+      m.`expectedVersion`,
+      `events` ++ m.`events`,
+      m.`requireMaster`
+    )
+  }
 
-	def getDefaultInstanceForType = WriteEvents.defaultInstance
-	def clear = getDefaultInstanceForType
-	def isInitialized = true
-	def build = this
-	def buildPartial = this
-	def newBuilderForType = this
-	def toBuilder = this
+  def getDefaultInstanceForType = WriteEvents.defaultInstance
+  def clear = getDefaultInstanceForType
+  def isInitialized = true
+  def build = this
+  def buildPartial = this
+  def newBuilderForType = this
+  def toBuilder = this
 }
 
 object WriteEvents {
-	@reflect.BeanProperty val defaultInstance = new WriteEvents()
+  @reflect.BeanProperty val defaultInstance = new WriteEvents()
 
-	val EVENT_STREAM_ID_FIELD_NUMBER = 1
-	val EXPECTED_VERSION_FIELD_NUMBER = 2
-	val EVENTS_FIELD_NUMBER = 3
-	val REQUIRE_MASTER_FIELD_NUMBER = 4
+  val EVENT_STREAM_ID_FIELD_NUMBER = 1
+  val EXPECTED_VERSION_FIELD_NUMBER = 2
+  val EVENTS_FIELD_NUMBER = 3
+  val REQUIRE_MASTER_FIELD_NUMBER = 4
 
 }
 final case class WriteEventsCompleted (
-	`result`: OperationResult.EnumVal = OperationResult._UNINITIALIZED,
-	`message`: Option[String] = None,
-	`firstEventNumber`: Int = 0
-) extends com.google.protobuf.GeneratedMessageLite
-	 with com.google.protobuf.MessageLite.Builder
-	with net.sandrogrzicic.scalabuff.Message[WriteEventsCompleted] {
+                                        `result`: OperationResult.EnumVal = OperationResult._UNINITIALIZED,
+                                        `message`: Option[String] = None,
+                                        `firstEventNumber`: Int = 0
+                                        ) extends com.google.protobuf.GeneratedMessageLite
+with com.google.protobuf.MessageLite.Builder
+with net.sandrogrzicic.scalabuff.Message[WriteEventsCompleted] {
 
-	def setMessage(_f: String) = copy(`message` = _f)
+  def setMessage(_f: String) = copy(`message` = _f)
 
-	def clearMessage = copy(`message` = None)
+  def clearMessage = copy(`message` = None)
 
-	def writeTo(output: com.google.protobuf.CodedOutputStream) {
-		output.writeEnum(1, `result`)
-		if (`message`.isDefined) output.writeString(2, `message`.get)
-		output.writeInt32(3, `firstEventNumber`)
-	}
+  def writeTo(output: com.google.protobuf.CodedOutputStream) {
+    output.writeEnum(1, `result`)
+    if (`message`.isDefined) output.writeString(2, `message`.get)
+    output.writeInt32(3, `firstEventNumber`)
+  }
 
-	lazy val getSerializedSize = {
-		import com.google.protobuf.CodedOutputStream._
-		var size = 0
-		size += computeEnumSize(1, `result`)
-		if (`message`.isDefined) size += computeStringSize(2, `message`.get)
-		size += computeInt32Size(3, `firstEventNumber`)
+  lazy val getSerializedSize = {
+    import com.google.protobuf.CodedOutputStream._
+    var size = 0
+    size += computeEnumSize(1, `result`)
+    if (`message`.isDefined) size += computeStringSize(2, `message`.get)
+    size += computeInt32Size(3, `firstEventNumber`)
 
-		size
-	}
+    size
+  }
 
-	def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): WriteEventsCompleted = {
-		import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
-		var __result: OperationResult.EnumVal = OperationResult._UNINITIALIZED
-		var __message: Option[String] = `message`
-		var __firstEventNumber: Int = 0
+  def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): WriteEventsCompleted = {
+    import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
+    var __result: OperationResult.EnumVal = OperationResult._UNINITIALIZED
+    var __message: Option[String] = `message`
+    var __firstEventNumber: Int = 0
 
-		def __newMerged = WriteEventsCompleted(
-			__result,
-			__message,
-			__firstEventNumber
-		)
-		while (true) in.readTag match {
-			case 0 => return __newMerged
-			case 8 => __result = OperationResult.valueOf(in.readEnum())
-			case 18 => __message = in.readString()
-			case 24 => __firstEventNumber = in.readInt32()
-			case default => if (!in.skipField(default)) return __newMerged
-		}
-		null
-	}
+    def __newMerged = WriteEventsCompleted(
+      __result,
+      __message,
+      __firstEventNumber
+    )
+    while (true) in.readTag match {
+      case 0 => return __newMerged
+      case 8 => __result = OperationResult.valueOf(in.readEnum())
+      case 18 => __message = in.readString()
+      case 24 => __firstEventNumber = in.readInt32()
+      case default => if (!in.skipField(default)) return __newMerged
+    }
+    null
+  }
 
-	def mergeFrom(m: WriteEventsCompleted) = {
-		WriteEventsCompleted(
-			m.`result`,
-			m.`message`.orElse(`message`),
-			m.`firstEventNumber`
-		)
-	}
+  def mergeFrom(m: WriteEventsCompleted) = {
+    WriteEventsCompleted(
+      m.`result`,
+      m.`message`.orElse(`message`),
+      m.`firstEventNumber`
+    )
+  }
 
-	def getDefaultInstanceForType = WriteEventsCompleted.defaultInstance
-	def clear = getDefaultInstanceForType
-	def isInitialized = true
-	def build = this
-	def buildPartial = this
-	def newBuilderForType = this
-	def toBuilder = this
+  def getDefaultInstanceForType = WriteEventsCompleted.defaultInstance
+  def clear = getDefaultInstanceForType
+  def isInitialized = true
+  def build = this
+  def buildPartial = this
+  def newBuilderForType = this
+  def toBuilder = this
 }
 
 object WriteEventsCompleted {
-	@reflect.BeanProperty val defaultInstance = new WriteEventsCompleted()
+  @reflect.BeanProperty val defaultInstance = new WriteEventsCompleted()
 
-	val RESULT_FIELD_NUMBER = 1
-	val MESSAGE_FIELD_NUMBER = 2
-	val FIRST_EVENT_NUMBER_FIELD_NUMBER = 3
+  val RESULT_FIELD_NUMBER = 1
+  val MESSAGE_FIELD_NUMBER = 2
+  val FIRST_EVENT_NUMBER_FIELD_NUMBER = 3
 
 }
 final case class DeleteStream (
-	`eventStreamId`: String = "",
-	`expectedVersion`: Int = 0,
-	`requireMaster`: Boolean = false
-) extends com.google.protobuf.GeneratedMessageLite
-	 with com.google.protobuf.MessageLite.Builder
-	with net.sandrogrzicic.scalabuff.Message[DeleteStream] {
+                                `eventStreamId`: String = "",
+                                `expectedVersion`: Int = 0,
+                                `requireMaster`: Boolean = false
+                                ) extends com.google.protobuf.GeneratedMessageLite
+with com.google.protobuf.MessageLite.Builder
+with net.sandrogrzicic.scalabuff.Message[DeleteStream] {
 
 
 
-	def writeTo(output: com.google.protobuf.CodedOutputStream) {
-		output.writeString(1, `eventStreamId`)
-		output.writeInt32(2, `expectedVersion`)
-		output.writeBool(3, `requireMaster`)
-	}
+  def writeTo(output: com.google.protobuf.CodedOutputStream) {
+    output.writeString(1, `eventStreamId`)
+    output.writeInt32(2, `expectedVersion`)
+    output.writeBool(3, `requireMaster`)
+  }
 
-	lazy val getSerializedSize = {
-		import com.google.protobuf.CodedOutputStream._
-		var size = 0
-		size += computeStringSize(1, `eventStreamId`)
-		size += computeInt32Size(2, `expectedVersion`)
-		size += computeBoolSize(3, `requireMaster`)
+  lazy val getSerializedSize = {
+    import com.google.protobuf.CodedOutputStream._
+    var size = 0
+    size += computeStringSize(1, `eventStreamId`)
+    size += computeInt32Size(2, `expectedVersion`)
+    size += computeBoolSize(3, `requireMaster`)
 
-		size
-	}
+    size
+  }
 
-	def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): DeleteStream = {
-		import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
-		var __eventStreamId: String = ""
-		var __expectedVersion: Int = 0
-		var __requireMaster: Boolean = false
+  def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): DeleteStream = {
+    import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
+    var __eventStreamId: String = ""
+    var __expectedVersion: Int = 0
+    var __requireMaster: Boolean = false
 
-		def __newMerged = DeleteStream(
-			__eventStreamId,
-			__expectedVersion,
-			__requireMaster
-		)
-		while (true) in.readTag match {
-			case 0 => return __newMerged
-			case 10 => __eventStreamId = in.readString()
-			case 16 => __expectedVersion = in.readInt32()
-			case 24 => __requireMaster = in.readBool()
-			case default => if (!in.skipField(default)) return __newMerged
-		}
-		null
-	}
+    def __newMerged = DeleteStream(
+      __eventStreamId,
+      __expectedVersion,
+      __requireMaster
+    )
+    while (true) in.readTag match {
+      case 0 => return __newMerged
+      case 10 => __eventStreamId = in.readString()
+      case 16 => __expectedVersion = in.readInt32()
+      case 24 => __requireMaster = in.readBool()
+      case default => if (!in.skipField(default)) return __newMerged
+    }
+    null
+  }
 
-	def mergeFrom(m: DeleteStream) = {
-		DeleteStream(
-			m.`eventStreamId`,
-			m.`expectedVersion`,
-			m.`requireMaster`
-		)
-	}
+  def mergeFrom(m: DeleteStream) = {
+    DeleteStream(
+      m.`eventStreamId`,
+      m.`expectedVersion`,
+      m.`requireMaster`
+    )
+  }
 
-	def getDefaultInstanceForType = DeleteStream.defaultInstance
-	def clear = getDefaultInstanceForType
-	def isInitialized = true
-	def build = this
-	def buildPartial = this
-	def newBuilderForType = this
-	def toBuilder = this
+  def getDefaultInstanceForType = DeleteStream.defaultInstance
+  def clear = getDefaultInstanceForType
+  def isInitialized = true
+  def build = this
+  def buildPartial = this
+  def newBuilderForType = this
+  def toBuilder = this
 }
 
 object DeleteStream {
-	@reflect.BeanProperty val defaultInstance = new DeleteStream()
+  @reflect.BeanProperty val defaultInstance = new DeleteStream()
 
-	val EVENT_STREAM_ID_FIELD_NUMBER = 1
-	val EXPECTED_VERSION_FIELD_NUMBER = 2
-	val REQUIRE_MASTER_FIELD_NUMBER = 3
+  val EVENT_STREAM_ID_FIELD_NUMBER = 1
+  val EXPECTED_VERSION_FIELD_NUMBER = 2
+  val REQUIRE_MASTER_FIELD_NUMBER = 3
 
 }
 final case class DeleteStreamCompleted (
-	`result`: OperationResult.EnumVal = OperationResult._UNINITIALIZED,
-	`message`: Option[String] = None
-) extends com.google.protobuf.GeneratedMessageLite
-	 with com.google.protobuf.MessageLite.Builder
-	with net.sandrogrzicic.scalabuff.Message[DeleteStreamCompleted] {
+                                         `result`: OperationResult.EnumVal = OperationResult._UNINITIALIZED,
+                                         `message`: Option[String] = None
+                                         ) extends com.google.protobuf.GeneratedMessageLite
+with com.google.protobuf.MessageLite.Builder
+with net.sandrogrzicic.scalabuff.Message[DeleteStreamCompleted] {
 
-	def setMessage(_f: String) = copy(`message` = _f)
+  def setMessage(_f: String) = copy(`message` = _f)
 
-	def clearMessage = copy(`message` = None)
+  def clearMessage = copy(`message` = None)
 
-	def writeTo(output: com.google.protobuf.CodedOutputStream) {
-		output.writeEnum(1, `result`)
-		if (`message`.isDefined) output.writeString(2, `message`.get)
-	}
+  def writeTo(output: com.google.protobuf.CodedOutputStream) {
+    output.writeEnum(1, `result`)
+    if (`message`.isDefined) output.writeString(2, `message`.get)
+  }
 
-	lazy val getSerializedSize = {
-		import com.google.protobuf.CodedOutputStream._
-		var size = 0
-		size += computeEnumSize(1, `result`)
-		if (`message`.isDefined) size += computeStringSize(2, `message`.get)
+  lazy val getSerializedSize = {
+    import com.google.protobuf.CodedOutputStream._
+    var size = 0
+    size += computeEnumSize(1, `result`)
+    if (`message`.isDefined) size += computeStringSize(2, `message`.get)
 
-		size
-	}
+    size
+  }
 
-	def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): DeleteStreamCompleted = {
-		import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
-		var __result: OperationResult.EnumVal = OperationResult._UNINITIALIZED
-		var __message: Option[String] = `message`
+  def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): DeleteStreamCompleted = {
+    import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
+    var __result: OperationResult.EnumVal = OperationResult._UNINITIALIZED
+    var __message: Option[String] = `message`
 
-		def __newMerged = DeleteStreamCompleted(
-			__result,
-			__message
-		)
-		while (true) in.readTag match {
-			case 0 => return __newMerged
-			case 8 => __result = OperationResult.valueOf(in.readEnum())
-			case 18 => __message = in.readString()
-			case default => if (!in.skipField(default)) return __newMerged
-		}
-		null
-	}
+    def __newMerged = DeleteStreamCompleted(
+      __result,
+      __message
+    )
+    while (true) in.readTag match {
+      case 0 => return __newMerged
+      case 8 => __result = OperationResult.valueOf(in.readEnum())
+      case 18 => __message = in.readString()
+      case default => if (!in.skipField(default)) return __newMerged
+    }
+    null
+  }
 
-	def mergeFrom(m: DeleteStreamCompleted) = {
-		DeleteStreamCompleted(
-			m.`result`,
-			m.`message`.orElse(`message`)
-		)
-	}
+  def mergeFrom(m: DeleteStreamCompleted) = {
+    DeleteStreamCompleted(
+      m.`result`,
+      m.`message`.orElse(`message`)
+    )
+  }
 
-	def getDefaultInstanceForType = DeleteStreamCompleted.defaultInstance
-	def clear = getDefaultInstanceForType
-	def isInitialized = true
-	def build = this
-	def buildPartial = this
-	def newBuilderForType = this
-	def toBuilder = this
+  def getDefaultInstanceForType = DeleteStreamCompleted.defaultInstance
+  def clear = getDefaultInstanceForType
+  def isInitialized = true
+  def build = this
+  def buildPartial = this
+  def newBuilderForType = this
+  def toBuilder = this
 }
 
 object DeleteStreamCompleted {
-	@reflect.BeanProperty val defaultInstance = new DeleteStreamCompleted()
+  @reflect.BeanProperty val defaultInstance = new DeleteStreamCompleted()
 
-	val RESULT_FIELD_NUMBER = 1
-	val MESSAGE_FIELD_NUMBER = 2
+  val RESULT_FIELD_NUMBER = 1
+  val MESSAGE_FIELD_NUMBER = 2
 
 }
 final case class TransactionStart (
-	`eventStreamId`: String = "",
-	`expectedVersion`: Int = 0,
-	`requireMaster`: Boolean = false
-) extends com.google.protobuf.GeneratedMessageLite
-	 with com.google.protobuf.MessageLite.Builder
-	with net.sandrogrzicic.scalabuff.Message[TransactionStart] {
+                                    `eventStreamId`: String = "",
+                                    `expectedVersion`: Int = 0,
+                                    `requireMaster`: Boolean = false
+                                    ) extends com.google.protobuf.GeneratedMessageLite
+with com.google.protobuf.MessageLite.Builder
+with net.sandrogrzicic.scalabuff.Message[TransactionStart] {
 
 
 
-	def writeTo(output: com.google.protobuf.CodedOutputStream) {
-		output.writeString(1, `eventStreamId`)
-		output.writeInt32(2, `expectedVersion`)
-		output.writeBool(3, `requireMaster`)
-	}
+  def writeTo(output: com.google.protobuf.CodedOutputStream) {
+    output.writeString(1, `eventStreamId`)
+    output.writeInt32(2, `expectedVersion`)
+    output.writeBool(3, `requireMaster`)
+  }
 
-	lazy val getSerializedSize = {
-		import com.google.protobuf.CodedOutputStream._
-		var size = 0
-		size += computeStringSize(1, `eventStreamId`)
-		size += computeInt32Size(2, `expectedVersion`)
-		size += computeBoolSize(3, `requireMaster`)
+  lazy val getSerializedSize = {
+    import com.google.protobuf.CodedOutputStream._
+    var size = 0
+    size += computeStringSize(1, `eventStreamId`)
+    size += computeInt32Size(2, `expectedVersion`)
+    size += computeBoolSize(3, `requireMaster`)
 
-		size
-	}
+    size
+  }
 
-	def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): TransactionStart = {
-		import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
-		var __eventStreamId: String = ""
-		var __expectedVersion: Int = 0
-		var __requireMaster: Boolean = false
+  def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): TransactionStart = {
+    import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
+    var __eventStreamId: String = ""
+    var __expectedVersion: Int = 0
+    var __requireMaster: Boolean = false
 
-		def __newMerged = TransactionStart(
-			__eventStreamId,
-			__expectedVersion,
-			__requireMaster
-		)
-		while (true) in.readTag match {
-			case 0 => return __newMerged
-			case 10 => __eventStreamId = in.readString()
-			case 16 => __expectedVersion = in.readInt32()
-			case 24 => __requireMaster = in.readBool()
-			case default => if (!in.skipField(default)) return __newMerged
-		}
-		null
-	}
+    def __newMerged = TransactionStart(
+      __eventStreamId,
+      __expectedVersion,
+      __requireMaster
+    )
+    while (true) in.readTag match {
+      case 0 => return __newMerged
+      case 10 => __eventStreamId = in.readString()
+      case 16 => __expectedVersion = in.readInt32()
+      case 24 => __requireMaster = in.readBool()
+      case default => if (!in.skipField(default)) return __newMerged
+    }
+    null
+  }
 
-	def mergeFrom(m: TransactionStart) = {
-		TransactionStart(
-			m.`eventStreamId`,
-			m.`expectedVersion`,
-			m.`requireMaster`
-		)
-	}
+  def mergeFrom(m: TransactionStart) = {
+    TransactionStart(
+      m.`eventStreamId`,
+      m.`expectedVersion`,
+      m.`requireMaster`
+    )
+  }
 
-	def getDefaultInstanceForType = TransactionStart.defaultInstance
-	def clear = getDefaultInstanceForType
-	def isInitialized = true
-	def build = this
-	def buildPartial = this
-	def newBuilderForType = this
-	def toBuilder = this
+  def getDefaultInstanceForType = TransactionStart.defaultInstance
+  def clear = getDefaultInstanceForType
+  def isInitialized = true
+  def build = this
+  def buildPartial = this
+  def newBuilderForType = this
+  def toBuilder = this
 }
 
 object TransactionStart {
-	@reflect.BeanProperty val defaultInstance = new TransactionStart()
+  @reflect.BeanProperty val defaultInstance = new TransactionStart()
 
-	val EVENT_STREAM_ID_FIELD_NUMBER = 1
-	val EXPECTED_VERSION_FIELD_NUMBER = 2
-	val REQUIRE_MASTER_FIELD_NUMBER = 3
+  val EVENT_STREAM_ID_FIELD_NUMBER = 1
+  val EXPECTED_VERSION_FIELD_NUMBER = 2
+  val REQUIRE_MASTER_FIELD_NUMBER = 3
 
 }
 final case class TransactionStartCompleted (
-	`transactionId`: Long = 0L,
-	`result`: OperationResult.EnumVal = OperationResult._UNINITIALIZED,
-	`message`: Option[String] = None
-) extends com.google.protobuf.GeneratedMessageLite
-	 with com.google.protobuf.MessageLite.Builder
-	with net.sandrogrzicic.scalabuff.Message[TransactionStartCompleted] {
+                                             `transactionId`: Long = 0L,
+                                             `result`: OperationResult.EnumVal = OperationResult._UNINITIALIZED,
+                                             `message`: Option[String] = None
+                                             ) extends com.google.protobuf.GeneratedMessageLite
+with com.google.protobuf.MessageLite.Builder
+with net.sandrogrzicic.scalabuff.Message[TransactionStartCompleted] {
 
-	def setMessage(_f: String) = copy(`message` = _f)
+  def setMessage(_f: String) = copy(`message` = _f)
 
-	def clearMessage = copy(`message` = None)
+  def clearMessage = copy(`message` = None)
 
-	def writeTo(output: com.google.protobuf.CodedOutputStream) {
-		output.writeInt64(1, `transactionId`)
-		output.writeEnum(2, `result`)
-		if (`message`.isDefined) output.writeString(3, `message`.get)
-	}
+  def writeTo(output: com.google.protobuf.CodedOutputStream) {
+    output.writeInt64(1, `transactionId`)
+    output.writeEnum(2, `result`)
+    if (`message`.isDefined) output.writeString(3, `message`.get)
+  }
 
-	lazy val getSerializedSize = {
-		import com.google.protobuf.CodedOutputStream._
-		var size = 0
-		size += computeInt64Size(1, `transactionId`)
-		size += computeEnumSize(2, `result`)
-		if (`message`.isDefined) size += computeStringSize(3, `message`.get)
+  lazy val getSerializedSize = {
+    import com.google.protobuf.CodedOutputStream._
+    var size = 0
+    size += computeInt64Size(1, `transactionId`)
+    size += computeEnumSize(2, `result`)
+    if (`message`.isDefined) size += computeStringSize(3, `message`.get)
 
-		size
-	}
+    size
+  }
 
-	def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): TransactionStartCompleted = {
-		import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
-		var __transactionId: Long = 0L
-		var __result: OperationResult.EnumVal = OperationResult._UNINITIALIZED
-		var __message: Option[String] = `message`
+  def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): TransactionStartCompleted = {
+    import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
+    var __transactionId: Long = 0L
+    var __result: OperationResult.EnumVal = OperationResult._UNINITIALIZED
+    var __message: Option[String] = `message`
 
-		def __newMerged = TransactionStartCompleted(
-			__transactionId,
-			__result,
-			__message
-		)
-		while (true) in.readTag match {
-			case 0 => return __newMerged
-			case 8 => __transactionId = in.readInt64()
-			case 16 => __result = OperationResult.valueOf(in.readEnum())
-			case 26 => __message = in.readString()
-			case default => if (!in.skipField(default)) return __newMerged
-		}
-		null
-	}
+    def __newMerged = TransactionStartCompleted(
+      __transactionId,
+      __result,
+      __message
+    )
+    while (true) in.readTag match {
+      case 0 => return __newMerged
+      case 8 => __transactionId = in.readInt64()
+      case 16 => __result = OperationResult.valueOf(in.readEnum())
+      case 26 => __message = in.readString()
+      case default => if (!in.skipField(default)) return __newMerged
+    }
+    null
+  }
 
-	def mergeFrom(m: TransactionStartCompleted) = {
-		TransactionStartCompleted(
-			m.`transactionId`,
-			m.`result`,
-			m.`message`.orElse(`message`)
-		)
-	}
+  def mergeFrom(m: TransactionStartCompleted) = {
+    TransactionStartCompleted(
+      m.`transactionId`,
+      m.`result`,
+      m.`message`.orElse(`message`)
+    )
+  }
 
-	def getDefaultInstanceForType = TransactionStartCompleted.defaultInstance
-	def clear = getDefaultInstanceForType
-	def isInitialized = true
-	def build = this
-	def buildPartial = this
-	def newBuilderForType = this
-	def toBuilder = this
+  def getDefaultInstanceForType = TransactionStartCompleted.defaultInstance
+  def clear = getDefaultInstanceForType
+  def isInitialized = true
+  def build = this
+  def buildPartial = this
+  def newBuilderForType = this
+  def toBuilder = this
 }
 
 object TransactionStartCompleted {
-	@reflect.BeanProperty val defaultInstance = new TransactionStartCompleted()
+  @reflect.BeanProperty val defaultInstance = new TransactionStartCompleted()
 
-	val TRANSACTION_ID_FIELD_NUMBER = 1
-	val RESULT_FIELD_NUMBER = 2
-	val MESSAGE_FIELD_NUMBER = 3
+  val TRANSACTION_ID_FIELD_NUMBER = 1
+  val RESULT_FIELD_NUMBER = 2
+  val MESSAGE_FIELD_NUMBER = 3
 
 }
 final case class TransactionWrite (
-	`transactionId`: Long = 0L,
-	`events`: Vector[NewEvent] = Vector.empty[NewEvent],
-	`requireMaster`: Boolean = false
-) extends com.google.protobuf.GeneratedMessageLite
-	 with com.google.protobuf.MessageLite.Builder
-	with net.sandrogrzicic.scalabuff.Message[TransactionWrite] {
+                                    `transactionId`: Long = 0L,
+                                    `events`: Vector[NewEvent] = Vector.empty[NewEvent],
+                                    `requireMaster`: Boolean = false
+                                    ) extends com.google.protobuf.GeneratedMessageLite
+with com.google.protobuf.MessageLite.Builder
+with net.sandrogrzicic.scalabuff.Message[TransactionWrite] {
 
-	def setEvents(_i: Int, _v: NewEvent) = copy(`events` = `events`.updated(_i, _v))
-	def addEvents(_f: NewEvent) = copy(`events` = `events` :+ _f)
-	def addAllEvents(_f: NewEvent*) = copy(`events` = `events` ++ _f)
-	def addAllEvents(_f: TraversableOnce[NewEvent]) = copy(`events` = `events` ++ _f)
+  def setEvents(_i: Int, _v: NewEvent) = copy(`events` = `events`.updated(_i, _v))
+  def addEvents(_f: NewEvent) = copy(`events` = `events` :+ _f)
+  def addAllEvents(_f: NewEvent*) = copy(`events` = `events` ++ _f)
+  def addAllEvents(_f: TraversableOnce[NewEvent]) = copy(`events` = `events` ++ _f)
 
-	def clearEvents = copy(`events` = Vector.empty[NewEvent])
+  def clearEvents = copy(`events` = Vector.empty[NewEvent])
 
-	def writeTo(output: com.google.protobuf.CodedOutputStream) {
-		output.writeInt64(1, `transactionId`)
-		for (_v <- `events`) output.writeMessage(2, _v)
-		output.writeBool(3, `requireMaster`)
-	}
+  def writeTo(output: com.google.protobuf.CodedOutputStream) {
+    output.writeInt64(1, `transactionId`)
+    for (_v <- `events`) output.writeMessage(2, _v)
+    output.writeBool(3, `requireMaster`)
+  }
 
-	lazy val getSerializedSize = {
-		import com.google.protobuf.CodedOutputStream._
-		var size = 0
-		size += computeInt64Size(1, `transactionId`)
-		for (_v <- `events`) size += computeMessageSize(2, _v)
-		size += computeBoolSize(3, `requireMaster`)
+  lazy val getSerializedSize = {
+    import com.google.protobuf.CodedOutputStream._
+    var size = 0
+    size += computeInt64Size(1, `transactionId`)
+    for (_v <- `events`) size += computeMessageSize(2, _v)
+    size += computeBoolSize(3, `requireMaster`)
 
-		size
-	}
+    size
+  }
 
-	def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): TransactionWrite = {
-		import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
-		var __transactionId: Long = 0L
-		val __events: collection.mutable.Buffer[NewEvent] = `events`.toBuffer
-		var __requireMaster: Boolean = false
+  def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): TransactionWrite = {
+    import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
+    var __transactionId: Long = 0L
+    val __events: collection.mutable.Buffer[NewEvent] = `events`.toBuffer
+    var __requireMaster: Boolean = false
 
-		def __newMerged = TransactionWrite(
-			__transactionId,
-			Vector(__events: _*),
-			__requireMaster
-		)
-		while (true) in.readTag match {
-			case 0 => return __newMerged
-			case 8 => __transactionId = in.readInt64()
-			case 18 => __events += readMessage[NewEvent](in, NewEvent.defaultInstance, _emptyRegistry)
-			case 24 => __requireMaster = in.readBool()
-			case default => if (!in.skipField(default)) return __newMerged
-		}
-		null
-	}
+    def __newMerged = TransactionWrite(
+      __transactionId,
+      Vector(__events: _*),
+      __requireMaster
+    )
+    while (true) in.readTag match {
+      case 0 => return __newMerged
+      case 8 => __transactionId = in.readInt64()
+      case 18 => __events += readMessage[NewEvent](in, NewEvent.defaultInstance, _emptyRegistry)
+      case 24 => __requireMaster = in.readBool()
+      case default => if (!in.skipField(default)) return __newMerged
+    }
+    null
+  }
 
-	def mergeFrom(m: TransactionWrite) = {
-		TransactionWrite(
-			m.`transactionId`,
-			`events` ++ m.`events`,
-			m.`requireMaster`
-		)
-	}
+  def mergeFrom(m: TransactionWrite) = {
+    TransactionWrite(
+      m.`transactionId`,
+      `events` ++ m.`events`,
+      m.`requireMaster`
+    )
+  }
 
-	def getDefaultInstanceForType = TransactionWrite.defaultInstance
-	def clear = getDefaultInstanceForType
-	def isInitialized = true
-	def build = this
-	def buildPartial = this
-	def newBuilderForType = this
-	def toBuilder = this
+  def getDefaultInstanceForType = TransactionWrite.defaultInstance
+  def clear = getDefaultInstanceForType
+  def isInitialized = true
+  def build = this
+  def buildPartial = this
+  def newBuilderForType = this
+  def toBuilder = this
 }
 
 object TransactionWrite {
-	@reflect.BeanProperty val defaultInstance = new TransactionWrite()
+  @reflect.BeanProperty val defaultInstance = new TransactionWrite()
 
-	val TRANSACTION_ID_FIELD_NUMBER = 1
-	val EVENTS_FIELD_NUMBER = 2
-	val REQUIRE_MASTER_FIELD_NUMBER = 3
+  val TRANSACTION_ID_FIELD_NUMBER = 1
+  val EVENTS_FIELD_NUMBER = 2
+  val REQUIRE_MASTER_FIELD_NUMBER = 3
 
 }
 final case class TransactionWriteCompleted (
-	`transactionId`: Long = 0L,
-	`result`: OperationResult.EnumVal = OperationResult._UNINITIALIZED,
-	`message`: Option[String] = None
-) extends com.google.protobuf.GeneratedMessageLite
-	 with com.google.protobuf.MessageLite.Builder
-	with net.sandrogrzicic.scalabuff.Message[TransactionWriteCompleted] {
+                                             `transactionId`: Long = 0L,
+                                             `result`: OperationResult.EnumVal = OperationResult._UNINITIALIZED,
+                                             `message`: Option[String] = None
+                                             ) extends com.google.protobuf.GeneratedMessageLite
+with com.google.protobuf.MessageLite.Builder
+with net.sandrogrzicic.scalabuff.Message[TransactionWriteCompleted] {
 
-	def setMessage(_f: String) = copy(`message` = _f)
+  def setMessage(_f: String) = copy(`message` = _f)
 
-	def clearMessage = copy(`message` = None)
+  def clearMessage = copy(`message` = None)
 
-	def writeTo(output: com.google.protobuf.CodedOutputStream) {
-		output.writeInt64(1, `transactionId`)
-		output.writeEnum(2, `result`)
-		if (`message`.isDefined) output.writeString(3, `message`.get)
-	}
+  def writeTo(output: com.google.protobuf.CodedOutputStream) {
+    output.writeInt64(1, `transactionId`)
+    output.writeEnum(2, `result`)
+    if (`message`.isDefined) output.writeString(3, `message`.get)
+  }
 
-	lazy val getSerializedSize = {
-		import com.google.protobuf.CodedOutputStream._
-		var size = 0
-		size += computeInt64Size(1, `transactionId`)
-		size += computeEnumSize(2, `result`)
-		if (`message`.isDefined) size += computeStringSize(3, `message`.get)
+  lazy val getSerializedSize = {
+    import com.google.protobuf.CodedOutputStream._
+    var size = 0
+    size += computeInt64Size(1, `transactionId`)
+    size += computeEnumSize(2, `result`)
+    if (`message`.isDefined) size += computeStringSize(3, `message`.get)
 
-		size
-	}
+    size
+  }
 
-	def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): TransactionWriteCompleted = {
-		import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
-		var __transactionId: Long = 0L
-		var __result: OperationResult.EnumVal = OperationResult._UNINITIALIZED
-		var __message: Option[String] = `message`
+  def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): TransactionWriteCompleted = {
+    import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
+    var __transactionId: Long = 0L
+    var __result: OperationResult.EnumVal = OperationResult._UNINITIALIZED
+    var __message: Option[String] = `message`
 
-		def __newMerged = TransactionWriteCompleted(
-			__transactionId,
-			__result,
-			__message
-		)
-		while (true) in.readTag match {
-			case 0 => return __newMerged
-			case 8 => __transactionId = in.readInt64()
-			case 16 => __result = OperationResult.valueOf(in.readEnum())
-			case 26 => __message = in.readString()
-			case default => if (!in.skipField(default)) return __newMerged
-		}
-		null
-	}
+    def __newMerged = TransactionWriteCompleted(
+      __transactionId,
+      __result,
+      __message
+    )
+    while (true) in.readTag match {
+      case 0 => return __newMerged
+      case 8 => __transactionId = in.readInt64()
+      case 16 => __result = OperationResult.valueOf(in.readEnum())
+      case 26 => __message = in.readString()
+      case default => if (!in.skipField(default)) return __newMerged
+    }
+    null
+  }
 
-	def mergeFrom(m: TransactionWriteCompleted) = {
-		TransactionWriteCompleted(
-			m.`transactionId`,
-			m.`result`,
-			m.`message`.orElse(`message`)
-		)
-	}
+  def mergeFrom(m: TransactionWriteCompleted) = {
+    TransactionWriteCompleted(
+      m.`transactionId`,
+      m.`result`,
+      m.`message`.orElse(`message`)
+    )
+  }
 
-	def getDefaultInstanceForType = TransactionWriteCompleted.defaultInstance
-	def clear = getDefaultInstanceForType
-	def isInitialized = true
-	def build = this
-	def buildPartial = this
-	def newBuilderForType = this
-	def toBuilder = this
+  def getDefaultInstanceForType = TransactionWriteCompleted.defaultInstance
+  def clear = getDefaultInstanceForType
+  def isInitialized = true
+  def build = this
+  def buildPartial = this
+  def newBuilderForType = this
+  def toBuilder = this
 }
 
 object TransactionWriteCompleted {
-	@reflect.BeanProperty val defaultInstance = new TransactionWriteCompleted()
+  @reflect.BeanProperty val defaultInstance = new TransactionWriteCompleted()
 
-	val TRANSACTION_ID_FIELD_NUMBER = 1
-	val RESULT_FIELD_NUMBER = 2
-	val MESSAGE_FIELD_NUMBER = 3
+  val TRANSACTION_ID_FIELD_NUMBER = 1
+  val RESULT_FIELD_NUMBER = 2
+  val MESSAGE_FIELD_NUMBER = 3
 
 }
 final case class TransactionCommit (
-	`transactionId`: Long = 0L,
-	`requireMaster`: Boolean = false
-) extends com.google.protobuf.GeneratedMessageLite
-	 with com.google.protobuf.MessageLite.Builder
-	with net.sandrogrzicic.scalabuff.Message[TransactionCommit] {
+                                     `transactionId`: Long = 0L,
+                                     `requireMaster`: Boolean = false
+                                     ) extends com.google.protobuf.GeneratedMessageLite
+with com.google.protobuf.MessageLite.Builder
+with net.sandrogrzicic.scalabuff.Message[TransactionCommit] {
 
 
 
-	def writeTo(output: com.google.protobuf.CodedOutputStream) {
-		output.writeInt64(1, `transactionId`)
-		output.writeBool(2, `requireMaster`)
-	}
+  def writeTo(output: com.google.protobuf.CodedOutputStream) {
+    output.writeInt64(1, `transactionId`)
+    output.writeBool(2, `requireMaster`)
+  }
 
-	lazy val getSerializedSize = {
-		import com.google.protobuf.CodedOutputStream._
-		var size = 0
-		size += computeInt64Size(1, `transactionId`)
-		size += computeBoolSize(2, `requireMaster`)
+  lazy val getSerializedSize = {
+    import com.google.protobuf.CodedOutputStream._
+    var size = 0
+    size += computeInt64Size(1, `transactionId`)
+    size += computeBoolSize(2, `requireMaster`)
 
-		size
-	}
+    size
+  }
 
-	def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): TransactionCommit = {
-		import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
-		var __transactionId: Long = 0L
-		var __requireMaster: Boolean = false
+  def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): TransactionCommit = {
+    import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
+    var __transactionId: Long = 0L
+    var __requireMaster: Boolean = false
 
-		def __newMerged = TransactionCommit(
-			__transactionId,
-			__requireMaster
-		)
-		while (true) in.readTag match {
-			case 0 => return __newMerged
-			case 8 => __transactionId = in.readInt64()
-			case 16 => __requireMaster = in.readBool()
-			case default => if (!in.skipField(default)) return __newMerged
-		}
-		null
-	}
+    def __newMerged = TransactionCommit(
+      __transactionId,
+      __requireMaster
+    )
+    while (true) in.readTag match {
+      case 0 => return __newMerged
+      case 8 => __transactionId = in.readInt64()
+      case 16 => __requireMaster = in.readBool()
+      case default => if (!in.skipField(default)) return __newMerged
+    }
+    null
+  }
 
-	def mergeFrom(m: TransactionCommit) = {
-		TransactionCommit(
-			m.`transactionId`,
-			m.`requireMaster`
-		)
-	}
+  def mergeFrom(m: TransactionCommit) = {
+    TransactionCommit(
+      m.`transactionId`,
+      m.`requireMaster`
+    )
+  }
 
-	def getDefaultInstanceForType = TransactionCommit.defaultInstance
-	def clear = getDefaultInstanceForType
-	def isInitialized = true
-	def build = this
-	def buildPartial = this
-	def newBuilderForType = this
-	def toBuilder = this
+  def getDefaultInstanceForType = TransactionCommit.defaultInstance
+  def clear = getDefaultInstanceForType
+  def isInitialized = true
+  def build = this
+  def buildPartial = this
+  def newBuilderForType = this
+  def toBuilder = this
 }
 
 object TransactionCommit {
-	@reflect.BeanProperty val defaultInstance = new TransactionCommit()
+  @reflect.BeanProperty val defaultInstance = new TransactionCommit()
 
-	val TRANSACTION_ID_FIELD_NUMBER = 1
-	val REQUIRE_MASTER_FIELD_NUMBER = 2
+  val TRANSACTION_ID_FIELD_NUMBER = 1
+  val REQUIRE_MASTER_FIELD_NUMBER = 2
 
 }
 final case class TransactionCommitCompleted (
-	`transactionId`: Long = 0L,
-	`result`: OperationResult.EnumVal = OperationResult._UNINITIALIZED,
-	`message`: Option[String] = None
-) extends com.google.protobuf.GeneratedMessageLite
-	 with com.google.protobuf.MessageLite.Builder
-	with net.sandrogrzicic.scalabuff.Message[TransactionCommitCompleted] {
+                                              `transactionId`: Long = 0L,
+                                              `result`: OperationResult.EnumVal = OperationResult._UNINITIALIZED,
+                                              `message`: Option[String] = None
+                                              ) extends com.google.protobuf.GeneratedMessageLite
+with com.google.protobuf.MessageLite.Builder
+with net.sandrogrzicic.scalabuff.Message[TransactionCommitCompleted] {
 
-	def setMessage(_f: String) = copy(`message` = _f)
+  def setMessage(_f: String) = copy(`message` = _f)
 
-	def clearMessage = copy(`message` = None)
+  def clearMessage = copy(`message` = None)
 
-	def writeTo(output: com.google.protobuf.CodedOutputStream) {
-		output.writeInt64(1, `transactionId`)
-		output.writeEnum(2, `result`)
-		if (`message`.isDefined) output.writeString(3, `message`.get)
-	}
+  def writeTo(output: com.google.protobuf.CodedOutputStream) {
+    output.writeInt64(1, `transactionId`)
+    output.writeEnum(2, `result`)
+    if (`message`.isDefined) output.writeString(3, `message`.get)
+  }
 
-	lazy val getSerializedSize = {
-		import com.google.protobuf.CodedOutputStream._
-		var size = 0
-		size += computeInt64Size(1, `transactionId`)
-		size += computeEnumSize(2, `result`)
-		if (`message`.isDefined) size += computeStringSize(3, `message`.get)
+  lazy val getSerializedSize = {
+    import com.google.protobuf.CodedOutputStream._
+    var size = 0
+    size += computeInt64Size(1, `transactionId`)
+    size += computeEnumSize(2, `result`)
+    if (`message`.isDefined) size += computeStringSize(3, `message`.get)
 
-		size
-	}
+    size
+  }
 
-	def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): TransactionCommitCompleted = {
-		import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
-		var __transactionId: Long = 0L
-		var __result: OperationResult.EnumVal = OperationResult._UNINITIALIZED
-		var __message: Option[String] = `message`
+  def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): TransactionCommitCompleted = {
+    import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
+    var __transactionId: Long = 0L
+    var __result: OperationResult.EnumVal = OperationResult._UNINITIALIZED
+    var __message: Option[String] = `message`
 
-		def __newMerged = TransactionCommitCompleted(
-			__transactionId,
-			__result,
-			__message
-		)
-		while (true) in.readTag match {
-			case 0 => return __newMerged
-			case 8 => __transactionId = in.readInt64()
-			case 16 => __result = OperationResult.valueOf(in.readEnum())
-			case 26 => __message = in.readString()
-			case default => if (!in.skipField(default)) return __newMerged
-		}
-		null
-	}
+    def __newMerged = TransactionCommitCompleted(
+      __transactionId,
+      __result,
+      __message
+    )
+    while (true) in.readTag match {
+      case 0 => return __newMerged
+      case 8 => __transactionId = in.readInt64()
+      case 16 => __result = OperationResult.valueOf(in.readEnum())
+      case 26 => __message = in.readString()
+      case default => if (!in.skipField(default)) return __newMerged
+    }
+    null
+  }
 
-	def mergeFrom(m: TransactionCommitCompleted) = {
-		TransactionCommitCompleted(
-			m.`transactionId`,
-			m.`result`,
-			m.`message`.orElse(`message`)
-		)
-	}
+  def mergeFrom(m: TransactionCommitCompleted) = {
+    TransactionCommitCompleted(
+      m.`transactionId`,
+      m.`result`,
+      m.`message`.orElse(`message`)
+    )
+  }
 
-	def getDefaultInstanceForType = TransactionCommitCompleted.defaultInstance
-	def clear = getDefaultInstanceForType
-	def isInitialized = true
-	def build = this
-	def buildPartial = this
-	def newBuilderForType = this
-	def toBuilder = this
+  def getDefaultInstanceForType = TransactionCommitCompleted.defaultInstance
+  def clear = getDefaultInstanceForType
+  def isInitialized = true
+  def build = this
+  def buildPartial = this
+  def newBuilderForType = this
+  def toBuilder = this
 }
 
 object TransactionCommitCompleted {
-	@reflect.BeanProperty val defaultInstance = new TransactionCommitCompleted()
+  @reflect.BeanProperty val defaultInstance = new TransactionCommitCompleted()
 
-	val TRANSACTION_ID_FIELD_NUMBER = 1
-	val RESULT_FIELD_NUMBER = 2
-	val MESSAGE_FIELD_NUMBER = 3
+  val TRANSACTION_ID_FIELD_NUMBER = 1
+  val RESULT_FIELD_NUMBER = 2
+  val MESSAGE_FIELD_NUMBER = 3
 
 }
 final case class ReadEvent (
-	`eventStreamId`: String = "",
-	`eventNumber`: Int = 0,
-	`resolveLinkTos`: Boolean = false,
-	`requireMaster`: Boolean = false
-) extends com.google.protobuf.GeneratedMessageLite
-	 with com.google.protobuf.MessageLite.Builder
-	with net.sandrogrzicic.scalabuff.Message[ReadEvent] {
+                             `eventStreamId`: String = "",
+                             `eventNumber`: Int = 0,
+                             `resolveLinkTos`: Boolean = false,
+                             `requireMaster`: Boolean = false
+                             ) extends com.google.protobuf.GeneratedMessageLite
+with com.google.protobuf.MessageLite.Builder
+with net.sandrogrzicic.scalabuff.Message[ReadEvent] {
 
 
 
-	def writeTo(output: com.google.protobuf.CodedOutputStream) {
-		output.writeString(1, `eventStreamId`)
-		output.writeInt32(2, `eventNumber`)
-		output.writeBool(3, `resolveLinkTos`)
-		output.writeBool(4, `requireMaster`)
-	}
+  def writeTo(output: com.google.protobuf.CodedOutputStream) {
+    output.writeString(1, `eventStreamId`)
+    output.writeInt32(2, `eventNumber`)
+    output.writeBool(3, `resolveLinkTos`)
+    output.writeBool(4, `requireMaster`)
+  }
 
-	lazy val getSerializedSize = {
-		import com.google.protobuf.CodedOutputStream._
-		var size = 0
-		size += computeStringSize(1, `eventStreamId`)
-		size += computeInt32Size(2, `eventNumber`)
-		size += computeBoolSize(3, `resolveLinkTos`)
-		size += computeBoolSize(4, `requireMaster`)
+  lazy val getSerializedSize = {
+    import com.google.protobuf.CodedOutputStream._
+    var size = 0
+    size += computeStringSize(1, `eventStreamId`)
+    size += computeInt32Size(2, `eventNumber`)
+    size += computeBoolSize(3, `resolveLinkTos`)
+    size += computeBoolSize(4, `requireMaster`)
 
-		size
-	}
+    size
+  }
 
-	def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): ReadEvent = {
-		import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
-		var __eventStreamId: String = ""
-		var __eventNumber: Int = 0
-		var __resolveLinkTos: Boolean = false
-		var __requireMaster: Boolean = false
+  def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): ReadEvent = {
+    import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
+    var __eventStreamId: String = ""
+    var __eventNumber: Int = 0
+    var __resolveLinkTos: Boolean = false
+    var __requireMaster: Boolean = false
 
-		def __newMerged = ReadEvent(
-			__eventStreamId,
-			__eventNumber,
-			__resolveLinkTos,
-			__requireMaster
-		)
-		while (true) in.readTag match {
-			case 0 => return __newMerged
-			case 10 => __eventStreamId = in.readString()
-			case 16 => __eventNumber = in.readInt32()
-			case 24 => __resolveLinkTos = in.readBool()
-			case 32 => __requireMaster = in.readBool()
-			case default => if (!in.skipField(default)) return __newMerged
-		}
-		null
-	}
+    def __newMerged = ReadEvent(
+      __eventStreamId,
+      __eventNumber,
+      __resolveLinkTos,
+      __requireMaster
+    )
+    while (true) in.readTag match {
+      case 0 => return __newMerged
+      case 10 => __eventStreamId = in.readString()
+      case 16 => __eventNumber = in.readInt32()
+      case 24 => __resolveLinkTos = in.readBool()
+      case 32 => __requireMaster = in.readBool()
+      case default => if (!in.skipField(default)) return __newMerged
+    }
+    null
+  }
 
-	def mergeFrom(m: ReadEvent) = {
-		ReadEvent(
-			m.`eventStreamId`,
-			m.`eventNumber`,
-			m.`resolveLinkTos`,
-			m.`requireMaster`
-		)
-	}
+  def mergeFrom(m: ReadEvent) = {
+    ReadEvent(
+      m.`eventStreamId`,
+      m.`eventNumber`,
+      m.`resolveLinkTos`,
+      m.`requireMaster`
+    )
+  }
 
-	def getDefaultInstanceForType = ReadEvent.defaultInstance
-	def clear = getDefaultInstanceForType
-	def isInitialized = true
-	def build = this
-	def buildPartial = this
-	def newBuilderForType = this
-	def toBuilder = this
+  def getDefaultInstanceForType = ReadEvent.defaultInstance
+  def clear = getDefaultInstanceForType
+  def isInitialized = true
+  def build = this
+  def buildPartial = this
+  def newBuilderForType = this
+  def toBuilder = this
 }
 
 object ReadEvent {
-	@reflect.BeanProperty val defaultInstance = new ReadEvent()
+  @reflect.BeanProperty val defaultInstance = new ReadEvent()
 
-	val EVENT_STREAM_ID_FIELD_NUMBER = 1
-	val EVENT_NUMBER_FIELD_NUMBER = 2
-	val RESOLVE_LINK_TOS_FIELD_NUMBER = 3
-	val REQUIRE_MASTER_FIELD_NUMBER = 4
+  val EVENT_STREAM_ID_FIELD_NUMBER = 1
+  val EVENT_NUMBER_FIELD_NUMBER = 2
+  val RESOLVE_LINK_TOS_FIELD_NUMBER = 3
+  val REQUIRE_MASTER_FIELD_NUMBER = 4
 
 }
 final case class ReadEventCompleted (
-	`result`: ReadEventCompleted.ReadEventResult.EnumVal = ReadEventCompleted.ReadEventResult._UNINITIALIZED,
-	`event`: ResolvedIndexedEvent = ResolvedIndexedEvent.defaultInstance,
-	`error`: Option[String] = None
-) extends com.google.protobuf.GeneratedMessageLite
-	 with com.google.protobuf.MessageLite.Builder
-	with net.sandrogrzicic.scalabuff.Message[ReadEventCompleted] {
+                                      `result`: ReadEventCompleted.ReadEventResult.EnumVal = ReadEventCompleted.ReadEventResult._UNINITIALIZED,
+                                      `event`: ResolvedIndexedEvent = ResolvedIndexedEvent.defaultInstance,
+                                      `error`: Option[String] = None
+                                      ) extends com.google.protobuf.GeneratedMessageLite
+with com.google.protobuf.MessageLite.Builder
+with net.sandrogrzicic.scalabuff.Message[ReadEventCompleted] {
 
-	def setError(_f: String) = copy(`error` = _f)
+  def setError(_f: String) = copy(`error` = _f)
 
-	def clearError = copy(`error` = None)
+  def clearError = copy(`error` = None)
 
-	def writeTo(output: com.google.protobuf.CodedOutputStream) {
-		output.writeEnum(1, `result`)
-		output.writeMessage(2, `event`)
-		if (`error`.isDefined) output.writeString(3, `error`.get)
-	}
+  def writeTo(output: com.google.protobuf.CodedOutputStream) {
+    output.writeEnum(1, `result`)
+    output.writeMessage(2, `event`)
+    if (`error`.isDefined) output.writeString(3, `error`.get)
+  }
 
-	lazy val getSerializedSize = {
-		import com.google.protobuf.CodedOutputStream._
-		var size = 0
-		size += computeEnumSize(1, `result`)
-		size += computeMessageSize(2, `event`)
-		if (`error`.isDefined) size += computeStringSize(3, `error`.get)
+  lazy val getSerializedSize = {
+    import com.google.protobuf.CodedOutputStream._
+    var size = 0
+    size += computeEnumSize(1, `result`)
+    size += computeMessageSize(2, `event`)
+    if (`error`.isDefined) size += computeStringSize(3, `error`.get)
 
-		size
-	}
+    size
+  }
 
-	def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): ReadEventCompleted = {
-		import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
-		var __result: ReadEventCompleted.ReadEventResult.EnumVal = ReadEventCompleted.ReadEventResult._UNINITIALIZED
-		var __event: ResolvedIndexedEvent = ResolvedIndexedEvent.defaultInstance
-		var __error: Option[String] = `error`
+  def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): ReadEventCompleted = {
+    import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
+    var __result: ReadEventCompleted.ReadEventResult.EnumVal = ReadEventCompleted.ReadEventResult._UNINITIALIZED
+    var __event: ResolvedIndexedEvent = ResolvedIndexedEvent.defaultInstance
+    var __error: Option[String] = `error`
 
-		def __newMerged = ReadEventCompleted(
-			__result,
-			__event,
-			__error
-		)
-		while (true) in.readTag match {
-			case 0 => return __newMerged
-			case 8 => __result = ReadEventCompleted.ReadEventResult.valueOf(in.readEnum())
-			case 18 => __event = readMessage[ResolvedIndexedEvent](in, __event, _emptyRegistry)
-			case 26 => __error = in.readString()
-			case default => if (!in.skipField(default)) return __newMerged
-		}
-		null
-	}
+    def __newMerged = ReadEventCompleted(
+      __result,
+      __event,
+      __error
+    )
+    while (true) in.readTag match {
+      case 0 => return __newMerged
+      case 8 => __result = ReadEventCompleted.ReadEventResult.valueOf(in.readEnum())
+      case 18 => __event = readMessage[ResolvedIndexedEvent](in, __event, _emptyRegistry)
+      case 26 => __error = in.readString()
+      case default => if (!in.skipField(default)) return __newMerged
+    }
+    null
+  }
 
-	def mergeFrom(m: ReadEventCompleted) = {
-		ReadEventCompleted(
-			m.`result`,
-			m.`event`,
-			m.`error`.orElse(`error`)
-		)
-	}
+  def mergeFrom(m: ReadEventCompleted) = {
+    ReadEventCompleted(
+      m.`result`,
+      m.`event`,
+      m.`error`.orElse(`error`)
+    )
+  }
 
-	def getDefaultInstanceForType = ReadEventCompleted.defaultInstance
-	def clear = getDefaultInstanceForType
-	def isInitialized = true
-	def build = this
-	def buildPartial = this
-	def newBuilderForType = this
-	def toBuilder = this
+  def getDefaultInstanceForType = ReadEventCompleted.defaultInstance
+  def clear = getDefaultInstanceForType
+  def isInitialized = true
+  def build = this
+  def buildPartial = this
+  def newBuilderForType = this
+  def toBuilder = this
 }
 
 object ReadEventCompleted {
-	@reflect.BeanProperty val defaultInstance = new ReadEventCompleted()
+  @reflect.BeanProperty val defaultInstance = new ReadEventCompleted()
 
-	val RESULT_FIELD_NUMBER = 1
-	val EVENT_FIELD_NUMBER = 2
-	val ERROR_FIELD_NUMBER = 3
+  val RESULT_FIELD_NUMBER = 1
+  val EVENT_FIELD_NUMBER = 2
+  val ERROR_FIELD_NUMBER = 3
 
-	object ReadEventResult extends net.sandrogrzicic.scalabuff.Enum {
-		sealed trait EnumVal extends Value
-		val _UNINITIALIZED = new EnumVal { val name = "UNINITIALIZED ENUM VALUE"; val id = -1 }
+  object ReadEventResult extends net.sandrogrzicic.scalabuff.Enum {
+    sealed trait EnumVal extends Value
+    val _UNINITIALIZED = new EnumVal { val name = "UNINITIALIZED ENUM VALUE"; val id = -1 }
 
-		val Success = new EnumVal { val name = "Success"; val id = 0 }
-		val NotFound = new EnumVal { val name = "NotFound"; val id = 1 }
-		val NoStream = new EnumVal { val name = "NoStream"; val id = 2 }
-		val StreamDeleted = new EnumVal { val name = "StreamDeleted"; val id = 3 }
-		val Error = new EnumVal { val name = "Error"; val id = 4 }
-		val AccessDenied = new EnumVal { val name = "AccessDenied"; val id = 5 }
+    val Success = new EnumVal { val name = "Success"; val id = 0 }
+    val NotFound = new EnumVal { val name = "NotFound"; val id = 1 }
+    val NoStream = new EnumVal { val name = "NoStream"; val id = 2 }
+    val StreamDeleted = new EnumVal { val name = "StreamDeleted"; val id = 3 }
+    val Error = new EnumVal { val name = "Error"; val id = 4 }
+    val AccessDenied = new EnumVal { val name = "AccessDenied"; val id = 5 }
 
-		val Success_VALUE = 0
-		val NotFound_VALUE = 1
-		val NoStream_VALUE = 2
-		val StreamDeleted_VALUE = 3
-		val Error_VALUE = 4
-		val AccessDenied_VALUE = 5
+    val Success_VALUE = 0
+    val NotFound_VALUE = 1
+    val NoStream_VALUE = 2
+    val StreamDeleted_VALUE = 3
+    val Error_VALUE = 4
+    val AccessDenied_VALUE = 5
 
-		def valueOf(id: Int) = id match {
-			case 0 => Success
-			case 1 => NotFound
-			case 2 => NoStream
-			case 3 => StreamDeleted
-			case 4 => Error
-			case 5 => AccessDenied
-			case _default => throw new net.sandrogrzicic.scalabuff.UnknownEnumException(_default)
-		}
-		val internalGetValueMap = new com.google.protobuf.Internal.EnumLiteMap[EnumVal] {
-			def findValueByNumber(id: Int): EnumVal = valueOf(id)
-		}
-	}
+    def valueOf(id: Int) = id match {
+      case 0 => Success
+      case 1 => NotFound
+      case 2 => NoStream
+      case 3 => StreamDeleted
+      case 4 => Error
+      case 5 => AccessDenied
+      case _default => throw new net.sandrogrzicic.scalabuff.UnknownEnumException(_default)
+    }
+    val internalGetValueMap = new com.google.protobuf.Internal.EnumLiteMap[EnumVal] {
+      def findValueByNumber(id: Int): EnumVal = valueOf(id)
+    }
+  }
 
 }
 final case class ReadStreamEvents (
-	`eventStreamId`: String = "",
-	`fromEventNumber`: Int = 0,
-	`maxCount`: Int = 0,
-	`resolveLinkTos`: Boolean = false,
-	`requireMaster`: Boolean = false
-) extends com.google.protobuf.GeneratedMessageLite
-	 with com.google.protobuf.MessageLite.Builder
-	with net.sandrogrzicic.scalabuff.Message[ReadStreamEvents] {
+                                    `eventStreamId`: String = "",
+                                    `fromEventNumber`: Int = 0,
+                                    `maxCount`: Int = 0,
+                                    `resolveLinkTos`: Boolean = false,
+                                    `requireMaster`: Boolean = false
+                                    ) extends com.google.protobuf.GeneratedMessageLite
+with com.google.protobuf.MessageLite.Builder
+with net.sandrogrzicic.scalabuff.Message[ReadStreamEvents] {
 
 
 
-	def writeTo(output: com.google.protobuf.CodedOutputStream) {
-		output.writeString(1, `eventStreamId`)
-		output.writeInt32(2, `fromEventNumber`)
-		output.writeInt32(3, `maxCount`)
-		output.writeBool(4, `resolveLinkTos`)
-		output.writeBool(5, `requireMaster`)
-	}
+  def writeTo(output: com.google.protobuf.CodedOutputStream) {
+    output.writeString(1, `eventStreamId`)
+    output.writeInt32(2, `fromEventNumber`)
+    output.writeInt32(3, `maxCount`)
+    output.writeBool(4, `resolveLinkTos`)
+    output.writeBool(5, `requireMaster`)
+  }
 
-	lazy val getSerializedSize = {
-		import com.google.protobuf.CodedOutputStream._
-		var size = 0
-		size += computeStringSize(1, `eventStreamId`)
-		size += computeInt32Size(2, `fromEventNumber`)
-		size += computeInt32Size(3, `maxCount`)
-		size += computeBoolSize(4, `resolveLinkTos`)
-		size += computeBoolSize(5, `requireMaster`)
+  lazy val getSerializedSize = {
+    import com.google.protobuf.CodedOutputStream._
+    var size = 0
+    size += computeStringSize(1, `eventStreamId`)
+    size += computeInt32Size(2, `fromEventNumber`)
+    size += computeInt32Size(3, `maxCount`)
+    size += computeBoolSize(4, `resolveLinkTos`)
+    size += computeBoolSize(5, `requireMaster`)
 
-		size
-	}
+    size
+  }
 
-	def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): ReadStreamEvents = {
-		import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
-		var __eventStreamId: String = ""
-		var __fromEventNumber: Int = 0
-		var __maxCount: Int = 0
-		var __resolveLinkTos: Boolean = false
-		var __requireMaster: Boolean = false
+  def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): ReadStreamEvents = {
+    import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
+    var __eventStreamId: String = ""
+    var __fromEventNumber: Int = 0
+    var __maxCount: Int = 0
+    var __resolveLinkTos: Boolean = false
+    var __requireMaster: Boolean = false
 
-		def __newMerged = ReadStreamEvents(
-			__eventStreamId,
-			__fromEventNumber,
-			__maxCount,
-			__resolveLinkTos,
-			__requireMaster
-		)
-		while (true) in.readTag match {
-			case 0 => return __newMerged
-			case 10 => __eventStreamId = in.readString()
-			case 16 => __fromEventNumber = in.readInt32()
-			case 24 => __maxCount = in.readInt32()
-			case 32 => __resolveLinkTos = in.readBool()
-			case 40 => __requireMaster = in.readBool()
-			case default => if (!in.skipField(default)) return __newMerged
-		}
-		null
-	}
+    def __newMerged = ReadStreamEvents(
+      __eventStreamId,
+      __fromEventNumber,
+      __maxCount,
+      __resolveLinkTos,
+      __requireMaster
+    )
+    while (true) in.readTag match {
+      case 0 => return __newMerged
+      case 10 => __eventStreamId = in.readString()
+      case 16 => __fromEventNumber = in.readInt32()
+      case 24 => __maxCount = in.readInt32()
+      case 32 => __resolveLinkTos = in.readBool()
+      case 40 => __requireMaster = in.readBool()
+      case default => if (!in.skipField(default)) return __newMerged
+    }
+    null
+  }
 
-	def mergeFrom(m: ReadStreamEvents) = {
-		ReadStreamEvents(
-			m.`eventStreamId`,
-			m.`fromEventNumber`,
-			m.`maxCount`,
-			m.`resolveLinkTos`,
-			m.`requireMaster`
-		)
-	}
+  def mergeFrom(m: ReadStreamEvents) = {
+    ReadStreamEvents(
+      m.`eventStreamId`,
+      m.`fromEventNumber`,
+      m.`maxCount`,
+      m.`resolveLinkTos`,
+      m.`requireMaster`
+    )
+  }
 
-	def getDefaultInstanceForType = ReadStreamEvents.defaultInstance
-	def clear = getDefaultInstanceForType
-	def isInitialized = true
-	def build = this
-	def buildPartial = this
-	def newBuilderForType = this
-	def toBuilder = this
+  def getDefaultInstanceForType = ReadStreamEvents.defaultInstance
+  def clear = getDefaultInstanceForType
+  def isInitialized = true
+  def build = this
+  def buildPartial = this
+  def newBuilderForType = this
+  def toBuilder = this
 }
 
 object ReadStreamEvents {
-	@reflect.BeanProperty val defaultInstance = new ReadStreamEvents()
+  @reflect.BeanProperty val defaultInstance = new ReadStreamEvents()
 
-	val EVENT_STREAM_ID_FIELD_NUMBER = 1
-	val FROM_EVENT_NUMBER_FIELD_NUMBER = 2
-	val MAX_COUNT_FIELD_NUMBER = 3
-	val RESOLVE_LINK_TOS_FIELD_NUMBER = 4
-	val REQUIRE_MASTER_FIELD_NUMBER = 5
+  val EVENT_STREAM_ID_FIELD_NUMBER = 1
+  val FROM_EVENT_NUMBER_FIELD_NUMBER = 2
+  val MAX_COUNT_FIELD_NUMBER = 3
+  val RESOLVE_LINK_TOS_FIELD_NUMBER = 4
+  val REQUIRE_MASTER_FIELD_NUMBER = 5
 
 }
 final case class ReadStreamEventsCompleted (
-	`events`: Vector[ResolvedIndexedEvent] = Vector.empty[ResolvedIndexedEvent],
-	`result`: ReadStreamEventsCompleted.ReadStreamResult.EnumVal = ReadStreamEventsCompleted.ReadStreamResult._UNINITIALIZED,
-	`nextEventNumber`: Int = 0,
-	`lastEventNumber`: Int = 0,
-	`isEndOfStream`: Boolean = false,
-	`lastCommitPosition`: Long = 0L,
-	`error`: Option[String] = None
-) extends com.google.protobuf.GeneratedMessageLite
-	 with com.google.protobuf.MessageLite.Builder
-	with net.sandrogrzicic.scalabuff.Message[ReadStreamEventsCompleted] {
+                                             `events`: Vector[ResolvedIndexedEvent] = Vector.empty[ResolvedIndexedEvent],
+                                             `result`: ReadStreamEventsCompleted.ReadStreamResult.EnumVal = ReadStreamEventsCompleted.ReadStreamResult._UNINITIALIZED,
+                                             `nextEventNumber`: Int = 0,
+                                             `lastEventNumber`: Int = 0,
+                                             `isEndOfStream`: Boolean = false,
+                                             `lastCommitPosition`: Long = 0L,
+                                             `error`: Option[String] = None
+                                             ) extends com.google.protobuf.GeneratedMessageLite
+with com.google.protobuf.MessageLite.Builder
+with net.sandrogrzicic.scalabuff.Message[ReadStreamEventsCompleted] {
 
-	def setEvents(_i: Int, _v: ResolvedIndexedEvent) = copy(`events` = `events`.updated(_i, _v))
-	def addEvents(_f: ResolvedIndexedEvent) = copy(`events` = `events` :+ _f)
-	def addAllEvents(_f: ResolvedIndexedEvent*) = copy(`events` = `events` ++ _f)
-	def addAllEvents(_f: TraversableOnce[ResolvedIndexedEvent]) = copy(`events` = `events` ++ _f)
-	def setError(_f: String) = copy(`error` = _f)
+  def setEvents(_i: Int, _v: ResolvedIndexedEvent) = copy(`events` = `events`.updated(_i, _v))
+  def addEvents(_f: ResolvedIndexedEvent) = copy(`events` = `events` :+ _f)
+  def addAllEvents(_f: ResolvedIndexedEvent*) = copy(`events` = `events` ++ _f)
+  def addAllEvents(_f: TraversableOnce[ResolvedIndexedEvent]) = copy(`events` = `events` ++ _f)
+  def setError(_f: String) = copy(`error` = _f)
 
-	def clearEvents = copy(`events` = Vector.empty[ResolvedIndexedEvent])
-	def clearError = copy(`error` = None)
+  def clearEvents = copy(`events` = Vector.empty[ResolvedIndexedEvent])
+  def clearError = copy(`error` = None)
 
-	def writeTo(output: com.google.protobuf.CodedOutputStream) {
-		for (_v <- `events`) output.writeMessage(1, _v)
-		output.writeEnum(2, `result`)
-		output.writeInt32(3, `nextEventNumber`)
-		output.writeInt32(4, `lastEventNumber`)
-		output.writeBool(5, `isEndOfStream`)
-		output.writeInt64(6, `lastCommitPosition`)
-		if (`error`.isDefined) output.writeString(7, `error`.get)
-	}
+  def writeTo(output: com.google.protobuf.CodedOutputStream) {
+    for (_v <- `events`) output.writeMessage(1, _v)
+    output.writeEnum(2, `result`)
+    output.writeInt32(3, `nextEventNumber`)
+    output.writeInt32(4, `lastEventNumber`)
+    output.writeBool(5, `isEndOfStream`)
+    output.writeInt64(6, `lastCommitPosition`)
+    if (`error`.isDefined) output.writeString(7, `error`.get)
+  }
 
-	lazy val getSerializedSize = {
-		import com.google.protobuf.CodedOutputStream._
-		var size = 0
-		for (_v <- `events`) size += computeMessageSize(1, _v)
-		size += computeEnumSize(2, `result`)
-		size += computeInt32Size(3, `nextEventNumber`)
-		size += computeInt32Size(4, `lastEventNumber`)
-		size += computeBoolSize(5, `isEndOfStream`)
-		size += computeInt64Size(6, `lastCommitPosition`)
-		if (`error`.isDefined) size += computeStringSize(7, `error`.get)
+  lazy val getSerializedSize = {
+    import com.google.protobuf.CodedOutputStream._
+    var size = 0
+    for (_v <- `events`) size += computeMessageSize(1, _v)
+    size += computeEnumSize(2, `result`)
+    size += computeInt32Size(3, `nextEventNumber`)
+    size += computeInt32Size(4, `lastEventNumber`)
+    size += computeBoolSize(5, `isEndOfStream`)
+    size += computeInt64Size(6, `lastCommitPosition`)
+    if (`error`.isDefined) size += computeStringSize(7, `error`.get)
 
-		size
-	}
+    size
+  }
 
-	def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): ReadStreamEventsCompleted = {
-		import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
-		val __events: collection.mutable.Buffer[ResolvedIndexedEvent] = `events`.toBuffer
-		var __result: ReadStreamEventsCompleted.ReadStreamResult.EnumVal = ReadStreamEventsCompleted.ReadStreamResult._UNINITIALIZED
-		var __nextEventNumber: Int = 0
-		var __lastEventNumber: Int = 0
-		var __isEndOfStream: Boolean = false
-		var __lastCommitPosition: Long = 0L
-		var __error: Option[String] = `error`
+  def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): ReadStreamEventsCompleted = {
+    import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
+    val __events: collection.mutable.Buffer[ResolvedIndexedEvent] = `events`.toBuffer
+    var __result: ReadStreamEventsCompleted.ReadStreamResult.EnumVal = ReadStreamEventsCompleted.ReadStreamResult._UNINITIALIZED
+    var __nextEventNumber: Int = 0
+    var __lastEventNumber: Int = 0
+    var __isEndOfStream: Boolean = false
+    var __lastCommitPosition: Long = 0L
+    var __error: Option[String] = `error`
 
-		def __newMerged = ReadStreamEventsCompleted(
-			Vector(__events: _*),
-			__result,
-			__nextEventNumber,
-			__lastEventNumber,
-			__isEndOfStream,
-			__lastCommitPosition,
-			__error
-		)
-		while (true) in.readTag match {
-			case 0 => return __newMerged
-			case 10 => __events += readMessage[ResolvedIndexedEvent](in, ResolvedIndexedEvent.defaultInstance, _emptyRegistry)
-			case 16 => __result = ReadStreamEventsCompleted.ReadStreamResult.valueOf(in.readEnum())
-			case 24 => __nextEventNumber = in.readInt32()
-			case 32 => __lastEventNumber = in.readInt32()
-			case 40 => __isEndOfStream = in.readBool()
-			case 48 => __lastCommitPosition = in.readInt64()
-			case 58 => __error = in.readString()
-			case default => if (!in.skipField(default)) return __newMerged
-		}
-		null
-	}
+    def __newMerged = ReadStreamEventsCompleted(
+      Vector(__events: _*),
+      __result,
+      __nextEventNumber,
+      __lastEventNumber,
+      __isEndOfStream,
+      __lastCommitPosition,
+      __error
+    )
+    while (true) in.readTag match {
+      case 0 => return __newMerged
+      case 10 => __events += readMessage[ResolvedIndexedEvent](in, ResolvedIndexedEvent.defaultInstance, _emptyRegistry)
+      case 16 => __result = ReadStreamEventsCompleted.ReadStreamResult.valueOf(in.readEnum())
+      case 24 => __nextEventNumber = in.readInt32()
+      case 32 => __lastEventNumber = in.readInt32()
+      case 40 => __isEndOfStream = in.readBool()
+      case 48 => __lastCommitPosition = in.readInt64()
+      case 58 => __error = in.readString()
+      case default => if (!in.skipField(default)) return __newMerged
+    }
+    null
+  }
 
-	def mergeFrom(m: ReadStreamEventsCompleted) = {
-		ReadStreamEventsCompleted(
-			`events` ++ m.`events`,
-			m.`result`,
-			m.`nextEventNumber`,
-			m.`lastEventNumber`,
-			m.`isEndOfStream`,
-			m.`lastCommitPosition`,
-			m.`error`.orElse(`error`)
-		)
-	}
+  def mergeFrom(m: ReadStreamEventsCompleted) = {
+    ReadStreamEventsCompleted(
+      `events` ++ m.`events`,
+      m.`result`,
+      m.`nextEventNumber`,
+      m.`lastEventNumber`,
+      m.`isEndOfStream`,
+      m.`lastCommitPosition`,
+      m.`error`.orElse(`error`)
+    )
+  }
 
-	def getDefaultInstanceForType = ReadStreamEventsCompleted.defaultInstance
-	def clear = getDefaultInstanceForType
-	def isInitialized = true
-	def build = this
-	def buildPartial = this
-	def newBuilderForType = this
-	def toBuilder = this
+  def getDefaultInstanceForType = ReadStreamEventsCompleted.defaultInstance
+  def clear = getDefaultInstanceForType
+  def isInitialized = true
+  def build = this
+  def buildPartial = this
+  def newBuilderForType = this
+  def toBuilder = this
 }
 
 object ReadStreamEventsCompleted {
-	@reflect.BeanProperty val defaultInstance = new ReadStreamEventsCompleted()
+  @reflect.BeanProperty val defaultInstance = new ReadStreamEventsCompleted()
 
-	val EVENTS_FIELD_NUMBER = 1
-	val RESULT_FIELD_NUMBER = 2
-	val NEXT_EVENT_NUMBER_FIELD_NUMBER = 3
-	val LAST_EVENT_NUMBER_FIELD_NUMBER = 4
-	val IS_END_OF_STREAM_FIELD_NUMBER = 5
-	val LAST_COMMIT_POSITION_FIELD_NUMBER = 6
-	val ERROR_FIELD_NUMBER = 7
+  val EVENTS_FIELD_NUMBER = 1
+  val RESULT_FIELD_NUMBER = 2
+  val NEXT_EVENT_NUMBER_FIELD_NUMBER = 3
+  val LAST_EVENT_NUMBER_FIELD_NUMBER = 4
+  val IS_END_OF_STREAM_FIELD_NUMBER = 5
+  val LAST_COMMIT_POSITION_FIELD_NUMBER = 6
+  val ERROR_FIELD_NUMBER = 7
 
-	object ReadStreamResult extends net.sandrogrzicic.scalabuff.Enum {
-		sealed trait EnumVal extends Value
-		val _UNINITIALIZED = new EnumVal { val name = "UNINITIALIZED ENUM VALUE"; val id = -1 }
+  object ReadStreamResult extends net.sandrogrzicic.scalabuff.Enum {
+    sealed trait EnumVal extends Value
+    val _UNINITIALIZED = new EnumVal { val name = "UNINITIALIZED ENUM VALUE"; val id = -1 }
 
-		val Success = new EnumVal { val name = "Success"; val id = 0 }
-		val NoStream = new EnumVal { val name = "NoStream"; val id = 1 }
-		val StreamDeleted = new EnumVal { val name = "StreamDeleted"; val id = 2 }
-		val NotModified = new EnumVal { val name = "NotModified"; val id = 3 }
-		val Error = new EnumVal { val name = "Error"; val id = 4 }
-		val AccessDenied = new EnumVal { val name = "AccessDenied"; val id = 5 }
+    val Success = new EnumVal { val name = "Success"; val id = 0 }
+    val NoStream = new EnumVal { val name = "NoStream"; val id = 1 }
+    val StreamDeleted = new EnumVal { val name = "StreamDeleted"; val id = 2 }
+    val NotModified = new EnumVal { val name = "NotModified"; val id = 3 }
+    val Error = new EnumVal { val name = "Error"; val id = 4 }
+    val AccessDenied = new EnumVal { val name = "AccessDenied"; val id = 5 }
 
-		val Success_VALUE = 0
-		val NoStream_VALUE = 1
-		val StreamDeleted_VALUE = 2
-		val NotModified_VALUE = 3
-		val Error_VALUE = 4
-		val AccessDenied_VALUE = 5
+    val Success_VALUE = 0
+    val NoStream_VALUE = 1
+    val StreamDeleted_VALUE = 2
+    val NotModified_VALUE = 3
+    val Error_VALUE = 4
+    val AccessDenied_VALUE = 5
 
-		def valueOf(id: Int) = id match {
-			case 0 => Success
-			case 1 => NoStream
-			case 2 => StreamDeleted
-			case 3 => NotModified
-			case 4 => Error
-			case 5 => AccessDenied
-			case _default => throw new net.sandrogrzicic.scalabuff.UnknownEnumException(_default)
-		}
-		val internalGetValueMap = new com.google.protobuf.Internal.EnumLiteMap[EnumVal] {
-			def findValueByNumber(id: Int): EnumVal = valueOf(id)
-		}
-	}
+    def valueOf(id: Int) = id match {
+      case 0 => Success
+      case 1 => NoStream
+      case 2 => StreamDeleted
+      case 3 => NotModified
+      case 4 => Error
+      case 5 => AccessDenied
+      case _default => throw new net.sandrogrzicic.scalabuff.UnknownEnumException(_default)
+    }
+    val internalGetValueMap = new com.google.protobuf.Internal.EnumLiteMap[EnumVal] {
+      def findValueByNumber(id: Int): EnumVal = valueOf(id)
+    }
+  }
 
 }
 final case class ReadAllEvents (
-	`commitPosition`: Long = 0L,
-	`preparePosition`: Long = 0L,
-	`maxCount`: Int = 0,
-	`resolveLinkTos`: Boolean = false,
-	`requireMaster`: Boolean = false
-) extends com.google.protobuf.GeneratedMessageLite
-	 with com.google.protobuf.MessageLite.Builder
-	with net.sandrogrzicic.scalabuff.Message[ReadAllEvents] {
+                                 `commitPosition`: Long = 0L,
+                                 `preparePosition`: Long = 0L,
+                                 `maxCount`: Int = 0,
+                                 `resolveLinkTos`: Boolean = false,
+                                 `requireMaster`: Boolean = false
+                                 ) extends com.google.protobuf.GeneratedMessageLite
+with com.google.protobuf.MessageLite.Builder
+with net.sandrogrzicic.scalabuff.Message[ReadAllEvents] {
 
 
 
-	def writeTo(output: com.google.protobuf.CodedOutputStream) {
-		output.writeInt64(1, `commitPosition`)
-		output.writeInt64(2, `preparePosition`)
-		output.writeInt32(3, `maxCount`)
-		output.writeBool(4, `resolveLinkTos`)
-		output.writeBool(5, `requireMaster`)
-	}
+  def writeTo(output: com.google.protobuf.CodedOutputStream) {
+    output.writeInt64(1, `commitPosition`)
+    output.writeInt64(2, `preparePosition`)
+    output.writeInt32(3, `maxCount`)
+    output.writeBool(4, `resolveLinkTos`)
+    output.writeBool(5, `requireMaster`)
+  }
 
-	lazy val getSerializedSize = {
-		import com.google.protobuf.CodedOutputStream._
-		var size = 0
-		size += computeInt64Size(1, `commitPosition`)
-		size += computeInt64Size(2, `preparePosition`)
-		size += computeInt32Size(3, `maxCount`)
-		size += computeBoolSize(4, `resolveLinkTos`)
-		size += computeBoolSize(5, `requireMaster`)
+  lazy val getSerializedSize = {
+    import com.google.protobuf.CodedOutputStream._
+    var size = 0
+    size += computeInt64Size(1, `commitPosition`)
+    size += computeInt64Size(2, `preparePosition`)
+    size += computeInt32Size(3, `maxCount`)
+    size += computeBoolSize(4, `resolveLinkTos`)
+    size += computeBoolSize(5, `requireMaster`)
 
-		size
-	}
+    size
+  }
 
-	def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): ReadAllEvents = {
-		import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
-		var __commitPosition: Long = 0L
-		var __preparePosition: Long = 0L
-		var __maxCount: Int = 0
-		var __resolveLinkTos: Boolean = false
-		var __requireMaster: Boolean = false
+  def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): ReadAllEvents = {
+    import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
+    var __commitPosition: Long = 0L
+    var __preparePosition: Long = 0L
+    var __maxCount: Int = 0
+    var __resolveLinkTos: Boolean = false
+    var __requireMaster: Boolean = false
 
-		def __newMerged = ReadAllEvents(
-			__commitPosition,
-			__preparePosition,
-			__maxCount,
-			__resolveLinkTos,
-			__requireMaster
-		)
-		while (true) in.readTag match {
-			case 0 => return __newMerged
-			case 8 => __commitPosition = in.readInt64()
-			case 16 => __preparePosition = in.readInt64()
-			case 24 => __maxCount = in.readInt32()
-			case 32 => __resolveLinkTos = in.readBool()
-			case 40 => __requireMaster = in.readBool()
-			case default => if (!in.skipField(default)) return __newMerged
-		}
-		null
-	}
+    def __newMerged = ReadAllEvents(
+      __commitPosition,
+      __preparePosition,
+      __maxCount,
+      __resolveLinkTos,
+      __requireMaster
+    )
+    while (true) in.readTag match {
+      case 0 => return __newMerged
+      case 8 => __commitPosition = in.readInt64()
+      case 16 => __preparePosition = in.readInt64()
+      case 24 => __maxCount = in.readInt32()
+      case 32 => __resolveLinkTos = in.readBool()
+      case 40 => __requireMaster = in.readBool()
+      case default => if (!in.skipField(default)) return __newMerged
+    }
+    null
+  }
 
-	def mergeFrom(m: ReadAllEvents) = {
-		ReadAllEvents(
-			m.`commitPosition`,
-			m.`preparePosition`,
-			m.`maxCount`,
-			m.`resolveLinkTos`,
-			m.`requireMaster`
-		)
-	}
+  def mergeFrom(m: ReadAllEvents) = {
+    ReadAllEvents(
+      m.`commitPosition`,
+      m.`preparePosition`,
+      m.`maxCount`,
+      m.`resolveLinkTos`,
+      m.`requireMaster`
+    )
+  }
 
-	def getDefaultInstanceForType = ReadAllEvents.defaultInstance
-	def clear = getDefaultInstanceForType
-	def isInitialized = true
-	def build = this
-	def buildPartial = this
-	def newBuilderForType = this
-	def toBuilder = this
+  def getDefaultInstanceForType = ReadAllEvents.defaultInstance
+  def clear = getDefaultInstanceForType
+  def isInitialized = true
+  def build = this
+  def buildPartial = this
+  def newBuilderForType = this
+  def toBuilder = this
 }
 
 object ReadAllEvents {
-	@reflect.BeanProperty val defaultInstance = new ReadAllEvents()
+  @reflect.BeanProperty val defaultInstance = new ReadAllEvents()
 
-	val COMMIT_POSITION_FIELD_NUMBER = 1
-	val PREPARE_POSITION_FIELD_NUMBER = 2
-	val MAX_COUNT_FIELD_NUMBER = 3
-	val RESOLVE_LINK_TOS_FIELD_NUMBER = 4
-	val REQUIRE_MASTER_FIELD_NUMBER = 5
+  val COMMIT_POSITION_FIELD_NUMBER = 1
+  val PREPARE_POSITION_FIELD_NUMBER = 2
+  val MAX_COUNT_FIELD_NUMBER = 3
+  val RESOLVE_LINK_TOS_FIELD_NUMBER = 4
+  val REQUIRE_MASTER_FIELD_NUMBER = 5
 
 }
 final case class ReadAllEventsCompleted (
-	`commitPosition`: Long = 0L,
-	`preparePosition`: Long = 0L,
-	`events`: Vector[ResolvedEvent] = Vector.empty[ResolvedEvent],
-	`nextCommitPosition`: Long = 0L,
-	`nextPreparePosition`: Long = 0L,
-	`result`: Option[ReadAllEventsCompleted.ReadAllResult.EnumVal] = Some(ReadAllEventsCompleted.ReadAllResult.Success),
-	`error`: Option[String] = None
-) extends com.google.protobuf.GeneratedMessageLite
-	 with com.google.protobuf.MessageLite.Builder
-	with net.sandrogrzicic.scalabuff.Message[ReadAllEventsCompleted] {
+                                          `commitPosition`: Long = 0L,
+                                          `preparePosition`: Long = 0L,
+                                          `events`: Vector[ResolvedEvent] = Vector.empty[ResolvedEvent],
+                                          `nextCommitPosition`: Long = 0L,
+                                          `nextPreparePosition`: Long = 0L,
+                                          `result`: Option[ReadAllEventsCompleted.ReadAllResult.EnumVal] = Some(ReadAllEventsCompleted.ReadAllResult.Success),
+                                          `error`: Option[String] = None
+                                          ) extends com.google.protobuf.GeneratedMessageLite
+with com.google.protobuf.MessageLite.Builder
+with net.sandrogrzicic.scalabuff.Message[ReadAllEventsCompleted] {
 
-	def setEvents(_i: Int, _v: ResolvedEvent) = copy(`events` = `events`.updated(_i, _v))
-	def addEvents(_f: ResolvedEvent) = copy(`events` = `events` :+ _f)
-	def addAllEvents(_f: ResolvedEvent*) = copy(`events` = `events` ++ _f)
-	def addAllEvents(_f: TraversableOnce[ResolvedEvent]) = copy(`events` = `events` ++ _f)
-	def setResult(_f: ReadAllEventsCompleted.ReadAllResult.EnumVal) = copy(`result` = _f)
-	def setError(_f: String) = copy(`error` = _f)
+  def setEvents(_i: Int, _v: ResolvedEvent) = copy(`events` = `events`.updated(_i, _v))
+  def addEvents(_f: ResolvedEvent) = copy(`events` = `events` :+ _f)
+  def addAllEvents(_f: ResolvedEvent*) = copy(`events` = `events` ++ _f)
+  def addAllEvents(_f: TraversableOnce[ResolvedEvent]) = copy(`events` = `events` ++ _f)
+  def setResult(_f: ReadAllEventsCompleted.ReadAllResult.EnumVal) = copy(`result` = _f)
+  def setError(_f: String) = copy(`error` = _f)
 
-	def clearEvents = copy(`events` = Vector.empty[ResolvedEvent])
-	def clearResult = copy(`result` = None)
-	def clearError = copy(`error` = None)
+  def clearEvents = copy(`events` = Vector.empty[ResolvedEvent])
+  def clearResult = copy(`result` = None)
+  def clearError = copy(`error` = None)
 
-	def writeTo(output: com.google.protobuf.CodedOutputStream) {
-		output.writeInt64(1, `commitPosition`)
-		output.writeInt64(2, `preparePosition`)
-		for (_v <- `events`) output.writeMessage(3, _v)
-		output.writeInt64(4, `nextCommitPosition`)
-		output.writeInt64(5, `nextPreparePosition`)
-		if (`result`.isDefined) output.writeEnum(6, `result`.get)
-		if (`error`.isDefined) output.writeString(7, `error`.get)
-	}
+  def writeTo(output: com.google.protobuf.CodedOutputStream) {
+    output.writeInt64(1, `commitPosition`)
+    output.writeInt64(2, `preparePosition`)
+    for (_v <- `events`) output.writeMessage(3, _v)
+    output.writeInt64(4, `nextCommitPosition`)
+    output.writeInt64(5, `nextPreparePosition`)
+    if (`result`.isDefined) output.writeEnum(6, `result`.get)
+    if (`error`.isDefined) output.writeString(7, `error`.get)
+  }
 
-	lazy val getSerializedSize = {
-		import com.google.protobuf.CodedOutputStream._
-		var size = 0
-		size += computeInt64Size(1, `commitPosition`)
-		size += computeInt64Size(2, `preparePosition`)
-		for (_v <- `events`) size += computeMessageSize(3, _v)
-		size += computeInt64Size(4, `nextCommitPosition`)
-		size += computeInt64Size(5, `nextPreparePosition`)
-		if (`result`.isDefined) size += computeEnumSize(6, `result`.get)
-		if (`error`.isDefined) size += computeStringSize(7, `error`.get)
+  lazy val getSerializedSize = {
+    import com.google.protobuf.CodedOutputStream._
+    var size = 0
+    size += computeInt64Size(1, `commitPosition`)
+    size += computeInt64Size(2, `preparePosition`)
+    for (_v <- `events`) size += computeMessageSize(3, _v)
+    size += computeInt64Size(4, `nextCommitPosition`)
+    size += computeInt64Size(5, `nextPreparePosition`)
+    if (`result`.isDefined) size += computeEnumSize(6, `result`.get)
+    if (`error`.isDefined) size += computeStringSize(7, `error`.get)
 
-		size
-	}
+    size
+  }
 
-	def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): ReadAllEventsCompleted = {
-		import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
-		var __commitPosition: Long = 0L
-		var __preparePosition: Long = 0L
-		val __events: collection.mutable.Buffer[ResolvedEvent] = `events`.toBuffer
-		var __nextCommitPosition: Long = 0L
-		var __nextPreparePosition: Long = 0L
-		var __result: Option[ReadAllEventsCompleted.ReadAllResult.EnumVal] = `result`
-		var __error: Option[String] = `error`
+  def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): ReadAllEventsCompleted = {
+    import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
+    var __commitPosition: Long = 0L
+    var __preparePosition: Long = 0L
+    val __events: collection.mutable.Buffer[ResolvedEvent] = `events`.toBuffer
+    var __nextCommitPosition: Long = 0L
+    var __nextPreparePosition: Long = 0L
+    var __result: Option[ReadAllEventsCompleted.ReadAllResult.EnumVal] = `result`
+    var __error: Option[String] = `error`
 
-		def __newMerged = ReadAllEventsCompleted(
-			__commitPosition,
-			__preparePosition,
-			Vector(__events: _*),
-			__nextCommitPosition,
-			__nextPreparePosition,
-			__result,
-			__error
-		)
-		while (true) in.readTag match {
-			case 0 => return __newMerged
-			case 8 => __commitPosition = in.readInt64()
-			case 16 => __preparePosition = in.readInt64()
-			case 26 => __events += readMessage[ResolvedEvent](in, ResolvedEvent.defaultInstance, _emptyRegistry)
-			case 32 => __nextCommitPosition = in.readInt64()
-			case 40 => __nextPreparePosition = in.readInt64()
-			case 48 => __result = ReadAllEventsCompleted.ReadAllResult.valueOf(in.readEnum())
-			case 58 => __error = in.readString()
-			case default => if (!in.skipField(default)) return __newMerged
-		}
-		null
-	}
+    def __newMerged = ReadAllEventsCompleted(
+      __commitPosition,
+      __preparePosition,
+      Vector(__events: _*),
+      __nextCommitPosition,
+      __nextPreparePosition,
+      __result,
+      __error
+    )
+    while (true) in.readTag match {
+      case 0 => return __newMerged
+      case 8 => __commitPosition = in.readInt64()
+      case 16 => __preparePosition = in.readInt64()
+      case 26 => __events += readMessage[ResolvedEvent](in, ResolvedEvent.defaultInstance, _emptyRegistry)
+      case 32 => __nextCommitPosition = in.readInt64()
+      case 40 => __nextPreparePosition = in.readInt64()
+      case 48 => __result = ReadAllEventsCompleted.ReadAllResult.valueOf(in.readEnum())
+      case 58 => __error = in.readString()
+      case default => if (!in.skipField(default)) return __newMerged
+    }
+    null
+  }
 
-	def mergeFrom(m: ReadAllEventsCompleted) = {
-		ReadAllEventsCompleted(
-			m.`commitPosition`,
-			m.`preparePosition`,
-			`events` ++ m.`events`,
-			m.`nextCommitPosition`,
-			m.`nextPreparePosition`,
-			m.`result`.orElse(`result`),
-			m.`error`.orElse(`error`)
-		)
-	}
+  def mergeFrom(m: ReadAllEventsCompleted) = {
+    ReadAllEventsCompleted(
+      m.`commitPosition`,
+      m.`preparePosition`,
+      `events` ++ m.`events`,
+      m.`nextCommitPosition`,
+      m.`nextPreparePosition`,
+      m.`result`.orElse(`result`),
+      m.`error`.orElse(`error`)
+    )
+  }
 
-	def getDefaultInstanceForType = ReadAllEventsCompleted.defaultInstance
-	def clear = getDefaultInstanceForType
-	def isInitialized = true
-	def build = this
-	def buildPartial = this
-	def newBuilderForType = this
-	def toBuilder = this
+  def getDefaultInstanceForType = ReadAllEventsCompleted.defaultInstance
+  def clear = getDefaultInstanceForType
+  def isInitialized = true
+  def build = this
+  def buildPartial = this
+  def newBuilderForType = this
+  def toBuilder = this
 }
 
 object ReadAllEventsCompleted {
-	@reflect.BeanProperty val defaultInstance = new ReadAllEventsCompleted()
+  @reflect.BeanProperty val defaultInstance = new ReadAllEventsCompleted()
 
-	val COMMIT_POSITION_FIELD_NUMBER = 1
-	val PREPARE_POSITION_FIELD_NUMBER = 2
-	val EVENTS_FIELD_NUMBER = 3
-	val NEXT_COMMIT_POSITION_FIELD_NUMBER = 4
-	val NEXT_PREPARE_POSITION_FIELD_NUMBER = 5
-	val RESULT_FIELD_NUMBER = 6
-	val ERROR_FIELD_NUMBER = 7
+  val COMMIT_POSITION_FIELD_NUMBER = 1
+  val PREPARE_POSITION_FIELD_NUMBER = 2
+  val EVENTS_FIELD_NUMBER = 3
+  val NEXT_COMMIT_POSITION_FIELD_NUMBER = 4
+  val NEXT_PREPARE_POSITION_FIELD_NUMBER = 5
+  val RESULT_FIELD_NUMBER = 6
+  val ERROR_FIELD_NUMBER = 7
 
-	object ReadAllResult extends net.sandrogrzicic.scalabuff.Enum {
-		sealed trait EnumVal extends Value
-		val _UNINITIALIZED = new EnumVal { val name = "UNINITIALIZED ENUM VALUE"; val id = -1 }
+  object ReadAllResult extends net.sandrogrzicic.scalabuff.Enum {
+    sealed trait EnumVal extends Value
+    val _UNINITIALIZED = new EnumVal { val name = "UNINITIALIZED ENUM VALUE"; val id = -1 }
 
-		val Success = new EnumVal { val name = "Success"; val id = 0 }
-		val NotModified = new EnumVal { val name = "NotModified"; val id = 1 }
-		val Error = new EnumVal { val name = "Error"; val id = 2 }
-		val AccessDenied = new EnumVal { val name = "AccessDenied"; val id = 3 }
+    val Success = new EnumVal { val name = "Success"; val id = 0 }
+    val NotModified = new EnumVal { val name = "NotModified"; val id = 1 }
+    val Error = new EnumVal { val name = "Error"; val id = 2 }
+    val AccessDenied = new EnumVal { val name = "AccessDenied"; val id = 3 }
 
-		val Success_VALUE = 0
-		val NotModified_VALUE = 1
-		val Error_VALUE = 2
-		val AccessDenied_VALUE = 3
+    val Success_VALUE = 0
+    val NotModified_VALUE = 1
+    val Error_VALUE = 2
+    val AccessDenied_VALUE = 3
 
-		def valueOf(id: Int) = id match {
-			case 0 => Success
-			case 1 => NotModified
-			case 2 => Error
-			case 3 => AccessDenied
-			case _default => throw new net.sandrogrzicic.scalabuff.UnknownEnumException(_default)
-		}
-		val internalGetValueMap = new com.google.protobuf.Internal.EnumLiteMap[EnumVal] {
-			def findValueByNumber(id: Int): EnumVal = valueOf(id)
-		}
-	}
+    def valueOf(id: Int) = id match {
+      case 0 => Success
+      case 1 => NotModified
+      case 2 => Error
+      case 3 => AccessDenied
+      case _default => throw new net.sandrogrzicic.scalabuff.UnknownEnumException(_default)
+    }
+    val internalGetValueMap = new com.google.protobuf.Internal.EnumLiteMap[EnumVal] {
+      def findValueByNumber(id: Int): EnumVal = valueOf(id)
+    }
+  }
 
 }
 final case class SubscribeToStream (
-	`eventStreamId`: String = "",
-	`resolveLinkTos`: Boolean = false
-) extends com.google.protobuf.GeneratedMessageLite
-	 with com.google.protobuf.MessageLite.Builder
-	with net.sandrogrzicic.scalabuff.Message[SubscribeToStream] {
+                                     `eventStreamId`: String = "",
+                                     `resolveLinkTos`: Boolean = false
+                                     ) extends com.google.protobuf.GeneratedMessageLite
+with com.google.protobuf.MessageLite.Builder
+with net.sandrogrzicic.scalabuff.Message[SubscribeToStream] {
 
 
 
-	def writeTo(output: com.google.protobuf.CodedOutputStream) {
-		output.writeString(1, `eventStreamId`)
-		output.writeBool(2, `resolveLinkTos`)
-	}
+  def writeTo(output: com.google.protobuf.CodedOutputStream) {
+    output.writeString(1, `eventStreamId`)
+    output.writeBool(2, `resolveLinkTos`)
+  }
 
-	lazy val getSerializedSize = {
-		import com.google.protobuf.CodedOutputStream._
-		var size = 0
-		size += computeStringSize(1, `eventStreamId`)
-		size += computeBoolSize(2, `resolveLinkTos`)
+  lazy val getSerializedSize = {
+    import com.google.protobuf.CodedOutputStream._
+    var size = 0
+    size += computeStringSize(1, `eventStreamId`)
+    size += computeBoolSize(2, `resolveLinkTos`)
 
-		size
-	}
+    size
+  }
 
-	def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): SubscribeToStream = {
-		import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
-		var __eventStreamId: String = ""
-		var __resolveLinkTos: Boolean = false
+  def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): SubscribeToStream = {
+    import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
+    var __eventStreamId: String = ""
+    var __resolveLinkTos: Boolean = false
 
-		def __newMerged = SubscribeToStream(
-			__eventStreamId,
-			__resolveLinkTos
-		)
-		while (true) in.readTag match {
-			case 0 => return __newMerged
-			case 10 => __eventStreamId = in.readString()
-			case 16 => __resolveLinkTos = in.readBool()
-			case default => if (!in.skipField(default)) return __newMerged
-		}
-		null
-	}
+    def __newMerged = SubscribeToStream(
+      __eventStreamId,
+      __resolveLinkTos
+    )
+    while (true) in.readTag match {
+      case 0 => return __newMerged
+      case 10 => __eventStreamId = in.readString()
+      case 16 => __resolveLinkTos = in.readBool()
+      case default => if (!in.skipField(default)) return __newMerged
+    }
+    null
+  }
 
-	def mergeFrom(m: SubscribeToStream) = {
-		SubscribeToStream(
-			m.`eventStreamId`,
-			m.`resolveLinkTos`
-		)
-	}
+  def mergeFrom(m: SubscribeToStream) = {
+    SubscribeToStream(
+      m.`eventStreamId`,
+      m.`resolveLinkTos`
+    )
+  }
 
-	def getDefaultInstanceForType = SubscribeToStream.defaultInstance
-	def clear = getDefaultInstanceForType
-	def isInitialized = true
-	def build = this
-	def buildPartial = this
-	def newBuilderForType = this
-	def toBuilder = this
+  def getDefaultInstanceForType = SubscribeToStream.defaultInstance
+  def clear = getDefaultInstanceForType
+  def isInitialized = true
+  def build = this
+  def buildPartial = this
+  def newBuilderForType = this
+  def toBuilder = this
 }
 
 object SubscribeToStream {
-	@reflect.BeanProperty val defaultInstance = new SubscribeToStream()
+  @reflect.BeanProperty val defaultInstance = new SubscribeToStream()
 
-	val EVENT_STREAM_ID_FIELD_NUMBER = 1
-	val RESOLVE_LINK_TOS_FIELD_NUMBER = 2
+  val EVENT_STREAM_ID_FIELD_NUMBER = 1
+  val RESOLVE_LINK_TOS_FIELD_NUMBER = 2
 
 }
 final case class SubscriptionConfirmation (
-	`lastCommitPosition`: Long = 0L,
-	`lastEventNumber`: Option[Int] = None
-) extends com.google.protobuf.GeneratedMessageLite
-	 with com.google.protobuf.MessageLite.Builder
-	with net.sandrogrzicic.scalabuff.Message[SubscriptionConfirmation] {
+                                            `lastCommitPosition`: Long = 0L,
+                                            `lastEventNumber`: Option[Int] = None
+                                            ) extends com.google.protobuf.GeneratedMessageLite
+with com.google.protobuf.MessageLite.Builder
+with net.sandrogrzicic.scalabuff.Message[SubscriptionConfirmation] {
 
-	def setLastEventNumber(_f: Int) = copy(`lastEventNumber` = _f)
+  def setLastEventNumber(_f: Int) = copy(`lastEventNumber` = _f)
 
-	def clearLastEventNumber = copy(`lastEventNumber` = None)
+  def clearLastEventNumber = copy(`lastEventNumber` = None)
 
-	def writeTo(output: com.google.protobuf.CodedOutputStream) {
-		output.writeInt64(1, `lastCommitPosition`)
-		if (`lastEventNumber`.isDefined) output.writeInt32(2, `lastEventNumber`.get)
-	}
+  def writeTo(output: com.google.protobuf.CodedOutputStream) {
+    output.writeInt64(1, `lastCommitPosition`)
+    if (`lastEventNumber`.isDefined) output.writeInt32(2, `lastEventNumber`.get)
+  }
 
-	lazy val getSerializedSize = {
-		import com.google.protobuf.CodedOutputStream._
-		var size = 0
-		size += computeInt64Size(1, `lastCommitPosition`)
-		if (`lastEventNumber`.isDefined) size += computeInt32Size(2, `lastEventNumber`.get)
+  lazy val getSerializedSize = {
+    import com.google.protobuf.CodedOutputStream._
+    var size = 0
+    size += computeInt64Size(1, `lastCommitPosition`)
+    if (`lastEventNumber`.isDefined) size += computeInt32Size(2, `lastEventNumber`.get)
 
-		size
-	}
+    size
+  }
 
-	def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): SubscriptionConfirmation = {
-		import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
-		var __lastCommitPosition: Long = 0L
-		var __lastEventNumber: Option[Int] = `lastEventNumber`
+  def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): SubscriptionConfirmation = {
+    import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
+    var __lastCommitPosition: Long = 0L
+    var __lastEventNumber: Option[Int] = `lastEventNumber`
 
-		def __newMerged = SubscriptionConfirmation(
-			__lastCommitPosition,
-			__lastEventNumber
-		)
-		while (true) in.readTag match {
-			case 0 => return __newMerged
-			case 8 => __lastCommitPosition = in.readInt64()
-			case 16 => __lastEventNumber = in.readInt32()
-			case default => if (!in.skipField(default)) return __newMerged
-		}
-		null
-	}
+    def __newMerged = SubscriptionConfirmation(
+      __lastCommitPosition,
+      __lastEventNumber
+    )
+    while (true) in.readTag match {
+      case 0 => return __newMerged
+      case 8 => __lastCommitPosition = in.readInt64()
+      case 16 => __lastEventNumber = in.readInt32()
+      case default => if (!in.skipField(default)) return __newMerged
+    }
+    null
+  }
 
-	def mergeFrom(m: SubscriptionConfirmation) = {
-		SubscriptionConfirmation(
-			m.`lastCommitPosition`,
-			m.`lastEventNumber`.orElse(`lastEventNumber`)
-		)
-	}
+  def mergeFrom(m: SubscriptionConfirmation) = {
+    SubscriptionConfirmation(
+      m.`lastCommitPosition`,
+      m.`lastEventNumber`.orElse(`lastEventNumber`)
+    )
+  }
 
-	def getDefaultInstanceForType = SubscriptionConfirmation.defaultInstance
-	def clear = getDefaultInstanceForType
-	def isInitialized = true
-	def build = this
-	def buildPartial = this
-	def newBuilderForType = this
-	def toBuilder = this
+  def getDefaultInstanceForType = SubscriptionConfirmation.defaultInstance
+  def clear = getDefaultInstanceForType
+  def isInitialized = true
+  def build = this
+  def buildPartial = this
+  def newBuilderForType = this
+  def toBuilder = this
 }
 
 object SubscriptionConfirmation {
-	@reflect.BeanProperty val defaultInstance = new SubscriptionConfirmation()
+  @reflect.BeanProperty val defaultInstance = new SubscriptionConfirmation()
 
-	val LAST_COMMIT_POSITION_FIELD_NUMBER = 1
-	val LAST_EVENT_NUMBER_FIELD_NUMBER = 2
+  val LAST_COMMIT_POSITION_FIELD_NUMBER = 1
+  val LAST_EVENT_NUMBER_FIELD_NUMBER = 2
 
 }
 final case class StreamEventAppeared (
-	`event`: ResolvedEvent = ResolvedEvent.defaultInstance
-) extends com.google.protobuf.GeneratedMessageLite
-	 with com.google.protobuf.MessageLite.Builder
-	with net.sandrogrzicic.scalabuff.Message[StreamEventAppeared] {
+                                       `event`: ResolvedEvent = ResolvedEvent.defaultInstance
+                                       ) extends com.google.protobuf.GeneratedMessageLite
+with com.google.protobuf.MessageLite.Builder
+with net.sandrogrzicic.scalabuff.Message[StreamEventAppeared] {
 
 
 
-	def writeTo(output: com.google.protobuf.CodedOutputStream) {
-		output.writeMessage(1, `event`)
-	}
+  def writeTo(output: com.google.protobuf.CodedOutputStream) {
+    output.writeMessage(1, `event`)
+  }
 
-	lazy val getSerializedSize = {
-		import com.google.protobuf.CodedOutputStream._
-		var size = 0
-		size += computeMessageSize(1, `event`)
+  lazy val getSerializedSize = {
+    import com.google.protobuf.CodedOutputStream._
+    var size = 0
+    size += computeMessageSize(1, `event`)
 
-		size
-	}
+    size
+  }
 
-	def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): StreamEventAppeared = {
-		import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
-		var __event: ResolvedEvent = ResolvedEvent.defaultInstance
+  def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): StreamEventAppeared = {
+    import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
+    var __event: ResolvedEvent = ResolvedEvent.defaultInstance
 
-		def __newMerged = StreamEventAppeared(
-			__event
-		)
-		while (true) in.readTag match {
-			case 0 => return __newMerged
-			case 10 => __event = readMessage[ResolvedEvent](in, __event, _emptyRegistry)
-			case default => if (!in.skipField(default)) return __newMerged
-		}
-		null
-	}
+    def __newMerged = StreamEventAppeared(
+      __event
+    )
+    while (true) in.readTag match {
+      case 0 => return __newMerged
+      case 10 => __event = readMessage[ResolvedEvent](in, __event, _emptyRegistry)
+      case default => if (!in.skipField(default)) return __newMerged
+    }
+    null
+  }
 
-	def mergeFrom(m: StreamEventAppeared) = {
-		StreamEventAppeared(
-			m.`event`
-		)
-	}
+  def mergeFrom(m: StreamEventAppeared) = {
+    StreamEventAppeared(
+      m.`event`
+    )
+  }
 
-	def getDefaultInstanceForType = StreamEventAppeared.defaultInstance
-	def clear = getDefaultInstanceForType
-	def isInitialized = true
-	def build = this
-	def buildPartial = this
-	def newBuilderForType = this
-	def toBuilder = this
+  def getDefaultInstanceForType = StreamEventAppeared.defaultInstance
+  def clear = getDefaultInstanceForType
+  def isInitialized = true
+  def build = this
+  def buildPartial = this
+  def newBuilderForType = this
+  def toBuilder = this
 }
 
 object StreamEventAppeared {
-	@reflect.BeanProperty val defaultInstance = new StreamEventAppeared()
+  @reflect.BeanProperty val defaultInstance = new StreamEventAppeared()
 
-	val EVENT_FIELD_NUMBER = 1
+  val EVENT_FIELD_NUMBER = 1
 
 }
 final case class UnsubscribeFromStream (
 
-) extends com.google.protobuf.GeneratedMessageLite
-	 with com.google.protobuf.MessageLite.Builder
-	with net.sandrogrzicic.scalabuff.Message[UnsubscribeFromStream] {
+                                         ) extends com.google.protobuf.GeneratedMessageLite
+with com.google.protobuf.MessageLite.Builder
+with net.sandrogrzicic.scalabuff.Message[UnsubscribeFromStream] {
 
 
 
-	def writeTo(output: com.google.protobuf.CodedOutputStream) {
-	}
+  def writeTo(output: com.google.protobuf.CodedOutputStream) {
+  }
 
-	lazy val getSerializedSize = {
-		import com.google.protobuf.CodedOutputStream._
-		var size = 0
+  lazy val getSerializedSize = {
+    import com.google.protobuf.CodedOutputStream._
+    var size = 0
 
-		size
-	}
+    size
+  }
 
-	def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): UnsubscribeFromStream = {
-		import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
+  def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): UnsubscribeFromStream = {
+    import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
 
-		def __newMerged = UnsubscribeFromStream(
+    def __newMerged = UnsubscribeFromStream(
 
-		)
-		while (true) in.readTag match {
-			case 0 => return __newMerged
-			case default => if (!in.skipField(default)) return __newMerged
-		}
-		null
-	}
+    )
+    while (true) in.readTag match {
+      case 0 => return __newMerged
+      case default => if (!in.skipField(default)) return __newMerged
+    }
+    null
+  }
 
-	def mergeFrom(m: UnsubscribeFromStream) = {
-		UnsubscribeFromStream(
+  def mergeFrom(m: UnsubscribeFromStream) = {
+    UnsubscribeFromStream(
 
-		)
-	}
+    )
+  }
 
-	def getDefaultInstanceForType = UnsubscribeFromStream.defaultInstance
-	def clear = getDefaultInstanceForType
-	def isInitialized = true
-	def build = this
-	def buildPartial = this
-	def newBuilderForType = this
-	def toBuilder = this
+  def getDefaultInstanceForType = UnsubscribeFromStream.defaultInstance
+  def clear = getDefaultInstanceForType
+  def isInitialized = true
+  def build = this
+  def buildPartial = this
+  def newBuilderForType = this
+  def toBuilder = this
 }
 
 object UnsubscribeFromStream {
-	@reflect.BeanProperty val defaultInstance = new UnsubscribeFromStream()
+  @reflect.BeanProperty val defaultInstance = new UnsubscribeFromStream()
 
 
 }
 final case class SubscriptionDropped (
-	`reason`: Option[SubscriptionDropped.SubscriptionDropReason.EnumVal] = Some(SubscriptionDropped.SubscriptionDropReason.Unsubscribed)
-) extends com.google.protobuf.GeneratedMessageLite
-	 with com.google.protobuf.MessageLite.Builder
-	with net.sandrogrzicic.scalabuff.Message[SubscriptionDropped] {
+                                       `reason`: Option[SubscriptionDropped.SubscriptionDropReason.EnumVal] = Some(SubscriptionDropped.SubscriptionDropReason.Unsubscribed)
+                                       ) extends com.google.protobuf.GeneratedMessageLite
+with com.google.protobuf.MessageLite.Builder
+with net.sandrogrzicic.scalabuff.Message[SubscriptionDropped] {
 
-	def setReason(_f: SubscriptionDropped.SubscriptionDropReason.EnumVal) = copy(`reason` = _f)
+  def setReason(_f: SubscriptionDropped.SubscriptionDropReason.EnumVal) = copy(`reason` = _f)
 
-	def clearReason = copy(`reason` = None)
+  def clearReason = copy(`reason` = None)
 
-	def writeTo(output: com.google.protobuf.CodedOutputStream) {
-		if (`reason`.isDefined) output.writeEnum(1, `reason`.get)
-	}
+  def writeTo(output: com.google.protobuf.CodedOutputStream) {
+    if (`reason`.isDefined) output.writeEnum(1, `reason`.get)
+  }
 
-	lazy val getSerializedSize = {
-		import com.google.protobuf.CodedOutputStream._
-		var size = 0
-		if (`reason`.isDefined) size += computeEnumSize(1, `reason`.get)
+  lazy val getSerializedSize = {
+    import com.google.protobuf.CodedOutputStream._
+    var size = 0
+    if (`reason`.isDefined) size += computeEnumSize(1, `reason`.get)
 
-		size
-	}
+    size
+  }
 
-	def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): SubscriptionDropped = {
-		import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
-		var __reason: Option[SubscriptionDropped.SubscriptionDropReason.EnumVal] = `reason`
+  def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): SubscriptionDropped = {
+    import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
+    var __reason: Option[SubscriptionDropped.SubscriptionDropReason.EnumVal] = `reason`
 
-		def __newMerged = SubscriptionDropped(
-			__reason
-		)
-		while (true) in.readTag match {
-			case 0 => return __newMerged
-			case 8 => __reason = SubscriptionDropped.SubscriptionDropReason.valueOf(in.readEnum())
-			case default => if (!in.skipField(default)) return __newMerged
-		}
-		null
-	}
+    def __newMerged = SubscriptionDropped(
+      __reason
+    )
+    while (true) in.readTag match {
+      case 0 => return __newMerged
+      case 8 => __reason = SubscriptionDropped.SubscriptionDropReason.valueOf(in.readEnum())
+      case default => if (!in.skipField(default)) return __newMerged
+    }
+    null
+  }
 
-	def mergeFrom(m: SubscriptionDropped) = {
-		SubscriptionDropped(
-			m.`reason`.orElse(`reason`)
-		)
-	}
+  def mergeFrom(m: SubscriptionDropped) = {
+    SubscriptionDropped(
+      m.`reason`.orElse(`reason`)
+    )
+  }
 
-	def getDefaultInstanceForType = SubscriptionDropped.defaultInstance
-	def clear = getDefaultInstanceForType
-	def isInitialized = true
-	def build = this
-	def buildPartial = this
-	def newBuilderForType = this
-	def toBuilder = this
+  def getDefaultInstanceForType = SubscriptionDropped.defaultInstance
+  def clear = getDefaultInstanceForType
+  def isInitialized = true
+  def build = this
+  def buildPartial = this
+  def newBuilderForType = this
+  def toBuilder = this
 }
 
 object SubscriptionDropped {
-	@reflect.BeanProperty val defaultInstance = new SubscriptionDropped()
+  @reflect.BeanProperty val defaultInstance = new SubscriptionDropped()
 
-	val REASON_FIELD_NUMBER = 1
+  val REASON_FIELD_NUMBER = 1
 
-	object SubscriptionDropReason extends net.sandrogrzicic.scalabuff.Enum {
-		sealed trait EnumVal extends Value
-		val _UNINITIALIZED = new EnumVal { val name = "UNINITIALIZED ENUM VALUE"; val id = -1 }
+  object SubscriptionDropReason extends net.sandrogrzicic.scalabuff.Enum {
+    sealed trait EnumVal extends Value
+    val _UNINITIALIZED = new EnumVal { val name = "UNINITIALIZED ENUM VALUE"; val id = -1 }
 
-		val Unsubscribed = new EnumVal { val name = "Unsubscribed"; val id = 0 }
-		val AccessDenied = new EnumVal { val name = "AccessDenied"; val id = 1 }
+    val Unsubscribed = new EnumVal { val name = "Unsubscribed"; val id = 0 }
+    val AccessDenied = new EnumVal { val name = "AccessDenied"; val id = 1 }
 
-		val Unsubscribed_VALUE = 0
-		val AccessDenied_VALUE = 1
+    val Unsubscribed_VALUE = 0
+    val AccessDenied_VALUE = 1
 
-		def valueOf(id: Int) = id match {
-			case 0 => Unsubscribed
-			case 1 => AccessDenied
-			case _default => throw new net.sandrogrzicic.scalabuff.UnknownEnumException(_default)
-		}
-		val internalGetValueMap = new com.google.protobuf.Internal.EnumLiteMap[EnumVal] {
-			def findValueByNumber(id: Int): EnumVal = valueOf(id)
-		}
-	}
+    def valueOf(id: Int) = id match {
+      case 0 => Unsubscribed
+      case 1 => AccessDenied
+      case _default => throw new net.sandrogrzicic.scalabuff.UnknownEnumException(_default)
+    }
+    val internalGetValueMap = new com.google.protobuf.Internal.EnumLiteMap[EnumVal] {
+      def findValueByNumber(id: Int): EnumVal = valueOf(id)
+    }
+  }
 
 }
 final case class NotHandled (
-	`reason`: NotHandled.NotHandledReason.EnumVal = NotHandled.NotHandledReason._UNINITIALIZED,
-	`additionalInfo`: Option[com.google.protobuf.ByteString] = None
-) extends com.google.protobuf.GeneratedMessageLite
-	 with com.google.protobuf.MessageLite.Builder
-	with net.sandrogrzicic.scalabuff.Message[NotHandled] {
+                              `reason`: NotHandled.NotHandledReason.EnumVal = NotHandled.NotHandledReason._UNINITIALIZED,
+                              `additionalInfo`: Option[com.google.protobuf.ByteString] = None
+                              ) extends com.google.protobuf.GeneratedMessageLite
+with com.google.protobuf.MessageLite.Builder
+with net.sandrogrzicic.scalabuff.Message[NotHandled] {
 
-	def setAdditionalInfo(_f: com.google.protobuf.ByteString) = copy(`additionalInfo` = _f)
+  def setAdditionalInfo(_f: com.google.protobuf.ByteString) = copy(`additionalInfo` = _f)
 
-	def clearAdditionalInfo = copy(`additionalInfo` = None)
+  def clearAdditionalInfo = copy(`additionalInfo` = None)
 
-	def writeTo(output: com.google.protobuf.CodedOutputStream) {
-		output.writeEnum(1, `reason`)
-		if (`additionalInfo`.isDefined) output.writeBytes(2, `additionalInfo`.get)
-	}
+  def writeTo(output: com.google.protobuf.CodedOutputStream) {
+    output.writeEnum(1, `reason`)
+    if (`additionalInfo`.isDefined) output.writeBytes(2, `additionalInfo`.get)
+  }
 
-	lazy val getSerializedSize = {
-		import com.google.protobuf.CodedOutputStream._
-		var size = 0
-		size += computeEnumSize(1, `reason`)
-		if (`additionalInfo`.isDefined) size += computeBytesSize(2, `additionalInfo`.get)
+  lazy val getSerializedSize = {
+    import com.google.protobuf.CodedOutputStream._
+    var size = 0
+    size += computeEnumSize(1, `reason`)
+    if (`additionalInfo`.isDefined) size += computeBytesSize(2, `additionalInfo`.get)
 
-		size
-	}
+    size
+  }
 
-	def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): NotHandled = {
-		import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
-		var __reason: NotHandled.NotHandledReason.EnumVal = NotHandled.NotHandledReason._UNINITIALIZED
-		var __additionalInfo: Option[com.google.protobuf.ByteString] = `additionalInfo`
+  def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): NotHandled = {
+    import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
+    var __reason: NotHandled.NotHandledReason.EnumVal = NotHandled.NotHandledReason._UNINITIALIZED
+    var __additionalInfo: Option[com.google.protobuf.ByteString] = `additionalInfo`
 
-		def __newMerged = NotHandled(
-			__reason,
-			__additionalInfo
-		)
-		while (true) in.readTag match {
-			case 0 => return __newMerged
-			case 8 => __reason = NotHandled.NotHandledReason.valueOf(in.readEnum())
-			case 18 => __additionalInfo = in.readBytes()
-			case default => if (!in.skipField(default)) return __newMerged
-		}
-		null
-	}
+    def __newMerged = NotHandled(
+      __reason,
+      __additionalInfo
+    )
+    while (true) in.readTag match {
+      case 0 => return __newMerged
+      case 8 => __reason = NotHandled.NotHandledReason.valueOf(in.readEnum())
+      case 18 => __additionalInfo = in.readBytes()
+      case default => if (!in.skipField(default)) return __newMerged
+    }
+    null
+  }
 
-	def mergeFrom(m: NotHandled) = {
-		NotHandled(
-			m.`reason`,
-			m.`additionalInfo`.orElse(`additionalInfo`)
-		)
-	}
+  def mergeFrom(m: NotHandled) = {
+    NotHandled(
+      m.`reason`,
+      m.`additionalInfo`.orElse(`additionalInfo`)
+    )
+  }
 
-	def getDefaultInstanceForType = NotHandled.defaultInstance
-	def clear = getDefaultInstanceForType
-	def isInitialized = true
-	def build = this
-	def buildPartial = this
-	def newBuilderForType = this
-	def toBuilder = this
+  def getDefaultInstanceForType = NotHandled.defaultInstance
+  def clear = getDefaultInstanceForType
+  def isInitialized = true
+  def build = this
+  def buildPartial = this
+  def newBuilderForType = this
+  def toBuilder = this
 }
 
 object NotHandled {
-	@reflect.BeanProperty val defaultInstance = new NotHandled()
+  @reflect.BeanProperty val defaultInstance = new NotHandled()
 
-	val REASON_FIELD_NUMBER = 1
-	val ADDITIONAL_INFO_FIELD_NUMBER = 2
+  val REASON_FIELD_NUMBER = 1
+  val ADDITIONAL_INFO_FIELD_NUMBER = 2
 
-	object NotHandledReason extends net.sandrogrzicic.scalabuff.Enum {
-		sealed trait EnumVal extends Value
-		val _UNINITIALIZED = new EnumVal { val name = "UNINITIALIZED ENUM VALUE"; val id = -1 }
+  object NotHandledReason extends net.sandrogrzicic.scalabuff.Enum {
+    sealed trait EnumVal extends Value
+    val _UNINITIALIZED = new EnumVal { val name = "UNINITIALIZED ENUM VALUE"; val id = -1 }
 
-		val NotReady = new EnumVal { val name = "NotReady"; val id = 0 }
-		val TooBusy = new EnumVal { val name = "TooBusy"; val id = 1 }
-		val NotMaster = new EnumVal { val name = "NotMaster"; val id = 2 }
+    val NotReady = new EnumVal { val name = "NotReady"; val id = 0 }
+    val TooBusy = new EnumVal { val name = "TooBusy"; val id = 1 }
+    val NotMaster = new EnumVal { val name = "NotMaster"; val id = 2 }
 
-		val NotReady_VALUE = 0
-		val TooBusy_VALUE = 1
-		val NotMaster_VALUE = 2
+    val NotReady_VALUE = 0
+    val TooBusy_VALUE = 1
+    val NotMaster_VALUE = 2
 
-		def valueOf(id: Int) = id match {
-			case 0 => NotReady
-			case 1 => TooBusy
-			case 2 => NotMaster
-			case _default => throw new net.sandrogrzicic.scalabuff.UnknownEnumException(_default)
-		}
-		val internalGetValueMap = new com.google.protobuf.Internal.EnumLiteMap[EnumVal] {
-			def findValueByNumber(id: Int): EnumVal = valueOf(id)
-		}
-	}
+    def valueOf(id: Int) = id match {
+      case 0 => NotReady
+      case 1 => TooBusy
+      case 2 => NotMaster
+      case _default => throw new net.sandrogrzicic.scalabuff.UnknownEnumException(_default)
+    }
+    val internalGetValueMap = new com.google.protobuf.Internal.EnumLiteMap[EnumVal] {
+      def findValueByNumber(id: Int): EnumVal = valueOf(id)
+    }
+  }
 
-	final case class MasterInfo (
-		`externalTcpAddress`: String = "",
-		`externalTcpPort`: Int = 0,
-		`externalHttpAddress`: String = "",
-		`externalHttpPort`: Int = 0,
-		`externalSecureTcpAddress`: Option[String] = None,
-		`externalSecureTcpPort`: Option[Int] = None
-	) extends com.google.protobuf.GeneratedMessageLite
-		 with com.google.protobuf.MessageLite.Builder
-		with net.sandrogrzicic.scalabuff.Message[MasterInfo] {
+  final case class MasterInfo (
+                                `externalTcpAddress`: String = "",
+                                `externalTcpPort`: Int = 0,
+                                `externalHttpAddress`: String = "",
+                                `externalHttpPort`: Int = 0,
+                                `externalSecureTcpAddress`: Option[String] = None,
+                                `externalSecureTcpPort`: Option[Int] = None
+                                ) extends com.google.protobuf.GeneratedMessageLite
+  with com.google.protobuf.MessageLite.Builder
+  with net.sandrogrzicic.scalabuff.Message[MasterInfo] {
 
-		def setExternalSecureTcpAddress(_f: String) = copy(`externalSecureTcpAddress` = _f)
-		def setExternalSecureTcpPort(_f: Int) = copy(`externalSecureTcpPort` = _f)
+    def setExternalSecureTcpAddress(_f: String) = copy(`externalSecureTcpAddress` = _f)
+    def setExternalSecureTcpPort(_f: Int) = copy(`externalSecureTcpPort` = _f)
 
-		def clearExternalSecureTcpAddress = copy(`externalSecureTcpAddress` = None)
-		def clearExternalSecureTcpPort = copy(`externalSecureTcpPort` = None)
+    def clearExternalSecureTcpAddress = copy(`externalSecureTcpAddress` = None)
+    def clearExternalSecureTcpPort = copy(`externalSecureTcpPort` = None)
 
-		def writeTo(output: com.google.protobuf.CodedOutputStream) {
-			output.writeString(1, `externalTcpAddress`)
-			output.writeInt32(2, `externalTcpPort`)
-			output.writeString(3, `externalHttpAddress`)
-			output.writeInt32(4, `externalHttpPort`)
-			if (`externalSecureTcpAddress`.isDefined) output.writeString(5, `externalSecureTcpAddress`.get)
-			if (`externalSecureTcpPort`.isDefined) output.writeInt32(6, `externalSecureTcpPort`.get)
-		}
+    def writeTo(output: com.google.protobuf.CodedOutputStream) {
+      output.writeString(1, `externalTcpAddress`)
+      output.writeInt32(2, `externalTcpPort`)
+      output.writeString(3, `externalHttpAddress`)
+      output.writeInt32(4, `externalHttpPort`)
+      if (`externalSecureTcpAddress`.isDefined) output.writeString(5, `externalSecureTcpAddress`.get)
+      if (`externalSecureTcpPort`.isDefined) output.writeInt32(6, `externalSecureTcpPort`.get)
+    }
 
-		lazy val getSerializedSize = {
-			import com.google.protobuf.CodedOutputStream._
-			var size = 0
-			size += computeStringSize(1, `externalTcpAddress`)
-			size += computeInt32Size(2, `externalTcpPort`)
-			size += computeStringSize(3, `externalHttpAddress`)
-			size += computeInt32Size(4, `externalHttpPort`)
-			if (`externalSecureTcpAddress`.isDefined) size += computeStringSize(5, `externalSecureTcpAddress`.get)
-			if (`externalSecureTcpPort`.isDefined) size += computeInt32Size(6, `externalSecureTcpPort`.get)
+    lazy val getSerializedSize = {
+      import com.google.protobuf.CodedOutputStream._
+      var size = 0
+      size += computeStringSize(1, `externalTcpAddress`)
+      size += computeInt32Size(2, `externalTcpPort`)
+      size += computeStringSize(3, `externalHttpAddress`)
+      size += computeInt32Size(4, `externalHttpPort`)
+      if (`externalSecureTcpAddress`.isDefined) size += computeStringSize(5, `externalSecureTcpAddress`.get)
+      if (`externalSecureTcpPort`.isDefined) size += computeInt32Size(6, `externalSecureTcpPort`.get)
 
-			size
-		}
+      size
+    }
 
-		def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): MasterInfo = {
-			import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
-			var __externalTcpAddress: String = ""
-			var __externalTcpPort: Int = 0
-			var __externalHttpAddress: String = ""
-			var __externalHttpPort: Int = 0
-			var __externalSecureTcpAddress: Option[String] = `externalSecureTcpAddress`
-			var __externalSecureTcpPort: Option[Int] = `externalSecureTcpPort`
+    def mergeFrom(in: com.google.protobuf.CodedInputStream, extensionRegistry: com.google.protobuf.ExtensionRegistryLite): MasterInfo = {
+      import com.google.protobuf.ExtensionRegistryLite.{getEmptyRegistry => _emptyRegistry}
+      var __externalTcpAddress: String = ""
+      var __externalTcpPort: Int = 0
+      var __externalHttpAddress: String = ""
+      var __externalHttpPort: Int = 0
+      var __externalSecureTcpAddress: Option[String] = `externalSecureTcpAddress`
+      var __externalSecureTcpPort: Option[Int] = `externalSecureTcpPort`
 
-			def __newMerged = MasterInfo(
-				__externalTcpAddress,
-				__externalTcpPort,
-				__externalHttpAddress,
-				__externalHttpPort,
-				__externalSecureTcpAddress,
-				__externalSecureTcpPort
-			)
-			while (true) in.readTag match {
-				case 0 => return __newMerged
-				case 10 => __externalTcpAddress = in.readString()
-				case 16 => __externalTcpPort = in.readInt32()
-				case 26 => __externalHttpAddress = in.readString()
-				case 32 => __externalHttpPort = in.readInt32()
-				case 42 => __externalSecureTcpAddress = in.readString()
-				case 48 => __externalSecureTcpPort = in.readInt32()
-				case default => if (!in.skipField(default)) return __newMerged
-			}
-			null
-		}
+      def __newMerged = MasterInfo(
+        __externalTcpAddress,
+        __externalTcpPort,
+        __externalHttpAddress,
+        __externalHttpPort,
+        __externalSecureTcpAddress,
+        __externalSecureTcpPort
+      )
+      while (true) in.readTag match {
+        case 0 => return __newMerged
+        case 10 => __externalTcpAddress = in.readString()
+        case 16 => __externalTcpPort = in.readInt32()
+        case 26 => __externalHttpAddress = in.readString()
+        case 32 => __externalHttpPort = in.readInt32()
+        case 42 => __externalSecureTcpAddress = in.readString()
+        case 48 => __externalSecureTcpPort = in.readInt32()
+        case default => if (!in.skipField(default)) return __newMerged
+      }
+      null
+    }
 
-		def mergeFrom(m: MasterInfo) = {
-			MasterInfo(
-				m.`externalTcpAddress`,
-				m.`externalTcpPort`,
-				m.`externalHttpAddress`,
-				m.`externalHttpPort`,
-				m.`externalSecureTcpAddress`.orElse(`externalSecureTcpAddress`),
-				m.`externalSecureTcpPort`.orElse(`externalSecureTcpPort`)
-			)
-		}
+    def mergeFrom(m: MasterInfo) = {
+      MasterInfo(
+        m.`externalTcpAddress`,
+        m.`externalTcpPort`,
+        m.`externalHttpAddress`,
+        m.`externalHttpPort`,
+        m.`externalSecureTcpAddress`.orElse(`externalSecureTcpAddress`),
+        m.`externalSecureTcpPort`.orElse(`externalSecureTcpPort`)
+      )
+    }
 
-		def getDefaultInstanceForType = MasterInfo.defaultInstance
-		def clear = getDefaultInstanceForType
-		def isInitialized = true
-		def build = this
-		def buildPartial = this
-		def newBuilderForType = this
-		def toBuilder = this
-	}
+    def getDefaultInstanceForType = MasterInfo.defaultInstance
+    def clear = getDefaultInstanceForType
+    def isInitialized = true
+    def build = this
+    def buildPartial = this
+    def newBuilderForType = this
+    def toBuilder = this
+  }
 
-	object MasterInfo {
-		@reflect.BeanProperty val defaultInstance = new MasterInfo()
+  object MasterInfo {
+    @reflect.BeanProperty val defaultInstance = new MasterInfo()
 
-		val EXTERNAL_TCP_ADDRESS_FIELD_NUMBER = 1
-		val EXTERNAL_TCP_PORT_FIELD_NUMBER = 2
-		val EXTERNAL_HTTP_ADDRESS_FIELD_NUMBER = 3
-		val EXTERNAL_HTTP_PORT_FIELD_NUMBER = 4
-		val EXTERNAL_SECURE_TCP_ADDRESS_FIELD_NUMBER = 5
-		val EXTERNAL_SECURE_TCP_PORT_FIELD_NUMBER = 6
+    val EXTERNAL_TCP_ADDRESS_FIELD_NUMBER = 1
+    val EXTERNAL_TCP_PORT_FIELD_NUMBER = 2
+    val EXTERNAL_HTTP_ADDRESS_FIELD_NUMBER = 3
+    val EXTERNAL_HTTP_PORT_FIELD_NUMBER = 4
+    val EXTERNAL_SECURE_TCP_ADDRESS_FIELD_NUMBER = 5
+    val EXTERNAL_SECURE_TCP_PORT_FIELD_NUMBER = 6
 
-	}
+  }
 }
 
 object EventStoreMessages {
-	def registerAllExtensions(registry: com.google.protobuf.ExtensionRegistryLite) {
-	}
+  def registerAllExtensions(registry: com.google.protobuf.ExtensionRegistryLite) {
+  }
 
 }
