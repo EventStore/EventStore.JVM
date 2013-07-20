@@ -19,8 +19,7 @@ class ReadAllEventsBackwardSpec extends TestConnectionSpec {
     }
 
     "return events in reversed order compared to written" in new ReadAllEventsBackwardScope {
-      val events = (1 to 10).map(_ => newEvent)
-      appendMany(events)
+      val events = appendMany()
       readAllEvents(-1, -1, 10) mustEqual events.reverse
     }
 

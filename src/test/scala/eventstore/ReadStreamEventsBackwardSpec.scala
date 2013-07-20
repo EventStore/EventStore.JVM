@@ -34,32 +34,27 @@ class ReadStreamEventsBackwardSpec extends TestConnectionSpec {
     }
 
     "get events in reversed order as written" in new ReadStreamBackwardScope {
-      val events = (1 to 10).map(_ => newEvent)
-      appendMany(events)
+      val events = appendMany()
       doReadStreamEvents(-1, 10) mustEqual events.reverse
     }
 
     "be able to read single event from arbitrary position" in new ReadStreamBackwardScope {
-      val events = (1 to 10).map(_ => newEvent)
-      appendMany(events)
+      val events = appendMany()
       doReadStreamEvents(5, 1) mustEqual List(events(5))
     }
 
     "be able to read slice from arbitrary position" in new ReadStreamBackwardScope {
-      val events = (1 to 10).map(_ => newEvent)
-      appendMany(events)
+      val events = appendMany()
       doReadStreamEvents(5, 3) mustEqual List(events(5), events(4), events(3))
     }
 
     "be able to read first event" in new ReadStreamBackwardScope {
-      val events = (1 to 10).map(_ => newEvent)
-      appendMany(events)
+      val events = appendMany()
       doReadStreamEvents(0, 1) mustEqual List(events.head)
     }
 
     "be able to read last event" in new ReadStreamBackwardScope {
-      val events = (1 to 10).map(_ => newEvent)
-      appendMany(events)
+      val events = appendMany()
       doReadStreamEvents(9, 1) mustEqual List(events.last)
     }
   }

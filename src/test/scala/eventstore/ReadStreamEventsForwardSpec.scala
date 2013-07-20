@@ -46,20 +46,17 @@ class ReadStreamEventsForwardSpec extends TestConnectionSpec {
     }
 
     "get events in same order as written" in new ReadStreamForwardScope {
-      val events = (0 to 10).map(_ => newEvent)
-      appendMany(events)
+      val events = appendMany()
       doReadStreamEvents(0, Int.MaxValue) mustEqual events
     }
 
     "be able to read single event from arbitrary position" in new ReadStreamForwardScope {
-      val events = (0 to 10).map(_ => newEvent)
-      appendMany(events)
+      val events = appendMany()
       doReadStreamEvents(5, 1) mustEqual List(events(5))
     }
 
     "be able to read slice from arbitrary position" in new ReadStreamForwardScope {
-      val events = (0 to 10).map(_ => newEvent)
-      appendMany(events)
+      val events = appendMany()
       doReadStreamEvents(5, 3) mustEqual events.slice(5, 8)
     }
   }

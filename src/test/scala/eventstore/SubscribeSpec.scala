@@ -16,10 +16,9 @@ class SubscribeSpec extends TestConnectionSpec {
     "be able to subscribe to non existing stream and then catch new event" in new SubscribeScope {
       subscribeToStream()
 
-      val event = newEvent
-      appendMany(List(event), TestProbe())
+      val events = appendMany(TestProbe())
 
-      val er = eventRecord(0, event)
+      val er = eventRecord(0, events.head)
       expectMsgPF() {
         case StreamEventAppeared(ResolvedEvent(`er`, None, _, _)) =>
       }

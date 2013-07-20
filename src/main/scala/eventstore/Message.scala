@@ -92,8 +92,8 @@ object AppendToStream {
 }
 
 case class AppendToStreamCompleted(result: OperationResult.Value,
-                                message: Option[String],
-                                firstEventNumber: Int) extends In
+                                   message: Option[String],
+                                   firstEventNumber: Int) extends In
 
 
 case class DeleteStream(streamId: String,
@@ -108,12 +108,16 @@ case class ReadEvent(streamId: String,
                      eventNumber: Int,
                      resolveLinkTos: Boolean) extends Out
 
-case class ReadEventCompleted(result: ReadEventResult.Value,
-                              event: ResolvedIndexedEvent) extends In
+sealed trait ReadEventCompleted extends In
+case class ReadEventSucceed(event: ResolvedIndexedEvent) extends ReadEventCompleted
+case class ReadEventFailed(reason: ReadEventFailed.Value) extends ReadEventCompleted
+object ReadEventFailed extends Enumeration {
+  val NotFound, NoStream, StreamDeleted, Error, AccessDenied = Value
+}
 
 
 object ReadEventResult extends Enumeration {
-  val Success, NotFound, NoStream, StreamDeleted = Value
+  val Success, NotFound, NoStream, StreamDeleted, Error, AccessDenied = Value
 }
 
 case class ReadStreamEvents(streamId: String,
@@ -187,7 +191,6 @@ object SubscribeToStream {
 }
 case class SubscriptionConfirmation(lastCommitPosition: Long, lastEventNumber: Option[Int]) extends In
 case class StreamEventAppeared(event: ResolvedEvent) extends In
-
 
 case object UnsubscribeFromStream extends Out
 

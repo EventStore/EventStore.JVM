@@ -87,13 +87,18 @@ object Deserializers {
   }
 
   implicit val readEventCompletedDeserializer = new DeserializeProto[ReadEventCompleted, proto.ReadEventCompleted] {
-    def apply(x: proto.ReadEventCompleted) = ReadEventCompleted(
-      result = readEventResult(x.`result`),
-      event = resolvedIndexedEvent(x.`event`))
+    import proto.ReadEventCompleted.ReadEventResult._
+
+    def apply(x: proto.ReadEventCompleted) = x.`result` match {
+      case Success => ReadEventSucceed(resolvedIndexedEvent(x.`event`))
+      case NotFound => ReadEventFailed(ReadEventFailed.NotFound)
+      case NoStream => ReadEventFailed(ReadEventFailed.NoStream)
+      case StreamDeleted => ReadEventFailed(ReadEventFailed.StreamDeleted)
+      case Error => ReadEventFailed(ReadEventFailed.Error)
+      case AccessDenied => ReadEventFailed(ReadEventFailed.AccessDenied)
+      case enum => sys.error(s"$enum is not supported")
+    }
   }
-
-
-
 
   def readStreamEventsCompleted(direction: ReadDirection.Value)(buffer: ByteBuffer) = {
     val bytes = new Array[Byte](buffer.remaining())
@@ -169,14 +174,17 @@ object Deserializers {
 
   def noBytes(message: In): DeserializeMessage = _ => message
 
-  def eventRecord(x: proto.EventRecord): EventRecord = EventRecord(
-    streamId = x.`eventStreamId`,
-    eventNumber = x.`eventNumber`,
-    event = Event(
-      eventId = uuid(x.`eventId`),
-      eventType = x.`eventType`,
-      data = byteString(x.`data`),
-      metadata = byteString(x.`metadata`)))
+  def eventRecord(x: proto.EventRecord): EventRecord = {
+    println(x)
+    EventRecord(
+      streamId = x.`eventStreamId`,
+      eventNumber = x.`eventNumber`,
+      event = Event(
+        eventId = uuid(x.`eventId`),
+        eventType = x.`eventType`,
+        data = byteString(x.`data`),
+        metadata = byteString(x.`metadata`)))
+  }
 
   def resolvedEvent(x: proto.ResolvedEvent): ResolvedEvent = ResolvedEvent(
     event = eventRecord(x.`event`),

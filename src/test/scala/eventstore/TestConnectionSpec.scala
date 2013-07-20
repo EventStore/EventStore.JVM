@@ -61,12 +61,12 @@ abstract class TestConnectionSpec extends SpecificationWithJUnit {
       expectMsg(appendToStreamCompleted(0))
     }
 
-    def appendMany(events: Seq[Event], kit: TestKitBase = this) {
+    def appendMany(kit: TestKitBase = this): Seq[Event] = {
+      val events = (1 to 10).map(_ => newEvent)
       actor.!(AppendToStream(streamId, AnyVersion, events.toList))(kit.testActor)
       kit.expectMsg(appendToStreamCompleted(0))
+      events
     }
-
-
 
     def after = {
       /*println("after")

@@ -11,14 +11,12 @@ class ReadAllEventsForwardSpec extends TestConnectionSpec {
 
   "read all events forward" should {
     "return empty slice if asked to read from end" in new ReadAllEventsForwardScope {
-      val events = (1 to 10).map(_ => newEvent)
-      appendMany(events)
+      val events = appendMany()
       readAllEvents(-1, -1, 1) must beEmpty
     }
 
     "return events in same order as written" in new ReadAllEventsForwardScope {
-      val events = (1 to 10).map(_ => newEvent)
-      appendMany(events)
+      val events = appendMany()
       readAllEvents(0, 0, Int.MaxValue).takeRight(events.length) mustEqual events
     }
 

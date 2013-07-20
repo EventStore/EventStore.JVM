@@ -64,8 +64,7 @@ class AppendToStreamSpec extends TestConnectionSpec {
     }
 
     "be able to append multiple events at once" in new AppendToStreamScope {
-      val events = (0 until 100).map(_ => newEvent)
-      appendMany(events)
+      val events = appendMany()
       streamEvents mustEqual events
     }
   }
