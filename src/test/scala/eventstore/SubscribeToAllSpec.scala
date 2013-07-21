@@ -10,6 +10,7 @@ class SubscribeToAllSpec extends TestConnectionSpec {
   sequential
 
   "subscribe to all" should {
+
     "allow multiple subscriptions" in new SubscribeToAll {
       appendEventToCreateStream()
 
@@ -19,30 +20,26 @@ class SubscribeToAllSpec extends TestConnectionSpec {
       val event = newEvent
       doAppendToStream(event, AnyVersion, 1)
 
-      val er = eventRecord(1, event)
-
       clients.foreach {
-        client => client.expectMsgPF() {
-          case StreamEventAppeared(ResolvedEvent(`er`, _, _, _)) => true
-        }
+        client => expectEventAppeared(EventNumber.Exact(1), client) mustEqual event
       }
     }
 
     "catch created and deleted events as well" in new SubscribeToAll {
       subscribeToAll()
       appendEventToCreateStream()
-      expectMsgType[StreamEventAppeared]
+      expectEventAppeared(EventNumber.First)
       deleteStream()
-      expectMsgPF() {
-        case StreamEventAppeared(ResolvedEvent(EventRecord(`streamId`, _, Event.StreamDeleted(_)), None, _, _)) => true
+      expectEventAppeared(EventNumber.Max) must beLike {
+        case Event.StreamDeleted(_) => ok
       }
     }
   }
 
   trait SubscribeToAll extends TestConnectionScope {
     def subscribeToAll(testKit: TestKitBase = this) {
-      actor.!(SubscribeToStream(""))(testKit.testActor) // TODO don't like passing empty string, need to create const...
-      testKit.expectMsgType[SubscriptionConfirmation]
+      actor.!(SubscribeTo(Stream.All))(testKit.testActor)
+      testKit.expectMsgType[SubscribeToAllCompleted]
     }
   }
 }

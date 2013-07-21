@@ -1,6 +1,6 @@
 package eventstore
 
-import OperationResult._
+import OperationFailed._
 
 /**
  * @author Yaroslav Klymko
@@ -23,26 +23,26 @@ class AppendToStreamSpec extends TestConnectionSpec {
     }
 
     "fail create stream with wrong exp ver if does not exist" in new AppendToStreamScope {
-      failAppendToStream(newEvent, EmptyStream, WrongExpectedVersion)
-      failAppendToStream(newEvent, Version(1), WrongExpectedVersion)
+      failAppendToStream(newEvent, EmptyStream) mustEqual WrongExpectedVersion
+      failAppendToStream(newEvent, Version(1)) mustEqual WrongExpectedVersion
     }
 
     "fail writing with correct exp ver to deleted stream" in new AppendToStreamScope {
       appendEventToCreateStream()
       deleteStream()
-      failAppendToStream(newEvent, EmptyStream, StreamDeleted)
+      failAppendToStream(newEvent, EmptyStream) mustEqual StreamDeleted
     }
 
     "fail writing with any exp ver to deleted stream" in new AppendToStreamScope {
       appendEventToCreateStream()
       deleteStream()
-      failAppendToStream(newEvent, AnyVersion, StreamDeleted)
+      failAppendToStream(newEvent, AnyVersion) mustEqual StreamDeleted
     }
 
     "fail writing with invalid exp ver to deleted stream" in new AppendToStreamScope {
       appendEventToCreateStream()
       deleteStream()
-      failAppendToStream(newEvent, Version(1), StreamDeleted)
+      failAppendToStream(newEvent, Version(1)) mustEqual StreamDeleted
     }
 
     "succeed writing with correct exp ver to existing stream" in new AppendToStreamScope {
@@ -59,8 +59,8 @@ class AppendToStreamSpec extends TestConnectionSpec {
 
     "fail writing with wrong exp ver to existing stream" in new AppendToStreamScope {
       appendEventToCreateStream()
-      failAppendToStream(newEvent, NoStream, WrongExpectedVersion)
-      failAppendToStream(newEvent, Version(1), WrongExpectedVersion)
+      failAppendToStream(newEvent, NoStream) mustEqual WrongExpectedVersion
+      failAppendToStream(newEvent, Version(1)) mustEqual WrongExpectedVersion
     }
 
     "be able to append multiple events at once" in new AppendToStreamScope {
@@ -70,10 +70,10 @@ class AppendToStreamSpec extends TestConnectionSpec {
   }
 
   trait AppendToStreamScope extends TestConnectionScope {
-    def failAppendToStream(event: Event, expVer: ExpectedVersion = AnyVersion, result: Value) {
+    def failAppendToStream(event: Event, expVer: ExpectedVersion = AnyVersion) = {
       actor ! appendToStream(expVer, event)
       expectMsgPF() {
-        case AppendToStreamCompleted(`result`, Some(_), _) => true
+        case AppendToStreamFailed(reason, _) => reason
       }
     }
   }

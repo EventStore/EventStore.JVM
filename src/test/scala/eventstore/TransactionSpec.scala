@@ -52,17 +52,11 @@ class TransactionSpec extends TestConnectionSpec {
 
       val probe = TestProbe()
 
-      actor.!(appendToStream(AnyVersion, newEvent))(probe.ref)
-      probe.expectMsgPF() {
-        case AppendToStreamCompleted(Success, None, _) => true
-      }
+      doAppendToStream(newEvent, AnyVersion, 1, probe)
 
       doTransactionWrite(newEvent)
 
-      actor.!(appendToStream(AnyVersion, newEvent))(probe.ref)
-      probe.expectMsgPF() {
-        case AppendToStreamCompleted(Success, None, _) => true
-      }
+      doAppendToStream(newEvent, AnyVersion, 2, probe)
 
       doTransactionWrite(newEvent)
       transactionCommit

@@ -15,7 +15,7 @@ import eventstore.OperationResult._
 abstract class TestConnectionSpec extends SpecificationWithJUnit {
 
   abstract class TestConnectionScope extends TestKit(ActorSystem()) with After with ImplicitSender {
-    val streamId = getClass.getEnclosingClass.getSimpleName + "-" + newUuid.toString
+    val streamId = Stream.Id(getClass.getEnclosingClass.getSimpleName + "-" + newUuid.toString)
 
     val streamMetadata = ByteString(getClass.getEnclosingClass.getSimpleName)
     val actor = TestActorRef(new ConnectionActor(new InetSocketAddress("127.0.0.1", 1113)))
@@ -23,16 +23,14 @@ abstract class TestConnectionSpec extends SpecificationWithJUnit {
     def deleteStream(expVer: ExpectedVersion = AnyVersion) {
       val probe = TestProbe()
       actor.!(DeleteStream(streamId, expVer, requireMaster = true))(probe.ref)
-      probe.expectMsg(DeleteStreamCompleted(Success, None))
+      probe.expectMsg(DeleteStreamSucceed)
     }
 
     def appendEventToCreateStream() {
       val probe = TestProbe()
       actor.!(appendToStream(NoStream, Event(newUuid, "first event")))(probe.ref)
-      probe.expectMsg(AppendToStreamCompleted(Success, None, 0))
+      probe.expectMsg(AppendToStreamSucceed(0))
     }
-
-    def eventRecord(eventNumber: Int, event: Event) = EventRecord(streamId, eventNumber, event)
 
     def readStreamEvents = ReadStreamEvents(streamId, 0, 1000, resolveLinkTos = false, ReadDirection.Forward)
 
@@ -40,11 +38,14 @@ abstract class TestConnectionSpec extends SpecificationWithJUnit {
 
     def appendToStream(expVer: ExpectedVersion, events: Event*) = AppendToStream(streamId, expVer, events.toList)
 
-    def appendToStreamCompleted(firstEventNumber: Int = 0) = AppendToStreamCompleted(Success, None, firstEventNumber)
+    def appendToStreamCompleted(firstEventNumber: Int = 0) = AppendToStreamSucceed(firstEventNumber)
 
-    def doAppendToStream(event: Event, expVer: ExpectedVersion = AnyVersion, firstEventNumber: Int = 0) {
-      actor ! appendToStream(expVer, event)
-      expectMsg(appendToStreamCompleted(firstEventNumber))
+    def doAppendToStream(event: Event,
+                         expVer: ExpectedVersion = AnyVersion,
+                         firstEventNumber: Int = 0,
+                         testKit: TestKitBase = this) {
+      actor.!(appendToStream(expVer, event))(testKit.testActor)
+      testKit.expectMsg(appendToStreamCompleted(firstEventNumber))
     }
 
     def streamEvents: List[Event] = {
@@ -58,14 +59,18 @@ abstract class TestConnectionSpec extends SpecificationWithJUnit {
 
     def append(events: Event*) {
       actor ! AppendToStream(streamId, AnyVersion, events.toList)
-      expectMsg(appendToStreamCompleted(0))
+      expectMsg(appendToStreamCompleted())
     }
 
     def appendMany(kit: TestKitBase = this): Seq[Event] = {
       val events = (1 to 10).map(_ => newEvent)
       actor.!(AppendToStream(streamId, AnyVersion, events.toList))(kit.testActor)
-      kit.expectMsg(appendToStreamCompleted(0))
+      kit.expectMsg(appendToStreamCompleted())
       events
+    }
+
+    def expectEventAppeared(eventNumber: EventNumber.Exact, testKit: TestKitBase = this) = testKit.expectMsgPF() {
+      case StreamEventAppeared(ResolvedEvent(EventRecord(`streamId`, `eventNumber`, event), None, _, _)) => event
     }
 
     def after = {

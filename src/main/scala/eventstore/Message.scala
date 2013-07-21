@@ -62,7 +62,7 @@ object EvenType {
   val streamCreated = "$streamCreated"
 }
 
-case class EventRecord(streamId: String, eventNumber: Int, event: Event)
+case class EventRecord(streamId: Stream.Id, number: EventNumber.Exact, event: Event)
 
 case class ResolvedIndexedEvent(eventRecord: EventRecord, link: Option[EventRecord])
 
@@ -78,49 +78,59 @@ case class DeniedToRoute(externalTcpAddress: String,
                          externalHttpPort: Int) extends Message
 
 
-case class AppendToStream(streamId: String,
+
+case class AppendToStream(streamId: Stream.Id,
                           expVer: ExpectedVersion,
                           events: List[Event],
                           requireMaster: Boolean) extends Out
 
 object AppendToStream {
-  def apply(streamId: String, expVer: ExpectedVersion, events: List[Event]): AppendToStream = AppendToStream(
+  def apply(streamId: Stream.Id, expVer: ExpectedVersion, events: List[Event]): AppendToStream = AppendToStream(
     streamId = streamId,
     expVer = expVer,
     events = events,
     requireMaster = true)
 }
 
-case class AppendToStreamCompleted(result: OperationResult.Value,
-                                   message: Option[String],
-                                   firstEventNumber: Int) extends In
+sealed trait AppendToStreamCompleted extends In
+case class AppendToStreamSucceed(firstEventNumber: Int) extends AppendToStreamCompleted
+case class AppendToStreamFailed(reason: OperationFailed.Value, message: String) extends AppendToStreamCompleted
 
 
-case class DeleteStream(streamId: String,
+object OperationFailed extends Enumeration {
+  val PrepareTimeout,
+  CommitTimeout,
+  ForwardTimeout,
+  WrongExpectedVersion,
+  StreamDeleted,
+  InvalidTransaction,
+  AccessDenied = Value
+}
+
+
+
+case class DeleteStream(streamId: Stream.Id,
                         expVer: ExpectedVersion, // TODO disallow NoVersion
                         requireMaster: Boolean) extends Out
 
+sealed trait DeleteStreamCompleted extends In
+case object DeleteStreamSucceed extends DeleteStreamCompleted
+case class DeleteStreamFailed(result: OperationFailed.Value, message: String) extends DeleteStreamCompleted
 
-case class DeleteStreamCompleted(result: OperationResult.Value, message: Option[String]) extends In
 
 
-case class ReadEvent(streamId: String,
-                     eventNumber: Int,
-                     resolveLinkTos: Boolean) extends Out
+case class ReadEvent(streamId: Stream.Id, eventNumber: EventNumber, resolveLinkTos: Boolean) extends Out
 
 sealed trait ReadEventCompleted extends In
 case class ReadEventSucceed(event: ResolvedIndexedEvent) extends ReadEventCompleted
-case class ReadEventFailed(reason: ReadEventFailed.Value) extends ReadEventCompleted
+case class ReadEventFailed(reason: ReadEventFailed.Value, message: String) extends ReadEventCompleted
 object ReadEventFailed extends Enumeration {
   val NotFound, NoStream, StreamDeleted, Error, AccessDenied = Value
 }
 
 
-object ReadEventResult extends Enumeration {
-  val Success, NotFound, NoStream, StreamDeleted, Error, AccessDenied = Value
-}
 
-case class ReadStreamEvents(streamId: String,
+case class ReadStreamEvents(streamId: Stream.Id,
                             fromEventNumber: Int,
                             maxCount: Int,
                             resolveLinkTos: Boolean,
@@ -136,8 +146,9 @@ case class ReadStreamEventsCompleted(events: List[ResolvedIndexedEvent],
                                      direction: ReadDirection.Value) extends In
 
 object ReadStreamResult extends Enumeration {
-  val Success, NoStream, StreamDeleted, NotModified, Error = Value
+  val Success, NoStream, StreamDeleted, NotModified, Error, AccessDenied = Value
 }
+
 
 
 case class ReadAllEvents(commitPosition: Long,
@@ -153,12 +164,14 @@ case class ReadAllEventsCompleted(commitPosition: Long,
                                   nextPreparePosition: Long,
                                   direction: ReadDirection.Value) extends In
 
+
+
 object ReadDirection extends Enumeration {
   val Forward, Backward = Value
 }
 
 
-case class TransactionStart(streamId: String,
+case class TransactionStart(streamId: Stream.Id,
                             expVer: ExpectedVersion,
                             requireMaster: Boolean) extends Out
 
@@ -182,31 +195,32 @@ case class TransactionCommitCompleted(transactionId: Long,
                                       message: Option[String]) extends In
 
 
-case class SubscribeToStream(streamId: String, resolveLinkTos: Boolean) extends Out
 
-object SubscribeToStream {
-  def apply(streamId: String): SubscribeToStream = SubscribeToStream(
-    streamId = streamId,
-    resolveLinkTos = false)
+case class SubscribeTo(stream: Stream, resolveLinkTos: Boolean) extends Out
+
+object SubscribeTo {
+  def apply(stream: Stream): SubscribeTo = SubscribeTo(stream = stream, resolveLinkTos = false)
 }
-case class SubscriptionConfirmation(lastCommitPosition: Long, lastEventNumber: Option[Int]) extends In
+
+sealed trait SubscribeCompleted extends In
+
+case class SubscribeToAllCompleted(lastCommitPosition: Long) extends SubscribeCompleted
+
+case class SubscribeToStreamCompleted(lastCommitPosition: Long, lastEventNumber: EventNumber) extends SubscribeCompleted
+
 case class StreamEventAppeared(event: ResolvedEvent) extends In
+
+
 
 case object UnsubscribeFromStream extends Out
 
-case class SubscriptionDropped(reason: SubscriptionDropped.Reason.Value) extends In
+case class SubscriptionDropped(reason: SubscriptionDropped.Value) extends In
 
-
-object SubscriptionDropped {
-
-//  def apply(): SubscriptionDropped = SubscriptionDropped(Reason.Unsubscribed)
-
-  object Reason extends Enumeration {
-    val Unsubscribed, AccessDenied = Value
-    val Default = Unsubscribed
-  }
-
+object SubscriptionDropped extends Enumeration {
+  val Unsubscribed, AccessDenied = Value
+  val Default: Value = Unsubscribed
 }
+
 
 
 case object ScavengeDatabase extends Out

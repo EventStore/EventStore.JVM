@@ -12,7 +12,7 @@ class SubscribeActor extends Actor with ActorLogging {
 
   import context.dispatcher
 
-  val subscribeToStream = SubscribeToStream("test", resolveLinkTos = false)
+  val subscribeToStream = SubscribeTo(Stream.Id("test"), resolveLinkTos = false)
 
 
   def receive = {

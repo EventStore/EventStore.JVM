@@ -10,56 +10,56 @@ class SubscribeSpec extends TestConnectionSpec {
     "succeed for deleted stream but should not receive any events" in new SubscribeScope {
       appendEventToCreateStream()
       deleteStream()
-      subscribeToStream()
+      subscribeToStream() mustEqual EventNumber.Max // TODO WHY?
     }
 
     "be able to subscribe to non existing stream and then catch new event" in new SubscribeScope {
-      subscribeToStream()
+      subscribeToStream() mustEqual EventNumber.NoEvent
 
       val events = appendMany(TestProbe())
 
-      val er = eventRecord(0, events.head)
-      expectMsgPF() {
-        case StreamEventAppeared(ResolvedEvent(`er`, None, _, _)) =>
+      events.zipWithIndex.foreach {
+        case (event, index) =>
+          expectEventAppeared(EventNumber.Exact(index)) mustEqual event
       }
     }
 
     "allow multiple subscriptions to the same stream" in new SubscribeScope {
-      subscribeToStream(TestProbe())
-      subscribeToStream(TestProbe())
+      subscribeToStream(TestProbe()) mustEqual EventNumber.NoEvent
+      subscribeToStream(TestProbe()) mustEqual EventNumber.NoEvent
     }
 
     "be able to unsubscribe from existing stream" in new SubscribeScope {
       appendEventToCreateStream()
-      subscribeToStream()
+      subscribeToStream() mustEqual EventNumber.First
       unsubscribeFromStream()
     }
 
     "be able to unsubscribe from not existing stream" in new SubscribeScope {
-      subscribeToStream()
+      subscribeToStream() mustEqual EventNumber.NoEvent
       unsubscribeFromStream()
     }
 
     "catch stream deleted events" in new SubscribeScope {
-      subscribeToStream()
+      subscribeToStream() mustEqual EventNumber.NoEvent
       appendEventToCreateStream()
-      expectMsgType[StreamEventAppeared]
+      expectEventAppeared(EventNumber.First)
       deleteStream()
-      expectMsgPF() {
-        case StreamEventAppeared(ResolvedEvent(EventRecord(`streamId`, _, Event.StreamDeleted(_)), None, _, _)) => true
+      expectEventAppeared(EventNumber.Max) must beLike {
+        case Event.StreamDeleted(_) => ok
       }
     }
   }
 
   trait SubscribeScope extends TestConnectionScope {
-    def subscribeToStream(testKit: TestKitBase = this) {
-      actor.!(SubscribeToStream(streamId, resolveLinkTos = false))(testKit.testActor)
-      testKit.expectMsgType[SubscriptionConfirmation]
+    def subscribeToStream(testKit: TestKitBase = this): EventNumber = {
+      actor.!(SubscribeTo(streamId, resolveLinkTos = false))(testKit.testActor)
+      testKit.expectMsgType[SubscribeToStreamCompleted].lastEventNumber
     }
 
     def unsubscribeFromStream() {
       actor ! UnsubscribeFromStream
-      expectMsg(SubscriptionDropped(SubscriptionDropped.Reason.Unsubscribed))
+      expectMsg(SubscriptionDropped(SubscriptionDropped.Unsubscribed))
     }
   }
 }

@@ -1,6 +1,6 @@
 package eventstore
 
-import OperationResult._
+import OperationFailed._
 
 /**
  * @author Yaroslav Klymko
@@ -12,8 +12,8 @@ class DeleteStreamSpec extends TestConnectionSpec {
     }
 
     "fail if doesn't exist and invalid expect version" in new DeleteStreamScope {
-      failDeleteStream(EmptyStream, WrongExpectedVersion)
-      failDeleteStream(Version(1), WrongExpectedVersion)
+      failDeleteStream(EmptyStream) mustEqual WrongExpectedVersion
+      failDeleteStream(Version(1)) mustEqual WrongExpectedVersion
     }
 
     "succeed if correct expected version" in new DeleteStreamScope {
@@ -28,25 +28,25 @@ class DeleteStreamSpec extends TestConnectionSpec {
 
     "fail if invalid expected version" in new DeleteStreamScope {
       appendEventToCreateStream()
-      failDeleteStream(NoStream, WrongExpectedVersion)
-      failDeleteStream(Version(1), WrongExpectedVersion)
+      failDeleteStream(NoStream) mustEqual WrongExpectedVersion
+      failDeleteStream(Version(1)) mustEqual WrongExpectedVersion
     }
 
     "fail if already deleted" in new DeleteStreamScope {
       appendEventToCreateStream()
       deleteStream(EmptyStream)
-      failDeleteStream(EmptyStream, StreamDeleted)
-      failDeleteStream(NoStream, StreamDeleted)
-      failDeleteStream(AnyVersion, StreamDeleted)
-      failDeleteStream(Version(1), StreamDeleted)
+      failDeleteStream(EmptyStream) mustEqual StreamDeleted
+      failDeleteStream(NoStream) mustEqual StreamDeleted
+      failDeleteStream(AnyVersion) mustEqual StreamDeleted
+      failDeleteStream(Version(1)) mustEqual StreamDeleted
     }
   }
 
   abstract class DeleteStreamScope extends TestConnectionScope {
-    def failDeleteStream(expVer: ExpectedVersion = AnyVersion, result: Value) {
+    def failDeleteStream(expVer: ExpectedVersion = AnyVersion) = {
       actor ! DeleteStream(streamId, expVer, requireMaster = true)
       expectMsgPF() {
-        case DeleteStreamCompleted(`result`, Some(_)) => true
+        case DeleteStreamFailed(reason, _) => reason
       }
     }
   }

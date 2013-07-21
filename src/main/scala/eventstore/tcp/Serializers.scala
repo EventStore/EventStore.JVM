@@ -41,7 +41,7 @@ object Serializers {
 
       case x: ReadAllEvents => readAllEvents(x)
 
-      case x: SubscribeToStream => >>(0xC0, proto.SubscribeToStream(x.streamId, x.resolveLinkTos))
+      case x: SubscribeTo => subscribeTo(0xC0, x)
 
       case UnsubscribeFromStream => >>(0xC3, proto.UnsubscribeFromStream.defaultInstance)
 
@@ -78,7 +78,7 @@ object Serializers {
       case ReadDirection.Backward => 0xB4
     }
     >>(markerByte, proto.ReadStreamEvents(
-      `eventStreamId` = x.streamId,
+      `eventStreamId` = x.streamId.value,
       `fromEventNumber` = x.fromEventNumber,
       `maxCount` = x.maxCount,
       `resolveLinkTos` = x.resolveLinkTos))
@@ -90,6 +90,17 @@ object Serializers {
 
   def pbyteStringOption(bs: ByteString): Option[PByteString] = if (bs.isEmpty) None else Some(pbyteString(bs))
 
+
+  def subscribeTo(markerByte: Byte, x: SubscribeTo) = {
+    val streamId = x.stream match {
+      case Stream.All => ""
+      case Stream.Id(value) => value
+    }
+
+    >>(markerByte, proto.SubscribeToStream(
+      `eventStreamId` = streamId,
+      `resolveLinkTos` = x.resolveLinkTos))
+  }
 
   def newEvent(x: Event) = {
     proto.NewEvent(
@@ -103,7 +114,7 @@ object Serializers {
 
   def appendToStream(markerByte: Byte, x: AppendToStream) = {
     >>(markerByte, proto.WriteEvents(
-      `eventStreamId` = x.streamId,
+      `eventStreamId` = x.streamId.value,
       `expectedVersion` = x.expVer.value,
       `events` = x.events.map(newEvent).toVector,
       `requireMaster` = x.requireMaster))
@@ -112,14 +123,14 @@ object Serializers {
 
   def readEvent(markerByte: Byte, x: ReadEvent) = {
     >>(markerByte, proto.ReadEvent(
-      `eventStreamId` = x.streamId,
-      `eventNumber` = x.eventNumber,
+      `eventStreamId` = x.streamId.value,
+      `eventNumber` = x.eventNumber.proto,
       `resolveLinkTos` = x.resolveLinkTos))
   }
 
   def deleteStream(markerByte: Byte, x: DeleteStream) = {
     >>(markerByte, proto.DeleteStream(
-      `eventStreamId` = x.streamId,
+      `eventStreamId` = x.streamId.value,
       `expectedVersion` = x.expVer.value,
       `requireMaster` = x.requireMaster))
   }
@@ -127,7 +138,7 @@ object Serializers {
 
   def transactionStart(markerByte: Byte, x: TransactionStart) = {
     >>(markerByte, proto.TransactionStart(
-      `eventStreamId` = x.streamId,
+      `eventStreamId` = x.streamId.value,
       `expectedVersion` = x.expVer.value,
       `requireMaster` = x.requireMaster))
   }
@@ -147,4 +158,11 @@ object Serializers {
 
 
   def uuid(bs: ByteString): Uuid = UuidSerializer.deserialize(bs)
+
+  implicit class RichEventNumber(val self: EventNumber) extends AnyVal {
+    def proto: Int = self match {
+      case EventNumber.Last => -1
+      case EventNumber.Exact(x) => x
+    }
+  }
 }

@@ -6,6 +6,7 @@ import eventstore.proto
 import com.google.protobuf.{ByteString => PByteString}
 import net.sandrogrzicic.scalabuff.MessageBuilder
 import scala.reflect.ClassTag
+import PartialFunction.condOpt
 
 /**
  * @author Yaroslav Klymko
@@ -30,6 +31,19 @@ object Deserializers {
     }
   }
 
+  private def operationFailed(x: proto.OperationResult.EnumVal): Option[OperationFailed.Value] = {
+    import proto.OperationResult._
+    condOpt(x) {
+      case PrepareTimeout => OperationFailed.PrepareTimeout
+      case CommitTimeout => OperationFailed.CommitTimeout
+      case ForwardTimeout => OperationFailed.ForwardTimeout
+      case WrongExpectedVersion => OperationFailed.WrongExpectedVersion
+      case StreamDeleted => OperationFailed.StreamDeleted
+      case InvalidTransaction => OperationFailed.InvalidTransaction
+      case AccessDenied => OperationFailed.AccessDenied
+    }
+  }
+
   import ReadDirection.{Backward, Forward}
 
 
@@ -47,10 +61,10 @@ object Deserializers {
   }
 
   implicit val writeEventsCompletedDeserializer = new DeserializeProto[AppendToStreamCompleted, proto.WriteEventsCompleted] {
-    def apply(x: proto.WriteEventsCompleted) = AppendToStreamCompleted(
-      result = operationResult(x.`result`),
-      message = x.`message`,
-      firstEventNumber = x.`firstEventNumber`)
+    def apply(x: proto.WriteEventsCompleted) = operationFailed(x.`result`) match {
+      case Some(reason) => AppendToStreamFailed(reason, x.`message` getOrElse sys.error(s"AppendToStreamCompleted.result is not given, however operation result is $reason"))
+      case None => AppendToStreamSucceed(x.`firstEventNumber`)
+    }
   }
 
   implicit val transactionStartCompletedDeserializer = new DeserializeProto[TransactionStartCompleted, proto.TransactionStartCompleted] {
@@ -75,28 +89,30 @@ object Deserializers {
   }
 
   implicit val deleteStreamCompletedDeserializer = new DeserializeProto[DeleteStreamCompleted, proto.DeleteStreamCompleted] {
-    import OperationResult._
-
-    /*def apply(x: proto.DeleteStreamCompleted) = operationResult(x.`result`) match {
-      case Success => DeleteStreamSucceed
-      case result@WrongExpectedVersion => DeleteStreamFailed(x.`message`.getOrElse(
-        sys.error(s"DeleteStreamCompleted.message is not given, however operation result: $result")))
-      case result => sys.error(s"invalid operation result: $x")
-    }*/
-    def apply(x: proto.DeleteStreamCompleted) = DeleteStreamCompleted(operationResult(x.`result`), x.`message`)
+    def apply(x: proto.DeleteStreamCompleted) = operationFailed(x.`result`) match {
+      case Some(reason) => DeleteStreamFailed(reason, x.`message` getOrElse sys.error(s"DeleteStreamCompleted.message is not given, however operation result is $reason"))
+      case None => DeleteStreamSucceed
+    }
   }
 
   implicit val readEventCompletedDeserializer = new DeserializeProto[ReadEventCompleted, proto.ReadEventCompleted] {
-    import proto.ReadEventCompleted.ReadEventResult._
 
-    def apply(x: proto.ReadEventCompleted) = x.`result` match {
-      case Success => ReadEventSucceed(resolvedIndexedEvent(x.`event`))
-      case NotFound => ReadEventFailed(ReadEventFailed.NotFound)
-      case NoStream => ReadEventFailed(ReadEventFailed.NoStream)
-      case StreamDeleted => ReadEventFailed(ReadEventFailed.StreamDeleted)
-      case Error => ReadEventFailed(ReadEventFailed.Error)
-      case AccessDenied => ReadEventFailed(ReadEventFailed.AccessDenied)
-      case enum => sys.error(s"$enum is not supported")
+    def readEventFailed(x: proto.ReadEventCompleted.ReadEventResult.EnumVal): Option[ReadEventFailed.Value] = {
+      import proto.ReadEventCompleted.ReadEventResult._
+
+      condOpt(x) {
+        case NotFound => ReadEventFailed.NotFound
+        case NoStream => ReadEventFailed.NoStream
+        case StreamDeleted => ReadEventFailed.StreamDeleted
+        case Error => ReadEventFailed.Error
+        case AccessDenied => ReadEventFailed.AccessDenied
+      }
+    }
+
+    def apply(x: proto.ReadEventCompleted) = readEventFailed(x.`result`) match {
+      //TODO why empty message case Some(reason) => ReadEventFailed(reason, x.`error` getOrElse sys.error(s"ReadEventCompleted.error is not given, however operation result is $reason"))
+      case Some(reason) => ReadEventFailed(reason, x.`error` getOrElse "")
+      case None => ReadEventSucceed(resolvedIndexedEvent(x.`event`))
     }
   }
 
@@ -121,8 +137,8 @@ object Deserializers {
     ReadStreamEventsCompleted(
       events = x.`events`.map(resolvedIndexedEvent).toList,
       result = readStreamResult(x.`result`),
-      nextEventNumber = x.`nextEventNumber`,
-      lastEventNumber = x.`lastEventNumber`,
+      nextEventNumber = /*EventNumber*/(x.`nextEventNumber`),
+      lastEventNumber = /*EventNumber*/(x.`lastEventNumber`),
       isEndOfStream = x.`isEndOfStream`,
       lastCommitPosition = x.`lastCommitPosition`,
       direction = direction)
@@ -144,8 +160,11 @@ object Deserializers {
   }
 
 
-  implicit val subscriptionConfirmationDeserializer = new DeserializeProto[SubscriptionConfirmation, proto.SubscriptionConfirmation] {
-    def apply(x: proto.SubscriptionConfirmation) = SubscriptionConfirmation(x.`lastCommitPosition`, x.`lastEventNumber`)
+  implicit val subscribeCompletedDeserializer = new DeserializeProto[SubscribeCompleted, proto.SubscriptionConfirmation] {
+    def apply(x: proto.SubscriptionConfirmation) = x.`lastEventNumber` match {
+      case None => SubscribeToAllCompleted(x.`lastCommitPosition`)
+      case Some(eventNumber) => SubscribeToStreamCompleted(x.`lastCommitPosition`, EventNumber(eventNumber))
+    }
   }
 
   implicit val streamEventAppearedDeserialize = new DeserializeProto[StreamEventAppeared, proto.StreamEventAppeared] {
@@ -153,18 +172,16 @@ object Deserializers {
   }
 
   implicit val subscriptionDroppedDeserialize = new DeserializeProto[SubscriptionDropped, proto.SubscriptionDropped] {
-
-    import SubscriptionDropped.Reason
     import proto.SubscriptionDropped.SubscriptionDropReason._
 
-    def reason(x: EnumVal): Reason.Value = x match {
-      case Unsubscribed => Reason.Unsubscribed
-      case AccessDenied => Reason.AccessDenied
-      case _ => Reason.Default
+    def reason(x: EnumVal): SubscriptionDropped.Value = x match {
+      case Unsubscribed => SubscriptionDropped.Unsubscribed
+      case AccessDenied => SubscriptionDropped.AccessDenied
+      case _ => SubscriptionDropped.Default
     }
 
     def apply(x: proto.SubscriptionDropped) =
-      SubscriptionDropped(reason = x.`reason`.fold(Reason.Default)(reason))
+      SubscriptionDropped(reason = x.`reason`.fold(SubscriptionDropped.Default)(reason))
   }
 
 
@@ -174,17 +191,14 @@ object Deserializers {
 
   def noBytes(message: In): DeserializeMessage = _ => message
 
-  def eventRecord(x: proto.EventRecord): EventRecord = {
-    println(x)
-    EventRecord(
-      streamId = x.`eventStreamId`,
-      eventNumber = x.`eventNumber`,
-      event = Event(
-        eventId = uuid(x.`eventId`),
-        eventType = x.`eventType`,
-        data = byteString(x.`data`),
-        metadata = byteString(x.`metadata`)))
-  }
+  def eventRecord(x: proto.EventRecord): EventRecord = EventRecord(
+    streamId = Stream.Id(x.`eventStreamId`),
+    number = EventNumber.Exact(x.`eventNumber`),
+    event = Event(
+      eventId = uuid(x.`eventId`),
+      eventType = x.`eventType`,
+      data = byteString(x.`data`),
+      metadata = byteString(x.`metadata`)))
 
   def resolvedEvent(x: proto.ResolvedEvent): ResolvedEvent = ResolvedEvent(
     event = eventRecord(x.`event`),
@@ -192,21 +206,9 @@ object Deserializers {
     commitPosition = x.`commitPosition`,
     preparePosition = x.`preparePosition`)
 
-    def resolvedIndexedEvent(x: proto.ResolvedIndexedEvent) = {
+  def resolvedIndexedEvent(x: proto.ResolvedIndexedEvent) =
     ResolvedIndexedEvent(eventRecord(x.`event`), x.`link`.map(eventRecord))
-  }
 
-
-  def readEventResult(x: proto.ReadEventCompleted.ReadEventResult.EnumVal): ReadEventResult.Value = {
-    import proto.ReadEventCompleted.ReadEventResult._
-    x match {
-      case Success => ReadEventResult.Success
-      case NotFound => ReadEventResult.NotFound
-      case NoStream => ReadEventResult.NoStream
-      case StreamDeleted => ReadEventResult.StreamDeleted
-      case _ => ???
-    }
-  }
 
   val markerBytes: Map[Byte, DeserializeMessage] = Map[Int, DeserializeMessage](
     0x01 -> deserializeX(HeartbeatRequestCommand),
@@ -237,7 +239,7 @@ object Deserializers {
     0xB7 -> readAllEventsCompleted(Forward),
     0xB9 -> readAllEventsCompleted(Backward),
 
-    0xC1 -> deserializer[SubscriptionConfirmation],
+    0xC1 -> deserializer[SubscribeCompleted],
     0xC2 -> deserializer[StreamEventAppeared],
     0xC4 -> deserializer[SubscriptionDropped],
 
