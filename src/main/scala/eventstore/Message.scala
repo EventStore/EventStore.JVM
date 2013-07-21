@@ -62,7 +62,7 @@ object EvenType {
   val streamCreated = "$streamCreated"
 }
 
-case class EventRecord(streamId: Stream.Id, number: EventNumber.Exact, event: Event)
+case class EventRecord(streamId: EventStream.Id, number: EventNumber.Exact, event: Event)
 
 case class ResolvedIndexedEvent(eventRecord: EventRecord, link: Option[EventRecord])
 
@@ -79,13 +79,13 @@ case class DeniedToRoute(externalTcpAddress: String,
 
 
 
-case class AppendToStream(streamId: Stream.Id,
+case class AppendToStream(streamId: EventStream.Id,
                           expVer: ExpectedVersion,
                           events: List[Event],
                           requireMaster: Boolean) extends Out
 
 object AppendToStream {
-  def apply(streamId: Stream.Id, expVer: ExpectedVersion, events: List[Event]): AppendToStream = AppendToStream(
+  def apply(streamId: EventStream.Id, expVer: ExpectedVersion, events: List[Event]): AppendToStream = AppendToStream(
     streamId = streamId,
     expVer = expVer,
     events = events,
@@ -109,7 +109,7 @@ object OperationFailed extends Enumeration {
 
 
 
-case class DeleteStream(streamId: Stream.Id,
+case class DeleteStream(streamId: EventStream.Id,
                         expVer: ExpectedVersion, // TODO disallow NoVersion
                         requireMaster: Boolean) extends Out
 
@@ -119,7 +119,7 @@ case class DeleteStreamFailed(result: OperationFailed.Value, message: String) ex
 
 
 
-case class ReadEvent(streamId: Stream.Id, eventNumber: EventNumber, resolveLinkTos: Boolean) extends Out
+case class ReadEvent(streamId: EventStream.Id, eventNumber: EventNumber, resolveLinkTos: Boolean) extends Out
 
 sealed trait ReadEventCompleted extends In
 case class ReadEventSucceed(event: ResolvedIndexedEvent) extends ReadEventCompleted
@@ -130,7 +130,7 @@ object ReadEventFailed extends Enumeration {
 
 
 
-case class ReadStreamEvents(streamId: Stream.Id,
+case class ReadStreamEvents(streamId: EventStream.Id,
                             fromEventNumber: Int,
                             maxCount: Int,
                             resolveLinkTos: Boolean,
@@ -171,7 +171,7 @@ object ReadDirection extends Enumeration {
 }
 
 
-case class TransactionStart(streamId: Stream.Id,
+case class TransactionStart(streamId: EventStream.Id,
                             expVer: ExpectedVersion,
                             requireMaster: Boolean) extends Out
 
@@ -196,10 +196,10 @@ case class TransactionCommitCompleted(transactionId: Long,
 
 
 
-case class SubscribeTo(stream: Stream, resolveLinkTos: Boolean) extends Out
+case class SubscribeTo(stream: EventStream, resolveLinkTos: Boolean) extends Out
 
 object SubscribeTo {
-  def apply(stream: Stream): SubscribeTo = SubscribeTo(stream = stream, resolveLinkTos = false)
+  def apply(stream: EventStream): SubscribeTo = SubscribeTo(stream = stream, resolveLinkTos = false)
 }
 
 sealed trait SubscribeCompleted extends In

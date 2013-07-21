@@ -13,7 +13,7 @@ class SubscribeActor extends Actor with ActorLogging {
   import context.dispatcher
 
   //  val subscribeToStream = SubscribeToStream(testStreamId, resolveLinkTos = false)
-  val subscribeToStream = SubscribeTo(Stream.All, resolveLinkTos = false)
+  val subscribeToStream = SubscribeTo(EventStream.All, resolveLinkTos = false)
 
 
   val stats = context.actorOf(Props[MessagesPerSecondActor])

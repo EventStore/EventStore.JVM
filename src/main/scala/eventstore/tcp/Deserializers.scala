@@ -192,7 +192,7 @@ object Deserializers {
   def noBytes(message: In): DeserializeMessage = _ => message
 
   def eventRecord(x: proto.EventRecord): EventRecord = EventRecord(
-    streamId = Stream.Id(x.`eventStreamId`),
+    streamId = EventStream.Id(x.`eventStreamId`),
     number = EventNumber.Exact(x.`eventNumber`),
     event = Event(
       eventId = uuid(x.`eventId`),

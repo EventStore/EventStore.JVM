@@ -93,8 +93,8 @@ object Serializers {
 
   def subscribeTo(markerByte: Byte, x: SubscribeTo) = {
     val streamId = x.stream match {
-      case Stream.All => ""
-      case Stream.Id(value) => value
+      case EventStream.All => ""
+      case EventStream.Id(value) => value
     }
 
     >>(markerByte, proto.SubscribeToStream(

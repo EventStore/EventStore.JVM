@@ -15,7 +15,7 @@ import eventstore.OperationResult._
 abstract class TestConnectionSpec extends SpecificationWithJUnit {
 
   abstract class TestConnectionScope extends TestKit(ActorSystem()) with After with ImplicitSender {
-    val streamId = Stream.Id(getClass.getEnclosingClass.getSimpleName + "-" + newUuid.toString)
+    val streamId = EventStream.Id(getClass.getEnclosingClass.getSimpleName + "-" + newUuid.toString)
 
     val streamMetadata = ByteString(getClass.getEnclosingClass.getSimpleName)
     val actor = TestActorRef(new ConnectionActor(new InetSocketAddress("127.0.0.1", 1113)))
