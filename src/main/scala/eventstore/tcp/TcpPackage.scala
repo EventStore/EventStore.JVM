@@ -30,10 +30,10 @@ object Flag extends Enumeration {
 
 case class TcpPackage[T <: Message](correlationId: Uuid, message: T, auth: Option[AuthData]) {
 
-  def serialize(implicit ev: T <:< Out): Bytes = {
+  def serialize(implicit ev: T <:< Out): ByteString = {
     val builder = ByteString.newBuilder
     write(builder)
-    builder.result().toArray
+    builder.result()
   }
 
   def write(builder: ByteStringBuilder)(implicit ev: T <:< Out) {
@@ -84,3 +84,5 @@ object TcpPackage {
     TcpPackage(correlationId, command, authData)
   }
 }
+
+case class AuthData(login: String, password: String)

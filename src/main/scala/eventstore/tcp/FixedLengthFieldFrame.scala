@@ -13,7 +13,6 @@ class FixedLengthFieldFrame(maxSize: Int,
   extends LengthFieldFrame(maxSize, byteOrder, 4, lengthIncludesHeader) {
 
   override def apply(ctx: PipelineContext) = {
-
     val superPipePair = super.apply(ctx)
 
     new SymmetricPipePair[ByteString, ByteString] {
@@ -21,11 +20,9 @@ class FixedLengthFieldFrame(maxSize: Int,
 
       def eventPipeline = superPipePair.eventPipeline
 
-
       override def commandPipeline = {
         bs: ByteString =>
-          val length =
-            if (lengthIncludesHeader) bs.length + 4 else bs.length
+          val length = if (lengthIncludesHeader) bs.length + 4 else bs.length
           if (length > maxSize) Seq()
           else {
             val bb = ByteString.newBuilder
