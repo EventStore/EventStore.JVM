@@ -1,41 +1,29 @@
 package eventstore
 
-import akka.actor.{Props, ActorLogging, Actor}
+import akka.actor.{ActorRef, Props, ActorLogging, Actor}
 import akka.io.Tcp
 import scala.concurrent.duration._
-import eventstore.examples.MessagesPerSecondActor
+import examples.MessagesPerSecondActor
 
 /**
  * @author Yaroslav Klymko
  */
-class SubscribeActor extends Actor with ActorLogging {
+class SubscribeActor(connection: ActorRef) extends Actor with ActorLogging {
 
-  import context.dispatcher
+  //  import context.dispatcher
 
   //  val subscribeToStream = SubscribeToStream(testStreamId, resolveLinkTos = false)
   val subscribeToStream = SubscribeTo(EventStream.All, resolveLinkTos = false)
 
-
   val stats = context.actorOf(Props[MessagesPerSecondActor])
 
   def receive = {
-    case _: Tcp.Connected =>
+    case x: SubscribeToAllCompleted =>
 
+    case x: StreamEventAppeared => stats ! x
+
+    case SubscriptionDropped =>
+      println(SubscriptionDropped)
       sender ! subscribeToStream
-
-      context.become({
-        case x: SubscribeToAllCompleted =>
-
-
-        case x: StreamEventAppeared => stats ! x
-
-        case SubscriptionDropped =>
-          println(SubscriptionDropped)
-          sender ! subscribeToStream
-
-        case HeartbeatRequestCommand => sender ! HeartbeatResponseCommand
-
-        case x => log.warning(x.toString)
-      }, discardOld = false)
   }
 }

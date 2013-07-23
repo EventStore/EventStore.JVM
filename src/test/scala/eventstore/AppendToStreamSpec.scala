@@ -1,6 +1,7 @@
 package eventstore
 
 import OperationFailed._
+import akka.testkit.TestProbe
 
 /**
  * @author Yaroslav Klymko
@@ -9,7 +10,7 @@ class AppendToStreamSpec extends TestConnectionSpec {
   "append to stream" should {
     "succeed for zero events" in new AppendToStreamScope {
       actor ! appendToStream(NoStream)
-      expectMsg(appendToStreamCompleted())
+      expectMsg(appendToStreamSucceed())
     }
 
     "create stream with NoStream exp ver on first write if does not exist" in new AppendToStreamScope {
@@ -66,6 +67,26 @@ class AppendToStreamSpec extends TestConnectionSpec {
     "be able to append multiple events at once" in new AppendToStreamScope {
       val events = appendMany()
       streamEvents mustEqual events
+    }
+
+    "be able to append many events at once" in new AppendToStreamScope {
+      val size = 10000
+      appendMany(size = size)
+      actor ! ReadStreamEvents(streamId, -1, 1, resolveLinkTos = false, ReadDirection.Backward)
+      expectMsgType[ReadStreamEventsCompleted].events.head.eventRecord.number mustEqual EventNumber.Exact(size - 1)
+      deleteStream()
+    }
+
+    "be able to append many events at once concurrently" in new AppendToStreamScope {
+      val n = 10
+      val size = 1000
+
+      Seq.fill(n)(TestProbe()).foreach(x => appendMany(size = size, testKit = x))
+
+      actor ! ReadStreamEvents(streamId, -1, 1, resolveLinkTos = false, ReadDirection.Backward)
+      expectMsgType[ReadStreamEventsCompleted].events.head.eventRecord.number mustEqual EventNumber.Exact(size * n - 1)
+
+      deleteStream()
     }
   }
 

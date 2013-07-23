@@ -16,7 +16,7 @@ class SubscribeSpec extends TestConnectionSpec {
     "be able to subscribe to non existing stream and then catch new event" in new SubscribeScope {
       subscribeToStream() mustEqual EventNumber.NoEvent
 
-      val events = appendMany(TestProbe())
+      val events = appendMany(testKit = TestProbe())
 
       events.zipWithIndex.foreach {
         case (event, index) =>

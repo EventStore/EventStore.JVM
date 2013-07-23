@@ -14,10 +14,12 @@ class SubscribeActor extends Actor with ActorLogging {
 
   val subscribeToStream = SubscribeTo(EventStream.Id("test"), resolveLinkTos = false)
 
+  sender ! subscribeToStream
+
 
   def receive = {
     case _: Tcp.Connected =>
-      sender ! subscribeToStream
+
 
       context.become {
         case x: StreamEventAppeared =>
