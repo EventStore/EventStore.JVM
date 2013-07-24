@@ -102,12 +102,6 @@ reconnectionDelay: FiniteDuration = 100.millis
                      )
 
 object Settings {
-  val default = Settings(
-    maxRetries = 10,
-    maxReconnections = 10,
-    requireMaster = true,
-    reconnectionDelay = 100.millis)
-
   /*public const int DefaultMaxQueueSize = 5000;
         public const int DefaultMaxConcurrentItems = 5000;
         public const int DefaultMaxOperationRetries = 10;
