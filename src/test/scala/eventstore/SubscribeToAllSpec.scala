@@ -1,7 +1,6 @@
 package eventstore
 
 import akka.testkit.{TestKitBase, TestProbe}
-import OperationResult._
 
 /**
  * @author Yaroslav Klymko

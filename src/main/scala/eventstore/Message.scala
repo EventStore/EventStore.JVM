@@ -27,18 +27,6 @@ case object CreateChunk extends Message
 case object PhysicalChunkBulk extends Message
 case object LogicalChunkBulk extends Message
 
-object OperationResult extends Enumeration {
-  val Success,
-  PrepareTimeout,
-  CommitTimeout,
-  ForwardTimeout,
-  WrongExpectedVersion,
-  StreamDeleted,
-  InvalidTransaction,
-  AccessDenied = Value
-}
-
-
 case class Event(eventId: Uuid,
                  eventType: String,
 //                 dataContentType: Int,
@@ -95,17 +83,6 @@ object AppendToStream {
 sealed trait AppendToStreamCompleted extends In
 case class AppendToStreamSucceed(firstEventNumber: Int) extends AppendToStreamCompleted
 case class AppendToStreamFailed(reason: OperationFailed.Value, message: String) extends AppendToStreamCompleted
-
-
-object OperationFailed extends Enumeration {
-  val PrepareTimeout,
-  CommitTimeout,
-  ForwardTimeout,
-  WrongExpectedVersion,
-  StreamDeleted,
-  InvalidTransaction,
-  AccessDenied = Value
-}
 
 
 
@@ -171,28 +148,37 @@ object ReadDirection extends Enumeration {
 }
 
 
-case class TransactionStart(streamId: EventStream.Id,
-                            expVer: ExpectedVersion,
-                            requireMaster: Boolean) extends Out
+case class TransactionStart(streamId: EventStream.Id, expVer: ExpectedVersion, requireMaster: Boolean) extends Out
 
-case class TransactionStartCompleted(transactionId: Long,
-                                     result: OperationResult.Value,
-                                     message: Option[String]) extends In
+sealed trait TransactionStartCompleted extends In
+case class TransactionStartSucceed(transactionId: Long) extends TransactionStartCompleted {
+  require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
+}
+case class TransactionStartFailed(result: OperationFailed.Value, message: Option[String]) extends TransactionStartCompleted
 
-case class TransactionWrite(transactionId: Long,
-                            events: List[Event],
-                            requireMaster: Boolean) extends Out
 
-case class TransactionWriteCompleted(transactionId: Long,
-                                     result: OperationResult.Value,
-                                     message: Option[String]) extends In
 
-case class TransactionCommit(transactionId: Long,
-                             requireMaster: Boolean) extends Out
+case class TransactionWrite(transactionId: Long, events: List[Event], requireMaster: Boolean) extends Out
 
-case class TransactionCommitCompleted(transactionId: Long,
-                                      result: OperationResult.Value,
-                                      message: Option[String]) extends In
+sealed trait TransactionWriteCompleted extends In
+case class TransactionWriteSucceed(transactionId: Long) extends TransactionWriteCompleted
+case class TransactionWriteFailed(transactionId: Long,
+                                  result: OperationFailed.Value,
+                                  message: Option[String]) extends TransactionWriteCompleted {
+  require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
+}
+
+
+
+case class TransactionCommit(transactionId: Long, requireMaster: Boolean) extends Out
+
+sealed trait TransactionCommitCompleted extends In
+case class TransactionCommitSucceed(transactionId: Long) extends TransactionCommitCompleted
+case class TransactionCommitFailed(transactionId: Long,
+                                   result: OperationFailed.Value,
+                                   message: Option[String]) extends TransactionCommitCompleted {
+  require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
+}
 
 
 

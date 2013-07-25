@@ -16,21 +16,6 @@ object Deserializers {
   type DeserializeMessage = ByteBuffer => In
   type SerializeMessage = Out => Bytes
 
-  private def operationResult(x: proto.OperationResult.EnumVal) = {
-    import proto.OperationResult._
-    x match {
-      case Success => OperationResult.Success
-      case PrepareTimeout => OperationResult.PrepareTimeout
-      case CommitTimeout => OperationResult.CommitTimeout
-      case ForwardTimeout => OperationResult.ForwardTimeout
-      case WrongExpectedVersion => OperationResult.WrongExpectedVersion
-      case StreamDeleted => OperationResult.StreamDeleted
-      case InvalidTransaction => OperationResult.InvalidTransaction
-      case AccessDenied => OperationResult.AccessDenied
-      case enum => sys.error(s"$enum is not supported")
-    }
-  }
-
   private def operationFailed(x: proto.OperationResult.EnumVal): Option[OperationFailed.Value] = {
     import proto.OperationResult._
     condOpt(x) {
@@ -68,24 +53,24 @@ object Deserializers {
   }
 
   implicit val transactionStartCompletedDeserializer = new DeserializeProto[TransactionStartCompleted, proto.TransactionStartCompleted] {
-    def apply(x: proto.TransactionStartCompleted) = TransactionStartCompleted(
-      transactionId = x.`transactionId`,
-      result = operationResult(x.`result`),
-      message = x.`message`)
+    def apply(x: proto.TransactionStartCompleted) = operationFailed(x.`result`) match {
+      case Some(failed) => TransactionStartFailed(failed, x.`message`)
+      case None => TransactionStartSucceed(x.`transactionId`)
+    }
   }
 
   implicit val transactionWriteCompletedDeserializer = new DeserializeProto[TransactionWriteCompleted, proto.TransactionWriteCompleted] {
-    def apply(x: proto.TransactionWriteCompleted) = TransactionWriteCompleted(
-      transactionId = x.`transactionId`,
-      result = operationResult(x.`result`),
-      message = x.`message`)
+    def apply(x: proto.TransactionWriteCompleted) = operationFailed(x.`result`) match {
+      case Some(failed) => TransactionWriteFailed(x.`transactionId`, failed, x.`message`)
+      case None => TransactionWriteSucceed(x.`transactionId`)
+    }
   }
 
   implicit val transactionCommitCompletedDeserializer = new DeserializeProto[TransactionCommitCompleted, proto.TransactionCommitCompleted] {
-    def apply(x: proto.TransactionCommitCompleted) = TransactionCommitCompleted(
-      transactionId = x.`transactionId`,
-      result = operationResult(x.`result`),
-      message = x.`message`)
+    def apply(x: proto.TransactionCommitCompleted) = operationFailed(x.`result`) match {
+      case Some(failed) => TransactionCommitFailed(x.`transactionId`, failed, x.`message`)
+      case None => TransactionCommitSucceed(x.`transactionId`)
+    }
   }
 
   implicit val deleteStreamCompletedDeserializer = new DeserializeProto[DeleteStreamCompleted, proto.DeleteStreamCompleted] {

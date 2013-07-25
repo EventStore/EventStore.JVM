@@ -35,7 +35,7 @@ abstract class TestConnectionSpec extends SpecificationWithJUnit with NoDuration
     def readStreamEvents = ReadStreamEvents(streamId, 0, 1000, resolveLinkTos = false, ReadDirection.Forward)
 
     def newEvent = {
-      val bytes = new Array[Byte](100)
+      val bytes = new Array[Byte](10)
       Random.nextBytes(bytes)
       val bs = ByteString(bytes)
       Event(newUuid, "test", data = bs, metadata = bs)
