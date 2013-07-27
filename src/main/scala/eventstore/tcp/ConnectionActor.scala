@@ -77,7 +77,7 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
       system.scheduler.scheduleOnce(heartbeatInterval, self, HeartbeatInterval))
 
     def send(pack: TcpPackage[Out]) {
-      log.debug(s"sending $pack")
+      log.debug(s"<< $pack")
       pipeline ! init.command(pack)
     }
 
@@ -91,11 +91,13 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
 
     {
       case init.Event(pack@TcpPackage(correlationId, msg, _)) =>
-        log.debug(s"received $pack")
+        log.debug(s">> $pack")
         scheduled.cancel()
         msg match {
           case HeartbeatResponseCommand =>
           case HeartbeatRequestCommand => send(TcpPackage(correlationId, HeartbeatResponseCommand))
+          case Pong =>
+          case Ping => send(TcpPackage(correlationId, Pong))
           case _ => dispatch(pack)
         }
         context become connected(connection, pipeline, init, packNumber + 1)

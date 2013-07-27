@@ -185,6 +185,7 @@ object Deserializers {
   val markerBytes: Map[Byte, Deserializer] = Map[Int, Deserializer](
     0x01 -> empty(HeartbeatRequestCommand),
     0x02 -> empty(HeartbeatResponseCommand),
+    0x04 -> empty(Ping),
     0x04 -> empty(Pong),
 
     //    PrepareAck = 0x05,

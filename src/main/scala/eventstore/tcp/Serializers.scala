@@ -15,6 +15,7 @@ object Serializers {
       case HeartbeatRequestCommand => >>(0x01)
       case HeartbeatResponseCommand => >>(0x02)
       case Ping => >>(0x03)
+      case Pong => >>(0x04)
       //
       //    PrepareAck = 0x05,
       //    CommitAck = 0x06,

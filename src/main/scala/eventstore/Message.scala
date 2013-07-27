@@ -11,11 +11,11 @@ sealed trait In extends Message
 sealed trait Out extends Message
 sealed trait InOut extends In with Out
 
-case object HeartbeatRequestCommand extends InOut
-case object HeartbeatResponseCommand extends InOut
+private[eventstore] case object HeartbeatRequestCommand extends InOut
+private[eventstore] case object HeartbeatResponseCommand extends InOut
 
-case object Ping extends Out
-case object Pong extends In
+private[eventstore] case object Ping extends InOut
+private[eventstore] case object Pong extends InOut
 
 case object PrepareAck extends Message
 case object CommitAck extends Message
@@ -190,9 +190,7 @@ object SubscribeTo {
 }
 
 sealed trait SubscribeCompleted extends In
-
 case class SubscribeToAllCompleted(lastCommitPosition: Long) extends SubscribeCompleted
-
 case class SubscribeToStreamCompleted(lastCommitPosition: Long, lastEventNumber: EventNumber) extends SubscribeCompleted
 
 case class StreamEventAppeared(event: ResolvedEvent) extends In
@@ -200,9 +198,7 @@ case class StreamEventAppeared(event: ResolvedEvent) extends In
 
 
 case object UnsubscribeFromStream extends Out
-
 case class SubscriptionDropped(reason: SubscriptionDropped.Value) extends In
-
 object SubscriptionDropped extends Enumeration {
   val Unsubscribed, AccessDenied = Value
   val Default: Value = Unsubscribed
