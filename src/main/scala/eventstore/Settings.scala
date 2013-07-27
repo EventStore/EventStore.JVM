@@ -53,7 +53,7 @@ requireMaster:Boolean  = true,
 //                             /// The amount of time to delay before attempting to reconnect
 //                             /// </summary>
 //                             public readonly TimeSpan ReconnectionDelay;
-reconnectionDelay: FiniteDuration = 100.millis
+reconnectionDelay: FiniteDuration = 100.millis,
 
 
 //                             /// <summary>
@@ -96,10 +96,17 @@ reconnectionDelay: FiniteDuration = 100.millis
 //                             public Action<IEventStoreConnection, string> AuthenticationFailed;
 //
 //                             public readonly bool FailOnNoServerResponse;
-//                             public readonly TimeSpan HeartbeatInterval;
-//                             public readonly TimeSpan HeartbeatTimeout;
-//                             public readonly TimeSpan ClientConnectionTimeout;
-                     )
+
+
+heartbeatInterval: FiniteDuration = 750.millis,
+heartbeatTimeout: FiniteDuration = 1500.millis,
+connectionTimeout: FiniteDuration = 1.second,
+
+backpressureLowWatermark: Int = 100,
+backpressureHighWatermark: Int = 10000,
+backpressureMaxCapacity: Int = 1000000) {
+  require(heartbeatInterval < heartbeatTimeout, s"heartbeatInterval must be < heartbeatTimeout, but $heartbeatInterval >= $heartbeatTimeout")
+}
 
 object Settings {
   /*public const int DefaultMaxQueueSize = 5000;
@@ -120,10 +127,5 @@ object Settings {
 
 
         private bool _failOnNoServerResponse;
-        private TimeSpan _heartbeatInterval = TimeSpan.FromMilliseconds(750);
-        private TimeSpan _heartbeatTimeout = TimeSpan.FromMilliseconds(1500);
-        private TimeSpan _clientConnectionTimeout = TimeSpan.FromMilliseconds(1000);
-
-
         */
 }

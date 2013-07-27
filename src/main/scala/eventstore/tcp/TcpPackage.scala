@@ -86,3 +86,7 @@ object TcpPackage {
 }
 
 case class AuthData(login: String, password: String)
+
+object AuthData {
+  val defaultAdmin = AuthData("admin", "changeit")
+}

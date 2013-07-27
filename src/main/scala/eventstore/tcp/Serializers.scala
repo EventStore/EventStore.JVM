@@ -12,6 +12,7 @@ object Serializers {
   implicit def intToByte(x: Int): Byte = x.toByte
   def serialize(message: Out): (Byte, Bytes) = {
     message match {
+      case HeartbeatRequestCommand => >>(0x01)
       case HeartbeatResponseCommand => >>(0x02)
       case Ping => >>(0x03)
       //
