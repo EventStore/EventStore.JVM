@@ -46,7 +46,7 @@ case class TcpPackage[T <: Message](correlationId: Uuid, message: T, auth: Optio
     UuidSerializer.write(builder, correlationId)
 
     auth.foreach(_.write(builder))
-    builder.putBytes(bytes)
+    builder.append(bytes)
   }
 }
 
