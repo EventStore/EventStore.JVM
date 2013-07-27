@@ -9,9 +9,10 @@ import util.BetterToString
 sealed trait Message
 sealed trait In extends Message
 sealed trait Out extends Message
+sealed trait InOut extends In with Out
 
-case object HeartbeatRequestCommand extends In
-case object HeartbeatResponseCommand extends Out
+case object HeartbeatRequestCommand extends InOut
+case object HeartbeatResponseCommand extends InOut
 
 case object Ping extends Out
 case object Pong extends In
