@@ -81,7 +81,7 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
     var packNumber = 0L
 
     def schedule(): Cancellable = CancellableAdapter(
-      system.scheduler.scheduleOnce(heartbeatTimeout, self, HeartbeatTimeout),
+      system.scheduler.scheduleOnce(heartbeatTimeout, self, HeartbeatTimeout(packNumber)),
       system.scheduler.scheduleOnce(heartbeatInterval, self, HeartbeatInterval))
 
     var scheduled = schedule() // TODO
