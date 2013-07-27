@@ -45,14 +45,7 @@ case class TcpPackage[T <: Message](correlationId: Uuid, message: T, auth: Optio
 
     UuidSerializer.write(builder, correlationId)
 
-    auth.foreach {
-      case AuthData(login, password) =>
-        builder.putByte(login.length.toByte)
-        builder.append(ByteString(login))
-
-        builder.putByte(password.length.toByte)
-        builder.append(ByteString(password))
-    }
+    auth.foreach(_.write(builder))
     builder.putBytes(bytes)
   }
 }
@@ -70,25 +63,40 @@ object TcpPackage {
     val flags = Flag.deserialize(iterator)
     val correlationId = UuidSerializer.read(iterator)
 
-    val authData = if (flags contains Flag.Auth) Some {
-      def getString = {
-        val length = iterator.getByte
-        val bytes = new Bytes(length)
-        iterator.getBytes(bytes)
-        new String(bytes, "UTF-8")
-      }
-      val login = getString
-      val password = getString
-      AuthData(login, password)
-    } else None
+    val authData = if (flags contains Flag.Auth) Some(AuthData.read(iterator)) else None
 
     val message = deserializer(iterator.toByteString)
     TcpPackage(correlationId, message, authData)
   }
 }
 
-case class AuthData(login: String, password: String)
+case class AuthData(login: String, password: String) {
+  require(login.nonEmpty, "login is empty")
+  require(password.nonEmpty, "password is empty")
+
+  def write(builder: ByteStringBuilder) {
+    def putString(s: String) {
+      val bs = ByteString(s)
+      builder.putByte(bs.size.toByte)
+      builder.append(bs)
+    }
+    putString(login)
+    putString(password)
+  }
+}
 
 object AuthData {
   val defaultAdmin = AuthData("admin", "changeit")
+
+  def read(iterator: ByteIterator): AuthData = {
+    def getString = {
+      val length = iterator.getByte
+      val bytes = new Bytes(length)
+      iterator.getBytes(bytes)
+      new String(bytes, "UTF-8")
+    }
+    val login = getString
+    val password = getString
+    AuthData(login, password)
+  }
 }
