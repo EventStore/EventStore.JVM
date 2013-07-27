@@ -4,7 +4,6 @@
 
 package object eventstore {
   type Bytes = Array[Byte]
-  type ByteBuffer = java.nio.ByteBuffer
   type Uuid = java.util.UUID
   val ByteString = akka.util.ByteString
   type ByteString = akka.util.ByteString

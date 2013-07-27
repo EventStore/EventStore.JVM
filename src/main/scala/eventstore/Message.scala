@@ -83,7 +83,7 @@ object AppendToStream {
 
 sealed trait AppendToStreamCompleted extends In
 case class AppendToStreamSucceed(firstEventNumber: Int) extends AppendToStreamCompleted
-case class AppendToStreamFailed(reason: OperationFailed.Value, message: String) extends AppendToStreamCompleted
+case class AppendToStreamFailed(reason: OperationFailed.Value, message: Option[String]) extends AppendToStreamCompleted
 
 
 
@@ -93,7 +93,7 @@ case class DeleteStream(streamId: EventStream.Id,
 
 sealed trait DeleteStreamCompleted extends In
 case object DeleteStreamSucceed extends DeleteStreamCompleted
-case class DeleteStreamFailed(result: OperationFailed.Value, message: String) extends DeleteStreamCompleted
+case class DeleteStreamFailed(result: OperationFailed.Value, message: Option[String]) extends DeleteStreamCompleted
 
 
 
@@ -101,7 +101,7 @@ case class ReadEvent(streamId: EventStream.Id, eventNumber: EventNumber, resolve
 
 sealed trait ReadEventCompleted extends In
 case class ReadEventSucceed(event: ResolvedIndexedEvent) extends ReadEventCompleted
-case class ReadEventFailed(reason: ReadEventFailed.Value, message: String) extends ReadEventCompleted
+case class ReadEventFailed(reason: ReadEventFailed.Value, message: Option[String]) extends ReadEventCompleted
 object ReadEventFailed extends Enumeration {
   val NotFound, NoStream, StreamDeleted, Error, AccessDenied = Value
 }
@@ -213,10 +213,3 @@ object SubscriptionDropped extends Enumeration {
 case object ScavengeDatabase extends Out
 
 case object BadRequest extends In
-
-
-object Message {
-  def deserialize(in: ByteString)(implicit deserializer: ByteString => In): In = deserializer(in)
-
-  def serialize[T <: Out](out: T)(implicit serializer: T => ByteString): ByteString = serializer(out)
-}

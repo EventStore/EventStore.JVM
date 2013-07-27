@@ -2,18 +2,17 @@ package eventstore
 package tcp
 
 import akka.util.ByteString
-import eventstore.proto
 import com.google.protobuf.{ByteString => PByteString}
 import net.sandrogrzicic.scalabuff.MessageBuilder
 import scala.reflect.ClassTag
-import PartialFunction.condOpt
+import scala.PartialFunction.condOpt
 
 /**
  * @author Yaroslav Klymko
  */
 object Deserializers {
   type Deserialize[T <: In] = ByteString => T
-  type DeserializeMessage = ByteBuffer => In
+  type Deserializer = ByteString => In
   type SerializeMessage = Out => Bytes
 
   private def operationFailed(x: proto.OperationResult.EnumVal): Option[OperationFailed.Value] = {
@@ -32,12 +31,9 @@ object Deserializers {
   import ReadDirection.{Backward, Forward}
 
 
-  def deserializer[T <: In](implicit deserializer: Deserialize[T]): DeserializeMessage = {
-    (buffer:ByteBuffer) => deserializer(ByteString(buffer))
-  }
+  def deserializer[T <: In](implicit deserializer: Deserialize[T]): Deserializer = deserializer
 
-
-  def deserializeX[T](x: T)(buffer: ByteBuffer): T = x
+  def empty[T](x: T)(bs: ByteString): T = x
 
   abstract class DeserializeProto[T <: In, P <: MessageBuilder[P]](implicit ev: ClassTag[P]) extends Deserialize[T] {
     val instance = ev.runtimeClass.getDeclaredMethod("defaultInstance").invoke(ev.runtimeClass).asInstanceOf[P]
@@ -47,7 +43,7 @@ object Deserializers {
 
   implicit val writeEventsCompletedDeserializer = new DeserializeProto[AppendToStreamCompleted, proto.WriteEventsCompleted] {
     def apply(x: proto.WriteEventsCompleted) = operationFailed(x.`result`) match {
-      case Some(reason) => AppendToStreamFailed(reason, x.`message` getOrElse sys.error(s"AppendToStreamCompleted.result is not given, however operation result is $reason"))
+      case Some(reason) => AppendToStreamFailed(reason, x.`message`)
       case None => AppendToStreamSucceed(x.`firstEventNumber`)
     }
   }
@@ -75,7 +71,7 @@ object Deserializers {
 
   implicit val deleteStreamCompletedDeserializer = new DeserializeProto[DeleteStreamCompleted, proto.DeleteStreamCompleted] {
     def apply(x: proto.DeleteStreamCompleted) = operationFailed(x.`result`) match {
-      case Some(reason) => DeleteStreamFailed(reason, x.`message` getOrElse sys.error(s"DeleteStreamCompleted.message is not given, however operation result is $reason"))
+      case Some(reason) => DeleteStreamFailed(reason, x.`message`)
       case None => DeleteStreamSucceed
     }
   }
@@ -95,16 +91,13 @@ object Deserializers {
     }
 
     def apply(x: proto.ReadEventCompleted) = readEventFailed(x.`result`) match {
-      //TODO why empty message case Some(reason) => ReadEventFailed(reason, x.`error` getOrElse sys.error(s"ReadEventCompleted.error is not given, however operation result is $reason"))
-      case Some(reason) => ReadEventFailed(reason, x.`error` getOrElse "")
+      case Some(reason) => ReadEventFailed(reason, x.`error`)
       case None => ReadEventSucceed(resolvedIndexedEvent(x.`event`))
     }
   }
 
-  def readStreamEventsCompleted(direction: ReadDirection.Value)(buffer: ByteBuffer) = {
-    val bytes = new Array[Byte](buffer.remaining())
-    buffer.get(bytes)
-    val x = proto.ReadStreamEventsCompleted.defaultInstance.mergeFrom(bytes)
+  def readStreamEventsCompleted(direction: ReadDirection.Value)(bs: ByteString) = {
+    val x = proto.ReadStreamEventsCompleted.defaultInstance.mergeFrom(bs.toArray[Byte])
 
     def readStreamResult(x: proto.ReadStreamEventsCompleted.ReadStreamResult.EnumVal) = {
       import proto.ReadStreamEventsCompleted.ReadStreamResult._
@@ -130,10 +123,8 @@ object Deserializers {
   }
 
 
-  def readAllEventsCompleted(direction: ReadDirection.Value)(buffer: ByteBuffer) = {
-    val bytes = new Array[Byte](buffer.remaining())
-    buffer.get(bytes)
-    val x = proto.ReadAllEventsCompleted.defaultInstance.mergeFrom(bytes)
+  def readAllEventsCompleted(direction: ReadDirection.Value)(bs: ByteString) = {
+    val x = proto.ReadAllEventsCompleted.defaultInstance.mergeFrom(bs.toArray[Byte])
 
     ReadAllEventsCompleted(
       commitPosition = x.`commitPosition`,
@@ -169,12 +160,8 @@ object Deserializers {
       SubscriptionDropped(reason = x.`reason`.fold(SubscriptionDropped.Default)(reason))
   }
 
-
-
-  def deserialize(markerByte: Byte): DeserializeMessage = markerBytes.get(markerByte).getOrElse(
+  def deserialize(markerByte: Byte): Deserializer = markerBytes.get(markerByte).getOrElse(
     sys.error(s"wrong marker byte: ${"0x" + Integer.toHexString(markerByte).drop(6).toUpperCase}"))
-
-  def noBytes(message: In): DeserializeMessage = _ => message
 
   def eventRecord(x: proto.EventRecord): EventRecord = EventRecord(
     streamId = EventStream.Id(x.`eventStreamId`),
@@ -195,10 +182,10 @@ object Deserializers {
     ResolvedIndexedEvent(eventRecord(x.`event`), x.`link`.map(eventRecord))
 
 
-  val markerBytes: Map[Byte, DeserializeMessage] = Map[Int, DeserializeMessage](
-    0x01 -> deserializeX(HeartbeatRequestCommand),
-    0x02 -> deserializeX(HeartbeatResponseCommand),
-    0x04 -> deserializeX(Pong),
+  val markerBytes: Map[Byte, Deserializer] = Map[Int, Deserializer](
+    0x01 -> empty(HeartbeatRequestCommand),
+    0x02 -> empty(HeartbeatResponseCommand),
+    0x04 -> empty(Pong),
 
     //    PrepareAck = 0x05,
     //    CommitAck = 0x06,
@@ -230,12 +217,12 @@ object Deserializers {
     0xC4 -> deserializer[SubscriptionDropped],
 
     //    ScavengeDatabase = 0xD0,
-    0xF0 -> deserializeX(BadRequest)
+    0xF0 -> empty(BadRequest)
     //    DeniedToRoute = 0xF1
 
   ).map {
     case (key, value) => key.toByte -> value
-  } // TODO
+  }
 
 
   def byteString(bs: PByteString): ByteString = ByteString(bs.asReadOnlyByteBuffer())

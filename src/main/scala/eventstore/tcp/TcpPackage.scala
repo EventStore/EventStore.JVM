@@ -1,7 +1,7 @@
-package eventstore.tcp
+package eventstore
+package tcp
 
 
-import eventstore._
 import akka.util.{ByteIterator, ByteStringBuilder}
 
 /**
@@ -66,7 +66,7 @@ object TcpPackage {
   def deserialize(bs: ByteString): TcpPackage[In] = read(bs.iterator)
 
   def read(iterator: ByteIterator): TcpPackage[In] = {
-    val markerByte = iterator.getByte
+    val deserializer = Deserializers.deserialize(iterator.getByte)
     val flags = Flag.deserialize(iterator)
     val correlationId = UuidSerializer.read(iterator)
 
@@ -78,10 +78,8 @@ object TcpPackage {
       AuthData(login, password)
     } else None
 
-    val deserializers = Deserializers.deserialize(markerByte)
-    val xx = iterator.toByteString
-    val command = Message.deserialize(xx)(x => deserializers(x.asByteBuffer))
-    TcpPackage(correlationId, command, authData)
+    val message = deserializer(iterator.toByteString)
+    TcpPackage(correlationId, message, authData)
   }
 }
 
