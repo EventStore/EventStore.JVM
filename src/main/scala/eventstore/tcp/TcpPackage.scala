@@ -71,10 +71,14 @@ object TcpPackage {
     val correlationId = UuidSerializer.read(iterator)
 
     val authData = if (flags contains Flag.Auth) Some {
-      val loginLength = iterator.getByte
-      val login = iterator.take(loginLength).clone().toByteString.utf8String
-      val passwordLength = iterator.getByte
-      val password = iterator.take(passwordLength).clone().toByteString.utf8String
+      def getString = {
+        val length = iterator.getByte
+        val bytes = new Bytes(length)
+        iterator.getBytes(bytes)
+        new String(bytes, "UTF-8")
+      }
+      val login = getString
+      val password = getString
       AuthData(login, password)
     } else None
 

@@ -70,7 +70,7 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
   def connected(connection: ActorRef,
                 pipeline: ActorRef,
                 init: Init[WithinActorContext, TcpPackage[Out], TcpPackage[In]],
-                packNumber: Long = -1): Receive = {
+                packNumber: Int = -1): Receive = {
 
     val scheduled = CancellableAdapter(
       system.scheduler.scheduleOnce(heartbeatTimeout, self, HeartbeatTimeout(packNumber)),
@@ -161,6 +161,6 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
 
   def connect = Tcp.Connect(address, timeout = Some(connectionTimeout))
 
-  case class HeartbeatTimeout(packNumber: Long)
+  case class HeartbeatTimeout(packNumber: Int)
   case object HeartbeatInterval
 }
