@@ -56,15 +56,15 @@ class ConnectionActorSpec extends SpecificationWithJUnit with NoDurationConversi
 
     "use reconnectionDelay from settings" in new TcpMockScope {
       val settings = Settings(maxReconnections = 3, reconnectionDelay = FiniteDuration(2, SECONDS))
-      newClient(settings)
+      val client = newClient(settings)
 
       val connect = expectMsgType[Connect]
-      lastSender ! CommandFailed(connect)
+      client ! CommandFailed(connect)
 
       expectNoMsg(FiniteDuration(1, SECONDS))
 
       expectMsgType[Connect]
-      lastSender ! CommandFailed(connect)
+      client ! CommandFailed(connect)
     }
 
     "reconnect if heartbeat timed out" in new TcpScope {

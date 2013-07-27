@@ -16,7 +16,7 @@ object UuidSerializer {
 
   def serialize(uuid: Uuid): ByteString = {
     val builder = ByteString.newBuilder
-    write(builder,uuid)
+    write(builder, uuid)
     builder.result()
   }
 

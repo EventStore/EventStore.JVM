@@ -1,42 +1,35 @@
 package eventstore
 package tcp
 
-import akka.actor.{Cancellable, Actor, ActorRef, ActorLogging}
+import akka.actor.{Actor, ActorRef, ActorLogging}
 import akka.io._
 import akka.io.TcpPipelineHandler.{WithinActorContext, Init}
 import java.nio.ByteOrder
-import scala.collection.immutable.Queue
 import util.{CancellableAdapter, BidirectionalMap}
+import scala.collection.immutable.Queue
+import scala.concurrent.duration._
 
 /**
  * @author Yaroslav Klymko
  */
 class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
-
   import Tcp._
   import context.system
   import context.dispatcher
   import settings._
 
-  case class HeartbeatTimeout(packNumber: Long)
-  case object HeartbeatInterval
-
   val tcp = IO(Tcp)
-
 
   override def preStart() {
     log.debug(s"connecting to $address")
     tcp ! connect
   }
 
-  def connect = Tcp.Connect(address, timeout = Some(connectionTimeout))
-
-  var binding = new BidirectionalMap[Uuid, ActorRef]() // todo clean on expiry or somehow  
+  var binding = new BidirectionalMap[Uuid, ActorRef]() // todo clean on expiry or somehow
 
   def receive = connecting()
 
-  def connecting(stash: Queue[TcpPackage[Out]] = Queue(),
-                            reconnectionsLeft: Int = maxReconnections): Receive = {
+  def connecting(stash: Queue[TcpPackage[Out]] = Queue(), reconnectionsLeft: Int = maxReconnections): Receive = {
     case Connected(remote, _) =>
       log.info(s"connected to $remote")
 
@@ -76,23 +69,16 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
 
   def connected(connection: ActorRef,
                 pipeline: ActorRef,
-                init: Init[WithinActorContext, TcpPackage[Out], TcpPackage[In]]): Receive = {
+                init: Init[WithinActorContext, TcpPackage[Out], TcpPackage[In]],
+                packNumber: Long = -1): Receive = {
 
-    var packNumber = 0L
-
-    def schedule(): Cancellable = CancellableAdapter(
+    val scheduled = CancellableAdapter(
       system.scheduler.scheduleOnce(heartbeatTimeout, self, HeartbeatTimeout(packNumber)),
       system.scheduler.scheduleOnce(heartbeatInterval, self, HeartbeatInterval))
-
-    var scheduled = schedule() // TODO
 
     def send(pack: TcpPackage[Out]) {
       log.debug(s"sending $pack")
       pipeline ! init.command(pack)
-    }
-
-    def reschedule() {
-      scheduled = schedule()
     }
 
     def maybeReconnect() {
@@ -106,23 +92,22 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
     {
       case init.Event(pack@TcpPackage(correlationId, msg, _)) =>
         log.debug(s"received $pack")
-        reschedule()
-        packNumber = packNumber + 1
-
+        scheduled.cancel()
         msg match {
           case HeartbeatResponseCommand =>
-          case HeartbeatRequestCommand => send(TcpPackage(correlationId, HeartbeatResponseCommand, Some(AuthData.defaultAdmin)))
+          case HeartbeatRequestCommand => send(TcpPackage(correlationId, HeartbeatResponseCommand))
           case _ => dispatch(pack)
         }
+        context become connected(connection, pipeline, init, packNumber + 1)
+
+      case out: Out => send(tcpPackage(out))
 
       case HeartbeatInterval => send(TcpPackage(HeartbeatRequestCommand))
 
-      case HeartbeatTimeout(n) if n == packNumber =>
+      case HeartbeatTimeout(`packNumber`) =>
         log.error(s"no heartbeat within $heartbeatTimeout")
         connection ! Close
         maybeReconnect()
-
-      case out: Out => send(tcpPackage(out))
 
       case closed: ConnectionClosed =>
         scheduled.cancel()
@@ -141,7 +126,7 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
   }
 
   def reconnect() {
-    if (reconnectionDelay.length == 0) {
+    if (reconnectionDelay == Duration.Zero) {
       log.info(s"reconnecting to $address")
       tcp ! connect
     } else {
@@ -171,4 +156,9 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
     }
     actor ! msg
   }
+
+  def connect = Tcp.Connect(address, timeout = Some(connectionTimeout))
+
+  case class HeartbeatTimeout(packNumber: Long)
+  case object HeartbeatInterval
 }
