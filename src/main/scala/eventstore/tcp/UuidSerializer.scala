@@ -2,7 +2,6 @@ package eventstore
 package tcp
 
 
-
 import java.nio.ByteOrder.LITTLE_ENDIAN
 import akka.util.{ByteStringBuilder, ByteIterator}
 
