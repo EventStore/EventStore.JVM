@@ -129,10 +129,14 @@ object Serializers {
     case x: TransactionCommit => serializer(0x88, x)
     case x: DeleteStream => serializer(0x8A, x)
     case x: ReadEvent => serializer(0xB0, x)
-    case x@ReadStreamEvents(_, _, _, _, Forward) => serializer(0xB2, x)
-    case x@ReadStreamEvents(_, _, _, _, Backward) => serializer(0xB4, x)
-    case x@ReadAllEvents(_, _, _, _, Forward) => serializer(0xB6, x)
-    case x@ReadAllEvents(_, _, _, _, Backward) => serializer(0xB8, x)
+    case x: ReadStreamEvents => x.direction match {
+      case Forward => serializer(0xB2, x)
+      case Backward => serializer(0xB4, x)
+    }
+    case x: ReadAllEvents => x.direction match {
+      case Forward => serializer(0xB6, x)
+      case Backward => serializer(0xB8, x)
+    }
     case x: SubscribeTo => serializer(0xC0, x)
     case UnsubscribeFromStream => empty(0xC3)
     case ScavengeDatabase => empty(0xD0)
