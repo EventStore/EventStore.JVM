@@ -177,7 +177,7 @@ class ConnectionActorSpec extends SpecificationWithJUnit with NoDurationConversi
   abstract class TcpMockScope extends TestKit(ActorSystem()) with ImplicitSender with Scope {
 
     def newClient(settings: Settings = Settings()) = TestActorRef(new ConnectionActor(settings) {
-      override val tcp = testActor
+      override def tcp = testActor
     })
 
     def verifyReconnections(n: Int) {

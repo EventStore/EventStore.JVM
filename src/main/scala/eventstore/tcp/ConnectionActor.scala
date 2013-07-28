@@ -18,8 +18,6 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
   import context.dispatcher
   import settings._
 
-  val tcp = IO(Tcp)
-
   override def preStart() {
     log.debug(s"connecting to $address")
     tcp ! connect
@@ -50,8 +48,15 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
       val pipeline = context.actorOf(TcpPipelineHandler.props(init, connection, self))
 
       connection ! Register(pipeline)
-      stash.foreach(segment => pipeline ! init.Command(segment))
-      context become connected(connection, pipeline, init)
+
+      def send(pack: TcpPackage[Out]) {
+        log.debug(s"<< $pack")
+        pipeline ! init.command(pack)
+      }
+
+      stash.foreach(send)
+
+      context become connected(connection, send, init)
 
     case CommandFailed(_: Connect) =>
       log.error(s"connection failed to $address")
@@ -62,24 +67,19 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
       }
 
     case message: Out =>
-      val segment = tcpPackage(message)
       log.debug(s"received $message while not connected, adding to stash")
-      context become connecting(stash.enqueue(segment))
+      val pack = tcpPackage(message)
+      context become connecting(stash enqueue pack)
   }
 
   def connected(connection: ActorRef,
-                pipeline: ActorRef,
+                send: TcpPackage[Out] => Unit,
                 init: Init[WithinActorContext, TcpPackage[Out], TcpPackage[In]],
                 packNumber: Int = -1): Receive = {
 
     val scheduled = CancellableAdapter(
       system.scheduler.scheduleOnce(heartbeatTimeout, self, HeartbeatTimeout(packNumber)),
       system.scheduler.scheduleOnce(heartbeatInterval, self, HeartbeatInterval))
-
-    def send(pack: TcpPackage[Out]) {
-      log.debug(s"<< $pack")
-      pipeline ! init.command(pack)
-    }
 
     def maybeReconnect() {
       if (settings.maxReconnections == 0) context stop self
@@ -100,7 +100,7 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
           case Ping => send(TcpPackage(correlationId, Pong))
           case _ => dispatch(pack)
         }
-        context become connected(connection, pipeline, init, packNumber + 1)
+        context become connected(connection, send, init, packNumber + 1)
 
       case out: Out => send(tcpPackage(out))
 
@@ -160,6 +160,8 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
   }
 
   def connect = Tcp.Connect(address, timeout = Some(connectionTimeout))
+
+  def tcp = IO(Tcp)
 
   case class HeartbeatTimeout(packNumber: Int)
   case object HeartbeatInterval
