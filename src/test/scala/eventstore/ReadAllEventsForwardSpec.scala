@@ -12,12 +12,12 @@ class ReadAllEventsForwardSpec extends TestConnectionSpec {
   "read all events forward" should {
     "return empty slice if asked to read from end" in new ReadAllEventsForwardScope {
       val events = appendMany()
-      readAllEvents(-1, -1, 1) must beEmpty
+      readAllEvents(Position.end, 1) must beEmpty
     }
 
     "return events in same order as written" in new ReadAllEventsForwardScope {
       val events = appendMany()
-      readAllEvents(0, 0, Int.MaxValue).takeRight(events.length) mustEqual events
+      readAllEvents(Position.start, Int.MaxValue).takeRight(events.length) mustEqual events
     }
 
     "be able to read all one by one until end of stream" in new ReadAllEventsForwardScope {
@@ -31,7 +31,7 @@ class ReadAllEventsForwardSpec extends TestConnectionSpec {
     "read '$streamDeleted' events" in new ReadAllEventsForwardScope {
       appendEventToCreateStream()
       deleteStream()
-      readAllEventRecords(0, 0, Int.MaxValue).last must beLike {
+      readAllEventRecords(Position.start, Int.MaxValue).last must beLike {
         case EventRecord(`streamId`, _, Event.StreamDeleted(_)) => ok
       }
     }
@@ -39,34 +39,34 @@ class ReadAllEventsForwardSpec extends TestConnectionSpec {
     "read events from deleted streams" in new ReadAllEventsForwardScope {
       doAppendToStream(newEvent, AnyVersion)
       deleteStream()
-      readAllEventRecords(0, 0, Int.MaxValue).filter(_.streamId == streamId) must haveSize(2)
+      readAllEventRecords(Position.start, Int.MaxValue).filter(_.streamId == streamId) must haveSize(2)
     }
   }
 
   trait ReadAllEventsForwardScope extends TestConnectionScope {
 
-    def readAllEventRecords(commitPosition: Long, preparePosition: Long, maxCount: Int): List[EventRecord] = {
-      actor ! ReadAllEvents(commitPosition, preparePosition, maxCount, resolveLinkTos = false, Forward)
+    def readAllEventRecords(position: Position, maxCount: Int): List[EventRecord] = {
+      actor ! ReadAllEvents(position, maxCount, resolveLinkTos = false, Forward)
       expectMsgPF() {
-        case ReadAllEventsCompleted(_, _, xs, _, _, Forward) => xs.map(_.event)
+        case ReadAllEventsCompleted(_, xs, _, Forward) => xs.map(_.event)
       }
     }
 
-    def readAllEvents(commitPosition: Long, preparePosition: Long, maxCount: Int): List[Event] =
-      readAllEventRecords(commitPosition, preparePosition, maxCount).map(_.event)
+    def readAllEvents(position: Position, maxCount: Int): List[Event] =
+      readAllEventRecords(position, maxCount).map(_.event)
 
     def readUntilEndOfStream(size: Int) {
-      def read(commitPosition: Long, preparePosition: Long) {
-        actor ! ReadAllEvents(commitPosition, preparePosition, size, resolveLinkTos = false, Forward)
-        val (events, nextCommitPosition, nextPreparePosition) = expectMsgPF() {
-          case ReadAllEventsCompleted(_, _, xs, c, p, Forward) => (xs, c, p)
+      def read(position: Position) {
+        actor ! ReadAllEvents(position, size, resolveLinkTos = false, Forward)
+        val (events, nextPosition) = expectMsgPF() {
+          case ReadAllEventsCompleted(_, xs, p, Forward) => (xs, p)
         }
         if (events.nonEmpty) {
           events.size must beLessThanOrEqualTo(size)
-          read(nextCommitPosition, nextPreparePosition)
+          read(nextPosition)
         }
       }
-      read(0, 0)
+      read(Position.start)
     }
   }
 }

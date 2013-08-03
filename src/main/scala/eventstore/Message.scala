@@ -55,10 +55,7 @@ case class EventRecord(streamId: EventStream.Id, number: EventNumber.Exact, even
 
 case class ResolvedIndexedEvent(eventRecord: EventRecord, link: Option[EventRecord])
 
-case class ResolvedEvent(event: EventRecord,
-                         link: Option[EventRecord],
-                         commitPosition: Long,
-                         preparePosition: Long)
+case class ResolvedEvent(event: EventRecord, link: Option[EventRecord], position: Position)
 
 
 case class DeniedToRoute(externalTcpAddress: String,
@@ -128,18 +125,14 @@ object ReadStreamResult extends Enumeration {
 }
 
 
-
-case class ReadAllEvents(commitPosition: Long,
-                         preparePosition: Long,
+case class ReadAllEvents(position: Position,
                          maxCount: Int,
                          resolveLinkTos: Boolean,
                          direction: ReadDirection.Value) extends Out
 
-case class ReadAllEventsCompleted(commitPosition: Long,
-                                  preparePosition: Long,
+case class ReadAllEventsCompleted(position: Position,
                                   events: List[ResolvedEvent],
-                                  nextCommitPosition: Long,
-                                  nextPreparePosition: Long,
+                                  nextPosition: Position,
                                   direction: ReadDirection.Value) extends In
 
 

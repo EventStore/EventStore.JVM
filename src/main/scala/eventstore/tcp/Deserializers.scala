@@ -122,16 +122,12 @@ object Deserializers {
       direction = direction)
   }
 
-
   def readAllEventsCompleted(direction: ReadDirection.Value)(bs: ByteString) = {
     val x = proto.ReadAllEventsCompleted.defaultInstance.mergeFrom(bs.toArray[Byte])
-
     ReadAllEventsCompleted(
-      commitPosition = x.`commitPosition`,
-      preparePosition = x.`preparePosition`,
+      position = Position(commitPosition = x.`commitPosition`, preparePosition = x.`preparePosition`),
       events = x.`events`.toList.map(resolvedEvent),
-      nextCommitPosition = x.`nextCommitPosition`,
-      nextPreparePosition = x.`nextPreparePosition`,
+      nextPosition = Position(commitPosition = x.`nextCommitPosition`, preparePosition = x.`nextPreparePosition`),
       direction = direction)
   }
 
@@ -175,8 +171,7 @@ object Deserializers {
   def resolvedEvent(x: proto.ResolvedEvent): ResolvedEvent = ResolvedEvent(
     event = eventRecord(x.`event`),
     link = x.`link`.map(eventRecord),
-    commitPosition = x.`commitPosition`,
-    preparePosition = x.`preparePosition`)
+    position = Position(commitPosition = x.`commitPosition`, preparePosition = x.`preparePosition`))
 
   def resolvedIndexedEvent(x: proto.ResolvedIndexedEvent) =
     ResolvedIndexedEvent(eventRecord(x.`event`), x.`link`.map(eventRecord))
@@ -207,11 +202,11 @@ object Deserializers {
     0x8B -> deserializer[DeleteStreamCompleted],
     0xB1 -> deserializer[ReadEventCompleted],
 
-    0xB3 -> readStreamEventsCompleted(Forward),
-    0xB5 -> readStreamEventsCompleted(Backward),
+    0xB3 -> readStreamEventsCompleted(Forward), // TODO
+    0xB5 -> readStreamEventsCompleted(Backward), // TODO
 
-    0xB7 -> readAllEventsCompleted(Forward),
-    0xB9 -> readAllEventsCompleted(Backward),
+    0xB7 -> readAllEventsCompleted(Forward), // TODO
+    0xB9 -> readAllEventsCompleted(Backward), // TODO
 
     0xC1 -> deserializer[SubscribeCompleted],
     0xC2 -> deserializer[StreamEventAppeared],

@@ -90,8 +90,8 @@ object Serializers {
 
   implicit val readAllEventsSerializer: Serializer[ReadAllEvents] = new ProtoSerializer[ReadAllEvents] {
     def toProto(x: ReadAllEvents) = proto.ReadAllEvents(
-      `commitPosition` = x.commitPosition,
-      `preparePosition` = x.preparePosition,
+      `commitPosition` = x.position.commitPosition,
+      `preparePosition` = x.position.preparePosition,
       `maxCount` = x.maxCount,
       `resolveLinkTos` = x.resolveLinkTos)
   }

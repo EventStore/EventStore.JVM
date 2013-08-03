@@ -84,7 +84,7 @@ abstract class TestConnectionSpec extends SpecificationWithJUnit with NoDuration
     }
 
     def expectEventAppeared(eventNumber: EventNumber.Exact, testKit: TestKitBase = this) = testKit.expectMsgPF() {
-      case StreamEventAppeared(ResolvedEvent(EventRecord(`streamId`, `eventNumber`, event), None, _, _)) => event
+      case StreamEventAppeared(ResolvedEvent(EventRecord(`streamId`, `eventNumber`, event), None, _)) => event
     }
 
     def after = {

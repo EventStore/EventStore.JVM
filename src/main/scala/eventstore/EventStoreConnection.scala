@@ -334,7 +334,6 @@ case class StreamEventsSlice(){
 }
 
 case class AllEventsSlice()
-case class Position()
 case class EventStoreSubscription()
 
 /*namespace EventStore.ClientAPI
