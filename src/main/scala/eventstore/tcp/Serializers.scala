@@ -17,6 +17,7 @@ object Serializers {
 
   trait ProtoSerializer[T] extends Serializer[T] {
     def apply(x: T) = ByteString(toProto(x).toByteArray)
+
     def toProto(x: T): MessageLite
 
     def newEvent(x: Event) = proto.NewEvent(
@@ -28,11 +29,13 @@ object Serializers {
       `metadata` = protoByteStringOption(x.metadata))
 
     def protoByteString(bs: ByteString) = ProtoByteString.copyFrom(bs.toByteBuffer)
+
     def protoByteString(uuid: Uuid) = ProtoByteString.copyFrom(UuidSerializer.serialize(uuid).toByteBuffer)
+
     def protoByteStringOption(bs: ByteString) = if (bs.isEmpty) None else Some(protoByteString(bs))
   }
 
-  implicit val appendToStreamSerializer: Serializer[AppendToStream] = new ProtoSerializer[AppendToStream] {
+  implicit object AppendToStreamSerializer extends ProtoSerializer[AppendToStream] {
     def toProto(x: AppendToStream) = proto.WriteEvents(
       `eventStreamId` = x.streamId.value,
       `expectedVersion` = x.expVer.value,
@@ -40,34 +43,34 @@ object Serializers {
       `requireMaster` = x.requireMaster)
   }
 
-  implicit val transactionStartSerializer: Serializer[TransactionStart] = new ProtoSerializer[TransactionStart] {
+  implicit object TransactionStartSerializer extends ProtoSerializer[TransactionStart] {
     def toProto(x: TransactionStart) = proto.TransactionStart(
       `eventStreamId` = x.streamId.value,
       `expectedVersion` = x.expVer.value,
       `requireMaster` = x.requireMaster)
   }
 
-  implicit val transactionWriteSerializer: Serializer[TransactionWrite] = new ProtoSerializer[TransactionWrite] {
+  implicit object TransactionWriteSerializer extends ProtoSerializer[TransactionWrite] {
     def toProto(x: TransactionWrite) = proto.TransactionWrite(
       `transactionId` = x.transactionId,
       `events` = x.events.map(newEvent).toVector,
       `requireMaster` = x.requireMaster)
   }
 
-  implicit val transactionCommitSerializer: Serializer[TransactionCommit] = new ProtoSerializer[TransactionCommit] {
+  implicit object TransactionCommitSerializer extends ProtoSerializer[TransactionCommit] {
     def toProto(x: TransactionCommit) = proto.TransactionCommit(
       `transactionId` = x.transactionId,
       `requireMaster` = x.requireMaster)
   }
 
-  implicit val deleteStreamSerializer: Serializer[DeleteStream] = new ProtoSerializer[DeleteStream] {
+  implicit object DeleteStreamSerializer extends ProtoSerializer[DeleteStream] {
     def toProto(x: DeleteStream) = proto.DeleteStream(
       `eventStreamId` = x.streamId.value,
       `expectedVersion` = x.expVer.value,
       `requireMaster` = x.requireMaster)
   }
 
-  implicit val readEventSerializer: Serializer[ReadEvent] = new ProtoSerializer[ReadEvent] {
+  implicit object ReadEventSerializer extends ProtoSerializer[ReadEvent] {
     def toProto(x: ReadEvent) = {
       val eventNumber = x.eventNumber match {
         case EventNumber.Last => -1
@@ -80,7 +83,7 @@ object Serializers {
     }
   }
 
-  implicit val readStreamEventsSerializer: Serializer[ReadStreamEvents] = new ProtoSerializer[ReadStreamEvents] {
+  implicit object ReadStreamEventsSerializer extends ProtoSerializer[ReadStreamEvents] {
     def toProto(x: ReadStreamEvents) = proto.ReadStreamEvents(
       `eventStreamId` = x.streamId.value,
       `fromEventNumber` = x.fromEventNumber,
@@ -88,7 +91,7 @@ object Serializers {
       `resolveLinkTos` = x.resolveLinkTos)
   }
 
-  implicit val readAllEventsSerializer: Serializer[ReadAllEvents] = new ProtoSerializer[ReadAllEvents] {
+  implicit object ReadAllEventsSerializer extends ProtoSerializer[ReadAllEvents] {
     def toProto(x: ReadAllEvents) = proto.ReadAllEvents(
       `commitPosition` = x.position.commitPosition,
       `preparePosition` = x.position.preparePosition,
@@ -96,7 +99,7 @@ object Serializers {
       `resolveLinkTos` = x.resolveLinkTos)
   }
 
-  implicit val subscribeToSerializer: Serializer[SubscribeTo] = new ProtoSerializer[SubscribeTo] {
+  implicit object SubscribeToSerializer extends ProtoSerializer[SubscribeTo] {
     def toProto(x: SubscribeTo) = {
       val streamId = x.stream match {
         case EventStream.All => ""
@@ -107,7 +110,7 @@ object Serializers {
         `resolveLinkTos` = x.resolveLinkTos)
     }
   }
-  
+
   def serialize(message: Out): (Byte, ByteString) = message match {
     case HeartbeatRequestCommand => empty(0x01)
     case HeartbeatResponseCommand => empty(0x02)

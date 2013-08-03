@@ -41,42 +41,42 @@ object Deserializers {
     def apply(x: P): T
   }
 
-  implicit val writeEventsCompletedDeserializer = new DeserializeProto[AppendToStreamCompleted, proto.WriteEventsCompleted] {
+  implicit object WriteEventsCompletedDeserializer extends DeserializeProto[AppendToStreamCompleted, proto.WriteEventsCompleted] {
     def apply(x: proto.WriteEventsCompleted) = operationFailed(x.`result`) match {
       case Some(reason) => AppendToStreamFailed(reason, x.`message`)
       case None => AppendToStreamSucceed(x.`firstEventNumber`)
     }
   }
 
-  implicit val transactionStartCompletedDeserializer = new DeserializeProto[TransactionStartCompleted, proto.TransactionStartCompleted] {
+  implicit object TransactionStartCompletedDeserializer extends DeserializeProto[TransactionStartCompleted, proto.TransactionStartCompleted] {
     def apply(x: proto.TransactionStartCompleted) = operationFailed(x.`result`) match {
       case Some(failed) => TransactionStartFailed(failed, x.`message`)
       case None => TransactionStartSucceed(x.`transactionId`)
     }
   }
 
-  implicit val transactionWriteCompletedDeserializer = new DeserializeProto[TransactionWriteCompleted, proto.TransactionWriteCompleted] {
+  implicit object TransactionWriteCompletedDeserializer extends DeserializeProto[TransactionWriteCompleted, proto.TransactionWriteCompleted] {
     def apply(x: proto.TransactionWriteCompleted) = operationFailed(x.`result`) match {
       case Some(failed) => TransactionWriteFailed(x.`transactionId`, failed, x.`message`)
       case None => TransactionWriteSucceed(x.`transactionId`)
     }
   }
 
-  implicit val transactionCommitCompletedDeserializer = new DeserializeProto[TransactionCommitCompleted, proto.TransactionCommitCompleted] {
+  implicit object TransactionCommitCompletedDeserializer extends DeserializeProto[TransactionCommitCompleted, proto.TransactionCommitCompleted] {
     def apply(x: proto.TransactionCommitCompleted) = operationFailed(x.`result`) match {
       case Some(failed) => TransactionCommitFailed(x.`transactionId`, failed, x.`message`)
       case None => TransactionCommitSucceed(x.`transactionId`)
     }
   }
 
-  implicit val deleteStreamCompletedDeserializer = new DeserializeProto[DeleteStreamCompleted, proto.DeleteStreamCompleted] {
+  implicit object DeleteStreamCompletedDeserializer extends DeserializeProto[DeleteStreamCompleted, proto.DeleteStreamCompleted] {
     def apply(x: proto.DeleteStreamCompleted) = operationFailed(x.`result`) match {
       case Some(reason) => DeleteStreamFailed(reason, x.`message`)
       case None => DeleteStreamSucceed
     }
   }
 
-  implicit val readEventCompletedDeserializer = new DeserializeProto[ReadEventCompleted, proto.ReadEventCompleted] {
+  implicit object ReadEventCompletedDeserializer extends DeserializeProto[ReadEventCompleted, proto.ReadEventCompleted] {
 
     def readEventFailed(x: proto.ReadEventCompleted.ReadEventResult.EnumVal): Option[ReadEventFailed.Value] = {
       import proto.ReadEventCompleted.ReadEventResult._
@@ -132,18 +132,18 @@ object Deserializers {
   }
 
 
-  implicit val subscribeCompletedDeserializer = new DeserializeProto[SubscribeCompleted, proto.SubscriptionConfirmation] {
+  implicit object subscribeCompletedDeserializer extends DeserializeProto[SubscribeCompleted, proto.SubscriptionConfirmation] {
     def apply(x: proto.SubscriptionConfirmation) = x.`lastEventNumber` match {
       case None => SubscribeToAllCompleted(x.`lastCommitPosition`)
       case Some(eventNumber) => SubscribeToStreamCompleted(x.`lastCommitPosition`, EventNumber(eventNumber))
     }
   }
 
-  implicit val streamEventAppearedDeserialize = new DeserializeProto[StreamEventAppeared, proto.StreamEventAppeared] {
+  implicit object streamEventAppearedDeserialize extends DeserializeProto[StreamEventAppeared, proto.StreamEventAppeared] {
     def apply(x: proto.StreamEventAppeared) = StreamEventAppeared(event = resolvedEvent(x.`event`))
   }
 
-  implicit val subscriptionDroppedDeserialize = new DeserializeProto[SubscriptionDropped, proto.SubscriptionDropped] {
+  implicit object subscriptionDroppedDeserialize extends DeserializeProto[SubscriptionDropped, proto.SubscriptionDropped] {
     import proto.SubscriptionDropped.SubscriptionDropReason._
 
     def reason(x: EnumVal): SubscriptionDropped.Value = x match {
