@@ -1,13 +1,13 @@
 package eventstore
 
-import ReadDirection.Forward
-
 
 /**
  * @author Yaroslav Klymko
  */
 class ReadAllEventsForwardSpec extends TestConnectionSpec {
   sequential
+
+  implicit val direction = ReadDirection.Forward
 
   "read all events forward" should {
     "return empty slice if asked to read from end" in new ReadAllEventsForwardScope {
@@ -43,30 +43,5 @@ class ReadAllEventsForwardSpec extends TestConnectionSpec {
     }
   }
 
-  trait ReadAllEventsForwardScope extends TestConnectionScope {
-
-    def readAllEventRecords(position: Position, maxCount: Int): List[EventRecord] = {
-      actor ! ReadAllEvents(position, maxCount, resolveLinkTos = false, Forward)
-      expectMsgPF() {
-        case ReadAllEventsCompleted(_, xs, _, Forward) => xs.map(_.event)
-      }
-    }
-
-    def readAllEvents(position: Position, maxCount: Int): List[Event] =
-      readAllEventRecords(position, maxCount).map(_.event)
-
-    def readUntilEndOfStream(size: Int) {
-      def read(position: Position) {
-        actor ! ReadAllEvents(position, size, resolveLinkTos = false, Forward)
-        val (events, nextPosition) = expectMsgPF() {
-          case ReadAllEventsCompleted(_, xs, p, Forward) => (xs, p)
-        }
-        if (events.nonEmpty) {
-          events.size must beLessThanOrEqualTo(size)
-          read(nextPosition)
-        }
-      }
-      read(Position.start)
-    }
-  }
+  trait ReadAllEventsForwardScope extends TestConnectionScope
 }

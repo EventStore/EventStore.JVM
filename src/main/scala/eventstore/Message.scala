@@ -55,7 +55,7 @@ case class EventRecord(streamId: EventStream.Id, number: EventNumber.Exact, even
 
 case class ResolvedIndexedEvent(eventRecord: EventRecord, link: Option[EventRecord])
 
-case class ResolvedEvent(event: EventRecord, link: Option[EventRecord], position: Position)
+case class ResolvedEvent(eventRecord: EventRecord, link: Option[EventRecord], position: Position)
 
 
 case class DeniedToRoute(externalTcpAddress: String,

@@ -169,7 +169,7 @@ object Deserializers {
       metadata = byteString(x.`metadata`)))
 
   def resolvedEvent(x: proto.ResolvedEvent): ResolvedEvent = ResolvedEvent(
-    event = eventRecord(x.`event`),
+    eventRecord = eventRecord(x.`event`),
     link = x.`link`.map(eventRecord),
     position = Position(commitPosition = x.`commitPosition`, preparePosition = x.`preparePosition`))
 

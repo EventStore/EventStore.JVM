@@ -87,7 +87,35 @@ abstract class TestConnectionSpec extends SpecificationWithJUnit with NoDuration
       case StreamEventAppeared(ResolvedEvent(EventRecord(`streamId`, `eventNumber`, event), None, _)) => event
     }
 
-    def after = {
+    def readAllEventRecords(position: Position, maxCount: Int)(implicit direction: ReadDirection.Value): List[EventRecord] = {
+      actor ! ReadAllEvents(position, maxCount, resolveLinkTos = false, direction)
+      expectMsgPF() {
+        case ReadAllEventsCompleted(_, xs, _, `direction`) => xs.map(_.eventRecord)
+      }
+    }
+
+    def readAllEvents(position: Position, maxCount: Int)(implicit direction: ReadDirection.Value): List[Event] =
+      readAllEventRecords(position, maxCount).map(_.event)
+
+    def readUntilEndOfStream(size: Int)(implicit direction: ReadDirection.Value) {
+      def read(position: Position) {
+        actor ! ReadAllEvents(position, size, resolveLinkTos = false, direction)
+        val (events, nextPosition) = expectMsgPF() {
+          case ReadAllEventsCompleted(_, xs, p, `direction`) => (xs, p)
+        }
+        if (events.nonEmpty) {
+          events.size must beLessThanOrEqualTo(size)
+          read(nextPosition)
+        }
+      }
+      val position = direction match {
+        case ReadDirection.Forward => Position.start
+        case ReadDirection.Backward => Position.end
+      }
+      read(position)
+    }
+
+  def after = {
       /*println("after")
       try actor ! DeleteStream(streamId, AnyVersion, requireMaster = true)
       catch {
