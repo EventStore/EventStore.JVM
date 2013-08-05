@@ -13,9 +13,15 @@ case class Position(commitPosition: Long, preparePosition: Long) extends Ordered
       case (0, x) => x
       case (x, _) => x
     }
+
+  override def toString =
+    if (commitPosition == preparePosition) s"Position($commitPosition)"
+    else s"Position($commitPosition,$preparePosition)"
 }
 
 object Position {
   val start = Position(0, 0)
   val end = Position(-1, -1)
+
+  def apply(position: Long): Position = Position(position, position)
 }

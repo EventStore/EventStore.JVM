@@ -37,7 +37,7 @@ object Serializers {
 
   implicit object AppendToStreamSerializer extends ProtoSerializer[AppendToStream] {
     def toProto(x: AppendToStream) = proto.WriteEvents(
-      `eventStreamId` = x.streamId.value,
+      `eventStreamId` = x.streamId.id,
       `expectedVersion` = x.expVer.value,
       `events` = x.events.map(newEvent).toVector,
       `requireMaster` = x.requireMaster)
@@ -45,7 +45,7 @@ object Serializers {
 
   implicit object TransactionStartSerializer extends ProtoSerializer[TransactionStart] {
     def toProto(x: TransactionStart) = proto.TransactionStart(
-      `eventStreamId` = x.streamId.value,
+      `eventStreamId` = x.streamId.id,
       `expectedVersion` = x.expVer.value,
       `requireMaster` = x.requireMaster)
   }
@@ -65,7 +65,7 @@ object Serializers {
 
   implicit object DeleteStreamSerializer extends ProtoSerializer[DeleteStream] {
     def toProto(x: DeleteStream) = proto.DeleteStream(
-      `eventStreamId` = x.streamId.value,
+      `eventStreamId` = x.streamId.id,
       `expectedVersion` = x.expVer.value,
       `requireMaster` = x.requireMaster)
   }
@@ -77,7 +77,7 @@ object Serializers {
         case EventNumber.Exact(x) => x
       }
       proto.ReadEvent(
-        `eventStreamId` = x.streamId.value,
+        `eventStreamId` = x.streamId.id,
         `eventNumber` = eventNumber,
         `resolveLinkTos` = x.resolveLinkTos)
     }
@@ -85,7 +85,7 @@ object Serializers {
 
   implicit object ReadStreamEventsSerializer extends ProtoSerializer[ReadStreamEvents] {
     def toProto(x: ReadStreamEvents) = proto.ReadStreamEvents(
-      `eventStreamId` = x.streamId.value,
+      `eventStreamId` = x.streamId.id,
       `fromEventNumber` = x.fromEventNumber,
       `maxCount` = x.maxCount,
       `resolveLinkTos` = x.resolveLinkTos)
@@ -102,8 +102,8 @@ object Serializers {
   implicit object SubscribeToSerializer extends ProtoSerializer[SubscribeTo] {
     def toProto(x: SubscribeTo) = {
       val streamId = x.stream match {
-        case EventStream.All => ""
-        case EventStream.Id(value) => value
+        case AllStreams => ""
+        case StreamId(value) => value
       }
       proto.SubscribeToStream(
         `eventStreamId` = streamId,

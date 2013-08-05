@@ -126,7 +126,7 @@ object Deserializers {
     val x = proto.ReadAllEventsCompleted.defaultInstance.mergeFrom(bs.toArray[Byte])
     ReadAllEventsCompleted(
       position = Position(commitPosition = x.`commitPosition`, preparePosition = x.`preparePosition`),
-      events = x.`events`.toList.map(resolvedEvent),
+      resolvedEvents = x.`events`.toList.map(resolvedEvent),
       nextPosition = Position(commitPosition = x.`nextCommitPosition`, preparePosition = x.`nextPreparePosition`),
       direction = direction)
   }
@@ -140,27 +140,27 @@ object Deserializers {
   }
 
   implicit object streamEventAppearedDeserialize extends DeserializeProto[StreamEventAppeared, proto.StreamEventAppeared] {
-    def apply(x: proto.StreamEventAppeared) = StreamEventAppeared(event = resolvedEvent(x.`event`))
+    def apply(x: proto.StreamEventAppeared) = StreamEventAppeared(resolvedEvent = resolvedEvent(x.`event`))
   }
 
   implicit object subscriptionDroppedDeserialize extends DeserializeProto[SubscriptionDropped, proto.SubscriptionDropped] {
     import proto.SubscriptionDropped.SubscriptionDropReason._
+    val default = SubscriptionDropped.Unsubscribed
 
     def reason(x: EnumVal): SubscriptionDropped.Value = x match {
       case Unsubscribed => SubscriptionDropped.Unsubscribed
       case AccessDenied => SubscriptionDropped.AccessDenied
-      case _ => SubscriptionDropped.Default
+      case _ => default
     }
 
-    def apply(x: proto.SubscriptionDropped) =
-      SubscriptionDropped(reason = x.`reason`.fold(SubscriptionDropped.Default)(reason))
+    def apply(x: proto.SubscriptionDropped) = SubscriptionDropped(reason = x.`reason`.fold(default)(reason))
   }
 
   def deserialize(markerByte: Byte): Deserializer = markerBytes.get(markerByte).getOrElse(
     sys.error(s"wrong marker byte: ${"0x" + Integer.toHexString(markerByte).drop(6).toUpperCase}"))
 
   def eventRecord(x: proto.EventRecord): EventRecord = EventRecord(
-    streamId = EventStream.Id(x.`eventStreamId`),
+    streamId = StreamId(x.`eventStreamId`),
     number = EventNumber.Exact(x.`eventNumber`),
     event = Event(
       eventId = uuid(x.`eventId`),

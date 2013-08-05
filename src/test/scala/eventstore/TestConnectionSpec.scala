@@ -15,7 +15,7 @@ import scala.util.Random
 abstract class TestConnectionSpec extends SpecificationWithJUnit with NoDurationConversions {
 
   abstract class TestConnectionScope extends TestKit(ActorSystem()) with After with ImplicitSender {
-    val streamId = EventStream.Id(getClass.getEnclosingClass.getSimpleName + "-" + newUuid.toString)
+    val streamId = StreamId(getClass.getEnclosingClass.getSimpleName + "-" + newUuid.toString)
 
     val streamMetadata = ByteString(getClass.getEnclosingClass.getSimpleName)
     val actor = TestActorRef(new ConnectionActor(Settings()))
@@ -83,8 +83,10 @@ abstract class TestConnectionSpec extends SpecificationWithJUnit with NoDuration
       events
     }
 
-    def expectEventAppeared(eventNumber: EventNumber.Exact, testKit: TestKitBase = this) = testKit.expectMsgPF() {
-      case StreamEventAppeared(ResolvedEvent(EventRecord(`streamId`, `eventNumber`, event), None, _)) => event
+    def expectEventAppeared(testKit: TestKitBase = this) = {
+      val resolvedEvent = testKit.expectMsgType[StreamEventAppeared].resolvedEvent
+      resolvedEvent.eventRecord.streamId mustEqual streamId
+      resolvedEvent
     }
 
     def readAllEventRecords(position: Position, maxCount: Int)(implicit direction: ReadDirection.Value): List[EventRecord] = {

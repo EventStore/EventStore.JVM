@@ -12,33 +12,39 @@ class SubscribeToAllSpec extends TestConnectionSpec {
 
     "allow multiple subscriptions" in new SubscribeToAll {
       appendEventToCreateStream()
-
-      val clients = List(TestProbe(), TestProbe(), TestProbe())
-      clients.foreach(subscribeToAll(_))
+      val clients = List(TestProbe(), TestProbe(), TestProbe()).map(client => client -> subscribeToAll(client))
 
       val event = newEvent
       doAppendToStream(event, AnyVersion, 1)
 
       clients.foreach {
-        client => expectEventAppeared(EventNumber.Exact(1), client) mustEqual event
+        case (client, commitPosition) =>
+          val resolvedEvent = expectEventAppeared(client)
+          resolvedEvent.position.commitPosition must >(commitPosition)
+          resolvedEvent.eventRecord.number mustEqual EventNumber.Exact(1)
       }
     }
 
     "catch created and deleted events as well" in new SubscribeToAll {
-      subscribeToAll()
+      val lastCommitPosition = subscribeToAll()
       appendEventToCreateStream()
-      expectEventAppeared(EventNumber.First)
+      expectEventAppeared().eventRecord.number mustEqual EventNumber.First
       deleteStream()
-      expectEventAppeared(EventNumber.Max) must beLike {
+
+      val resolvedEvent = expectEventAppeared()
+      val eventRecord = resolvedEvent.eventRecord
+      resolvedEvent.position.commitPosition must >(lastCommitPosition)
+      eventRecord.number mustEqual EventNumber.Max
+      eventRecord.event must beLike {
         case Event.StreamDeleted(_) => ok
       }
     }
   }
 
   trait SubscribeToAll extends TestConnectionScope {
-    def subscribeToAll(testKit: TestKitBase = this) {
-      actor.!(SubscribeTo(EventStream.All))(testKit.testActor)
-      testKit.expectMsgType[SubscribeToAllCompleted]
+    def subscribeToAll(testKit: TestKitBase = this) = {
+      actor.!(SubscribeTo(AllStreams))(testKit.testActor)
+      testKit.expectMsgType[SubscribeToAllCompleted].lastCommitPosition
     }
   }
 }
