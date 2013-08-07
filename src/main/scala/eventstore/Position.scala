@@ -6,6 +6,7 @@ package eventstore
 case class Position(commitPosition: Long, preparePosition: Long) extends Ordered[Position] {
   require(commitPosition >= -1, s"commitPosition must be >= -1, but is $commitPosition")
   require(preparePosition >= -1, s"preparePosition must be >= -1, but is $preparePosition")
+  require(commitPosition >= preparePosition, s"commitPosition must be >= preparePosition, but $commitPosition < $preparePosition ")
 
   def compare(that: Position) =
     (this.commitPosition compare that.commitPosition, this.preparePosition compare that.preparePosition) match {

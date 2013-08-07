@@ -40,9 +40,9 @@ class PositionSpec extends SpecificationWithJUnit {
   trait PositionScope extends Scope {
     val values = List(-1, 0, 1)
     val positions = for {
-      preparePosition <- values
       commitPosition <- values
-    } yield Position(preparePosition, commitPosition)
+      preparePosition <- values if commitPosition >= preparePosition
+    } yield Position(commitPosition = commitPosition, preparePosition = preparePosition)
 
     for {
       p1 <- positions
