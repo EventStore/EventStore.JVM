@@ -11,7 +11,7 @@ class TcpPackageSpec extends SpecificationWithJUnit {
     "serialize/deserialize" in {
       for {
         correlationId <- List(newUuid, newUuid)
-        msg <- List[InOut](HeartbeatRequestCommand, Ping)
+        msg <- List[InOut](HeartbeatRequestCommand, HeartbeatResponseCommand, Ping, Pong)
         authData <- None :: (for {
           login <- List("login1", "login2")
           password <- List("password1", "password2")
