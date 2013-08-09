@@ -21,7 +21,7 @@ class SubscribeSpec extends TestConnectionSpec {
       events.zipWithIndex.foreach {
         case (event, index) =>
           val resolvedEvent = expectEventAppeared()
-          resolvedEvent.position.commitPosition must >(subscribed.lastCommitPosition)
+          resolvedEvent.position.commitPosition must >(subscribed.lastCommit)
           resolvedEvent.eventRecord mustEqual EventRecord(streamId, EventNumber.Exact(index), event)
       }
     }
@@ -50,7 +50,7 @@ class SubscribeSpec extends TestConnectionSpec {
       deleteStream()
       val resolvedEvent = expectEventAppeared()
       val eventRecord = resolvedEvent.eventRecord
-      resolvedEvent.position.commitPosition must >(subscribed.lastCommitPosition)
+      resolvedEvent.position.commitPosition must >(subscribed.lastCommit)
       eventRecord.number mustEqual EventNumber.Max
       eventRecord.event must beLike {
         case Event.StreamDeleted(_) => ok

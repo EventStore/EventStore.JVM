@@ -70,7 +70,7 @@ class AppendToStreamSpec extends TestConnectionSpec {
     }
 
     "be able to append many events at once" in new AppendToStreamScope {
-      val size = 10000
+      val size = 1000
       appendMany(size = size)
       actor ! ReadStreamEvents(streamId, -1, 1, resolveLinkTos = false, ReadDirection.Backward)
       expectMsgType[ReadStreamEventsCompleted].events.head.eventRecord.number mustEqual EventNumber.Exact(size - 1)
@@ -79,7 +79,7 @@ class AppendToStreamSpec extends TestConnectionSpec {
 
     "be able to append many events at once concurrently" in new AppendToStreamScope {
       val n = 10
-      val size = 1000
+      val size = 100
 
       Seq.fill(n)(TestProbe()).foreach(x => appendMany(size = size, testKit = x))
 

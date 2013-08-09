@@ -133,6 +133,8 @@ case class ReadAllEventsCompleted(position: Position,
                                   nextPosition: Position,
                                   direction: ReadDirection.Value) extends In
 
+// TODO maybe have 2 instance with empty data and not...
+
 
 
 object ReadDirection extends Enumeration {
@@ -181,8 +183,14 @@ object SubscribeTo {
 }
 
 sealed trait SubscribeCompleted extends In
-case class SubscribeToAllCompleted(lastCommitPosition: Long) extends SubscribeCompleted
-case class SubscribeToStreamCompleted(lastCommitPosition: Long, lastEventNumber: EventNumber) extends SubscribeCompleted
+
+case class SubscribeToAllCompleted(lastCommit: Long) extends SubscribeCompleted {
+  require(lastCommit > 0, s"lastCommit must > 0, but is $lastCommit") // TODO not sure about this restriction
+}
+
+case class SubscribeToStreamCompleted(lastCommit: Long, lastEventNumber: EventNumber) extends SubscribeCompleted {
+  require(lastCommit > 0, s"lastCommit must > 0, but is $lastCommit")
+}
 
 case class StreamEventAppeared(resolvedEvent: ResolvedEvent) extends In
 
