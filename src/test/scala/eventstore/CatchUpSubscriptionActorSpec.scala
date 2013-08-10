@@ -1,11 +1,11 @@
 package eventstore
 
 import org.specs2.mutable.SpecificationWithJUnit
+import org.specs2.specification.Scope
+import org.specs2.mock.Mockito
 import akka.testkit.{TestProbe, TestActorRef, ImplicitSender, TestKit}
 import akka.actor.ActorSystem
 import ReadDirection.Forward
-import org.specs2.specification.Scope
-import org.specs2.mock.Mockito
 import scala.concurrent.duration._
 
 /**
@@ -16,19 +16,19 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
 
     "read events from given position" in new CatchUpSubscriptionActorScope(Some(Position(123))) {
       connection.expectMsgPF() {
-        case ReadAllEvents(Position(123, 123), `maxCount`, _, Forward) =>
+        case ReadAllEvents(Position(123, 123), maxCount, _, Forward) =>
       }
     }
 
     "read events from start if no position given" in new CatchUpSubscriptionActorScope {
       connection.expectMsgPF() {
-        case ReadAllEvents(Position.start, `maxCount`, _, Forward) =>
+        case ReadAllEvents(Position.start, maxCount, _, Forward) =>
       }
     }
 
     "ignore read events with position out of interest" in new CatchUpSubscriptionActorScope {
       connection.expectMsgPF() {
-        case ReadAllEvents(Position.start, `maxCount`, _, Forward) =>
+        case ReadAllEvents(Position.start, maxCount, _, Forward) =>
       }
 
       val `re-1` = ResolvedEvent(mock[EventRecord], None, Position(-1))
@@ -42,7 +42,7 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
       expectMsg(re2)
 
       connection.expectMsgPF() {
-        case ReadAllEvents(Position(3, 3), `maxCount`, _, Forward) =>
+        case ReadAllEvents(Position(3, 3), maxCount, _, Forward) =>
       }
 
       val re3 = ResolvedEvent(mock[EventRecord], None, Position(3))
@@ -54,19 +54,19 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
       expectMsg(re4)
 
       connection.expectMsgPF() {
-        case ReadAllEvents(Position(5, 5), `maxCount`, _, Forward) =>
+        case ReadAllEvents(Position(5, 5), maxCount, _, Forward) =>
       }
 
       actor ! ReadAllEventsCompleted(Position(3), List(re0, re1, re2, re3, re4), Position(5), Forward)
 
       expectNoMsg(noMessageDuration)
       connection.expectMsgPF() {
-        case ReadAllEvents(Position(5, 5), `maxCount`, _, Forward) =>
+        case ReadAllEvents(Position(5, 5), maxCount, _, Forward) =>
       }
     }
     "ignore read events with position out of interest when start position is given" in new CatchUpSubscriptionActorScope(Some(Position(1))) {
       connection.expectMsgPF() {
-        case ReadAllEvents(Position(1, 1), `maxCount`, _, Forward) =>
+        case ReadAllEvents(Position(1, 1), maxCount, _, Forward) =>
       }
 
       val re0 = ResolvedEvent(mock[EventRecord], None, Position.start)
@@ -78,7 +78,7 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
       expectNoMsg(noMessageDuration)
 
       connection.expectMsgPF() {
-        case ReadAllEvents(Position(3, 3), `maxCount`, _, Forward) =>
+        case ReadAllEvents(Position(3, 3), maxCount, _, Forward) =>
       }
     }
 
@@ -92,7 +92,7 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
       expectMsg(resolvedEvent)
 
       connection.expectMsgPF() {
-        case ReadAllEvents(`nextPosition`, `maxCount`, _, Forward) =>
+        case ReadAllEvents(`nextPosition`, maxCount, _, Forward) =>
       }
       actor ! ReadAllEventsCompleted(nextPosition, Nil, nextPosition, Forward)
 
@@ -101,7 +101,7 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
 
     "subscribe to new events if nothing to read" in new CatchUpSubscriptionActorScope {
       connection.expectMsgPF() {
-        case ReadAllEvents(Position(0, 0), `maxCount`, _, Forward) =>
+        case ReadAllEvents(Position(0, 0), maxCount, _, Forward) =>
       }
       val position = Position.start
       actor ! ReadAllEventsCompleted(position, Nil, position, Forward)
@@ -110,7 +110,7 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
       actor ! SubscribeToAllCompleted(1)
 
       connection.expectMsgPF() {
-        case ReadAllEvents(Position(0, 0), `maxCount`, _, Forward) =>
+        case ReadAllEvents(Position(0, 0), maxCount, _, Forward) =>
       }
       actor ! ReadAllEventsCompleted(position, Nil, position, Forward)
 
@@ -143,7 +143,7 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
 
     "catch events that appear in between reading and subscribing" in new CatchUpSubscriptionActorScope() {
       connection.expectMsgPF() {
-        case ReadAllEvents(Position.start, `maxCount`, _, Forward) =>
+        case ReadAllEvents(Position.start, maxCount, _, Forward) =>
       }
 
       val re0 = ResolvedEvent(mock[EventRecord], None, Position.start)
@@ -156,7 +156,7 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
       expectMsg(re1)
 
       connection.expectMsgPF() {
-        case ReadAllEvents(Position(2, 2), `maxCount`, _, Forward) =>
+        case ReadAllEvents(Position(2, 2), maxCount, _, Forward) =>
       }
 
       actor ! ReadAllEventsCompleted(Position(2), Nil, Position(2), Forward)
@@ -167,7 +167,7 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
       actor ! SubscribeToAllCompleted(4)
 
       connection.expectMsgPF() {
-        case ReadAllEvents(Position(2, 2), `maxCount`, _, Forward) =>
+        case ReadAllEvents(Position(2, 2), maxCount, _, Forward) =>
       }
 
       val re2 = ResolvedEvent(mock[EventRecord], None, Position(2))
@@ -183,7 +183,7 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
       expectMsg(re2)
 
       connection.expectMsgPF() {
-        case ReadAllEvents(Position(3, 3), `maxCount`, _, Forward) =>
+        case ReadAllEvents(Position(3, 3), maxCount, _, Forward) =>
       }
 
       val re5 = ResolvedEvent(mock[EventRecord], None, Position(5))
@@ -261,7 +261,7 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
 
     "stop catching events that appear in between reading and subscribing if stop received" in new CatchUpSubscriptionActorScope() {
       connection.expectMsgPF() {
-        case ReadAllEvents(Position.start, `maxCount`, _, Forward) =>
+        case ReadAllEvents(Position.start, maxCount, _, Forward) =>
       }
 
       val re0 = ResolvedEvent(mock[EventRecord], None, Position.start)
@@ -274,7 +274,7 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
       expectMsg(re1)
 
       connection.expectMsgPF() {
-        case ReadAllEvents(Position(2, 2), `maxCount`, _, Forward) =>
+        case ReadAllEvents(Position(2, 2), maxCount, _, Forward) =>
       }
 
       actor ! ReadAllEventsCompleted(Position(2), Nil, Position(2), Forward)
@@ -289,7 +289,7 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
       val re4 = ResolvedEvent(mock[EventRecord], None, Position(4))
 
       connection.expectMsgPF() {
-        case ReadAllEvents(Position(2, 2), `maxCount`, _, Forward) =>
+        case ReadAllEvents(Position(2, 2), maxCount, _, Forward) =>
       }
 
       actor ! StreamEventAppeared(re3)
@@ -310,7 +310,7 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
     "continue with subscription if no events appear in between reading and subscribing" in new CatchUpSubscriptionActorScope() {
       val position = Position.start
       connection.expectMsgPF() {
-        case ReadAllEvents(`position`, `maxCount`, _, Forward) =>
+        case ReadAllEvents(`position`, maxCount, _, Forward) =>
       }
       actor ! ReadAllEventsCompleted(position, Nil, position, Forward)
 
@@ -320,7 +320,7 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
       actor ! SubscribeToAllCompleted(1)
 
       connection.expectMsgPF() {
-        case ReadAllEvents(`position`, `maxCount`, _, Forward) =>
+        case ReadAllEvents(`position`, maxCount, _, Forward) =>
       }
       actor ! ReadAllEventsCompleted(position, Nil, position, Forward)
 
@@ -333,7 +333,7 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
     "continue with subscription if no events appear in between reading and subscribing and position is given" in new CatchUpSubscriptionActorScope(Some(Position(1))) {
       val position = Position(1)
       connection.expectMsgPF() {
-        case ReadAllEvents(`position`, `maxCount`, _, Forward) =>
+        case ReadAllEvents(`position`, maxCount, _, Forward) =>
       }
 
       actor ! ReadAllEventsCompleted(position, Nil, position, Forward)
@@ -352,7 +352,7 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
     "forward events while subscribed" in new CatchUpSubscriptionActorScope() {
       val position = Position.start
       connection.expectMsgPF() {
-        case ReadAllEvents(`position`, `maxCount`, _, Forward) =>
+        case ReadAllEvents(`position`, maxCount, _, Forward) =>
       }
       actor ! ReadAllEventsCompleted(position, Nil, position, Forward)
 
@@ -362,7 +362,7 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
       actor ! SubscribeToAllCompleted(1)
 
       connection.expectMsgPF() {
-        case ReadAllEvents(`position`, `maxCount`, _, Forward) =>
+        case ReadAllEvents(`position`, maxCount, _, Forward) =>
       }
       actor ! ReadAllEventsCompleted(position, Nil, position, Forward)
 
@@ -388,7 +388,7 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
     "ignore wrong events while subscribed" in new CatchUpSubscriptionActorScope(Some(Position(1))) {
       val position = Position(1)
       connection.expectMsgPF() {
-        case ReadAllEvents(`position`, `maxCount`, _, Forward) =>
+        case ReadAllEvents(`position`, maxCount, _, Forward) =>
       }
       actor ! ReadAllEventsCompleted(position, Nil, position, Forward)
 
@@ -396,7 +396,7 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
       actor ! SubscribeToAllCompleted(2)
 
       connection.expectMsgPF() {
-        case ReadAllEvents(`position`, `maxCount`, _, Forward) =>
+        case ReadAllEvents(`position`, maxCount, _, Forward) =>
       }
       actor ! ReadAllEventsCompleted(position, Nil, position, Forward)
 
@@ -452,8 +452,8 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
   abstract class CatchUpSubscriptionActorScope(position: Option[Position] = None)
     extends TestKit(ActorSystem()) with ImplicitSender with Scope {
     val noMessageDuration = FiniteDuration(1, SECONDS)
-    val maxCount = 500
+    val readBatchSize = 10
     val connection = TestProbe()
-    val actor = TestActorRef(new CatchUpSubscriptionActor(connection.ref, testActor, position, false, None))
+    val actor = TestActorRef(new CatchUpSubscriptionActor(connection.ref, testActor, position, false, readBatchSize))
   }
 }

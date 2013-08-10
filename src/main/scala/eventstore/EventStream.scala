@@ -5,7 +5,7 @@ package eventstore
  */
 sealed trait EventStream
 
-object AllStreams extends EventStream
+case object AllStreams extends EventStream
 
 case class StreamId(id: String) extends EventStream {
   require(id != null, "stream id must be not null")
