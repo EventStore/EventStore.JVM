@@ -22,42 +22,42 @@ class ReadStreamEventsForwardSpec extends TestConnectionSpec {
     }
 
     "return no events when called on empty stream" in new ReadStreamForwardScope {
-      doReadStreamEvents(1, Int.MaxValue) must beEmpty
+      readStreamEvents(1, Int.MaxValue) must beEmpty
     }
 
     "get empty slice if asked to read from end" in new ReadStreamForwardScope {
       appendEventToCreateStream()
-      doReadStreamEvents(1, 1000) must beEmpty
+      readStreamEvents(1, 1000) must beEmpty
     }
 
     "get empty slice if called with non existing range" in new ReadStreamForwardScope {
       appendEventToCreateStream()
-      doReadStreamEvents(10, 1000) must beEmpty
+      readStreamEvents(10, 1000) must beEmpty
     }
 
     "get partial slice if not enough events in stream" in new ReadStreamForwardScope {
       appendEventToCreateStream()
-      doReadStreamEvents(0, 1000) must haveSize(1)
+      readStreamEvents(0, 1000) must haveSize(1)
     }
 
     "get partial slice if not enough events in stream and called with Int.Max count" in new ReadStreamForwardScope {
       appendEventToCreateStream()
-      doReadStreamEvents(0, Int.MaxValue) must haveSize(1)
+      readStreamEvents(0, Int.MaxValue) must haveSize(1)
     }
 
     "get events in same order as written" in new ReadStreamForwardScope {
       val events = appendMany()
-      doReadStreamEvents(0, Int.MaxValue) mustEqual events
+      readStreamEvents(0, Int.MaxValue) mustEqual events
     }
 
     "be able to read single event from arbitrary position" in new ReadStreamForwardScope {
       val events = appendMany()
-      doReadStreamEvents(5, 1) mustEqual List(events(5))
+      readStreamEvents(5, 1) mustEqual List(events(5))
     }
 
     "be able to read slice from arbitrary position" in new ReadStreamForwardScope {
       val events = appendMany()
-      doReadStreamEvents(5, 3) mustEqual events.slice(5, 8)
+      readStreamEvents(5, 3) mustEqual events.slice(5, 8)
     }
   }
 
@@ -70,7 +70,7 @@ class ReadStreamEventsForwardSpec extends TestConnectionSpec {
       }
     }
 
-    def doReadStreamEvents(fromEventNumber: Int, maxCount: Int): List[Event] = {
+    def readStreamEvents(fromEventNumber: Int, maxCount: Int): Seq[Event] = {
       actor ! ReadStreamEvents(streamId, fromEventNumber, maxCount, resolveLinkTos = false, Forward)
       expectMsgPF() {
         case ReadStreamEventsCompleted(Nil, ReadStreamResult.NoStream, -1, -1, true, _, Forward) => Nil

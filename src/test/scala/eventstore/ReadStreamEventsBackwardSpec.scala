@@ -67,7 +67,7 @@ class ReadStreamEventsBackwardSpec extends TestConnectionSpec {
       }
     }
 
-    def doReadStreamEvents(fromEventNumber: Int, maxCount: Int): List[Event] = {
+    def doReadStreamEvents(fromEventNumber: Int, maxCount: Int): Seq[Event] = {
       actor ! ReadStreamEvents(streamId, fromEventNumber, maxCount, resolveLinkTos = false, Backward)
       val next = Math.max(-1, fromEventNumber - maxCount)
       val endOfStream = next == -1

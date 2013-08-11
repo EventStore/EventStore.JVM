@@ -65,11 +65,11 @@ case class DeniedToRoute(externalTcpAddress: String,
 
 case class AppendToStream(streamId: StreamId,
                           expVer: ExpectedVersion,
-                          events: List[Event],
+                          events: Seq[Event],
                           requireMaster: Boolean) extends Out
 
 object AppendToStream {
-  def apply(streamId: StreamId, expVer: ExpectedVersion, events: List[Event]): AppendToStream = AppendToStream(
+  def apply(streamId: StreamId, expVer: ExpectedVersion, events: Seq[Event]): AppendToStream = AppendToStream(
     streamId = streamId,
     expVer = expVer,
     events = events,
@@ -110,7 +110,7 @@ case class ReadStreamEvents(streamId: StreamId,
                             direction: ReadDirection.Value) extends Out
 
 // TODO simplify
-case class ReadStreamEventsCompleted(events: List[ResolvedIndexedEvent],
+case class ReadStreamEventsCompleted(events: Seq[ResolvedIndexedEvent],
                                      result: ReadStreamResult.Value,
                                      nextEventNumber: Int,
                                      lastEventNumber: Int,
@@ -129,7 +129,7 @@ case class ReadAllEvents(position: Position,
                          direction: ReadDirection.Value) extends Out
 
 case class ReadAllEventsCompleted(position: Position,
-                                  resolvedEvents: List[ResolvedEvent],
+                                  resolvedEvents: Seq[ResolvedEvent],
                                   nextPosition: Position,
                                   direction: ReadDirection.Value) extends In
 
@@ -152,7 +152,7 @@ case class TransactionStartFailed(result: OperationFailed.Value, message: Option
 
 
 
-case class TransactionWrite(transactionId: Long, events: List[Event], requireMaster: Boolean) extends Out
+case class TransactionWrite(transactionId: Long, events: Seq[Event], requireMaster: Boolean) extends Out
 
 sealed trait TransactionWriteCompleted extends In
 case class TransactionWriteSucceed(transactionId: Long) extends TransactionWriteCompleted

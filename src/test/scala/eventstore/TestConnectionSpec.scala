@@ -53,14 +53,13 @@ abstract class TestConnectionSpec extends SpecificationWithJUnit with NoDuration
       testKit.expectMsg(appendToStreamSucceed(firstEventNumber))
     }
 
-    def streamEvents: List[Event] = {
+    def streamEvents: Seq[Event] = {
       actor ! readStreamEvents
       expectMsgPF() {
         case ReadStreamEventsCompleted(events, ReadStreamResult.Success, _, _, _, _, _) => events.map(_.eventRecord.event)
         case ReadStreamEventsCompleted(Nil, ReadStreamResult.NoStream, _, _, _, _, _) => Nil
       }
     }
-
 
     def append(events: Event*) {
       actor ! AppendToStream(streamId, AnyVersion, events.toList)
@@ -89,14 +88,14 @@ abstract class TestConnectionSpec extends SpecificationWithJUnit with NoDuration
       resolvedEvent
     }
 
-    def readAllEventRecords(position: Position, maxCount: Int)(implicit direction: ReadDirection.Value): List[EventRecord] = {
+    def readAllEventRecords(position: Position, maxCount: Int)(implicit direction: ReadDirection.Value): Seq[EventRecord] = {
       actor ! ReadAllEvents(position, maxCount, resolveLinkTos = false, direction)
       expectMsgPF() {
         case ReadAllEventsCompleted(_, xs, _, `direction`) => xs.map(_.eventRecord)
       }
     }
 
-    def readAllEvents(position: Position, maxCount: Int)(implicit direction: ReadDirection.Value): List[Event] =
+    def readAllEvents(position: Position, maxCount: Int)(implicit direction: ReadDirection.Value): Seq[Event] =
       readAllEventRecords(position, maxCount).map(_.event)
 
     def readUntilEndOfStream(size: Int)(implicit direction: ReadDirection.Value) {
