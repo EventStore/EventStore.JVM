@@ -27,7 +27,7 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
 
   def receive = connecting()
 
-  def connecting(stash: Queue[TcpPackage[Out]] = Queue(), reconnectionsLeft: Int = maxReconnections): Receive = {
+  def connecting(stash: Queue[TcpPackageOut] = Queue(), reconnectionsLeft: Int = maxReconnections): Receive = {
     case Connected(remote, _) =>
       log.info(s"connected to $remote")
 
@@ -49,7 +49,7 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
 
       connection ! Register(pipeline)
 
-      def send(pack: TcpPackage[Out]) {
+      def send(pack: TcpPackageOut) {
         log.debug(s"<< $pack")
         pipeline ! init.command(pack)
       }
@@ -73,8 +73,8 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
   }
 
   def connected(connection: ActorRef,
-                send: TcpPackage[Out] => Unit,
-                init: Init[WithinActorContext, TcpPackage[Out], TcpPackage[In]],
+                send: TcpPackageOut => Unit,
+                init: Init[WithinActorContext, TcpPackageOut, TcpPackageIn],
                 packNumber: Int = -1): Receive = {
 
     val scheduled = CancellableAdapter(
@@ -90,21 +90,21 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
     }
 
     {
-      case init.Event(pack@TcpPackage(correlationId, msg, _)) =>
+      case init.Event(pack@TcpPackageIn(correlationId, msg, _)) =>
         log.debug(s">> $pack")
         scheduled.cancel()
         msg match {
           case HeartbeatResponseCommand =>
-          case HeartbeatRequestCommand => send(TcpPackage(correlationId, HeartbeatResponseCommand))
+          case HeartbeatRequestCommand => send(TcpPackageOut(correlationId, HeartbeatResponseCommand))
           case Pong =>
-          case Ping => send(TcpPackage(correlationId, Pong))
+          case Ping => send(TcpPackageOut(correlationId, Pong))
           case _ => dispatch(pack)
         }
         context become connected(connection, send, init, packNumber + 1)
 
       case out: Out => send(tcpPackage(out))
 
-      case HeartbeatInterval => send(TcpPackage(HeartbeatRequestCommand))
+      case HeartbeatInterval => send(TcpPackageOut(HeartbeatRequestCommand))
 
       case HeartbeatTimeout(`packNumber`) =>
         log.error(s"no heartbeat within $heartbeatTimeout")
@@ -145,10 +145,10 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
       x
     }
 
-    TcpPackage(correlationId, message, Some(AuthData.defaultAdmin))
+    TcpPackageOut(correlationId, message, Some(AuthData.defaultAdmin))
   }
 
-  def dispatch(pack: TcpPackage[In]) {
+  def dispatch(pack: TcpPackageIn) {
     val msg = pack.message
     val actor = binding.x(pack.correlationId) match {
       case Some(channel) => channel

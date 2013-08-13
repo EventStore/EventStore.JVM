@@ -11,7 +11,7 @@ import akka.testkit.{TestActorRef, ImplicitSender, TestKit}
 import akka.actor.{ActorRef, ActorSystem}
 import scala.concurrent.duration._
 import java.nio.ByteOrder
-import eventstore.Out
+import EventStoreFormats.{TcpPackageInReader, TcpPackageOutWriter}
 
 /**
  * @author Yaroslav Klymko
@@ -82,7 +82,7 @@ class ConnectionActorSpec extends SpecificationWithJUnit with NoDurationConversi
       val req = expectTcpPack
       req.message mustEqual HeartbeatRequestCommand
 
-      connection ! Write(Frame(TcpPackage(req.correlationId, HeartbeatResponseCommand)))
+      connection ! Write(Frame(TcpPackageOut(req.correlationId, HeartbeatResponseCommand)))
       expectTcpPack.message mustEqual HeartbeatRequestCommand
 
       unbind(socket)
@@ -102,7 +102,7 @@ class ConnectionActorSpec extends SpecificationWithJUnit with NoDurationConversi
       val req = expectTcpPack
       req.message mustEqual HeartbeatRequestCommand
 
-      connection ! Write(Frame(TcpPackage(req.correlationId, HeartbeatResponseCommand)))
+      connection ! Write(Frame(TcpPackageOut(req.correlationId, HeartbeatResponseCommand)))
 
       expectTcpPack.message mustEqual HeartbeatRequestCommand
 
@@ -111,7 +111,7 @@ class ConnectionActorSpec extends SpecificationWithJUnit with NoDurationConversi
 
     "respond with HeartbeatResponseCommand on HeartbeatRequestCommand" in new TcpScope {
       val (client, connection) = connect(Settings(address = address, maxReconnections = 0))
-      val req = TcpPackage[Out](HeartbeatRequestCommand)
+      val req = TcpPackageOut(HeartbeatRequestCommand)
       connection ! Write(Frame(req))
 
       val res = expectTcpPack
@@ -158,15 +158,15 @@ class ConnectionActorSpec extends SpecificationWithJUnit with NoDurationConversi
   object Frame {
     implicit val byteOrder = ByteOrder.LITTLE_ENDIAN
 
-    def unapply(bs: ByteString): TcpPackage[In] = {
+    def unapply(bs: ByteString): TcpPackageIn = {
       val iterator = bs.iterator
       val length = iterator.getInt
-      TcpPackage.deserialize(iterator.toByteString)
+      TcpPackageInReader.read(iterator)
     }
 
-    def apply(pack: TcpPackage[Out]): ByteString = {
+    def apply(pack: TcpPackageOut): ByteString = {
       val bb = ByteString.newBuilder
-      val data = pack.serialize
+      val data = TcpPackageOutWriter.toByteString(pack)
       bb.putInt(data.length)
       bb.append(data)
       bb.result()

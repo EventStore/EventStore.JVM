@@ -190,12 +190,6 @@ trait EventStoreConnection {
   def getStreamMetadataAsRawBytes(streamId: String, credentials: Option[UserCredentials] = None): Future[RawStreamMetadataResult]
 }
 
-case class UserCredentials(login: String, password: String) {
-  require(login != null && login.nonEmpty, s"login is '$login'")
-  require(password != null && password.nonEmpty, s"password is '$password'")
-}
-
-
 case class EventData()
 
 case class EventStoreTransaction()

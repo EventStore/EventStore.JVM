@@ -2,13 +2,17 @@ package eventstore
 package tcp
 
 import akka.io._
+import EventStoreFormats._
+import util.{BytesWriter, BytesReader}
 
 /**
  * @author Yaroslav Klymko
  */
-class MessageByteStringAdapter extends PipelineStage[PipelineContext, TcpPackage[Out], ByteString, TcpPackage[In], ByteString] {
-  def apply(ctx: PipelineContext) = new PipePair[TcpPackage[Out], ByteString, TcpPackage[In], ByteString] {
-    val commandPipeline = (out: TcpPackage[Out]) ⇒ ctx.singleCommand(out.serialize)
-    val eventPipeline = (bs: ByteString) ⇒ ctx.singleEvent(TcpPackage.deserialize(bs))
+class MessageByteStringAdapter
+  extends PipelineStage[PipelineContext, TcpPackageOut, ByteString, TcpPackageIn, ByteString] {
+
+  def apply(ctx: PipelineContext) = new PipePair[TcpPackageOut, ByteString, TcpPackageIn, ByteString] {
+    val commandPipeline = (x: TcpPackageOut) ⇒ ctx.singleCommand(BytesWriter.toByteString(x))
+    val eventPipeline = (bs: ByteString) ⇒ ctx.singleEvent(BytesReader.read[TcpPackageIn](bs))
   }
 }
