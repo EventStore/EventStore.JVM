@@ -3,7 +3,7 @@ package eventstore
 /**
  * @author Yaroslav Klymko
  */
-class ReadEventSpec extends TransactionSpec {
+class ReadEventSpec extends TestConnectionSpec {
 
   "read event" should {
     "fail if stream not found" in new ReadEventScope {
@@ -33,7 +33,7 @@ class ReadEventSpec extends TransactionSpec {
   }
 
 
-  trait ReadEventScope extends TransactionScope {
+  trait ReadEventScope extends TestConnectionScope {
     def failReadEvent(eventNumber: EventNumber) = {
       actor ! ReadEvent(streamId, eventNumber, resolveLinkTos = false)
       expectMsgPF() {

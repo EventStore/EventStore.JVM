@@ -50,7 +50,7 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
       connection ! Register(pipeline)
 
       def send(pack: TcpPackageOut) {
-        log.debug(s"<< $pack")
+        log.debug(pack.toString)
         pipeline ! init.command(pack)
       }
 
@@ -90,8 +90,8 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
     }
 
     {
-      case init.Event(pack@TcpPackageIn(correlationId, msg, _)) =>
-        log.debug(s">> $pack")
+      case init.Event(pack@TcpPackageIn(correlationId, msg)) =>
+        log.debug(pack.toString)
         scheduled.cancel()
         msg match {
           case HeartbeatResponseCommand =>
@@ -145,7 +145,7 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
       x
     }
 
-    TcpPackageOut(correlationId, message, Some(AuthData.defaultAdmin))
+    TcpPackageOut(correlationId, message, Some(UserCredentials.defaultAdmin))
   }
 
   def dispatch(pack: TcpPackageIn) {
