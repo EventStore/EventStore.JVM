@@ -121,6 +121,28 @@ class ConnectionActorSpec extends SpecificationWithJUnit with NoDurationConversi
       unbind(socket)
     }
 
+    "ping" in new TcpScope {
+      val (client, connection) = connect(Settings(address = address))
+
+      client ! Ping
+
+      val req = expectTcpPack
+      req.message mustEqual Ping
+
+      connection ! Write(Frame(TcpPackageOut(req.correlationId, Pong)))
+
+      unbind(socket)
+    }
+
+    "pong" in new TcpScope {
+      val (client, connection) = connect(Settings(address = address))
+
+      connection ! Write(Frame(TcpPackageOut(Ping)))
+      expectTcpPack.message mustEqual Pong
+
+      unbind(socket)
+    }
+
     "stash messages while connecting" in todo
     "stash messages while connection lost" in todo
     "send stashed messages when connection restored" in todo
