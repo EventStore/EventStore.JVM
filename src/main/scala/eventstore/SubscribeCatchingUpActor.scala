@@ -29,9 +29,11 @@ class CatchUpSubscriptionActor(connection: ActorRef,
   def read(lastPosition: Option[Position]): Receive = {
     case StopSubscription => unsubscribed(SubscriptionDropped.Unsubscribed)
 
-    case ReadAllEventsCompleted(_, events, nextPosition, Forward) => context become (
+    case ReadAllEventsSucceed(_, events, nextPosition, _, Forward) => context become (
       if (events.nonEmpty) read(lastPosition = process(lastPosition, events), nextPosition = nextPosition)
       else subscribe(lastPosition = lastPosition, nextPosition = nextPosition))
+
+    case _: ReadAllEventsFailed => ??? // TODO
   }
 
   def catchUp(lastPosition: Option[Position],
@@ -42,7 +44,7 @@ class CatchUpSubscriptionActor(connection: ActorRef,
     readEventsFrom(nextPosition)
 
     def catchingUp(stash: Queue[ResolvedEvent]): Receive = {
-      case ReadAllEventsCompleted(_, events, np, Forward) => context become (
+      case ReadAllEventsSucceed(_, events, np, _, Forward) => context become (
         if (events.isEmpty) liveProcessing(lastPosition, stash)
         else {
           def loop(events: List[ResolvedEvent], lastPosition: Option[Position]): Receive = events match {
@@ -58,6 +60,8 @@ class CatchUpSubscriptionActor(connection: ActorRef,
           }
           loop(events.toList, lastPosition)
         })
+
+      case _: ReadAllEventsFailed => ??? // TODO
 
       case StreamEventAppeared(x) if x.position.commitPosition > subscriptionLastCommit =>
         debug(s"catching up: adding appeared event to stash(${stash.size}): $x")
@@ -139,7 +143,7 @@ class CatchUpSubscriptionActor(connection: ActorRef,
 
   def readEventsFrom(position: Position) {
     debug(s"reading events from $position")
-    connection ! ReadAllEvents(position, readBatchSize, resolveLinkTos = resolveLinkTos, Forward)
+    connection ! ReadAllEvents(position, readBatchSize, resolveLinkTos = resolveLinkTos, requireMaster = true, Forward)
   }
 
   def forward(event: ResolvedEvent) {

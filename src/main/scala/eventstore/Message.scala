@@ -30,9 +30,9 @@ case object LogicalChunkBulk extends Message
 
 case class Event(eventId: Uuid,
                  eventType: String,
-//                 dataContentType: Int,
+//                 dataContentType: Int, // TODO
                  data: ByteString,
-//                 metadataContentType: Int,
+//                 metadataContentType: Int, // TODO
                  metadata: ByteString) extends BetterToString
 
 object Event {
@@ -47,13 +47,14 @@ object Event {
 }
 
 object EvenType {
-  val streamDeleted = "$streamDeleted"
-  val streamCreated = "$streamCreated"
+  val streamDeleted = "$streamDeleted" // TODO
+  val streamCreated = "$streamCreated" // TODO
 }
 
 case class EventRecord(streamId: StreamId, number: EventNumber.Exact, event: Event)
 case class ResolvedIndexedEvent(eventRecord: EventRecord, link: Option[EventRecord])
 case class ResolvedEvent(eventRecord: EventRecord, link: Option[EventRecord], position: Position)
+
 
 
 case class DeniedToRoute(externalTcpAddress: String,
@@ -88,7 +89,7 @@ case class DeleteStream(streamId: StreamId,
 
 sealed trait DeleteStreamCompleted extends In
 case object DeleteStreamSucceed extends DeleteStreamCompleted
-case class DeleteStreamFailed(result: OperationFailed.Value, message: Option[String]) extends DeleteStreamCompleted
+case class DeleteStreamFailed(reason: OperationFailed.Value, message: Option[String]) extends DeleteStreamCompleted
 
 
 
@@ -103,43 +104,94 @@ object ReadEventFailed extends Enumeration {
 
 
 
+object ReadDirection extends Enumeration {
+  val Forward, Backward = Value
+}
+
+
 case class ReadStreamEvents(streamId: StreamId,
                             fromEventNumber: Int,
                             maxCount: Int,
                             resolveLinkTos: Boolean,
-                            direction: ReadDirection.Value) extends Out
-
-// TODO simplify
-case class ReadStreamEventsCompleted(events: Seq[ResolvedIndexedEvent],
-                                     result: ReadStreamResult.Value,
-                                     nextEventNumber: Int,
-                                     lastEventNumber: Int,
-                                     isEndOfStream: Boolean,
-                                     lastCommitPosition: Long,
-                                     direction: ReadDirection.Value) extends In
-
-object ReadStreamResult extends Enumeration {
-  val Success, NoStream, StreamDeleted, NotModified, Error, AccessDenied = Value
+                            requireMaster: Boolean,
+                            direction: ReadDirection.Value) extends Out {
+  require(maxCount > 0, s"maxCount must > 0, but is $maxCount")
 }
+
+object ReadStreamEvents {
+  def apply(streamId: StreamId,
+            fromEventNumber: Int,
+            maxCount: Int,
+            direction: ReadDirection.Value): ReadStreamEvents = ReadStreamEvents(
+    streamId = streamId,
+    fromEventNumber = fromEventNumber,
+    maxCount = maxCount,
+    resolveLinkTos = false,
+    requireMaster = true,
+    direction = direction)
+}
+
+sealed trait ReadStreamEventsCompleted extends In {
+  def direction: ReadDirection.Value
+}
+
+case class ReadStreamEventsSucceed(events: Seq[ResolvedIndexedEvent],
+                                   nextEventNumber: Int,
+                                   lastEventNumber: Int,
+                                   modified: Boolean, // TODO Looks like it's not possible to receive `NotModified` IS IT?
+                                   endOfStream: Boolean,
+                                   lastCommitPosition: Long,
+                                   direction: ReadDirection.Value) extends ReadStreamEventsCompleted
+
+case class ReadStreamEventsFailed(reason: ReadStreamEventsFailed.Value,
+                                  message: Option[String],
+                                  nextEventNumber: Int,
+                                  lastEventNumber: Int,
+                                  isEndOfStream: Boolean,
+                                  lastCommitPosition: Long,
+                                  direction: ReadDirection.Value) extends ReadStreamEventsCompleted
+
+object ReadStreamEventsFailed extends Enumeration {
+  val NoStream, StreamDeleted, Error, AccessDenied = Value
+}
+
 
 
 case class ReadAllEvents(position: Position,
                          maxCount: Int,
                          resolveLinkTos: Boolean,
+                         requireMaster: Boolean,
                          direction: ReadDirection.Value) extends Out
 
-case class ReadAllEventsCompleted(position: Position,
-                                  resolvedEvents: Seq[ResolvedEvent],
-                                  nextPosition: Position,
-                                  direction: ReadDirection.Value) extends In
-
-// TODO maybe have 2 instance with empty data and not...
-
-
-
-object ReadDirection extends Enumeration {
-  val Forward, Backward = Value
+object ReadAllEvents {
+  def apply(position: Position, maxCount: Int, direction: ReadDirection.Value): ReadAllEvents = ReadAllEvents(
+    position = position,
+    maxCount = maxCount,
+    resolveLinkTos = false,
+    requireMaster = true,
+    direction = direction)
 }
+
+sealed trait ReadAllEventsCompleted extends In {
+  def position: Position
+  def direction: ReadDirection.Value
+}
+
+case class ReadAllEventsSucceed(position: Position,
+                                resolvedEvents: Seq[ResolvedEvent],
+                                nextPosition: Position,
+                                modified: Boolean, // TODO Looks like it's not possible to receive `NotModified`
+                                direction: ReadDirection.Value) extends ReadAllEventsCompleted
+
+case class ReadAllEventsFailed(reason: ReadAllEventsFailed.Value,
+                               message: Option[String],
+                               position: Position,
+                               direction: ReadDirection.Value) extends ReadAllEventsCompleted
+
+object ReadAllEventsFailed extends Enumeration {
+  val Error, AccessDenied = Value
+}
+
 
 
 case class TransactionStart(streamId: StreamId, expVer: ExpectedVersion, requireMaster: Boolean) extends Out
@@ -148,16 +200,18 @@ sealed trait TransactionStartCompleted extends In
 case class TransactionStartSucceed(transactionId: Long) extends TransactionStartCompleted {
   require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
 }
-case class TransactionStartFailed(result: OperationFailed.Value, message: Option[String]) extends TransactionStartCompleted
+case class TransactionStartFailed(reason: OperationFailed.Value, message: Option[String]) extends TransactionStartCompleted
 
 
 
 case class TransactionWrite(transactionId: Long, events: Seq[Event], requireMaster: Boolean) extends Out
 
-sealed trait TransactionWriteCompleted extends In
+sealed trait TransactionWriteCompleted extends In {
+  def transactionId: Long
+}
 case class TransactionWriteSucceed(transactionId: Long) extends TransactionWriteCompleted
 case class TransactionWriteFailed(transactionId: Long,
-                                  result: OperationFailed.Value,
+                                  reason: OperationFailed.Value,
                                   message: Option[String]) extends TransactionWriteCompleted {
   require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
 }
@@ -169,7 +223,7 @@ case class TransactionCommit(transactionId: Long, requireMaster: Boolean) extend
 sealed trait TransactionCommitCompleted extends In
 case class TransactionCommitSucceed(transactionId: Long) extends TransactionCommitCompleted
 case class TransactionCommitFailed(transactionId: Long,
-                                   result: OperationFailed.Value,
+                                   reason: OperationFailed.Value,
                                    message: Option[String]) extends TransactionCommitCompleted {
   require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
 }

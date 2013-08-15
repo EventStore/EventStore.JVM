@@ -1,85 +1,100 @@
 package eventstore
 
-import ReadDirection.Forward
-
 /**
  * @author Yaroslav Klymko
  */
 class ReadStreamEventsForwardSpec extends TestConnectionSpec {
+  implicit val direction = ReadDirection.Forward
+
   "read stream events forward" should {
-    "fail if count <= 0" in todo
-
-    "fail if start < 0 " in todo
-
-    "fail if stream not found" in new ReadStreamForwardScope {
-      failReadStreamEvents(0, 1000, ReadStreamResult.NoStream)
+    "fail if count <= 0" in new TestConnectionScope {
+      readStreamEventsFailed(0, 0) must throwAn[IllegalArgumentException]
+      readStreamEventsFailed(0, -1) must throwAn[IllegalArgumentException]
     }
 
-    "fail if stream has been deleted" in new ReadStreamForwardScope {
+    "fail if start < 0 " in new TestConnectionScope {
+      readStreamEventsFailed(-1, 1) must throwAn[IllegalArgumentException]
+    }
+
+    "fail if stream not found" in new TestConnectionScope {
+      readStreamEventsFailed(0, 1000).reason mustEqual ReadStreamEventsFailed.NoStream
+    }
+
+    "fail if stream has been deleted" in new TestConnectionScope {
       appendEventToCreateStream()
       deleteStream()
-      failReadStreamEvents(0, 1000, ReadStreamResult.StreamDeleted)
+      readStreamEventsFailed(0, 1000).reason mustEqual ReadStreamEventsFailed.StreamDeleted
     }
 
-    "return no events when called on empty stream" in new ReadStreamForwardScope {
-      readStreamEvents(1, Int.MaxValue) must beEmpty
-    }
-
-    "get empty slice if asked to read from end" in new ReadStreamForwardScope {
+    "get empty slice if asked to read from end" in new TestConnectionScope {
       appendEventToCreateStream()
       readStreamEvents(1, 1000) must beEmpty
     }
 
-    "get empty slice if called with non existing range" in new ReadStreamForwardScope {
+    "get empty slice if called with non existing range" in new TestConnectionScope {
       appendEventToCreateStream()
       readStreamEvents(10, 1000) must beEmpty
     }
 
-    "get partial slice if not enough events in stream" in new ReadStreamForwardScope {
+    "get partial slice if not enough events in stream" in new TestConnectionScope {
       appendEventToCreateStream()
       readStreamEvents(0, 1000) must haveSize(1)
     }
 
-    "get partial slice if not enough events in stream and called with Int.Max count" in new ReadStreamForwardScope {
+    "get partial slice if not enough events in stream and called with Int.Max count" in new TestConnectionScope {
       appendEventToCreateStream()
       readStreamEvents(0, Int.MaxValue) must haveSize(1)
     }
 
-    "get events in same order as written" in new ReadStreamForwardScope {
+    "get events in same order as written" in new TestConnectionScope {
       val events = appendMany()
       readStreamEvents(0, Int.MaxValue) mustEqual events
     }
 
-    "be able to read single event from arbitrary position" in new ReadStreamForwardScope {
+    "be able to read single event from arbitrary position" in new TestConnectionScope {
       val events = appendMany()
       readStreamEvents(5, 1) mustEqual List(events(5))
     }
 
-    "be able to read slice from arbitrary position" in new ReadStreamForwardScope {
+    "be able to read slice from arbitrary position" in new TestConnectionScope {
       val events = appendMany()
       readStreamEvents(5, 3) mustEqual events.slice(5, 8)
     }
-  }
 
-
-  trait ReadStreamForwardScope extends TestConnectionScope {
-    def failReadStreamEvents(fromEventNumber: Int, maxCount: Int, expectedResult: ReadStreamResult.Value) {
-      actor ! ReadStreamEvents(streamId, fromEventNumber, maxCount, resolveLinkTos = false, Forward)
-      expectMsgPF() {
-        case ReadStreamEventsCompleted(Nil, `expectedResult`, _, _, _, _, Forward) => true
-      }
+    "be able to read first event" in new TestConnectionScope {
+      val events = appendMany()
+      val result = readStreamEventsSucceed(0, 1)
+      result.events.map(_.eventRecord.event) mustEqual List(events.head)
+      result.endOfStream must beFalse
+      result.nextEventNumber mustEqual 1
     }
 
-    def readStreamEvents(fromEventNumber: Int, maxCount: Int): Seq[Event] = {
-      actor ! ReadStreamEvents(streamId, fromEventNumber, maxCount, resolveLinkTos = false, Forward)
-      expectMsgPF() {
-        case ReadStreamEventsCompleted(Nil, ReadStreamResult.NoStream, -1, -1, true, _, Forward) => Nil
-        case ReadStreamEventsCompleted(xs, ReadStreamResult.Success, next, last, endOfStream, _, Forward) =>
-          endOfStream mustEqual (next > last)
-          xs.size must beLessThanOrEqualTo(maxCount)
-          xs.map(_.eventRecord.event)
-      }
+    "be able to read last event" in new TestConnectionScope {
+      val events = appendMany()
+      val result = readStreamEventsSucceed(9, 1)
+      result.events.map(_.eventRecord.event) mustEqual List(events.last)
+      result.endOfStream must beTrue
+      result.nextEventNumber mustEqual 10
+    }
+
+    "read not modified events" in new TestConnectionScope {
+//      appendMany()
+//
+//      def read() = readStreamEventsSucceed(0, 1)
+//
+//      val r1 = read()
+//      val r2 = read()
+//      r1.events mustEqual r2.events
+//      r1.modified must beTrue
+//      r2.modified must beFalse
+      skipped
+    }
+
+    "fail to read from wrong position" in new TestConnectionScope {
+      appendMany()
+      println(readStreamEventsFailed(-1, 1)) // TODO check on client side
+      //      val result = readStreamEventsSucceed(-1, 1)
+      //      println(result)
     }
   }
-
 }

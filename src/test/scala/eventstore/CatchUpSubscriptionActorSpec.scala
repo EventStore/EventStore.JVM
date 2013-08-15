@@ -25,21 +25,21 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
     "ignore read events with position out of interest" in new CatchUpSubscriptionActorScope {
       connection expectMsg readAllEvents(Position.start)
 
-      actor ! readAllEventsCompleted(Position.start, Position(3), re0, re1, re2)
+      actor ! readAllEventsSucceed(Position.start, Position(3), re0, re1, re2)
       expectMsg(re0)
       expectMsg(re1)
       expectMsg(re2)
 
       connection expectMsg readAllEvents(Position(3))
 
-      actor ! readAllEventsCompleted(Position(3), Position(5), re0, re1, re2, re3, re4)
+      actor ! readAllEventsSucceed(Position(3), Position(5), re0, re1, re2, re3, re4)
 
       expectMsg(re3)
       expectMsg(re4)
 
       connection expectMsg readAllEvents(Position(5))
 
-      actor ! readAllEventsCompleted(Position(3), Position(5), re0, re1, re2, re3, re4)
+      actor ! readAllEventsSucceed(Position(3), Position(5), re0, re1, re2, re3, re4)
 
       expectNoMsg(duration)
       connection expectMsg readAllEvents(Position(5))
@@ -47,7 +47,7 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
     "ignore read events with position out of interest when start position is given" in new CatchUpSubscriptionActorScope(Some(Position(1))) {
       connection expectMsg readAllEvents(Position(1))
 
-      actor ! readAllEventsCompleted(Position.start, Position(3), re0, re1, re2)
+      actor ! readAllEventsSucceed(Position.start, Position(3), re0, re1, re2)
       expectMsg(re2)
       expectNoMsg(duration)
 
@@ -59,12 +59,12 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
       val position = Position(1)
       val nextPosition = Position(2)
       val re = resolvedEvent(position)
-      actor ! readAllEventsCompleted(position, nextPosition, re)
+      actor ! readAllEventsSucceed(position, nextPosition, re)
 
       expectMsg(re)
 
       connection expectMsg readAllEvents(nextPosition)
-      actor ! readAllEventsCompleted(nextPosition, nextPosition)
+      actor ! readAllEventsSucceed(nextPosition, nextPosition)
 
       connection.expectMsg(SubscribeTo(AllStreams))
     }
@@ -72,13 +72,13 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
     "subscribe to new events if nothing to read" in new CatchUpSubscriptionActorScope {
       connection expectMsg readAllEvents(Position.start)
       val position = Position.start
-      actor ! readAllEventsCompleted(position, position)
+      actor ! readAllEventsSucceed(position, position)
       connection.expectMsg(SubscribeTo(AllStreams))
 
       actor ! SubscribeToAllCompleted(1)
 
       connection expectMsg readAllEvents(Position.start)
-      actor ! readAllEventsCompleted(position, position)
+      actor ! readAllEventsSucceed(position, position)
 
       expectMsg(LiveProcessingStarted)
     }
@@ -100,7 +100,7 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
 
       val position = Position(1)
       val re = resolvedEvent(position)
-      actor ! readAllEventsCompleted(position, Position(2), re)
+      actor ! readAllEventsSucceed(position, Position(2), re)
 
       expectNoActivty
     }
@@ -109,13 +109,13 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
       connection expectMsg readAllEvents(Position.start)
 
       val position = Position(1)
-      actor ! readAllEventsCompleted(Position.start, Position(2), re0, re1)
+      actor ! readAllEventsSucceed(Position.start, Position(2), re0, re1)
 
       expectMsg(re0)
       expectMsg(re1)
 
       connection expectMsg readAllEvents(Position(2))
-      actor ! readAllEventsCompleted(Position(2), Position(2))
+      actor ! readAllEventsSucceed(Position(2), Position(2))
 
       expectNoMsg(duration)
       connection.expectMsg(SubscribeTo(AllStreams))
@@ -129,7 +129,7 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
       actor ! StreamEventAppeared(re4)
       expectNoMsg(duration)
 
-      actor ! readAllEventsCompleted(Position(2), Position(3), re1, re2)
+      actor ! readAllEventsSucceed(Position(2), Position(3), re1, re2)
       expectMsg(re2)
 
       connection expectMsg readAllEvents(Position(3))
@@ -138,7 +138,7 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
       actor ! StreamEventAppeared(re6)
       expectNoMsg(duration)
 
-      actor ! readAllEventsCompleted(Position(3), Position(6), re3, re4, re5)
+      actor ! readAllEventsSucceed(Position(3), Position(6), re3, re4, re5)
 
       expectMsg(re3)
       expectMsg(re4)
@@ -154,7 +154,7 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
 
     "stop subscribing if stop received when subscription not yet confirmed" in new CatchUpSubscriptionActorScope() {
       connection expectMsg readAllEvents(Position.start)
-      actor ! readAllEventsCompleted(Position.start, Position.start)
+      actor ! readAllEventsSucceed(Position.start, Position.start)
 
       connection.expectMsg(SubscribeTo(AllStreams))
       actor ! StopSubscription
@@ -173,7 +173,7 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
 
     "not unsubscribe if subscription failed" in new CatchUpSubscriptionActorScope() {
       connection expectMsg readAllEvents(Position.start)
-      actor ! readAllEventsCompleted(Position.start, Position.start)
+      actor ! readAllEventsSucceed(Position.start, Position.start)
 
       connection.expectMsg(SubscribeTo(AllStreams))
       actor ! SubscriptionDropped(SubscriptionDropped.AccessDenied)
@@ -185,7 +185,7 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
 
     "not unsubscribe if subscription failed if stop received " in new CatchUpSubscriptionActorScope() {
       connection expectMsg readAllEvents(Position.start)
-      actor ! readAllEventsCompleted(Position.start, Position.start)
+      actor ! readAllEventsSucceed(Position.start, Position.start)
 
       actor ! StopSubscription
       connection.expectMsg(SubscribeTo(AllStreams))
@@ -202,14 +202,14 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
       connection expectMsg readAllEvents(Position.start)
 
       val position = Position(1)
-      actor ! readAllEventsCompleted(Position.start, Position(2), re0, re1)
+      actor ! readAllEventsSucceed(Position.start, Position(2), re0, re1)
 
       expectMsg(re0)
       expectMsg(re1)
 
       connection expectMsg readAllEvents(Position(2))
 
-      actor ! readAllEventsCompleted(Position(2), Position(2))
+      actor ! readAllEventsSucceed(Position(2), Position(2))
 
       expectNoMsg(duration)
       connection.expectMsg(SubscribeTo(AllStreams))
@@ -235,7 +235,7 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
     "continue with subscription if no events appear in between reading and subscribing" in new CatchUpSubscriptionActorScope() {
       val position = Position.start
       connection expectMsg readAllEvents(position)
-      actor ! readAllEventsCompleted(position, position)
+      actor ! readAllEventsSucceed(position, position)
 
       connection.expectMsg(SubscribeTo(AllStreams))
       expectNoMsg(duration)
@@ -243,7 +243,7 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
       actor ! SubscribeToAllCompleted(1)
 
       connection expectMsg readAllEvents(position)
-      actor ! readAllEventsCompleted(position, position)
+      actor ! readAllEventsSucceed(position, position)
 
       expectMsg(LiveProcessingStarted)
 
@@ -254,7 +254,7 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
       val position = Position(1)
       connection expectMsg readAllEvents(position)
 
-      actor ! readAllEventsCompleted(position, position)
+      actor ! readAllEventsSucceed(position, position)
 
       connection.expectMsg(SubscribeTo(AllStreams))
       expectNoMsg(duration)
@@ -269,7 +269,7 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
     "forward events while subscribed" in new CatchUpSubscriptionActorScope() {
       val position = Position.start
       connection expectMsg readAllEvents(position)
-      actor ! readAllEventsCompleted(position, position)
+      actor ! readAllEventsSucceed(position, position)
 
       connection.expectMsg(SubscribeTo(AllStreams))
       expectNoMsg(duration)
@@ -277,7 +277,7 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
       actor ! SubscribeToAllCompleted(1)
 
       connection expectMsg readAllEvents(position)
-      actor ! readAllEventsCompleted(position, position)
+      actor ! readAllEventsSucceed(position, position)
 
       expectMsg(LiveProcessingStarted)
 
@@ -295,13 +295,13 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
     "ignore wrong events while subscribed" in new CatchUpSubscriptionActorScope(Some(Position(1))) {
       val position = Position(1)
       connection expectMsg readAllEvents(position)
-      actor ! readAllEventsCompleted(position, position)
+      actor ! readAllEventsSucceed(position, position)
 
       connection.expectMsg(SubscribeTo(AllStreams))
       actor ! SubscribeToAllCompleted(2)
 
       connection expectMsg readAllEvents(position)
-      actor ! readAllEventsCompleted(position, position)
+      actor ! readAllEventsSucceed(position, position)
 
       expectMsg(LiveProcessingStarted)
 
@@ -324,7 +324,7 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
       connection expectMsg readAllEvents(Position(1))
 
       val position = Position(1)
-      actor ! readAllEventsCompleted(position, position)
+      actor ! readAllEventsSucceed(position, position)
 
       connection.expectMsg(SubscribeTo(AllStreams))
       actor ! SubscribeToAllCompleted(1)
@@ -362,10 +362,10 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
     val re6 = resolvedEvent(Position(6))
 
     def resolvedEvent(x: Position) = ResolvedEvent(mock[EventRecord], None, x)
-    def readAllEvents(x: Position) = ReadAllEvents(x, readBatchSize, resolveLinkTos, Forward)
+    def readAllEvents(x: Position) = ReadAllEvents(x, readBatchSize, resolveLinkTos = resolveLinkTos, requireMaster = true, Forward)
 
-    def readAllEventsCompleted(position: Position, nextPosition: Position, res: ResolvedEvent*) =
-      ReadAllEventsCompleted(position, res, nextPosition, Forward)
+    def readAllEventsSucceed(position: Position, nextPosition: Position, res: ResolvedEvent*) =
+      ReadAllEventsSucceed(position, res, nextPosition, modified = true, Forward)
 
     def expectNoActivty {
       expectNoMsg(duration)

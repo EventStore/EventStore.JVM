@@ -21,8 +21,8 @@ case class Position(commitPosition: Long, preparePosition: Long) extends Ordered
 }
 
 object Position {
-  val start = Position(0, 0)
-  val end = Position(-1, -1)
+  val start = Position(0)
+  val end   = Position(-1)
 
   def apply(position: Long): Position = Position(position, position)
 }

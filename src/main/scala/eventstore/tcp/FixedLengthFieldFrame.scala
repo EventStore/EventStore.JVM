@@ -1,8 +1,8 @@
-package eventstore.tcp
+package eventstore
+package tcp
 
 import java.nio.ByteOrder
 import akka.io.{SymmetricPipePair, PipelineContext, LengthFieldFrame}
-import akka.util.ByteString
 
 /**
  * @author Yaroslav Klymko

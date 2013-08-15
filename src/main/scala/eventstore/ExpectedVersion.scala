@@ -3,6 +3,8 @@ package eventstore
 /**
  * @author Yaroslav Klymko
  */
+
+// TODO hide from eventstore package
 sealed trait ExpectedVersion {
   def value: Int
 }

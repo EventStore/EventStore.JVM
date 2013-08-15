@@ -1,9 +1,9 @@
 package eventstore
 package tcp
 
-import PartialFunction.condOpt
-import ReadDirection.{Backward, Forward}
+import scala.PartialFunction.condOpt
 import util.DefaultFormats
+import ReadDirection.{Backward, Forward}
 
 
 /**
@@ -100,63 +100,108 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
 
   implicit object ReadEventCompletedReader
     extends ProtoReader[ReadEventCompleted, proto.ReadEventCompleted](proto.ReadEventCompleted) {
+    import eventstore.proto.ReadEventCompleted.ReadEventResult._
 
-    def readEventFailed(x: proto.ReadEventCompleted.ReadEventResult.EnumVal): Option[ReadEventFailed.Value] = {
-      import eventstore.proto.ReadEventCompleted.ReadEventResult._
-
-      condOpt(x) {
-        case NotFound => ReadEventFailed.NotFound
-        case NoStream => ReadEventFailed.NoStream
-        case StreamDeleted => ReadEventFailed.StreamDeleted
-        case Error => ReadEventFailed.Error
-        case AccessDenied => ReadEventFailed.AccessDenied
-      }
+    // TODO test it, what if new enum will be added in proto?
+    def reason(x: EnumVal): Option[ReadEventFailed.Value] = condOpt(x) {
+      case NotFound => ReadEventFailed.NotFound
+      case NoStream => ReadEventFailed.NoStream
+      case StreamDeleted => ReadEventFailed.StreamDeleted
+      case Error => ReadEventFailed.Error
+      case AccessDenied => ReadEventFailed.AccessDenied
     }
 
-    def fromProto(x: proto.ReadEventCompleted) = readEventFailed(x.`result`) match {
+    def fromProto(x: proto.ReadEventCompleted) = reason(x.`result`) match {
       case Some(reason) => ReadEventFailed(reason, x.`error`)
       case None => ReadEventSucceed(ResolvedIndexedEventReader.fromProto(x.`event`))
     }
   }
 
 
+
+  implicit object ReadStreamEventsWriter extends ProtoWriter[ReadStreamEvents] {
+    def toProto(x: ReadStreamEvents) = proto.ReadStreamEvents(
+      `eventStreamId` = x.streamId.id,
+      `fromEventNumber` = x.fromEventNumber,
+      `maxCount` = x.maxCount,
+      `resolveLinkTos` = x.resolveLinkTos)
+  }
+
   abstract class ReadStreamEventsCompletedReader(direction: ReadDirection.Value)
     extends ProtoReader[ReadStreamEventsCompleted, proto.ReadStreamEventsCompleted](proto.ReadStreamEventsCompleted) {
+    import eventstore.proto.ReadStreamEventsCompleted.ReadStreamResult._
 
-    def readStreamResult(x: proto.ReadStreamEventsCompleted.ReadStreamResult.EnumVal) = {
-      import eventstore.proto.ReadStreamEventsCompleted.ReadStreamResult._
-      x match {
-        case Success => ReadStreamResult.Success
-        case NoStream => ReadStreamResult.NoStream
-        case StreamDeleted => ReadStreamResult.StreamDeleted
-        case NotModified => ReadStreamResult.NotModified
-        case Error => ReadStreamResult.Error
-        case AccessDenied => ReadStreamResult.AccessDenied
-        case _ => sys.error("TODO") // TODO
-      }
+    // TODO test it, what if new enum will be added in proto?
+    def reason(x: EnumVal) = condOpt(x) {
+      case NoStream => ReadStreamEventsFailed.NoStream
+      case StreamDeleted => ReadStreamEventsFailed.StreamDeleted
+      case Error => ReadStreamEventsFailed.Error
+      case AccessDenied => ReadStreamEventsFailed.AccessDenied
     }
 
-    def fromProto(x: proto.ReadStreamEventsCompleted) = ReadStreamEventsCompleted(
-      events = x.`events`.map(ResolvedIndexedEventReader.fromProto).toList,
-      result = readStreamResult(x.`result`),
-      nextEventNumber = /*EventNumber*/ (x.`nextEventNumber`),
-      lastEventNumber = /*EventNumber*/ (x.`lastEventNumber`),
-      isEndOfStream = x.`isEndOfStream`,
-      lastCommitPosition = x.`lastCommitPosition`,
-      direction = direction)
+    def fromProto(x: proto.ReadStreamEventsCompleted) = reason(x.`result`) match {
+      case None => ReadStreamEventsSucceed(
+        events = x.`events`.map(ResolvedIndexedEventReader.fromProto).toList,
+        nextEventNumber = /*EventNumber*/ (x.`nextEventNumber`),
+        lastEventNumber = /*EventNumber*/ (x.`lastEventNumber`),
+        modified = { println(x.`result`); x.`result` != NotModified},
+        endOfStream = x.`isEndOfStream`,
+        lastCommitPosition = x.`lastCommitPosition`,
+        direction = direction)
+
+      case Some(reason) => ReadStreamEventsFailed(
+        reason = reason,
+        message = x.`error`,
+        nextEventNumber = /*EventNumber*/ (x.`nextEventNumber`),
+        lastEventNumber = /*EventNumber*/ (x.`lastEventNumber`),
+        isEndOfStream = x.`isEndOfStream`,
+        lastCommitPosition = x.`lastCommitPosition`,
+        direction = direction)
+    }
   }
 
   object ReadStreamEventsForwardCompletedReader extends ReadStreamEventsCompletedReader(Forward)
   object ReadStreamEventsBackwardCompletedReader extends ReadStreamEventsCompletedReader(Backward)
 
 
+  implicit object ReadAllEventsWriter extends ProtoWriter[ReadAllEvents] {
+    def toProto(x: ReadAllEvents) = proto.ReadAllEvents(
+      `commitPosition` = x.position.commitPosition,
+      `preparePosition` = x.position.preparePosition,
+      `maxCount` = x.maxCount,
+      `resolveLinkTos` = x.resolveLinkTos,
+      `requireMaster` = x.requireMaster)
+  }
+
+
   abstract class ReadAllEventsCompletedReader(direction: ReadDirection.Value)
     extends ProtoReader[ReadAllEventsCompleted, proto.ReadAllEventsCompleted](proto.ReadAllEventsCompleted) {
-    def fromProto(x: proto.ReadAllEventsCompleted) = ReadAllEventsCompleted(
-      position = Position(commitPosition = x.`commitPosition`, preparePosition = x.`preparePosition`),
-      resolvedEvents = x.`events`.toList.map(ResolvedEventReader.fromProto),
-      nextPosition = Position(commitPosition = x.`nextCommitPosition`, preparePosition = x.`nextPreparePosition`),
-      direction = direction)
+    import proto.ReadAllEventsCompleted.ReadAllResult._
+
+    // TODO test it, what if new enum will be added in proto?
+    def reason(x: EnumVal): Option[ReadAllEventsFailed.Value] = condOpt(x) {
+      case Error        => ReadAllEventsFailed.Error
+      case AccessDenied => ReadAllEventsFailed.AccessDenied
+    }
+
+    def fromProto(x: proto.ReadAllEventsCompleted) = {
+      val result = x.`result` getOrElse Success
+      val position = Position(commitPosition = x.`commitPosition`, preparePosition = x.`preparePosition`)
+      reason(result) match {
+        case None => ReadAllEventsSucceed(
+          position = position,
+          resolvedEvents = x.`events`.toList.map(ResolvedEventReader.fromProto),
+          nextPosition = Position(commitPosition = x.`nextCommitPosition`, preparePosition = x.`nextPreparePosition`),
+          modified = result != NotModified,
+          direction = direction)
+
+        case Some(reason) => ReadAllEventsFailed(
+          reason = reason,
+          position = position,
+          direction = direction,
+          message = x.`error`)
+      }
+    }
   }
 
   object ReadAllEventsForwardCompletedReader extends ReadAllEventsCompletedReader(Forward)
@@ -184,6 +229,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
     import eventstore.proto.SubscriptionDropped.SubscriptionDropReason._
     val default = SubscriptionDropped.Unsubscribed
 
+    // TODO test it, what if new enum will be added in proto?
     def reason(x: EnumVal): SubscriptionDropped.Value = x match {
       case Unsubscribed => SubscriptionDropped.Unsubscribed
       case AccessDenied => SubscriptionDropped.AccessDenied
@@ -248,24 +294,6 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
   }
 
 
-  implicit object ReadStreamEventsWriter extends ProtoWriter[ReadStreamEvents] {
-    def toProto(x: ReadStreamEvents) = proto.ReadStreamEvents(
-      `eventStreamId` = x.streamId.id,
-      `fromEventNumber` = x.fromEventNumber,
-      `maxCount` = x.maxCount,
-      `resolveLinkTos` = x.resolveLinkTos)
-  }
-
-
-  implicit object ReadAllEventsWriter extends ProtoWriter[ReadAllEvents] {
-    def toProto(x: ReadAllEvents) = proto.ReadAllEvents(
-      `commitPosition` = x.position.commitPosition,
-      `preparePosition` = x.position.preparePosition,
-      `maxCount` = x.maxCount,
-      `resolveLinkTos` = x.resolveLinkTos)
-  }
-
-
   implicit object SubscribeToWriter extends ProtoWriter[SubscribeTo] {
     def toProto(x: SubscribeTo) = {
       val streamId = x.stream match {
@@ -281,14 +309,15 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
 
   private def operationFailed(x: proto.OperationResult.EnumVal): Option[OperationFailed.Value] = {
     import eventstore.proto.OperationResult._
-    condOpt(x) {
-      case PrepareTimeout => OperationFailed.PrepareTimeout
-      case CommitTimeout => OperationFailed.CommitTimeout
-      case ForwardTimeout => OperationFailed.ForwardTimeout
+    // TODO test it, what if new enum will be added in proto?
+    condOpt(x) { // TODO add plugin to align this way
+      case PrepareTimeout       => OperationFailed.PrepareTimeout
+      case CommitTimeout        => OperationFailed.CommitTimeout
+      case ForwardTimeout       => OperationFailed.ForwardTimeout
       case WrongExpectedVersion => OperationFailed.WrongExpectedVersion
-      case StreamDeleted => OperationFailed.StreamDeleted
-      case InvalidTransaction => OperationFailed.InvalidTransaction
-      case AccessDenied => OperationFailed.AccessDenied
+      case StreamDeleted        => OperationFailed.StreamDeleted
+      case InvalidTransaction   => OperationFailed.InvalidTransaction
+      case AccessDenied         => OperationFailed.AccessDenied
     }
   }
 }
