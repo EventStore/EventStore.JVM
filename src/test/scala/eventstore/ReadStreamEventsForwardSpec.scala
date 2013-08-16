@@ -78,16 +78,13 @@ class ReadStreamEventsForwardSpec extends TestConnectionSpec {
     }
 
     "read not modified events" in new TestConnectionScope {
-//      appendMany()
-//
-//      def read() = readStreamEventsSucceed(0, 1)
-//
-//      val r1 = read()
-//      val r2 = read()
-//      r1.events mustEqual r2.events
-//      r1.modified must beTrue
-//      r2.modified must beFalse
-      skipped
+      appendMany()
+
+      def read() = readStreamEventsSucceed(0, 1)
+
+      val r1 = read()
+      val r2 = read()
+      r1.events mustEqual r2.events
     }
 
     "fail to read from wrong position" in new TestConnectionScope {

@@ -149,7 +149,7 @@ abstract class TestConnectionSpec extends SpecificationWithJUnit with NoDuration
       def read(position: Position) {
         actor ! ReadAllEvents(position, size, direction)
         val (events, nextPosition) = expectMsgPF() {
-          case ReadAllEventsSucceed(_, xs, p, _, `direction`) => (xs, p)
+          case ReadAllEventsSucceed(_, xs, p, `direction`) => (xs, p)
         }
         if (events.nonEmpty) {
           events.size must beLessThanOrEqualTo(size)

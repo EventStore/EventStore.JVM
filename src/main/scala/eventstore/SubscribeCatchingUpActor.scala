@@ -29,7 +29,7 @@ class CatchUpSubscriptionActor(connection: ActorRef,
   def read(lastPosition: Option[Position]): Receive = {
     case StopSubscription => unsubscribed(SubscriptionDropped.Unsubscribed)
 
-    case ReadAllEventsSucceed(_, events, nextPosition, _, Forward) => context become (
+    case ReadAllEventsSucceed(_, events, nextPosition, Forward) => context become (
       if (events.nonEmpty) read(lastPosition = process(lastPosition, events), nextPosition = nextPosition)
       else subscribe(lastPosition = lastPosition, nextPosition = nextPosition))
 
@@ -44,7 +44,7 @@ class CatchUpSubscriptionActor(connection: ActorRef,
     readEventsFrom(nextPosition)
 
     def catchingUp(stash: Queue[ResolvedEvent]): Receive = {
-      case ReadAllEventsSucceed(_, events, np, _, Forward) => context become (
+      case ReadAllEventsSucceed(_, events, np, Forward) => context become (
         if (events.isEmpty) liveProcessing(lastPosition, stash)
         else {
           def loop(events: List[ResolvedEvent], lastPosition: Option[Position]): Receive = events match {

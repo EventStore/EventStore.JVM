@@ -365,7 +365,7 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
     def readAllEvents(x: Position) = ReadAllEvents(x, readBatchSize, resolveLinkTos = resolveLinkTos, requireMaster = true, Forward)
 
     def readAllEventsSucceed(position: Position, nextPosition: Position, res: ResolvedEvent*) =
-      ReadAllEventsSucceed(position, res, nextPosition, modified = true, Forward)
+      ReadAllEventsSucceed(position, res, nextPosition, Forward)
 
     def expectNoActivty {
       expectNoMsg(duration)

@@ -138,7 +138,6 @@ sealed trait ReadStreamEventsCompleted extends In {
 case class ReadStreamEventsSucceed(events: Seq[ResolvedIndexedEvent],
                                    nextEventNumber: Int,
                                    lastEventNumber: Int,
-                                   modified: Boolean, // TODO Looks like it's not possible to receive `NotModified` IS IT?
                                    endOfStream: Boolean,
                                    lastCommitPosition: Long,
                                    direction: ReadDirection.Value) extends ReadStreamEventsCompleted
@@ -180,7 +179,6 @@ sealed trait ReadAllEventsCompleted extends In {
 case class ReadAllEventsSucceed(position: Position,
                                 resolvedEvents: Seq[ResolvedEvent],
                                 nextPosition: Position,
-                                modified: Boolean, // TODO Looks like it's not possible to receive `NotModified`
                                 direction: ReadDirection.Value) extends ReadAllEventsCompleted
 
 case class ReadAllEventsFailed(reason: ReadAllEventsFailed.Value,

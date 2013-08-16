@@ -52,8 +52,6 @@ class ReadAllEventsBackwardSpec extends TestConnectionSpec {
       val r1 = read()
       val r2 = read()
       r1.resolvedEvents mustEqual r2.resolvedEvents
-      r1.modified must beTrue
-      r2.modified must beFalse
     }
 
     "fail to read from wrong position" in new TestConnectionScope {
