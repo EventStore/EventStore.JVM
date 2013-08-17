@@ -3,23 +3,30 @@ package eventstore
 /**
  * @author Yaroslav Klymko
  */
-sealed trait EventNumber
+// TODO check all "event numbers in messages"
+sealed trait EventNumber extends Ordered[EventNumber]// TODO same rules as in Position.First = 0, Position.Last = -1
 
 object EventNumber {
   val First = Exact(0)
   val Max = Exact(Int.MaxValue)
-  object Last extends EventNumber
 
-  def apply(eventNumber: Int): EventNumber = {
-    if (eventNumber == First.value) First
-    else if (eventNumber > 0) Exact(eventNumber)
-    else if (eventNumber == Max.value) Max
-    else NoEvent
+  def apply(eventNumber: Int): EventNumber = if (eventNumber == -1) Last else Exact(eventNumber)
+
+
+  case object Last extends EventNumber {
+    def compare(that: EventNumber) = if (that.isInstanceOf[Last.type]) 0 else 1
+
+    override def toString = "LastEventNumber"
   }
 
   case class Exact(value: Int) extends EventNumber {
     require(value >= 0, s"event number must be >= 0, but is $value")
-  }
 
-  case object NoEvent extends EventNumber
+    def compare(that: EventNumber) = that match {
+      case Last => -1
+      case that: Exact => this.value compare that.value
+    }
+
+    override def toString = s"EventNumber($value)"
+  }
 }

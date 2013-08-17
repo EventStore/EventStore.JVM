@@ -64,7 +64,7 @@ class ReadStreamEventsForwardSpec extends TestConnectionSpec {
     "be able to read first event" in new TestConnectionScope {
       val events = appendMany()
       val result = readStreamEventsSucceed(0, 1)
-      result.events.map(_.eventRecord.event) mustEqual List(events.head)
+      result.resolvedIndexedEvents.map(_.eventRecord.event) mustEqual List(events.head)
       result.endOfStream must beFalse
       result.nextEventNumber mustEqual 1
     }
@@ -72,7 +72,7 @@ class ReadStreamEventsForwardSpec extends TestConnectionSpec {
     "be able to read last event" in new TestConnectionScope {
       val events = appendMany()
       val result = readStreamEventsSucceed(9, 1)
-      result.events.map(_.eventRecord.event) mustEqual List(events.last)
+      result.resolvedIndexedEvents.map(_.eventRecord.event) mustEqual List(events.last)
       result.endOfStream must beTrue
       result.nextEventNumber mustEqual 10
     }
@@ -84,7 +84,7 @@ class ReadStreamEventsForwardSpec extends TestConnectionSpec {
 
       val r1 = read()
       val r2 = read()
-      r1.events mustEqual r2.events
+      r1.resolvedIndexedEvents mustEqual r2.resolvedIndexedEvents
     }
 
     "fail to read from wrong position" in new TestConnectionScope {

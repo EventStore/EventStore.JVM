@@ -42,7 +42,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
     def fromProto(x: proto.ResolvedEvent) = ResolvedEvent(
       eventRecord = EventRecordReader.fromProto(x.`event`),
       link = x.`link`.map(EventRecordReader.fromProto),
-      position = Position(commitPosition = x.`commitPosition`, preparePosition = x.`preparePosition`))
+      position = Position.Exact(commitPosition = x.`commitPosition`, preparePosition = x.`preparePosition`))
   }
 
 
@@ -143,7 +143,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
       require(x.`result` != NotModified, "ReadStreamEventsCompleted.NotModified is not supported")
       reason(x.`result`) match {
         case None => ReadStreamEventsSucceed(
-          events = x.`events`.map(ResolvedIndexedEventReader.fromProto).toList,
+          resolvedIndexedEvents = x.`events`.map(ResolvedIndexedEventReader.fromProto).toList,
           nextEventNumber = /*EventNumber*/ (x.`nextEventNumber`),
           lastEventNumber = /*EventNumber*/ (x.`lastEventNumber`),
           endOfStream = x.`isEndOfStream`,
@@ -167,12 +167,18 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
 
 
   implicit object ReadAllEventsWriter extends ProtoWriter[ReadAllEvents] {
-    def toProto(x: ReadAllEvents) = proto.ReadAllEvents(
-      `commitPosition` = x.position.commitPosition,
-      `preparePosition` = x.position.preparePosition,
-      `maxCount` = x.maxCount,
-      `resolveLinkTos` = x.resolveLinkTos,
-      `requireMaster` = x.requireMaster)
+    def toProto(x: ReadAllEvents) = {
+      val (commitPosition, preparePosition) = x.position match {
+        case Position.Exact(c, p) => (c, p)
+        case Position.Last => (-1L, -1L)
+      }
+      proto.ReadAllEvents(
+        `commitPosition` = commitPosition,
+        `preparePosition` = preparePosition,
+        `maxCount` = x.maxCount,
+        `resolveLinkTos` = x.resolveLinkTos,
+        `requireMaster` = x.requireMaster)
+    }
   }
 
 
@@ -189,12 +195,12 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
     def fromProto(x: proto.ReadAllEventsCompleted) = {
       val result = x.`result` getOrElse Success
       require(result != NotModified, "ReadAllEventsCompleted.NotModified is not supported")
-      val position = Position(commitPosition = x.`commitPosition`, preparePosition = x.`preparePosition`)
+      val position = Position.Exact(commitPosition = x.`commitPosition`, preparePosition = x.`preparePosition`)
       reason(result) match {
         case None => ReadAllEventsSucceed(
           position = position,
           resolvedEvents = x.`events`.toList.map(ResolvedEventReader.fromProto),
-          nextPosition = Position(commitPosition = x.`nextCommitPosition`, preparePosition = x.`nextPreparePosition`),
+          nextPosition = Position.Exact(commitPosition = x.`nextCommitPosition`, preparePosition = x.`nextPreparePosition`),
           direction = direction)
 
         case Some(reason) => ReadAllEventsFailed(
@@ -214,7 +220,9 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
     extends ProtoReader[SubscribeCompleted, proto.SubscriptionConfirmation](proto.SubscriptionConfirmation) {
     def fromProto(x: proto.SubscriptionConfirmation) = x.`lastEventNumber` match {
       case None => SubscribeToAllCompleted(x.`lastCommitPosition`)
-      case Some(eventNumber) => SubscribeToStreamCompleted(x.`lastCommitPosition`, EventNumber(eventNumber))
+      case Some(eventNumber) => SubscribeToStreamCompleted(
+        lastCommit = x.`lastCommitPosition`,
+        lastEventNumber = if (eventNumber == -1) None else Some(EventNumber.Exact(eventNumber)))
     }
   }
 

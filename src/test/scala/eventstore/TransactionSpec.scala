@@ -3,10 +3,12 @@ package eventstore
 import OperationFailed._
 import akka.testkit.TestProbe
 
+
 /**
  * @author Yaroslav Klymko
  */
 class TransactionSpec extends TestConnectionSpec {
+  implicit val direction = ReadDirection.Forward
   "transaction" should {
     "start on non existing stream with correct exp ver and create stream on commit" in new TransactionScope {
       implicit val transactionId = transactionStart(NoStream)
@@ -29,14 +31,14 @@ class TransactionSpec extends TestConnectionSpec {
     "do nothing if commits without events to empty stream" in new TransactionScope {
       implicit val transactionId = transactionStart(NoStream)
       transactionCommit
-      streamEvents must beEmpty
+      readStreamEventsFailed.reason mustEqual ReadStreamEventsFailed.NoStream
     }
 
     "do nothing if commits no events to empty stream" in new TransactionScope {
       implicit val transactionId = transactionStart(NoStream)
       transactionWrite()
       transactionCommit
-      streamEvents must beEmpty
+      readStreamEventsFailed.reason mustEqual ReadStreamEventsFailed.NoStream
     }
 
     "validate expectations on commit" in new TransactionScope {

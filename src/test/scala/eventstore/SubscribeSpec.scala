@@ -10,12 +10,13 @@ class SubscribeSpec extends TestConnectionSpec {
     "succeed for deleted stream but should not receive any events" in new SubscribeScope {
       appendEventToCreateStream()
       deleteStream()
-      subscribeToStream().lastEventNumber mustEqual EventNumber.Max // TODO WHY?
+      subscribeToStream().lastEventNumber must beSome(EventNumber.Max) // TODO WHY?
     }
 
     "be able to subscribe to non existing stream and then catch new event" in new SubscribeScope {
       val subscribed = subscribeToStream()
-      subscribed.lastEventNumber mustEqual EventNumber.NoEvent
+      println(subscribed)
+      subscribed.lastEventNumber mustEqual None
 
       val events = appendMany(testKit = TestProbe())
       events.zipWithIndex.foreach {
@@ -27,24 +28,24 @@ class SubscribeSpec extends TestConnectionSpec {
     }
 
     "allow multiple subscriptions to the same stream" in new SubscribeScope {
-      subscribeToStream(TestProbe()).lastEventNumber mustEqual EventNumber.NoEvent
-      subscribeToStream(TestProbe()).lastEventNumber mustEqual EventNumber.NoEvent
+      subscribeToStream(TestProbe()).lastEventNumber must beEmpty
+      subscribeToStream(TestProbe()).lastEventNumber must beEmpty
     }
 
     "be able to unsubscribe from existing stream" in new SubscribeScope {
       appendEventToCreateStream()
-      subscribeToStream().lastEventNumber mustEqual EventNumber.First
+      subscribeToStream().lastEventNumber must beSome(EventNumber.First)
       unsubscribeFromStream()
     }
 
     "be able to unsubscribe from not existing stream" in new SubscribeScope {
-      subscribeToStream().lastEventNumber mustEqual EventNumber.NoEvent
+      subscribeToStream().lastEventNumber must beEmpty
       unsubscribeFromStream()
     }
 
     "catch stream deleted events" in new SubscribeScope {
       val subscribed = subscribeToStream()
-      subscribed.lastEventNumber mustEqual EventNumber.NoEvent
+      subscribed.lastEventNumber must beEmpty
       appendEventToCreateStream()
       expectEventAppeared().eventRecord.number mustEqual EventNumber.First
       deleteStream()

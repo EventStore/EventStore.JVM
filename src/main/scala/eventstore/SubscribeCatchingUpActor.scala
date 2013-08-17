@@ -9,7 +9,7 @@ import ReadDirection.Forward
  */
 class CatchUpSubscriptionActor(connection: ActorRef,
                                client: ActorRef,
-                               fromPositionExclusive: Option[Position],
+                               fromPositionExclusive: Option[Position.Exact],
                                resolveLinkTos: Boolean,
                                readBatchSize: Int = 500) extends Actor with ActorLogging {
 
@@ -19,14 +19,14 @@ class CatchUpSubscriptionActor(connection: ActorRef,
 
   def receive = read(
     lastPosition = fromPositionExclusive,
-    nextPosition = fromPositionExclusive getOrElse Position.start)
+    nextPosition = fromPositionExclusive getOrElse Position.First)
 
-  def read(lastPosition: Option[Position], nextPosition: Position): Receive = {
+  def read(lastPosition: Option[Position.Exact], nextPosition: Position): Receive = {
     readEventsFrom(nextPosition)
     read(lastPosition)
   }
 
-  def read(lastPosition: Option[Position]): Receive = {
+  def read(lastPosition: Option[Position.Exact]): Receive = {
     case StopSubscription => unsubscribed(SubscriptionDropped.Unsubscribed)
 
     case ReadAllEventsSucceed(_, events, nextPosition, Forward) => context become (
@@ -36,7 +36,7 @@ class CatchUpSubscriptionActor(connection: ActorRef,
     case _: ReadAllEventsFailed => ??? // TODO
   }
 
-  def catchUp(lastPosition: Option[Position],
+  def catchUp(lastPosition: Option[Position.Exact],
               nextPosition: Position,
               subscriptionLastCommit: Long,
               stash: Queue[ResolvedEvent]): Receive = {
@@ -47,7 +47,7 @@ class CatchUpSubscriptionActor(connection: ActorRef,
       case ReadAllEventsSucceed(_, events, np, Forward) => context become (
         if (events.isEmpty) liveProcessing(lastPosition, stash)
         else {
-          def loop(events: List[ResolvedEvent], lastPosition: Option[Position]): Receive = events match {
+          def loop(events: List[ResolvedEvent], lastPosition: Option[Position.Exact]): Receive = events match {
             case Nil => catchUp(lastPosition, np, subscriptionLastCommit, stash)
             case event :: tail =>
               val position = event.position
@@ -73,7 +73,7 @@ class CatchUpSubscriptionActor(connection: ActorRef,
     catchingUp(stash)
   }
 
-  def subscribe(lastPosition: Option[Position], nextPosition: Position): Receive = {
+  def subscribe(lastPosition: Option[Position.Exact], nextPosition: Position): Receive = {
     debug(s"subscribing: lastPosition: $lastPosition")
     connection ! SubscribeTo(streamId, resolveLinkTos = resolveLinkTos)
 
@@ -99,11 +99,11 @@ class CatchUpSubscriptionActor(connection: ActorRef,
     }
   }
 
-  def liveProcessing(lastPosition: Option[Position], stash: Queue[ResolvedEvent]): Receive = {
+  def liveProcessing(lastPosition: Option[Position.Exact], stash: Queue[ResolvedEvent]): Receive = {
     debug(s"live processing started, lastPosition: $lastPosition")
     client ! LiveProcessingStarted
 
-    def liveProcessing(lastPosition: Option[Position]): Receive = {
+    def liveProcessing(lastPosition: Option[Position.Exact]): Receive = {
       case StreamEventAppeared(event) => context become liveProcessing(process(lastPosition, event))
       case StopSubscription => unsubscribe
     }
@@ -126,10 +126,10 @@ class CatchUpSubscriptionActor(connection: ActorRef,
     }
   }
 
-  def process(lastPosition: Option[Position], events: Seq[ResolvedEvent]): Option[Position] =
+  def process(lastPosition: Option[Position.Exact], events: Seq[ResolvedEvent]): Option[Position.Exact] =
     events.foldLeft(lastPosition)((lastPosition, event) => process(lastPosition, event))
 
-  def process(lastPosition: Option[Position], event: ResolvedEvent): Option[Position] = {
+  def process(lastPosition: Option[Position.Exact], event: ResolvedEvent): Option[Position.Exact] = {
     val position = event.position
     lastPosition match {
       case Some(lp) if lp >= position =>

@@ -10,7 +10,7 @@ import scala.concurrent.duration._
  */
 class ReadAllEventsActor extends Actor with ActorLogging {
 
-  val readAllEvents = ReadAllEvents(Position.start, 10000, ReadDirection.Forward)
+  val readAllEvents = ReadAllEvents(Position.First, 10000, ReadDirection.Forward)
 
   import context.dispatcher
 

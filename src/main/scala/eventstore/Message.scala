@@ -1,6 +1,5 @@
 package eventstore
 
-import util.BetterToString
 
 /**
  * @author Yaroslav Klymko
@@ -27,33 +26,6 @@ case object SubscribeReplica extends Message
 case object CreateChunk extends Message
 case object PhysicalChunkBulk extends Message
 case object LogicalChunkBulk extends Message
-
-case class Event(eventId: Uuid,
-                 eventType: String,
-//                 dataContentType: Int, // TODO
-                 data: ByteString,
-//                 metadataContentType: Int, // TODO
-                 metadata: ByteString) extends BetterToString
-
-object Event {
-
-  def apply(eventId: Uuid, eventType: String): Event = Event(eventId, eventType, ByteString.empty, ByteString.empty)
-
-  object StreamDeleted {
-    def unapply(x: Event): Option[Uuid] = PartialFunction.condOpt(x) {
-      case Event(eventId, EvenType.streamDeleted, ByteString.empty, ByteString.empty) => eventId
-    }
-  }
-}
-
-object EvenType {
-  val streamDeleted = "$streamDeleted" // TODO
-  val streamCreated = "$streamCreated" // TODO
-}
-
-case class EventRecord(streamId: StreamId, number: EventNumber.Exact, event: Event)
-case class ResolvedIndexedEvent(eventRecord: EventRecord, link: Option[EventRecord])
-case class ResolvedEvent(eventRecord: EventRecord, link: Option[EventRecord], position: Position)
 
 
 
@@ -135,13 +107,14 @@ sealed trait ReadStreamEventsCompleted extends In {
   def direction: ReadDirection.Value
 }
 
-case class ReadStreamEventsSucceed(events: Seq[ResolvedIndexedEvent],
+case class ReadStreamEventsSucceed(resolvedIndexedEvents: Seq[ResolvedIndexedEvent],
                                    nextEventNumber: Int,
                                    lastEventNumber: Int,
                                    endOfStream: Boolean,
                                    lastCommitPosition: Long,
                                    direction: ReadDirection.Value) extends ReadStreamEventsCompleted
 
+// TODO check fields relevance
 case class ReadStreamEventsFailed(reason: ReadStreamEventsFailed.Value,
                                   message: Option[String],
                                   nextEventNumber: Int,
@@ -172,18 +145,18 @@ object ReadAllEvents {
 }
 
 sealed trait ReadAllEventsCompleted extends In {
-  def position: Position
+  def position: Position.Exact
   def direction: ReadDirection.Value
 }
 
-case class ReadAllEventsSucceed(position: Position,
+case class ReadAllEventsSucceed(position: Position.Exact,
                                 resolvedEvents: Seq[ResolvedEvent],
-                                nextPosition: Position,
+                                nextPosition: Position.Exact,
                                 direction: ReadDirection.Value) extends ReadAllEventsCompleted
 
 case class ReadAllEventsFailed(reason: ReadAllEventsFailed.Value,
                                message: Option[String],
-                               position: Position,
+                               position: Position.Exact,
                                direction: ReadDirection.Value) extends ReadAllEventsCompleted
 
 object ReadAllEventsFailed extends Enumeration {
@@ -240,7 +213,7 @@ case class SubscribeToAllCompleted(lastCommit: Long) extends SubscribeCompleted 
   require(lastCommit > 0, s"lastCommit must > 0, but is $lastCommit") // TODO not sure about this restriction
 }
 
-case class SubscribeToStreamCompleted(lastCommit: Long, lastEventNumber: EventNumber) extends SubscribeCompleted {
+case class SubscribeToStreamCompleted(lastCommit: Long, lastEventNumber: Option[EventNumber.Exact]) extends SubscribeCompleted {
   require(lastCommit > 0, s"lastCommit must > 0, but is $lastCommit")
 }
 

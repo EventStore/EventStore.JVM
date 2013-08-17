@@ -8,25 +8,30 @@ class ReadAllEventsForwardSpec extends TestConnectionSpec {
   sequential
 
   implicit val direction = ReadDirection.Forward
-  val startPosition = Position.start
+  val startPosition = Position.First
 
   "read all events forward" should {
     "return empty slice if asked to read from end" in new TestConnectionScope {
       val events = appendMany()
-      readAllEvents(Position.end, 1) must beEmpty
+      readAllEvents(Position.Last, 1) must beEmpty
+    }
+
+    "return partial slice if not enough events" in new TestConnectionScope {
+      val size = Int.MaxValue
+      readAllEvents(Position.First, size).size must beLessThan(size) // TODO
     }
 
     "return events in same order as written" in new TestConnectionScope {
       val events = appendMany()
-      readAllEvents(startPosition, Int.MaxValue).takeRight(events.length) mustEqual events
+      allStreamsEvents().takeRight(events.length).toSeq mustEqual events
     }
 
     "be able to read all one by one until end of stream" in new TestConnectionScope {
-      readUntilEndOfStream(1)
+      allStreamsEvents(1).force
     }
 
     "be able to read all slice by slice" in new TestConnectionScope {
-      readUntilEndOfStream(5)
+      allStreamsEvents(5).force
     }
 
     "read 'streamDeleted' events" in new TestConnectionScope {

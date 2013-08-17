@@ -6,6 +6,7 @@ import akka.testkit.TestProbe
 /**
  * @author Yaroslav Klymko
  */
+// TODO improve expectMsgType[ReadStreamEventsSucceed]
 class AppendToStreamSpec extends TestConnectionSpec {
   "append to stream" should {
     "succeed for zero events" in new AppendToStreamScope {
@@ -73,7 +74,7 @@ class AppendToStreamSpec extends TestConnectionSpec {
       val size = 1000
       appendMany(size = size)
       actor ! ReadStreamEvents(streamId, -1, 1, ReadDirection.Backward)
-      expectMsgType[ReadStreamEventsSucceed].events.head.eventRecord.number mustEqual EventNumber.Exact(size - 1)
+      expectMsgType[ReadStreamEventsSucceed].resolvedIndexedEvents.head.eventRecord.number mustEqual EventNumber.Exact(size - 1)
       deleteStream()
     }
 
@@ -84,7 +85,7 @@ class AppendToStreamSpec extends TestConnectionSpec {
       Seq.fill(n)(TestProbe()).foreach(x => appendMany(size = size, testKit = x))
 
       actor ! ReadStreamEvents(streamId, -1, 1, ReadDirection.Backward)
-      expectMsgType[ReadStreamEventsSucceed].events.head.eventRecord.number mustEqual EventNumber.Exact(size * n - 1)
+      expectMsgType[ReadStreamEventsSucceed].resolvedIndexedEvents.head.eventRecord.number mustEqual EventNumber.Exact(size * n - 1)
 
       deleteStream()
     }
