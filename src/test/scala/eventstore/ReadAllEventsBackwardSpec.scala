@@ -41,7 +41,7 @@ class ReadAllEventsBackwardSpec extends TestConnectionSpec {
     }
 
     "read events from deleted streams" in new TestConnectionScope {
-      doAppendToStream(newEvent, AnyVersion)
+      appendEventToCreateStream()
       deleteStream()
       readAllEventRecords(startPosition, Int.MaxValue).filter(_.streamId == streamId) must haveSize(2)
     }

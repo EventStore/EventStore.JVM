@@ -250,7 +250,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
   implicit object AppendToStreamWriter extends ProtoWriter[AppendToStream] {
     def toProto(x: AppendToStream) = proto.WriteEvents(
       `eventStreamId` = x.streamId.id,
-      `expectedVersion` = x.expVer.value,
+      `expectedVersion` = expectedVersion(x.expectedVersion),
       `events` = x.events.map(EventWriter.toProto).toVector,
       `requireMaster` = x.requireMaster)
   }
@@ -259,7 +259,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
   implicit object TransactionStartWriter extends ProtoWriter[TransactionStart] {
     def toProto(x: TransactionStart) = proto.TransactionStart(
       `eventStreamId` = x.streamId.id,
-      `expectedVersion` = x.expVer.value,
+      `expectedVersion` = expectedVersion(x.expectedVersion),
       `requireMaster` = x.requireMaster)
   }
 
@@ -282,7 +282,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
   implicit object DeleteStreamWriter extends ProtoWriter[DeleteStream] {
     def toProto(x: DeleteStream) = proto.DeleteStream(
       `eventStreamId` = x.streamId.id,
-      `expectedVersion` = x.expVer.value,
+      `expectedVersion` = expectedVersion(x.expectedVersion),
       `requireMaster` = x.requireMaster)
   }
 
@@ -322,6 +322,15 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
     }
   }
 
+
+  private def expectedVersion(x: ExpectedVersion): Int = {
+    import ExpectedVersion._
+    x match {
+      case NoStream => -1
+      case Any => -2
+      case Exact(v) => v
+    }
+  }
 
   trait Converter[A, B] {
     def from(x: A): B

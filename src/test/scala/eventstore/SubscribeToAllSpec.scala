@@ -15,7 +15,7 @@ class SubscribeToAllSpec extends TestConnectionSpec {
       val clients = List(TestProbe(), TestProbe(), TestProbe()).map(client => client -> subscribeToAll(client))
 
       val event = newEvent
-      doAppendToStream(event, AnyVersion, 1)
+      append(event)
 
       clients.foreach {
         case (client, commitPosition) =>

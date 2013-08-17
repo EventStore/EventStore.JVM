@@ -37,14 +37,14 @@ case class DeniedToRoute(externalTcpAddress: String,
 
 
 case class AppendToStream(streamId: StreamId,
-                          expVer: ExpectedVersion,
+                          expectedVersion: ExpectedVersion,
                           events: Seq[Event],
                           requireMaster: Boolean) extends Out
 
 object AppendToStream {
-  def apply(streamId: StreamId, expVer: ExpectedVersion, events: Seq[Event]): AppendToStream = AppendToStream(
+  def apply(streamId: StreamId, expectedVersion: ExpectedVersion, events: Seq[Event]): AppendToStream = AppendToStream(
     streamId = streamId,
-    expVer = expVer,
+    expectedVersion = expectedVersion,
     events = events,
     requireMaster = true)
 }
@@ -54,10 +54,7 @@ case class AppendToStreamSucceed(firstEventNumber: Int) extends AppendToStreamCo
 case class AppendToStreamFailed(reason: OperationFailed.Value, message: Option[String]) extends AppendToStreamCompleted
 
 
-
-case class DeleteStream(streamId: StreamId,
-                        expVer: ExpectedVersion, // TODO disallow NoVersion
-                        requireMaster: Boolean) extends Out
+case class DeleteStream(streamId: StreamId, expectedVersion: ExpectedVersion.Existing, requireMaster: Boolean) extends Out
 
 sealed trait DeleteStreamCompleted extends In
 case object DeleteStreamSucceed extends DeleteStreamCompleted
@@ -169,7 +166,7 @@ object ReadAllEventsFailed extends Enumeration {
 
 
 
-case class TransactionStart(streamId: StreamId, expVer: ExpectedVersion, requireMaster: Boolean) extends Out
+case class TransactionStart(streamId: StreamId, expectedVersion: ExpectedVersion, requireMaster: Boolean) extends Out
 
 sealed trait TransactionStartCompleted extends In
 case class TransactionStartSucceed(transactionId: Long) extends TransactionStartCompleted {

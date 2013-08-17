@@ -21,16 +21,10 @@ abstract class TestConnectionSpec extends SpecificationWithJUnit with NoDuration
     val streamMetadata = ByteString(getClass.getEnclosingClass.getSimpleName)
     val actor = TestActorRef(new ConnectionActor(Settings()))
 
-    def deleteStream(expVer: ExpectedVersion = AnyVersion) {
+    def deleteStream(expVer: ExpectedVersion.Existing = ExpectedVersion.Any) {
       val probe = TestProbe()
       actor.!(DeleteStream(streamId, expVer, requireMaster = true))(probe.ref)
       probe.expectMsg(DeleteStreamSucceed)
-    }
-
-    def appendEventToCreateStream() {
-      val probe = TestProbe()
-      actor.!(appendToStream(NoStream, Event(newUuid, "first event")))(probe.ref)
-      probe.expectMsg(AppendToStreamSucceed(0))
     }
 
     def newEvent = {
@@ -40,16 +34,38 @@ abstract class TestConnectionSpec extends SpecificationWithJUnit with NoDuration
       Event(newUuid, "test", data = bs, metadata = bs)
     }
 
-    def appendToStream(expVer: ExpectedVersion, events: Event*) = AppendToStream(streamId, expVer, events.toList)
+    def appendToStreamSucceed(events: Seq[Event],
+                              expVer: ExpectedVersion = ExpectedVersion.Any,
+                              testKit: TestKitBase = this) = {
+      actor.!(AppendToStream(streamId, expVer, events.toList))(testKit.testActor)
+      val firstEventNumber = testKit.expectMsgType[AppendToStreamSucceed].firstEventNumber
+      expVer match {
+        case ExpectedVersion.NoStream => firstEventNumber mustEqual 0
+        case _ =>
+      }
+      firstEventNumber
+    }
 
-    def appendToStreamSucceed(firstEventNumber: Int = 0) = AppendToStreamSucceed(firstEventNumber)
+    def appendEventToCreateStream() {
+      appendToStreamSucceed(Seq(Event(newUuid, "first event")), ExpectedVersion.NoStream, TestProbe()) mustEqual 0
+    }
 
-    def doAppendToStream(event: Event,
-                         expVer: ExpectedVersion = AnyVersion,
-                         firstEventNumber: Int = 0,
-                         testKit: TestKitBase = this) {
-      actor.!(appendToStream(expVer, event))(testKit.testActor)
-      testKit.expectMsg(appendToStreamSucceed(firstEventNumber))
+    def append(events: Event*) = appendToStreamSucceed(events)
+
+    def appendMany(size: Int = 10, testKit: TestKitBase = this): Seq[Event] = {
+      val duration = FiniteDuration(10, SECONDS)
+      val events = (1 to size).map(_ => newEvent)
+
+      def loop(n: Int) {
+        actor.!(AppendToStream(streamId, ExpectedVersion.Any, events))(testKit.testActor)
+        testKit.expectMsgPF(duration) {
+          case AppendToStreamSucceed(_) => true
+          case AppendToStreamFailed(OperationFailed.PrepareTimeout, _) if n < 3 => loop(n + 1)
+        }
+      }
+
+      loop(0)
+      events
     }
 
 
@@ -110,26 +126,6 @@ abstract class TestConnectionSpec extends SpecificationWithJUnit with NoDuration
       loop(EventNumber.First).map(_.eventRecord.event)
     }
 
-    def append(events: Event*) {
-      actor ! AppendToStream(streamId, AnyVersion, events.toList)
-      expectMsg(appendToStreamSucceed())
-    }
-
-    def appendMany(size: Int = 10, testKit: TestKitBase = this): Seq[Event] = {
-      val duration = FiniteDuration(10, SECONDS)
-      val events = (1 to size).map(_ => newEvent)
-
-      def loop(n: Int) {
-        actor.!(AppendToStream(streamId, AnyVersion, events.toList))(testKit.testActor)
-        testKit.expectMsgPF(duration) {
-          case AppendToStreamSucceed(_) => true
-          case AppendToStreamFailed(OperationFailed.PrepareTimeout, _) if n < 3 => loop(n + 1)
-        }
-      }
-
-      loop(0)
-      events
-    }
 
     def expectEventAppeared(testKit: TestKitBase = this) = {
       val resolvedEvent = testKit.expectMsgType[StreamEventAppeared].resolvedEvent
