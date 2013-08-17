@@ -3,30 +3,13 @@ package eventstore
 /**
  * @author Yaroslav Klymko
  */
-sealed trait Position extends Ordered[Position] {
-
-  import Position.{Exact, Last}
-
-  def compare_(that: Position) = (this, that) match {
-    case (Last, Last) => 0
-    case (Last, _) => -1
-    case (_, Last) => 1
-    case (Exact(c1, p1), Exact(c2, p2)) => (c1 compare c2, p1 compare p2) match {
-      case (0, 0) => 0
-      case (0, x) => x
-      case (x, _) => x
-    }
-  }
-}
+sealed trait Position extends Ordered[Position]
 
 object Position {
-  val First = Exact(0)
+  val First = Position(0)
 
-  def apply(position: Long): Position = apply(position, position)
-
-  def apply(commitPosition: Long, preparePosition: Long): Position =
-    if (commitPosition == -1 && preparePosition == -1) Last
-    else Exact(commitPosition, preparePosition)
+  def apply(position: Long): Exact = Exact(position)
+  def apply(commitPosition: Long, preparePosition: Long): Exact = Exact(commitPosition, preparePosition)
 
 
   case object Last extends Position {
@@ -56,6 +39,7 @@ object Position {
   }
 
   object Exact {
+    implicit val ordering = Ordering.by[Exact, Position](identity)
     def apply(position: Long): Exact = Exact(commitPosition = position, preparePosition = position)
   }
 

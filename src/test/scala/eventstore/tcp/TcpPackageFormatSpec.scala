@@ -16,8 +16,8 @@ class TcpPackageFormatSpec extends SpecificationWithJUnit {
         msg <- List[InOut](HeartbeatRequestCommand, HeartbeatResponseCommand, Ping, Pong)
       } yield {
         val expected = TcpPackageOut(correlationId, msg)
-        val bs = BytesWriter.toByteString(expected)
-        val actual = BytesReader.read[TcpPackageIn](bs)
+        val bs = BytesWriter[TcpPackageOut].toByteString(expected)
+        val actual = BytesReader[TcpPackageIn].read(bs)
         actual.correlationId mustEqual expected.correlationId
         actual.message mustEqual expected.message
       }

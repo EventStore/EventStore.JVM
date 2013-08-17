@@ -82,17 +82,20 @@ object ReadDirection extends Enumeration {
 
 
 case class ReadStreamEvents(streamId: StreamId,
-                            fromEventNumber: Int,
+                            fromEventNumber: EventNumber,
                             maxCount: Int,
                             resolveLinkTos: Boolean,
                             requireMaster: Boolean,
                             direction: ReadDirection.Value) extends Out {
-  require(maxCount > 0, s"maxCount must > 0, but is $maxCount")
+  require(maxCount > 0, s"maxCount must be > 0, but is $maxCount")
+  require(
+    direction != ReadDirection.Forward || fromEventNumber != EventNumber.Last,
+    s"fromEventNumber must not be EventNumber.Last")
 }
 
 object ReadStreamEvents {
   def apply(streamId: StreamId,
-            fromEventNumber: Int,
+            fromEventNumber: EventNumber,
             maxCount: Int,
             direction: ReadDirection.Value): ReadStreamEvents = ReadStreamEvents(
     streamId = streamId,
@@ -108,18 +111,19 @@ sealed trait ReadStreamEventsCompleted extends In {
 }
 
 case class ReadStreamEventsSucceed(resolvedIndexedEvents: Seq[ResolvedIndexedEvent],
-                                   nextEventNumber: Int,
-                                   lastEventNumber: Int,
+                                   nextEventNumber: EventNumber,
+                                   lastEventNumber: EventNumber.Exact,
                                    endOfStream: Boolean,
                                    lastCommitPosition: Long,
-                                   direction: ReadDirection.Value) extends ReadStreamEventsCompleted
+                                   direction: ReadDirection.Value) extends ReadStreamEventsCompleted {
+  require(
+    direction != ReadDirection.Forward || nextEventNumber != EventNumber.Last,
+    s"lastEventNumber must not be EventNumber.Last")
+}
 
 // TODO check fields relevance
 case class ReadStreamEventsFailed(reason: ReadStreamEventsFailed.Value,
                                   message: Option[String],
-                                  nextEventNumber: Int,
-                                  lastEventNumber: Int,
-                                  isEndOfStream: Boolean,
                                   lastCommitPosition: Long,
                                   direction: ReadDirection.Value) extends ReadStreamEventsCompleted
 
@@ -210,11 +214,11 @@ object SubscribeTo {
 sealed trait SubscribeCompleted extends In
 
 case class SubscribeToAllCompleted(lastCommit: Long) extends SubscribeCompleted {
-  require(lastCommit > 0, s"lastCommit must > 0, but is $lastCommit") // TODO not sure about this restriction
+  require(lastCommit > 0, s"lastCommit must be > 0, but is $lastCommit") // TODO not sure about this restriction
 }
 
 case class SubscribeToStreamCompleted(lastCommit: Long, lastEventNumber: Option[EventNumber.Exact]) extends SubscribeCompleted {
-  require(lastCommit > 0, s"lastCommit must > 0, but is $lastCommit")
+  require(lastCommit > 0, s"lastCommit must be > 0, but is $lastCommit")
 }
 
 case class StreamEventAppeared(resolvedEvent: ResolvedEvent) extends In

@@ -16,8 +16,8 @@ class UserCredentialsFormatSpec extends SpecificationWithJUnit {
         password <- List("password1", "password2")
       } yield {
         val expected = UserCredentials(login, password)
-        val bs = BytesWriter.toByteString(expected)
-        val actual = BytesReader.read[UserCredentials](bs)
+        val bs = BytesWriter[UserCredentials].toByteString(expected)
+        val actual = BytesReader[UserCredentials].read(bs)
         actual mustEqual expected
       }
     }
@@ -25,13 +25,13 @@ class UserCredentialsFormatSpec extends SpecificationWithJUnit {
     "throw exception if login is too long" in {
       val long = List.fill(500)("x").mkString
       val userCredentials = UserCredentials(login = long, password = "password")
-      BytesWriter.toByteString(userCredentials) must throwAn[IllegalArgumentException]
+      BytesWriter[UserCredentials].toByteString(userCredentials) must throwAn[IllegalArgumentException]
     }
 
     "throw exception if password is too long" in {
       val long = List.fill(500)("x").mkString
       val userCredentials = UserCredentials(login = "login", password = long)
-      BytesWriter.toByteString(userCredentials) must throwAn[IllegalArgumentException]
+      BytesWriter[UserCredentials].toByteString(userCredentials) must throwAn[IllegalArgumentException]
     }
   }
 }

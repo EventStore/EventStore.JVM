@@ -30,7 +30,9 @@ object EvenType {
   val streamCreated = "$streamCreated" // TODO
 }
 
-case class ResolvedEvent(eventRecord: EventRecord, link: Option[EventRecord], position: Position.Exact) extends Ordered[ResolvedEvent] {
+case class ResolvedEvent(eventRecord: EventRecord,
+                         link: Option[EventRecord],
+                         position: Position.Exact) extends Ordered[ResolvedEvent] {
   def compare(that: ResolvedEvent) = this.position compare that.position
 }
 

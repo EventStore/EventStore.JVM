@@ -56,7 +56,7 @@ class ReadAllEventsBackwardSpec extends TestConnectionSpec {
 
     "fail to read from wrong position" in new TestConnectionScope {
       val position = readAllEventsSucceed(startPosition, 10).nextPosition
-      val wrongPosition = Position.Exact(
+      val wrongPosition = Position(
         commitPosition = position.commitPosition - 1,
         preparePosition = position.preparePosition - 1)
       val failed = readAllEventsFailed(wrongPosition, 10)

@@ -21,7 +21,7 @@ class SubscribeToAllSpec extends TestConnectionSpec {
         case (client, commitPosition) =>
           val resolvedEvent = expectEventAppeared(client)
           resolvedEvent.position.commitPosition must >(commitPosition)
-          resolvedEvent.eventRecord.number mustEqual EventNumber.Exact(1)
+          resolvedEvent.eventRecord.number mustEqual EventNumber(1)
       }
     }
 

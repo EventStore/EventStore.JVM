@@ -1,6 +1,7 @@
 package eventstore
 
 import akka.testkit.{TestKitBase, TestProbe}
+import scala.concurrent.duration._
 
 /**
  * @author Yaroslav Klymko
@@ -15,7 +16,6 @@ class SubscribeSpec extends TestConnectionSpec {
 
     "be able to subscribe to non existing stream and then catch new event" in new SubscribeScope {
       val subscribed = subscribeToStream()
-      println(subscribed)
       subscribed.lastEventNumber mustEqual None
 
       val events = appendMany(testKit = TestProbe())
@@ -23,7 +23,7 @@ class SubscribeSpec extends TestConnectionSpec {
         case (event, index) =>
           val resolvedEvent = expectEventAppeared()
           resolvedEvent.position.commitPosition must >(subscribed.lastCommit)
-          resolvedEvent.eventRecord mustEqual EventRecord(streamId, EventNumber.Exact(index), event)
+          resolvedEvent.eventRecord mustEqual EventRecord(streamId, EventNumber(index), event)
       }
     }
 
@@ -56,6 +56,7 @@ class SubscribeSpec extends TestConnectionSpec {
       eventRecord.event must beLike {
         case Event.StreamDeleted(_) => ok
       }
+      expectNoMsg(FiniteDuration(1, SECONDS))
     }
   }
 

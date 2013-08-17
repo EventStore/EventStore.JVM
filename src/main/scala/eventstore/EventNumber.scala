@@ -10,7 +10,7 @@ object EventNumber {
   val First = Exact(0)
   val Max = Exact(Int.MaxValue)
 
-  def apply(eventNumber: Int): EventNumber = if (eventNumber == -1) Last else Exact(eventNumber)
+  def apply(eventNumber: Int): Exact = Exact(eventNumber)
 
 
   case object Last extends EventNumber {
@@ -28,5 +28,9 @@ object EventNumber {
     }
 
     override def toString = s"EventNumber($value)"
+  }
+
+  object Exact {
+    implicit val ordering = Ordering.by[Exact, EventNumber](identity)
   }
 }

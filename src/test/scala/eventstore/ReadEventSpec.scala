@@ -7,18 +7,18 @@ class ReadEventSpec extends TestConnectionSpec {
 
   "read event" should {
     "fail if stream not found" in new ReadEventScope {
-      failReadEvent(EventNumber.Exact(5)) mustEqual ReadEventFailed.NoStream
+      failReadEvent(EventNumber(5)) mustEqual ReadEventFailed.NoStream
     }
 
     "fail if stream deleted" in new ReadEventScope {
       appendEventToCreateStream()
       deleteStream()
-      failReadEvent(EventNumber.Exact(5)) mustEqual ReadEventFailed.StreamDeleted
+      failReadEvent(EventNumber(5)) mustEqual ReadEventFailed.StreamDeleted
     }
 
     "fail if stream does not have such event" in new ReadEventScope {
       appendEventToCreateStream()
-      failReadEvent(EventNumber.Exact(5)) mustEqual ReadEventFailed.NotFound
+      failReadEvent(EventNumber(5)) mustEqual ReadEventFailed.NotFound
     }
 
     "return existing event" in new ReadEventScope {

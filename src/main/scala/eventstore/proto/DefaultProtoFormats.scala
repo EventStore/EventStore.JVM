@@ -23,7 +23,13 @@ trait DefaultProtoFormats extends DefaultFormats {
 
     def byteString(bs: Option[ProtoByteString]): ByteString = bs.fold(ByteString.empty)(x => ByteString(x.asReadOnlyByteBuffer()))
 
-    def uuid(bs: ProtoByteString): Uuid = BytesReader.read[Uuid](byteString(bs))
+    def uuid(bs: ProtoByteString): Uuid = BytesReader[Uuid].read(byteString(bs))
+
+    def message(x: Option[String]): Option[String] = x match {
+      case Some("") => None
+      case Some(s) if s.trim.isEmpty => None
+      case x => x
+    }
   }
 
   trait ProtoWriter[T] extends BytesWriter[T] {
@@ -34,7 +40,7 @@ trait DefaultProtoFormats extends DefaultFormats {
     }
     def protoByteString(bs: ByteString) = ProtoByteString.copyFrom(bs.toByteBuffer)
 
-    def protoByteString(uuid: Uuid) = ProtoByteString.copyFrom(BytesWriter.toByteString(uuid).toByteBuffer)
+    def protoByteString(uuid: Uuid) = ProtoByteString.copyFrom(BytesWriter[Uuid].toByteString(uuid).toByteBuffer)
 
     def protoByteStringOption(bs: ByteString) = if (bs.isEmpty) None else Some(protoByteString(bs))
   }

@@ -26,12 +26,14 @@ trait BytesWriter[T] {
 @implicitNotFound(msg = "Cannot find BytesFormat type class for ${T}")
 trait BytesFormat[T] extends BytesReader[T] with BytesWriter[T]
 
+object BytesFormat {
+  def apply[T](implicit x: BytesFormat[T]): BytesFormat[T] = x
+}
+
 object BytesWriter {
-  def write[T](x: T, builder: ByteStringBuilder)(implicit writer: BytesWriter[T]): Unit = writer.write(x, builder)
-  def toByteString[T](x: T)(implicit writer: BytesWriter[T]): ByteString = writer.toByteString(x)
+  def apply[T](implicit x: BytesWriter[T]): BytesWriter[T] = x
 }
 
 object BytesReader {
-  def read[T](bi: ByteIterator)(implicit reader: BytesReader[T]): T = reader.read(bi) // TODO
-  def read[T](bs: ByteString)(implicit reader: BytesReader[T]): T = reader.read(bs) // TODO
+  def apply[T](implicit x: BytesReader[T]): BytesReader[T] = x
 }

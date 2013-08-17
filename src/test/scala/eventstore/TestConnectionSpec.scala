@@ -53,55 +53,36 @@ abstract class TestConnectionSpec extends SpecificationWithJUnit with NoDuration
     }
 
 
-    def readStreamEventsSucceed(fromEventNumber: Int, maxCount: Int)(implicit direction: ReadDirection.Value) = {
+    def readStreamEventsSucceed(fromEventNumber: EventNumber, maxCount: Int)(implicit direction: ReadDirection.Value) = {
       actor ! ReadStreamEvents(streamId, fromEventNumber, maxCount, direction)
       val result = expectMsgType[ReadStreamEventsSucceed]
       result.direction mustEqual direction
 
       val resolvedIndexedEvents = result.resolvedIndexedEvents
-      val size = resolvedIndexedEvents.size
-      size must beLessThanOrEqualTo(maxCount)
+      resolvedIndexedEvents.size must beLessThanOrEqualTo(maxCount)
+      mustBeSorted(resolvedIndexedEvents)
+      resolvedIndexedEvents.foreach {
+        x =>
+          x.link must beEmpty
 
-      if (resolvedIndexedEvents.nonEmpty) {
+          val number = x.eventRecord.number
+          number must beLessThanOrEqualTo(result.lastEventNumber)
 
-        val next = result.nextEventNumber
-        val (min, max, ordering) = {
-          val ordering = implicitly[Ordering[ResolvedIndexedEvent]]
           direction match {
-            case Forward => (fromEventNumber, next, ordering)
-            case Backward => (next, fromEventNumber, ordering.reverse)
+            case Forward => number must beGreaterThanOrEqualTo(fromEventNumber)
+            case Backward => number must beLessThanOrEqualTo(fromEventNumber)
           }
-        }
-        min must beLessThanOrEqualTo(max)
-
-        next mustEqual (direction match {
-          case Forward =>
-            if (result.endOfStream) result.lastEventNumber + 1 else fromEventNumber + size
-
-          case Backward =>
-            if (result.endOfStream) -1 else fromEventNumber - size
-        })
-
-        resolvedIndexedEvents.size must lessThanOrEqualTo(maxCount)
-        resolvedIndexedEvents must beSorted(ordering)
-        resolvedIndexedEvents.foreach {
-          x =>
-            x.link must beEmpty
-            x.eventRecord.number.value must beGreaterThanOrEqualTo(min)
-            x.eventRecord.number.value must beLessThanOrEqualTo(max)
-        }
       }
-
       result
     }
 
-    def readStreamEvents(fromEventNumber: Int, maxCount: Int)(implicit direction: ReadDirection.Value) = {
+    def readStreamEvents(fromEventNumber: EventNumber, maxCount: Int)(implicit direction: ReadDirection.Value) = {
       val result = readStreamEventsSucceed(fromEventNumber = fromEventNumber, maxCount = maxCount)
       result.resolvedIndexedEvents.map(_.eventRecord.event)
     }
 
 
-    def readStreamEventsFailed(fromEventNumber: Int, maxCount: Int)
+    def readStreamEventsFailed(fromEventNumber: EventNumber, maxCount: Int)
                               (implicit direction: ReadDirection.Value): ReadStreamEventsFailed = {
       actor ! ReadStreamEvents(streamId, fromEventNumber, maxCount, direction)
       val failed = expectMsgType[ReadStreamEventsFailed]
@@ -111,8 +92,8 @@ abstract class TestConnectionSpec extends SpecificationWithJUnit with NoDuration
 
     def readStreamEventsFailed(implicit direction: ReadDirection.Value): ReadStreamEventsFailed = {
       val position = direction match {
-        case Forward => 0 // TODO
-        case Backward => -1 // TODO
+        case Forward => EventNumber.First
+        case Backward => EventNumber.Last
       }
       readStreamEventsFailed(position, 500)
     }
@@ -120,13 +101,13 @@ abstract class TestConnectionSpec extends SpecificationWithJUnit with NoDuration
 
     def streamEvents: Stream[Event] = {
       implicit val direction = Forward
-      def loop(position: Int): Stream[ResolvedIndexedEvent] = {
+      def loop(position: EventNumber): Stream[ResolvedIndexedEvent] = {
         val result = readStreamEventsSucceed(position, 500)
         val resolvedIndexedEvents = result.resolvedIndexedEvents
         if (resolvedIndexedEvents.isEmpty || result.endOfStream) resolvedIndexedEvents.toStream
         else resolvedIndexedEvents.toStream #::: loop(result.nextEventNumber)
       }
-      loop(0).map(_.eventRecord.event)
+      loop(EventNumber.First).map(_.eventRecord.event)
     }
 
     def append(events: Event*) {
@@ -156,33 +137,30 @@ abstract class TestConnectionSpec extends SpecificationWithJUnit with NoDuration
       resolvedEvent
     }
 
+    def mustBeSorted[T](xs: Seq[T])(implicit direction: ReadDirection.Value, ordering: Ordering[T]) {
+      xs must beSorted(direction match {
+        case Forward => ordering
+        case Backward => ordering.reverse
+      })
+    }
+
     def readAllEventsSucceed(position: Position, maxCount: Int)(implicit direction: ReadDirection.Value) = {
       actor ! ReadAllEvents(position, maxCount, direction)
       val result = expectMsgType[ReadAllEventsSucceed]
       result.direction mustEqual direction
 
       val resolvedEvents = result.resolvedEvents
-
-      if (resolvedEvents.nonEmpty) {
-        val nextPosition = result.nextPosition
-        val (min, max, ordering) = {
-          val ordering = implicitly[Ordering[ResolvedEvent]]
+      resolvedEvents.size must beLessThanOrEqualTo(maxCount)
+      resolvedEvents.foreach {
+        x =>
+          x.link must beEmpty
           direction match {
-            case Forward => (position, nextPosition, ordering)
-            case Backward => (nextPosition, position, ordering.reverse)
+            case Forward => x.position must beGreaterThanOrEqualTo(position)
+            case Backward => x.position must beLessThanOrEqualTo(position)
           }
-        }
-        min must beLessThanOrEqualTo(max)
-
-        resolvedEvents.size must beLessThanOrEqualTo(maxCount)
-        resolvedEvents must beSorted(ordering)
-        resolvedEvents.foreach {
-          x =>
-            x.position must beLessThanOrEqualTo(max)
-            x.position must beGreaterThanOrEqualTo(min)
-            x.link must beEmpty
-        }
       }
+      mustBeSorted(resolvedEvents)
+
       result
     }
 
@@ -220,7 +198,7 @@ abstract class TestConnectionSpec extends SpecificationWithJUnit with NoDuration
       allStreamsEventRecords(maxCount).map(_.event)
 
     def after = {
-      /*println("after")
+      /*
       try actor ! DeleteStream(streamId, AnyVersion, requireMaster = true)
       catch {
         case e: Throwable =>

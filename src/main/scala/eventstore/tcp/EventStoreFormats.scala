@@ -62,9 +62,9 @@ trait EventStoreFormats extends EventStoreProtoFormats {
       val (writeMarker, writeMessage) = MarkerByte.writeMessage(x.message)
       writeMarker(builder)
 
-      BytesWriter.write(Flags(x.userCredentials), builder)
-      BytesWriter.write(x.correlationId, builder)
-      x.userCredentials.foreach(x => BytesWriter.write(x, builder))
+      BytesWriter[Flags].write(Flags(x.userCredentials), builder)
+      BytesWriter[Uuid].write(x.correlationId, builder)
+      x.userCredentials.foreach(x => BytesWriter[UserCredentials].write(x, builder))
 
       writeMessage(builder)
     }
@@ -74,8 +74,8 @@ trait EventStoreFormats extends EventStoreProtoFormats {
     def read(bi: ByteIterator): TcpPackageIn = {
       val readMessage = MarkerByte.readMessage(bi)
 
-      val flags = BytesReader.read[Flags](bi)
-      val correlationId = BytesReader.read[Uuid](bi)
+      val flags = BytesReader[Flags].read(bi)
+      val correlationId = BytesReader[Uuid].read(bi)
       val message = readMessage(bi)
 
       TcpPackageIn(correlationId, message)
