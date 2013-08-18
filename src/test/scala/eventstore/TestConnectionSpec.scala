@@ -23,26 +23,20 @@ abstract class TestConnectionSpec extends SpecificationWithJUnit with NoDuration
 
     def deleteStream(expVer: ExpectedVersion.Existing = ExpectedVersion.Any) {
       val probe = TestProbe()
-      actor.!(DeleteStream(streamId, expVer, requireMaster = true))(probe.ref)
+      actor.!(DeleteStream(streamId, expVer))(probe.ref)
       probe.expectMsg(DeleteStreamSucceed)
     }
 
-    def newEvent = {
-      val bytes = new Array[Byte](10)
-      Random.nextBytes(bytes)
-      val bs = ByteString(bytes)
-      Event(newUuid, "test", data = bs, metadata = bs)
-    }
+    def newEvent = Event(newUuid, "test",
+      data = ByteString( """{"data":"data"}"""),
+      metadata = ByteString( """{"metadata":"metadata"}"""))
 
     def appendToStreamSucceed(events: Seq[Event],
-                              expVer: ExpectedVersion = ExpectedVersion.Any,
-                              testKit: TestKitBase = this) = {
-      actor.!(AppendToStream(streamId, expVer, events.toList))(testKit.testActor)
+                              expectedVersion: ExpectedVersion = ExpectedVersion.Any,
+                              testKit: TestKitBase = this): EventNumber.Exact = {
+      actor.!(AppendToStream(streamId, expectedVersion, events))(testKit.testActor)
       val firstEventNumber = testKit.expectMsgType[AppendToStreamSucceed].firstEventNumber
-      expVer match {
-        case ExpectedVersion.NoStream => firstEventNumber mustEqual EventNumber.First
-        case _ =>
-      }
+      if (expectedVersion == ExpectedVersion.NoStream) firstEventNumber mustEqual EventNumber.First
       firstEventNumber
     }
 

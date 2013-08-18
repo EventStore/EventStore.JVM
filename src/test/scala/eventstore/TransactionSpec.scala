@@ -105,22 +105,22 @@ class TransactionSpec extends TestConnectionSpec {
   trait TransactionScope extends TestConnectionScope {
 
     def transactionStart(expVer: ExpectedVersion = Any): Long = {
-      actor ! TransactionStart(streamId, expVer, requireMaster = true)
+      actor ! TransactionStart(streamId, expVer)
       expectMsgType[TransactionStartSucceed].transactionId
     }
 
     def transactionWrite(events: Event*)(implicit transactionId: Long) {
-      actor ! TransactionWrite(transactionId, events.toList, requireMaster = true)
+      actor ! TransactionWrite(transactionId, events.toList)
       expectMsg(TransactionWriteSucceed(transactionId))
     }
 
     def transactionCommit(implicit transactionId: Long) {
-      actor ! TransactionCommit(transactionId, requireMaster = true)
+      actor ! TransactionCommit(transactionId)
       expectMsg(TransactionCommitSucceed(transactionId))
     }
 
     def failTransactionCommit(result: Value)(implicit transactionId: Long) {
-      actor ! TransactionCommit(transactionId, requireMaster = true)
+      actor ! TransactionCommit(transactionId)
       expectMsgPF() {
         case TransactionCommitFailed(`transactionId`, `result`, Some(_)) => true
       }

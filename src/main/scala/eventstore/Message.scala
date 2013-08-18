@@ -40,22 +40,17 @@ case class DeniedToRoute(externalTcpAddress: String,
 case class AppendToStream(streamId: EventStream.Id,
                           expectedVersion: ExpectedVersion,
                           events: Seq[Event],
-                          requireMaster: Boolean) extends Out
-
-object AppendToStream {
-  def apply(streamId: EventStream.Id, expectedVersion: ExpectedVersion, events: Seq[Event]): AppendToStream = AppendToStream(
-    streamId = streamId,
-    expectedVersion = expectedVersion,
-    events = events,
-    requireMaster = true)
-}
+                          requireMaster: Boolean = true) extends Out
 
 sealed trait AppendToStreamCompleted extends In
 case class AppendToStreamSucceed(firstEventNumber: EventNumber.Exact) extends AppendToStreamCompleted
 case class AppendToStreamFailed(reason: OperationFailed.Value, message: Option[String]) extends AppendToStreamCompleted
 
 
-case class DeleteStream(streamId: EventStream.Id, expectedVersion: ExpectedVersion.Existing, requireMaster: Boolean) extends Out
+
+case class DeleteStream(streamId: EventStream.Id,
+                        expectedVersion: ExpectedVersion.Existing,
+                        requireMaster: Boolean = true) extends Out
 
 sealed trait DeleteStreamCompleted extends In
 case object DeleteStreamSucceed extends DeleteStreamCompleted
@@ -63,10 +58,66 @@ case class DeleteStreamFailed(reason: OperationFailed.Value, message: Option[Str
 
 
 
-case class ReadEvent(streamId: EventStream.Id, eventNumber: EventNumber, resolveLinkTos: Boolean) extends Out
+case class TransactionStart(streamId: EventStream.Id,
+                            expectedVersion: ExpectedVersion,
+                            requireMaster: Boolean = true) extends Out
+
+sealed trait TransactionStartCompleted extends In
+
+case class TransactionStartSucceed(transactionId: Long) extends TransactionStartCompleted {
+  require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
+}
+
+case class TransactionStartFailed(reason: OperationFailed.Value,
+                                  message: Option[String]) extends TransactionStartCompleted
+
+
+
+case class TransactionWrite(transactionId: Long, events: Seq[Event], requireMaster: Boolean = true) extends Out {
+  require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
+}
+
+sealed trait TransactionWriteCompleted extends In {
+  def transactionId: Long
+}
+
+case class TransactionWriteSucceed(transactionId: Long) extends TransactionWriteCompleted{
+  require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
+}
+
+case class TransactionWriteFailed(transactionId: Long,
+                                  reason: OperationFailed.Value,
+                                  message: Option[String]) extends TransactionWriteCompleted {
+  require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
+}
+
+
+
+case class TransactionCommit(transactionId: Long, requireMaster: Boolean = true) extends Out {
+  require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
+}
+
+sealed trait TransactionCommitCompleted extends In
+
+case class TransactionCommitSucceed(transactionId: Long) extends TransactionCommitCompleted{
+  require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
+}
+
+case class TransactionCommitFailed(transactionId: Long,
+                                   reason: OperationFailed.Value,
+                                   message: Option[String]) extends TransactionCommitCompleted {
+  require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
+}
+
+
+
+case class ReadEvent(streamId: EventStream.Id,
+                     eventNumber: EventNumber,
+                     resolveLinkTos: Boolean = false,
+                     requireMaster: Boolean = true) extends Out
 
 sealed trait ReadEventCompleted extends In
-case class ReadEventSucceed(event: ResolvedIndexedEvent) extends ReadEventCompleted
+case class ReadEventSucceed(resolvedIndexedEvent: ResolvedIndexedEvent) extends ReadEventCompleted
 case class ReadEventFailed(reason: ReadEventFailed.Value, message: Option[String]) extends ReadEventCompleted
 object ReadEventFailed extends Enumeration {
   val NotFound, NoStream, StreamDeleted, Error, AccessDenied = Value
@@ -74,35 +125,16 @@ object ReadEventFailed extends Enumeration {
 
 
 
-object ReadDirection extends Enumeration {
-  val Forward, Backward = Value
-}
-
-
-
 case class ReadStreamEvents(streamId: EventStream.Id,
                             fromEventNumber: EventNumber,
                             maxCount: Int,
-                            resolveLinkTos: Boolean,
-                            requireMaster: Boolean,
-                            direction: ReadDirection.Value) extends Out {
+                            direction: ReadDirection.Value,
+                            resolveLinkTos: Boolean = false, // TODO test resolveLinkTos,
+                            requireMaster: Boolean = true) extends Out {
   require(maxCount > 0, s"maxCount must be > 0, but is $maxCount")
   require(
     direction != ReadDirection.Forward || fromEventNumber != EventNumber.Last,
     s"fromEventNumber must not be EventNumber.Last")
-}
-
-object ReadStreamEvents {
-  def apply(streamId: EventStream.Id,
-            fromEventNumber: EventNumber,
-            maxCount: Int,
-            direction: ReadDirection.Value): ReadStreamEvents = ReadStreamEvents(
-    streamId = streamId,
-    fromEventNumber = fromEventNumber,
-    maxCount = maxCount,
-    resolveLinkTos = false,
-    requireMaster = true,
-    direction = direction)
 }
 
 sealed trait ReadStreamEventsCompleted extends In {
@@ -133,19 +165,10 @@ object ReadStreamEventsFailed extends Enumeration {
 
 case class ReadAllEvents(position: Position,
                          maxCount: Int,
-                         resolveLinkTos: Boolean,
-                         requireMaster: Boolean,
-                         direction: ReadDirection.Value) extends Out {
+                         direction: ReadDirection.Value,
+                         resolveLinkTos: Boolean = false, // TODO test resolveLinkTos,
+                         requireMaster: Boolean = true) extends Out {
   require(maxCount > 0, s"maxCount must be > 0, but is $maxCount")
-}
-
-object ReadAllEvents {
-  def apply(position: Position, maxCount: Int, direction: ReadDirection.Value): ReadAllEvents = ReadAllEvents(
-    position = position,
-    maxCount = maxCount,
-    resolveLinkTos = false,
-    requireMaster = true,
-    direction = direction)
 }
 
 sealed trait ReadAllEventsCompleted extends In {
@@ -168,48 +191,7 @@ object ReadAllEventsFailed extends Enumeration {
 }
 
 
-
-case class TransactionStart(streamId: EventStream.Id, expectedVersion: ExpectedVersion, requireMaster: Boolean) extends Out
-
-sealed trait TransactionStartCompleted extends In
-case class TransactionStartSucceed(transactionId: Long) extends TransactionStartCompleted {
-  require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
-}
-case class TransactionStartFailed(reason: OperationFailed.Value, message: Option[String]) extends TransactionStartCompleted
-
-
-
-case class TransactionWrite(transactionId: Long, events: Seq[Event], requireMaster: Boolean) extends Out
-
-sealed trait TransactionWriteCompleted extends In {
-  def transactionId: Long
-}
-case class TransactionWriteSucceed(transactionId: Long) extends TransactionWriteCompleted
-case class TransactionWriteFailed(transactionId: Long,
-                                  reason: OperationFailed.Value,
-                                  message: Option[String]) extends TransactionWriteCompleted {
-  require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
-}
-
-
-
-case class TransactionCommit(transactionId: Long, requireMaster: Boolean) extends Out
-
-sealed trait TransactionCommitCompleted extends In
-case class TransactionCommitSucceed(transactionId: Long) extends TransactionCommitCompleted
-case class TransactionCommitFailed(transactionId: Long,
-                                   reason: OperationFailed.Value,
-                                   message: Option[String]) extends TransactionCommitCompleted {
-  require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
-}
-
-
-
-case class SubscribeTo(stream: EventStream, resolveLinkTos: Boolean) extends Out
-
-object SubscribeTo {
-  def apply(stream: EventStream): SubscribeTo = SubscribeTo(stream = stream, resolveLinkTos = false)
-}
+case class SubscribeTo(stream: EventStream, resolveLinkTos: Boolean = false /*TODO test resolveLinkTos*/) extends Out
 
 sealed trait SubscribeCompleted extends In
 

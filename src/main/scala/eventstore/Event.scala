@@ -25,8 +25,7 @@ object Event {
 }
 
 object EvenType {
-  val streamDeleted = "$streamDeleted"
-  // TODO
+  val streamDeleted = "$streamDeleted" // TODO
   val streamCreated = "$streamCreated" // TODO
 }
 
@@ -42,4 +41,10 @@ case class ResolvedIndexedEvent(eventRecord: EventRecord, link: Option[EventReco
 
 case class EventRecord(streamId: EventStream.Id, number: EventNumber.Exact, event: Event) extends Ordered[EventRecord] {
   def compare(that: EventRecord) = this.number.value compare that.number.value
+
+  def link(eventId: Uuid, metadata: ByteString = ByteString()): Event = Event(
+    eventId = eventId,
+    eventType = "$>",
+    data = ByteString(s"${number.value}@${streamId.value}"),
+    metadata = metadata)
 }

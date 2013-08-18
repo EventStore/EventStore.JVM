@@ -13,8 +13,8 @@ class DeleteStreamSpec extends TestConnectionSpec {
     }
 
     "fail if doesn't exist and invalid expect version" in new DeleteStreamScope {
-      failDeleteStream(ExpectedVersion.First) mustEqual WrongExpectedVersion
-      failDeleteStream(ExpectedVersion(1)) mustEqual WrongExpectedVersion
+      deleteStreamFailed(ExpectedVersion.First) mustEqual WrongExpectedVersion
+      deleteStreamFailed(ExpectedVersion(1)) mustEqual WrongExpectedVersion
     }
 
     "succeed if correct expected version" in new DeleteStreamScope {
@@ -29,24 +29,22 @@ class DeleteStreamSpec extends TestConnectionSpec {
 
     "fail if invalid expected version" in new DeleteStreamScope {
       appendEventToCreateStream()
-      failDeleteStream(ExpectedVersion(1)) mustEqual WrongExpectedVersion
+      deleteStreamFailed(ExpectedVersion(1)) mustEqual WrongExpectedVersion
     }
 
     "fail if already deleted" in new DeleteStreamScope {
       appendEventToCreateStream()
       deleteStream(ExpectedVersion.First)
-      failDeleteStream(ExpectedVersion.First) mustEqual StreamDeleted
-      failDeleteStream(Any) mustEqual StreamDeleted
-      failDeleteStream(ExpectedVersion(1)) mustEqual StreamDeleted
+      deleteStreamFailed(ExpectedVersion.First) mustEqual StreamDeleted
+      deleteStreamFailed(Any) mustEqual StreamDeleted
+      deleteStreamFailed(ExpectedVersion(1)) mustEqual StreamDeleted
     }
   }
 
   abstract class DeleteStreamScope extends TestConnectionScope {
-    def failDeleteStream(expVer: ExpectedVersion.Existing = Any) = {
-      actor ! DeleteStream(streamId, expVer, requireMaster = true)
-      expectMsgPF() {
-        case DeleteStreamFailed(reason, _) => reason
-      }
+    def deleteStreamFailed(expVer: ExpectedVersion.Existing = Any) = {
+      actor ! DeleteStream(streamId, expVer)
+      expectMsgType[DeleteStreamFailed].reason
     }
   }
 }

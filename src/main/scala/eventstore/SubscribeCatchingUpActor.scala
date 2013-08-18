@@ -143,7 +143,7 @@ class CatchUpSubscriptionActor(connection: ActorRef,
 
   def readEventsFrom(position: Position) {
     debug(s"reading events from $position")
-    connection ! ReadAllEvents(position, readBatchSize, resolveLinkTos = resolveLinkTos, requireMaster = true, Forward)
+    connection ! ReadAllEvents(position, readBatchSize, Forward, resolveLinkTos = resolveLinkTos)
   }
 
   def forward(event: ResolvedEvent) {
