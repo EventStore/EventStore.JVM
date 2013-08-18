@@ -11,6 +11,12 @@ class ReadAllEventsForwardSpec extends TestConnectionSpec {
   val startPosition = Position.First
 
   "read all events forward" should {
+    "fail if count <= 0" in new TestConnectionScope {
+      // TODO server does not validate maxCount, WHY?
+      readAllEventsSucceed(Position.First, 0) must throwAn[IllegalArgumentException]
+      readAllEventsSucceed(Position.First, -1) must throwAn[IllegalArgumentException]
+    }
+
     "return empty slice if asked to read from end" in new TestConnectionScope {
       val events = appendMany()
       readAllEvents(Position.Last, 1) must beEmpty

@@ -13,7 +13,7 @@ class CatchUpSubscriptionActor(connection: ActorRef,
                                resolveLinkTos: Boolean,
                                readBatchSize: Int = 500) extends Actor with ActorLogging {
 
-  val streamId = AllStreams
+  val streamId = EventStream.All
 
   // val maxPushQueueSize = 10000 // TODO implement
 

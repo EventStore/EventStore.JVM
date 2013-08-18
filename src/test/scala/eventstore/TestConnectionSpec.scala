@@ -16,7 +16,7 @@ import ReadDirection._
 abstract class TestConnectionSpec extends SpecificationWithJUnit with NoDurationConversions {
 
   abstract class TestConnectionScope extends TestKit(ActorSystem()) with After with ImplicitSender {
-    val streamId = StreamId(getClass.getEnclosingClass.getSimpleName + "-" + newUuid.toString)
+    val streamId = EventStream.Id(getClass.getEnclosingClass.getSimpleName + "-" + newUuid.toString)
 
     val streamMetadata = ByteString(getClass.getEnclosingClass.getSimpleName)
     val actor = TestActorRef(new ConnectionActor(Settings()))

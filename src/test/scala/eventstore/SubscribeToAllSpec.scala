@@ -43,7 +43,7 @@ class SubscribeToAllSpec extends TestConnectionSpec {
 
   trait SubscribeToAll extends TestConnectionScope {
     def subscribeToAll(testKit: TestKitBase = this) = {
-      actor.!(SubscribeTo(AllStreams))(testKit.testActor)
+      actor.!(SubscribeTo(EventStream.All))(testKit.testActor)
       testKit.expectMsgType[SubscribeToAllCompleted].lastCommit
     }
   }

@@ -40,6 +40,6 @@ case class ResolvedIndexedEvent(eventRecord: EventRecord, link: Option[EventReco
   def compare(that: ResolvedIndexedEvent) = this.eventRecord compare that.eventRecord
 }
 
-case class EventRecord(streamId: StreamId, number: EventNumber.Exact, event: Event) extends Ordered[EventRecord] {
+case class EventRecord(streamId: EventStream.Id, number: EventNumber.Exact, event: Event) extends Ordered[EventRecord] {
   def compare(that: EventRecord) = this.number.value compare that.number.value
 }

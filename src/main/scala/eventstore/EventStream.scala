@@ -5,17 +5,21 @@ package eventstore
  */
 sealed trait EventStream
 
-case object AllStreams extends EventStream
-
-case class StreamId(id: String) extends EventStream {
-  require(id != null, "stream id must be not null")
-  require(id.nonEmpty, "stream id must be not empty")
-
-  def isSystem = id.startsWith("$")
-  def isMeta = id.startsWith("$$")
-}
-
-
 object EventStream {
-  def apply(value: String): EventStream = if (value == null || value == "") AllStreams else StreamId(value)
+
+  def apply(id: String): Id = Id(id)
+
+  case object All extends EventStream {
+    override def toString = "EventStream.All"
+  }
+
+  case class Id(value: String) extends EventStream {
+    require(value != null, "stream id must be not null")
+    require(value.nonEmpty, "stream id must be not empty")
+
+    def isSystem = value.startsWith("$")
+    def isMeta = value.startsWith("$$")
+
+    override def toString = s"StreamId($value)"
+  }
 }

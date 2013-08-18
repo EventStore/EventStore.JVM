@@ -10,6 +10,12 @@ class ReadAllEventsBackwardSpec extends TestConnectionSpec {
   val startPosition = Position.Last
 
   "read all events backward" should {
+    "fail if count <= 0" in new TestConnectionScope {
+      // TODO server does not validate maxCount, WHY?
+      readAllEventsSucceed(Position.Last, 0) must throwAn[IllegalArgumentException]
+      readAllEventsSucceed(Position.Last, -1) must throwAn[IllegalArgumentException]
+    }
+
     "return empty slice if asked to read from start" in new TestConnectionScope {
       readAllEvents(Position.First, 1) must beEmpty
     }

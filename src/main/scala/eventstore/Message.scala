@@ -29,6 +29,7 @@ case object LogicalChunkBulk extends Message
 
 
 
+// TODO how to verify ???
 case class DeniedToRoute(externalTcpAddress: String,
                          externalTcpPort: Int,
                          externalHttpAddress: String,
@@ -36,13 +37,13 @@ case class DeniedToRoute(externalTcpAddress: String,
 
 
 
-case class AppendToStream(streamId: StreamId,
+case class AppendToStream(streamId: EventStream.Id,
                           expectedVersion: ExpectedVersion,
                           events: Seq[Event],
                           requireMaster: Boolean) extends Out
 
 object AppendToStream {
-  def apply(streamId: StreamId, expectedVersion: ExpectedVersion, events: Seq[Event]): AppendToStream = AppendToStream(
+  def apply(streamId: EventStream.Id, expectedVersion: ExpectedVersion, events: Seq[Event]): AppendToStream = AppendToStream(
     streamId = streamId,
     expectedVersion = expectedVersion,
     events = events,
@@ -54,7 +55,7 @@ case class AppendToStreamSucceed(firstEventNumber: EventNumber.Exact) extends Ap
 case class AppendToStreamFailed(reason: OperationFailed.Value, message: Option[String]) extends AppendToStreamCompleted
 
 
-case class DeleteStream(streamId: StreamId, expectedVersion: ExpectedVersion.Existing, requireMaster: Boolean) extends Out
+case class DeleteStream(streamId: EventStream.Id, expectedVersion: ExpectedVersion.Existing, requireMaster: Boolean) extends Out
 
 sealed trait DeleteStreamCompleted extends In
 case object DeleteStreamSucceed extends DeleteStreamCompleted
@@ -62,7 +63,7 @@ case class DeleteStreamFailed(reason: OperationFailed.Value, message: Option[Str
 
 
 
-case class ReadEvent(streamId: StreamId, eventNumber: EventNumber, resolveLinkTos: Boolean) extends Out
+case class ReadEvent(streamId: EventStream.Id, eventNumber: EventNumber, resolveLinkTos: Boolean) extends Out
 
 sealed trait ReadEventCompleted extends In
 case class ReadEventSucceed(event: ResolvedIndexedEvent) extends ReadEventCompleted
@@ -79,7 +80,7 @@ object ReadDirection extends Enumeration {
 
 
 
-case class ReadStreamEvents(streamId: StreamId,
+case class ReadStreamEvents(streamId: EventStream.Id,
                             fromEventNumber: EventNumber,
                             maxCount: Int,
                             resolveLinkTos: Boolean,
@@ -92,7 +93,7 @@ case class ReadStreamEvents(streamId: StreamId,
 }
 
 object ReadStreamEvents {
-  def apply(streamId: StreamId,
+  def apply(streamId: EventStream.Id,
             fromEventNumber: EventNumber,
             maxCount: Int,
             direction: ReadDirection.Value): ReadStreamEvents = ReadStreamEvents(
@@ -119,7 +120,6 @@ case class ReadStreamEventsSucceed(resolvedIndexedEvents: Seq[ResolvedIndexedEve
     s"lastEventNumber must not be EventNumber.Last")
 }
 
-// TODO check fields relevance
 case class ReadStreamEventsFailed(reason: ReadStreamEventsFailed.Value,
                                   message: Option[String],
                                   lastCommitPosition: Long,
@@ -135,7 +135,9 @@ case class ReadAllEvents(position: Position,
                          maxCount: Int,
                          resolveLinkTos: Boolean,
                          requireMaster: Boolean,
-                         direction: ReadDirection.Value) extends Out
+                         direction: ReadDirection.Value) extends Out {
+  require(maxCount > 0, s"maxCount must be > 0, but is $maxCount")
+}
 
 object ReadAllEvents {
   def apply(position: Position, maxCount: Int, direction: ReadDirection.Value): ReadAllEvents = ReadAllEvents(
@@ -167,7 +169,7 @@ object ReadAllEventsFailed extends Enumeration {
 
 
 
-case class TransactionStart(streamId: StreamId, expectedVersion: ExpectedVersion, requireMaster: Boolean) extends Out
+case class TransactionStart(streamId: EventStream.Id, expectedVersion: ExpectedVersion, requireMaster: Boolean) extends Out
 
 sealed trait TransactionStartCompleted extends In
 case class TransactionStartSucceed(transactionId: Long) extends TransactionStartCompleted {

@@ -27,7 +27,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
   implicit object EventRecordReader
     extends ProtoReader[EventRecord, proto.EventRecord](proto.EventRecord) {
     def fromProto(x: proto.EventRecord) = EventRecord(
-      streamId = StreamId(x.`eventStreamId`),
+      streamId = EventStream(x.`eventStreamId`),
       number = EventNumber(x.`eventNumber`),
       event = Event(
         eventId = uuid(x.`eventId`),
@@ -120,7 +120,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
 
   implicit object ReadStreamEventsWriter extends ProtoWriter[ReadStreamEvents] {
     def toProto(x: ReadStreamEvents) = proto.ReadStreamEvents(
-      `eventStreamId` = x.streamId.id,
+      `eventStreamId` = x.streamId.value,
       `fromEventNumber` = EventNumberConverter.from(x.fromEventNumber),
       `maxCount` = x.maxCount,
       `resolveLinkTos` = x.resolveLinkTos)
@@ -249,7 +249,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
 
   implicit object AppendToStreamWriter extends ProtoWriter[AppendToStream] {
     def toProto(x: AppendToStream) = proto.WriteEvents(
-      `eventStreamId` = x.streamId.id,
+      `eventStreamId` = x.streamId.value,
       `expectedVersion` = expectedVersion(x.expectedVersion),
       `events` = x.events.map(EventWriter.toProto).toVector,
       `requireMaster` = x.requireMaster)
@@ -258,7 +258,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
 
   implicit object TransactionStartWriter extends ProtoWriter[TransactionStart] {
     def toProto(x: TransactionStart) = proto.TransactionStart(
-      `eventStreamId` = x.streamId.id,
+      `eventStreamId` = x.streamId.value,
       `expectedVersion` = expectedVersion(x.expectedVersion),
       `requireMaster` = x.requireMaster)
   }
@@ -281,7 +281,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
 
   implicit object DeleteStreamWriter extends ProtoWriter[DeleteStream] {
     def toProto(x: DeleteStream) = proto.DeleteStream(
-      `eventStreamId` = x.streamId.id,
+      `eventStreamId` = x.streamId.value,
       `expectedVersion` = expectedVersion(x.expectedVersion),
       `requireMaster` = x.requireMaster)
   }
@@ -289,7 +289,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
 
   implicit object ReadEventWriter extends ProtoWriter[ReadEvent] {
     def toProto(x: ReadEvent) = proto.ReadEvent(
-      `eventStreamId` = x.streamId.id,
+      `eventStreamId` = x.streamId.value,
       `eventNumber` = EventNumberConverter.from(x.eventNumber),
       `resolveLinkTos` = x.resolveLinkTos)
   }
@@ -298,8 +298,8 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
   implicit object SubscribeToWriter extends ProtoWriter[SubscribeTo] {
     def toProto(x: SubscribeTo) = {
       val streamId = x.stream match {
-        case AllStreams => ""
-        case StreamId(value) => value
+        case EventStream.All => ""
+        case EventStream.Id(id) => id
       }
       proto.SubscribeToStream(
         `eventStreamId` = streamId,
