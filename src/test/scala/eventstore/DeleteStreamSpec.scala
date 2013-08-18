@@ -13,13 +13,13 @@ class DeleteStreamSpec extends TestConnectionSpec {
     }
 
     "fail if doesn't exist and invalid expect version" in new DeleteStreamScope {
-      failDeleteStream(Exact(0)) mustEqual WrongExpectedVersion
-      failDeleteStream(Exact(1)) mustEqual WrongExpectedVersion
+      failDeleteStream(ExpectedVersion(0)) mustEqual WrongExpectedVersion
+      failDeleteStream(ExpectedVersion(1)) mustEqual WrongExpectedVersion
     }
 
     "succeed if correct expected version" in new DeleteStreamScope {
       appendEventToCreateStream()
-      deleteStream(Exact(0))
+      deleteStream(ExpectedVersion(0))
     }
 
     "succeed if any expected version" in new DeleteStreamScope {
@@ -29,15 +29,15 @@ class DeleteStreamSpec extends TestConnectionSpec {
 
     "fail if invalid expected version" in new DeleteStreamScope {
       appendEventToCreateStream()
-      failDeleteStream(Exact(1)) mustEqual WrongExpectedVersion
+      failDeleteStream(ExpectedVersion(1)) mustEqual WrongExpectedVersion
     }
 
     "fail if already deleted" in new DeleteStreamScope {
       appendEventToCreateStream()
-      deleteStream(Exact(0))
-      failDeleteStream(Exact(0)) mustEqual StreamDeleted
+      deleteStream(ExpectedVersion(0))
+      failDeleteStream(ExpectedVersion(0)) mustEqual StreamDeleted
       failDeleteStream(Any) mustEqual StreamDeleted
-      failDeleteStream(Exact(1)) mustEqual StreamDeleted
+      failDeleteStream(ExpectedVersion(1)) mustEqual StreamDeleted
     }
   }
 

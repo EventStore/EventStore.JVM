@@ -7,6 +7,8 @@ sealed trait ExpectedVersion
 
 object ExpectedVersion {
 
+  def apply(expectedVersion: Int): Exact = Exact(expectedVersion)
+
   //The stream being written to should not yet exist. If it does exist treat that as a concurrency problem.
   case object NoStream extends ExpectedVersion {
     override def toString = "ExpectedNoStream"

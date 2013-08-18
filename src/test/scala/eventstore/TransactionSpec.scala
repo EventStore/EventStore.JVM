@@ -24,7 +24,7 @@ class TransactionSpec extends TestConnectionSpec {
     }
 
     "fail to commit on non existing stream with wrong exp ver" in new TransactionScope {
-      implicit val transactionId = transactionStart(Exact(0))
+      implicit val transactionId = transactionStart(ExpectedVersion(0))
       transactionWrite(newEvent)
       failTransactionCommit(WrongExpectedVersion)
     }
@@ -43,7 +43,7 @@ class TransactionSpec extends TestConnectionSpec {
     }
 
     "validate expectations on commit" in new TransactionScope {
-      implicit val transactionId = transactionStart(Exact(1))
+      implicit val transactionId = transactionStart(ExpectedVersion(1))
       transactionWrite(newEvent)
       failTransactionCommit(WrongExpectedVersion)
     }
@@ -68,7 +68,7 @@ class TransactionSpec extends TestConnectionSpec {
 
     "fail to commit if started with correct ver but committing with bad" in new TransactionScope {
       appendEventToCreateStream()
-      implicit val transactionId = transactionStart(Exact(0))
+      implicit val transactionId = transactionStart(ExpectedVersion(0))
       append(newEvent) mustEqual 1
       transactionWrite(newEvent)
       failTransactionCommit(WrongExpectedVersion)
@@ -76,7 +76,7 @@ class TransactionSpec extends TestConnectionSpec {
 
     "succeed to commit if started with wrong ver but committing with correct ver" in new TransactionScope {
       appendEventToCreateStream()
-      implicit val transactionId = transactionStart(Exact(1))
+      implicit val transactionId = transactionStart(ExpectedVersion(1))
       append(newEvent) mustEqual 1
       transactionWrite()
       transactionCommit
@@ -84,7 +84,7 @@ class TransactionSpec extends TestConnectionSpec {
 
     "fail to commit if stream has been deleted during transaction" in new TransactionScope {
       appendEventToCreateStream()
-      implicit val transactionId = transactionStart(Exact(0))
+      implicit val transactionId = transactionStart(ExpectedVersion(0))
       deleteStream()
       failTransactionCommit(StreamDeleted)
     }

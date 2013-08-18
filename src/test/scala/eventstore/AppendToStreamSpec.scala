@@ -25,14 +25,14 @@ class AppendToStreamSpec extends TestConnectionSpec {
     }
 
     "fail create stream with wrong exp ver if does not exist" in new AppendToStreamScope {
-      failAppendToStream(newEvent, Exact(0)) mustEqual WrongExpectedVersion
-      failAppendToStream(newEvent, Exact(1)) mustEqual WrongExpectedVersion
+      failAppendToStream(newEvent, ExpectedVersion(0)) mustEqual WrongExpectedVersion
+      failAppendToStream(newEvent, ExpectedVersion(1)) mustEqual WrongExpectedVersion
     }
 
     "fail writing with correct exp ver to deleted stream" in new AppendToStreamScope {
       appendEventToCreateStream()
       deleteStream()
-      failAppendToStream(newEvent, Exact(0)) mustEqual StreamDeleted
+      failAppendToStream(newEvent, ExpectedVersion(0)) mustEqual StreamDeleted
     }
 
     "fail writing with any exp ver to deleted stream" in new AppendToStreamScope {
@@ -44,13 +44,13 @@ class AppendToStreamSpec extends TestConnectionSpec {
     "fail writing with invalid exp ver to deleted stream" in new AppendToStreamScope {
       appendEventToCreateStream()
       deleteStream()
-      failAppendToStream(newEvent, Exact(1)) mustEqual StreamDeleted
+      failAppendToStream(newEvent, ExpectedVersion(1)) mustEqual StreamDeleted
     }
 
     "succeed writing with correct exp ver to existing stream" in new AppendToStreamScope {
       appendEventToCreateStream()
-      append(newEvent, Exact(0)) mustEqual 1
-      append(newEvent, Exact(1)) mustEqual 2
+      append(newEvent, ExpectedVersion(0)) mustEqual 1
+      append(newEvent, ExpectedVersion(1)) mustEqual 2
     }
 
     "succeed writing with any exp ver to existing stream" in new AppendToStreamScope {
@@ -62,7 +62,7 @@ class AppendToStreamSpec extends TestConnectionSpec {
     "fail writing with wrong exp ver to existing stream" in new AppendToStreamScope {
       appendEventToCreateStream()
       failAppendToStream(newEvent, NoStream) mustEqual WrongExpectedVersion
-      failAppendToStream(newEvent, Exact(1)) mustEqual WrongExpectedVersion
+      failAppendToStream(newEvent, ExpectedVersion(1)) mustEqual WrongExpectedVersion
     }
 
     "be able to append multiple events at once" in new AppendToStreamScope {
