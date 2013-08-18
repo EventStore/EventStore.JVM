@@ -57,7 +57,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
     extends ProtoReader[AppendToStreamCompleted, proto.WriteEventsCompleted](proto.WriteEventsCompleted) {
     def fromProto(x: proto.WriteEventsCompleted) = operationFailed(x.`result`) match {
       case Some(reason) => AppendToStreamFailed(reason, message(x.`message`))
-      case None => AppendToStreamSucceed(x.`firstEventNumber`)
+      case None => AppendToStreamSucceed(EventNumber(x.`firstEventNumber`))
     }
   }
 

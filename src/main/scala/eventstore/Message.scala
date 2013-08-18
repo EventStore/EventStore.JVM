@@ -50,7 +50,7 @@ object AppendToStream {
 }
 
 sealed trait AppendToStreamCompleted extends In
-case class AppendToStreamSucceed(firstEventNumber: Int) extends AppendToStreamCompleted
+case class AppendToStreamSucceed(firstEventNumber: EventNumber.Exact) extends AppendToStreamCompleted
 case class AppendToStreamFailed(reason: OperationFailed.Value, message: Option[String]) extends AppendToStreamCompleted
 
 
@@ -76,6 +76,7 @@ object ReadEventFailed extends Enumeration {
 object ReadDirection extends Enumeration {
   val Forward, Backward = Value
 }
+
 
 
 case class ReadStreamEvents(streamId: StreamId,

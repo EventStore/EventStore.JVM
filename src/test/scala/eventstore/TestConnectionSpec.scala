@@ -40,14 +40,14 @@ abstract class TestConnectionSpec extends SpecificationWithJUnit with NoDuration
       actor.!(AppendToStream(streamId, expVer, events.toList))(testKit.testActor)
       val firstEventNumber = testKit.expectMsgType[AppendToStreamSucceed].firstEventNumber
       expVer match {
-        case ExpectedVersion.NoStream => firstEventNumber mustEqual 0
+        case ExpectedVersion.NoStream => firstEventNumber mustEqual EventNumber.First
         case _ =>
       }
       firstEventNumber
     }
 
     def appendEventToCreateStream() {
-      appendToStreamSucceed(Seq(Event(newUuid, "first event")), ExpectedVersion.NoStream, TestProbe()) mustEqual 0
+      appendToStreamSucceed(Seq(Event(newUuid, "first event")), ExpectedVersion.NoStream, TestProbe()) mustEqual EventNumber.First
     }
 
     def append(events: Event*) = appendToStreamSucceed(events)

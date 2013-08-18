@@ -6,8 +6,11 @@ package eventstore
 sealed trait ExpectedVersion
 
 object ExpectedVersion {
+  val First = Exact(0)
 
   def apply(expectedVersion: Int): Exact = Exact(expectedVersion)
+
+  def apply(eventNumber: EventNumber.Exact): Exact = Exact(eventNumber.value)
 
   //The stream being written to should not yet exist. If it does exist treat that as a concurrency problem.
   case object NoStream extends ExpectedVersion {

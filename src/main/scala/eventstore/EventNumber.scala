@@ -12,6 +12,8 @@ object EventNumber {
 
   def apply(eventNumber: Int): Exact = Exact(eventNumber)
 
+  def apply(expectedVersion: ExpectedVersion.Exact): Exact = Exact(expectedVersion.value)
+
 
   case object Last extends EventNumber {
     def compare(that: EventNumber) = if (that.isInstanceOf[Last.type]) 0 else 1
