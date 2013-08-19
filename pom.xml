@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <prerequisites>
+        <maven>3.0.4</maven>
+    </prerequisites>
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.geteventstore</groupId>
@@ -54,7 +57,7 @@
         <dependency>
             <groupId>org.specs2</groupId>
             <artifactId>specs2_${scala.version}</artifactId>
-            <version>2.1</version>
+            <version>2.1.1</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -125,8 +128,9 @@
 
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.12</version>
+                <version>2.12.4</version>
                 <configuration>
+                    <skipTests>true</skipTests>
                     <includes>
                         <include>**/*Spec.class</include>
                     </includes>
@@ -151,4 +155,36 @@
             <url>http://repo.typesafe.com/typesafe/releases/</url>
         </repository>
     </repositories>
+
+    <profiles>
+        <profile>
+            <id>assembly</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <configuration>
+                            <descriptorRefs>
+                                <descriptorRef>jar-with-dependencies</descriptorRef>
+                            </descriptorRefs>
+                            <archive>
+                                <manifest>
+                                    <mainClass>eventstore.examples.CatchUp</mainClass>
+                                </manifest>
+                            </archive>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>make-assembly</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
