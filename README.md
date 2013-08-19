@@ -1,4 +1,4 @@
-# Event Store JVM Client [![Build Status](https://secure.travis-ci.org/EventStore/eventstorejvmclient.png)](http://travis-ci.org/EventStore/eventstorejvmclient)
+# Event Store JVM Client [![Build Status](https://travis-ci.org/EventStore/eventstorejvmclient.png?branch=master)](https://travis-ci.org/EventStore/eventstorejvmclient)
 
 <table border="0">
   <tr>
