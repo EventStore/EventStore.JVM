@@ -16,7 +16,7 @@ import ReadDirection._
 abstract class TestConnectionSpec extends SpecificationWithJUnit with NoDurationConversions {
 
   abstract class TestConnectionScope extends TestKit(ActorSystem()) with After with ImplicitSender {
-    val streamId = EventStream.Id(getClass.getEnclosingClass.getSimpleName + "-" + newUuid.toString)
+    val streamId = newStreamId
 
     val streamMetadata = ByteString(getClass.getEnclosingClass.getSimpleName)
     val actor = TestActorRef(new ConnectionActor(Settings()))
@@ -33,6 +33,7 @@ abstract class TestConnectionSpec extends SpecificationWithJUnit with NoDuration
 
     def appendToStreamSucceed(events: Seq[Event],
                               expectedVersion: ExpectedVersion = ExpectedVersion.Any,
+                              streamId: EventStream.Id = streamId,
                               testKit: TestKitBase = this): EventNumber.Exact = {
       actor.!(AppendToStream(streamId, expectedVersion, events))(testKit.testActor)
       val firstEventNumber = testKit.expectMsgType[AppendToStreamSucceed].firstEventNumber
@@ -41,7 +42,7 @@ abstract class TestConnectionSpec extends SpecificationWithJUnit with NoDuration
     }
 
     def appendEventToCreateStream() {
-      appendToStreamSucceed(Seq(Event(newUuid, "first event")), ExpectedVersion.NoStream, TestProbe()) mustEqual EventNumber.First
+      appendToStreamSucceed(Seq(newEvent.copy(eventType = "first event")), ExpectedVersion.NoStream, testKit = TestProbe()) mustEqual EventNumber.First
     }
 
     def append(events: Event*) = appendToStreamSucceed(events)
@@ -54,7 +55,7 @@ abstract class TestConnectionSpec extends SpecificationWithJUnit with NoDuration
         actor.!(AppendToStream(streamId, ExpectedVersion.Any, events))(testKit.testActor)
         testKit.expectMsgPF(duration) {
           case AppendToStreamSucceed(_) => true
-          case AppendToStreamFailed(OperationFailed.PrepareTimeout, _) if n < 3 => loop(n + 1)
+          case AppendToStreamFailed(OperationFailed.PrepareTimeout, _) if n < 3 => loop(n + 1) // TODO
         }
       }
 
@@ -136,7 +137,7 @@ abstract class TestConnectionSpec extends SpecificationWithJUnit with NoDuration
 
     def readAllEventsSucceed(position: Position, maxCount: Int)(implicit direction: ReadDirection.Value) = {
       actor ! ReadAllEvents(position, maxCount, direction)
-      val result = expectMsgType[ReadAllEventsSucceed]
+      val result = expectMsgType[ReadAllEventsSucceed](FiniteDuration(10, SECONDS))
       result.direction mustEqual direction
 
       val resolvedEvents = result.resolvedEvents
@@ -186,6 +187,8 @@ abstract class TestConnectionSpec extends SpecificationWithJUnit with NoDuration
 
     def allStreamsEvents(maxCount: Int = 500)(implicit direction: ReadDirection.Value) =
       allStreamsEventRecords(maxCount).map(_.event)
+
+    def newStreamId = EventStream.Id(getClass.getEnclosingClass.getSimpleName + "-" + newUuid.toString)
 
     def after = {
       /*

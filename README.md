@@ -2,11 +2,11 @@
 
 <table border="0">
   <tr>
-    <td>Scala: </td>
+    <td>Scala </td>
     <td>2.10.2</td>
   </tr>
   <tr>
-    <td>Akka: </td>
+    <td>Akka </td>
     <td>2.2.0</td>
   </tr>
 </table>
