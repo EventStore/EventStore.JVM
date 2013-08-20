@@ -18,8 +18,7 @@ class SubscribeToAllCatchingUpSpec extends TestConnectionSpec {
 
       subscriptionActor ! StopSubscription
       fishForMessage() {
-        case _: StreamEventAppeared => false
-        case ResolvedEvent => false
+        case _: ResolvedEvent => false
         case SubscriptionDropped(SubscriptionDropped.Unsubscribed) => true
       }
       expectNoMsg(FiniteDuration(1, SECONDS))

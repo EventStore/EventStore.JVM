@@ -148,7 +148,7 @@ class CatchUpSubscriptionActor(connection: ActorRef,
 
   def forward(event: ResolvedEvent) {
     debug(s"forwarding $event")
-    client ! event
+    client ! event // TODO put in to envelope
   }
 
   def debug(msg: => String) {

@@ -23,8 +23,8 @@ object MarkerByte {
   val readers: Map[Byte, Reader] = Map[Int, Reader](
     0x01 -> reader[HeartbeatRequestCommand.type],
     0x02 -> reader[HeartbeatResponseCommand.type],
-    0x03 -> reader[Ping.type], // TODO ADD TEST
-    0x04 -> reader[Pong.type], // TODO ADD TEST
+    0x03 -> reader[Ping.type],
+    0x04 -> reader[Pong.type],
 
     //    PrepareAck = 0x05,
     //    CommitAck = 0x06,
