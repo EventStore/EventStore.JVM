@@ -21,7 +21,7 @@ class SubscribeToAllCatchingUpSpec extends TestConnectionSpec {
         case _: ResolvedEvent => false
         case SubscriptionDropped(SubscriptionDropped.Unsubscribed) => true
       }
-      expectNoMsg(FiniteDuration(1, SECONDS))
+      expectNoEvents()
     }
 
     /*"be able to subscribe to empty db" in {
@@ -85,17 +85,19 @@ class SubscribeToAllCatchingUpSpec extends TestConnectionSpec {
       val subscriptionActor = newSubscription(Some(position))
 
       fishForLiveProcessingStarted(position)
-      expectNoMsg(FiniteDuration(1, SECONDS))
+      expectNoEvents()
 
       subscriptionActor ! StopSubscription
       expectMsg(SubscriptionDropped(SubscriptionDropped.Unsubscribed))
     }
+
+    "resolveLinkTos = true" in todo
   }
 
   trait SubscribeToAllCatchingUpScope extends TestConnectionScope {
 
     def newSubscription(fromPositionExclusive: Option[Position.Exact] = None) =
-      TestActorRef(new CatchUpSubscriptionActor(actor, testActor, fromPositionExclusive, false))
+      TestActorRef(new CatchUpSubscriptionActor(actor, testActor, fromPositionExclusive, false, 500))
 
     def expectEventsAppeared(events: Seq[Event], position: Position = Position.First): Seq[ResolvedEvent] = {
 
@@ -109,6 +111,18 @@ class SubscribeToAllCatchingUpSpec extends TestConnectionSpec {
           else loop(events, resolvedEvent.position)
       }
       loop(events.toList, position)
+    }
+
+    @tailrec final def expectNoEvents() {
+      receiveOne(FiniteDuration(1, SECONDS)) match {
+        case null =>
+        case msg =>
+          msg must beAnInstanceOf[ResolvedEvent]
+          val resolvedEvent = msg.asInstanceOf[ResolvedEvent]
+          val streamId = resolvedEvent.eventRecord.streamId
+          streamId.isSystem must beTrue
+          expectNoEvents()
+      }
     }
 
     @tailrec final def fishForLiveProcessingStarted(position: Position = Position.First): Position = {

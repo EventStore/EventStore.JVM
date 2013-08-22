@@ -11,6 +11,10 @@ object Position {
   def apply(position: Long): Exact = Exact(position)
   def apply(commitPosition: Long, preparePosition: Long): Exact = Exact(commitPosition, preparePosition)
 
+  def start(direction: ReadDirection.Value): Position = direction match {
+    case ReadDirection.Forward => First
+    case ReadDirection.Backward => Last
+  }
 
   case object Last extends Position {
     def compare(that: Position) = if (that.isInstanceOf[Last.type]) 0 else 1

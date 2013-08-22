@@ -342,6 +342,8 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
 
       expectNoActivity
     }
+
+    "handle properly linked events resolveLinkTos = true" in todo
   }
 
   abstract class CatchUpSubscriptionActorScope(position: Option[Position.Exact] = None)

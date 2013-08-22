@@ -129,9 +129,10 @@ case class ReadStreamEvents(streamId: EventStream.Id,
                             fromEventNumber: EventNumber,
                             maxCount: Int,
                             direction: ReadDirection.Value,
-                            resolveLinkTos: Boolean = false, // TODO test resolveLinkTos,
+                            resolveLinkTos: Boolean = false,
                             requireMaster: Boolean = true) extends Out {
   require(maxCount > 0, s"maxCount must be > 0, but is $maxCount")
+  require(maxCount <= MaxBatchSize, s"maxCount must be <= $MaxBatchSize, but is $maxCount")
   require(
     direction != ReadDirection.Forward || fromEventNumber != EventNumber.Last,
     s"fromEventNumber must not be EventNumber.Last")
@@ -147,6 +148,7 @@ case class ReadStreamEventsSucceed(resolvedIndexedEvents: Seq[ResolvedIndexedEve
                                    endOfStream: Boolean,
                                    lastCommitPosition: Long,
                                    direction: ReadDirection.Value) extends ReadStreamEventsCompleted {
+  require(resolvedIndexedEvents.size <= MaxBatchSize, s"resolvedIndexedEvents.size must be <= $MaxBatchSize, but is ${resolvedIndexedEvents.size}")
   require(
     direction != ReadDirection.Forward || nextEventNumber != EventNumber.Last,
     s"lastEventNumber must not be EventNumber.Last")
@@ -162,13 +164,13 @@ object ReadStreamEventsFailed extends Enumeration {
 }
 
 
-
 case class ReadAllEvents(position: Position,
                          maxCount: Int,
                          direction: ReadDirection.Value,
-                         resolveLinkTos: Boolean = false, // TODO test resolveLinkTos,
+                         resolveLinkTos: Boolean = false,
                          requireMaster: Boolean = true) extends Out {
   require(maxCount > 0, s"maxCount must be > 0, but is $maxCount")
+  require(maxCount <= MaxBatchSize, s"maxCount must be <= $MaxBatchSize, but is $maxCount")
 }
 
 sealed trait ReadAllEventsCompleted extends In {
@@ -179,7 +181,9 @@ sealed trait ReadAllEventsCompleted extends In {
 case class ReadAllEventsSucceed(position: Position.Exact,
                                 resolvedEvents: Seq[ResolvedEvent],
                                 nextPosition: Position.Exact,
-                                direction: ReadDirection.Value) extends ReadAllEventsCompleted
+                                direction: ReadDirection.Value) extends ReadAllEventsCompleted{
+  require(resolvedEvents.size <= MaxBatchSize, s"resolvedEvents.size must be <= $MaxBatchSize, but is ${resolvedEvents.size}")
+}
 
 case class ReadAllEventsFailed(reason: ReadAllEventsFailed.Value,
                                message: Option[String],
@@ -191,7 +195,7 @@ object ReadAllEventsFailed extends Enumeration {
 }
 
 
-case class SubscribeTo(stream: EventStream, resolveLinkTos: Boolean = false /*TODO test resolveLinkTos*/) extends Out
+case class SubscribeTo(stream: EventStream, resolveLinkTos: Boolean = false) extends Out
 
 sealed trait SubscribeCompleted extends In
 

@@ -9,4 +9,6 @@ package object eventstore {
 //  val Uuid = java.util.UUID
 
   def newUuid: Uuid = java.util.UUID.randomUUID()
+
+  val MaxBatchSize = 10000
 }

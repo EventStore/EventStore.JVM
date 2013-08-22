@@ -11,7 +11,7 @@ class SubscribeSpec extends TestConnectionSpec {
     "succeed for deleted stream but should not receive any events" in new SubscribeScope {
       appendEventToCreateStream()
       deleteStream()
-      subscribeToStream().lastEventNumber must beSome(EventNumber.Max) // TODO WHY?
+      subscribeToStream().lastEventNumber must beSome(EventNumber(Int.MaxValue)) // TODO WHY?
     }
 
     "be able to subscribe to non existing stream and then catch new event" in new SubscribeScope {
@@ -28,8 +28,8 @@ class SubscribeSpec extends TestConnectionSpec {
     }
 
     "allow multiple subscriptions to the same stream" in new SubscribeScope {
-      subscribeToStream(TestProbe()).lastEventNumber must beEmpty
-      subscribeToStream(TestProbe()).lastEventNumber must beEmpty
+      subscribeToStream(testKit = TestProbe()).lastEventNumber must beEmpty
+      subscribeToStream(testKit = TestProbe()).lastEventNumber must beEmpty
     }
 
     "be able to unsubscribe from existing stream" in new SubscribeScope {
@@ -50,19 +50,39 @@ class SubscribeSpec extends TestConnectionSpec {
       expectEventAppeared().eventRecord.number mustEqual EventNumber.First
       deleteStream()
       val resolvedEvent = expectEventAppeared()
-      val eventRecord = resolvedEvent.eventRecord
       resolvedEvent.position.commitPosition must >(subscribed.lastCommit)
-      eventRecord.number mustEqual EventNumber.Max
-      eventRecord.event must beLike {
-        case Event.StreamDeleted(_) => ok
+      resolvedEvent.eventRecord must beLike {
+        case EventRecord.StreamDeleted(`streamId`, EventNumber.Exact(Int.MaxValue/*TODO WHY?*/), _) => ok
       }
       expectNoMsg(FiniteDuration(1, SECONDS))
+    }
+
+    "not catch linked events if resolveLinkTos = false" in new SubscribeScope {
+      subscribeToStream(resolveLinkTos = false)
+      val (linked, link) = linkedAndLink()
+
+      expectEventAppeared()
+      expectEventAppeared()
+      val resolvedEvent = expectEventAppeared()
+      resolvedEvent.eventRecord mustEqual link
+      resolvedEvent.link must beNone
+    }
+
+    "catch linked events if resolveLinkTos = true" in new SubscribeScope {
+      subscribeToStream(resolveLinkTos = true)
+      val (linked, link) = linkedAndLink()
+
+      expectEventAppeared()
+      expectEventAppeared()
+      val resolvedEvent = expectEventAppeared()
+      resolvedEvent.eventRecord mustEqual linked
+      resolvedEvent.link must beSome(link)
     }
   }
 
   trait SubscribeScope extends TestConnectionScope {
-    def subscribeToStream(testKit: TestKitBase = this): SubscribeToStreamCompleted = {
-      actor.!(SubscribeTo(streamId, resolveLinkTos = false))(testKit.testActor)
+    def subscribeToStream(resolveLinkTos: Boolean = false, testKit: TestKitBase = this): SubscribeToStreamCompleted = {
+      actor.!(SubscribeTo(streamId, resolveLinkTos = resolveLinkTos))(testKit.testActor)
       testKit.expectMsgType[SubscribeToStreamCompleted]
     }
 

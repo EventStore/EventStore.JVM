@@ -20,7 +20,7 @@ class MessagesPerSecondActor extends Actor {
     case Report if count > 0 =>
       val current = currentTimeMillis
       val value = count / ((current - time) / 1000)
-      if (value > 0) println(s"$value e/s")
+      if (value > 0) println(s"$value m/s")
       time = current
       count = 0
 

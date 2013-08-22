@@ -24,20 +24,12 @@ object Event {
 
 }
 
+
 object EvenType {
   val streamDeleted = "$streamDeleted" // TODO
   val streamCreated = "$streamCreated" // TODO
 }
 
-case class ResolvedEvent(eventRecord: EventRecord,
-                         link: Option[EventRecord],
-                         position: Position.Exact) extends Ordered[ResolvedEvent] {
-  def compare(that: ResolvedEvent) = this.position compare that.position
-}
-
-case class ResolvedIndexedEvent(eventRecord: EventRecord, link: Option[EventRecord]) extends Ordered[ResolvedIndexedEvent] {
-  def compare(that: ResolvedIndexedEvent) = this.eventRecord compare that.eventRecord
-}
 
 case class EventRecord(streamId: EventStream.Id, number: EventNumber.Exact, event: Event) extends Ordered[EventRecord] {
   def compare(that: EventRecord) = this.number.value compare that.number.value
@@ -47,4 +39,26 @@ case class EventRecord(streamId: EventStream.Id, number: EventNumber.Exact, even
     eventType = "$>",
     data = ByteString(s"${number.value}@${streamId.value}"),
     metadata = metadata)
+}
+
+object EventRecord {
+  object StreamDeleted {
+    def unapply(x: EventRecord): Option[(EventStream.Id, EventNumber.Exact, Uuid)] = PartialFunction.condOpt(x) {
+      case EventRecord(streamId, eventNumber, Event.StreamDeleted(uuid)) => (streamId, eventNumber, uuid)
+    }
+  }
+}
+
+
+// TODO has common with ResolvedIndexedEvent structure.
+case class ResolvedEvent(eventRecord: EventRecord,
+                         link: Option[EventRecord], // TODO change the way links are provided to user
+                         position: Position.Exact) extends Ordered[ResolvedEvent] {
+  def compare(that: ResolvedEvent) = this.position compare that.position
+}
+
+// TODO has common with ResolvedEvent structure.
+// TODO change the way links are provided to user
+case class ResolvedIndexedEvent(eventRecord: EventRecord, link: Option[EventRecord]) extends Ordered[ResolvedIndexedEvent] {
+  def compare(that: ResolvedIndexedEvent) = this.eventRecord compare that.eventRecord
 }

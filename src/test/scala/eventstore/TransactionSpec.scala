@@ -69,7 +69,7 @@ class TransactionSpec extends TestConnectionSpec {
     "fail to commit if started with correct ver but committing with bad" in new TransactionScope {
       appendEventToCreateStream()
       implicit val transactionId = transactionStart(ExpectedVersion.First)
-      append(newEvent) mustEqual EventNumber(1)
+      append(newEvent).number mustEqual EventNumber(1)
       transactionWrite(newEvent)
       failTransactionCommit(WrongExpectedVersion)
     }
@@ -77,7 +77,7 @@ class TransactionSpec extends TestConnectionSpec {
     "succeed to commit if started with wrong ver but committing with correct ver" in new TransactionScope {
       appendEventToCreateStream()
       implicit val transactionId = transactionStart(ExpectedVersion(1))
-      append(newEvent) mustEqual EventNumber(1)
+      append(newEvent).number mustEqual EventNumber(1)
       transactionWrite()
       transactionCommit
     }

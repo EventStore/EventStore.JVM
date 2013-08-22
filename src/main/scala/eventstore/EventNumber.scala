@@ -8,7 +8,11 @@ sealed trait EventNumber extends Ordered[EventNumber]// TODO same rules as in Po
 
 object EventNumber {
   val First = Exact(0)
-  val Max = Exact(Int.MaxValue)
+
+  def start(direction: ReadDirection.Value): EventNumber = direction match {
+    case ReadDirection.Forward => First
+    case ReadDirection.Backward => Last
+  }
 
   def apply(eventNumber: Int): Exact = Exact(eventNumber)
 

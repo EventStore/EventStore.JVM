@@ -31,23 +31,22 @@ class ReadEventSpec extends TestConnectionSpec {
       readEvent(EventNumber.Last) mustEqual events.last
     }
 
-    "return linked event if resolveLinkTos = false" in new ReadEventScope {
-      append(newEvent)
-      val origin = readEventSucceed(EventNumber.First).eventRecord
-
-      val link = origin.link(newUuid)
-      append(link)
+    "return link event if resolveLinkTos = false" in new ReadEventScope {
+      val (linked, link) = linkedAndLink()
 
       when(resolveLinkTos = false) {
         resolvedIndexedEvent =>
-          resolvedIndexedEvent.eventRecord.event mustEqual link
+          resolvedIndexedEvent.eventRecord mustEqual link
           resolvedIndexedEvent.link must beNone
       }
+    }
 
+    "return linked event if resolveLinkTos = true" in new ReadEventScope {
+      val (linked, link) = linkedAndLink()
       when(resolveLinkTos = true) {
         resolvedIndexedEvent =>
-          resolvedIndexedEvent.eventRecord mustEqual origin
-          resolvedIndexedEvent.link.map(_.event) must beSome(link)
+          resolvedIndexedEvent.eventRecord mustEqual linked
+          resolvedIndexedEvent.link must beSome(link)
       }
     }
   }

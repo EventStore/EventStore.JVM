@@ -16,13 +16,18 @@ class ReadAllEventsBackwardSpec extends TestConnectionSpec {
       readAllEventsSucceed(Position.Last, -1) must throwAn[IllegalArgumentException]
     }
 
+    "fail if count > MacBatchSize" in new TestConnectionScope {
+      readAllEventsSucceed(Position.Last, MaxBatchSize + 1) must throwAn[IllegalArgumentException]
+    }
+
     "return empty slice if asked to read from start" in new TestConnectionScope {
       readAllEvents(Position.First, 1) must beEmpty
     }
 
     "return partial slice if not enough events" in new TestConnectionScope {
-      val size = Int.MaxValue
-      readAllEvents(Position.First, size).size must beLessThan(size) // TODO
+      appendMany()
+      val position = allStreamsResolvedEvents()(ReadDirection.Forward).take(5).last.position
+      readAllEvents(position, 10).size must beLessThan(5)
     }
 
     "return events in reversed order compared to written" in new TestConnectionScope {
@@ -42,14 +47,20 @@ class ReadAllEventsBackwardSpec extends TestConnectionSpec {
       appendEventToCreateStream()
       deleteStream()
       readAllEventRecords(Position.Last, 1).head must beLike {
-        case EventRecord(`streamId`, _, Event.StreamDeleted(_)) => ok
+        case EventRecord.StreamDeleted(`streamId`, EventNumber.Exact(1), _) => ok
       }
     }
 
     "read events from deleted streams" in new TestConnectionScope {
-      appendEventToCreateStream()
+      val event = appendEventToCreateStream()
       deleteStream()
-      readAllEventRecords(startPosition, Int.MaxValue).filter(_.streamId == streamId) must haveSize(2)
+      val events = readAllEventRecords(startPosition, 10).filter(_.streamId == streamId)
+      events must haveSize(2)
+      println(events)
+      events.last.event mustEqual event
+      events.head must beLike {
+        case EventRecord.StreamDeleted(`streamId`, EventNumber.Exact(1), _) => ok
+      }
     }
 
     "read not modified events" in new TestConnectionScope {
@@ -68,6 +79,20 @@ class ReadAllEventsBackwardSpec extends TestConnectionSpec {
       val failed = readAllEventsFailed(wrongPosition, 10)
       failed.reason mustEqual ReadAllEventsFailed.Error
       failed.message must beSome
+    }
+
+    "not read linked events if resolveLinkTos = false" in new TestConnectionScope {
+      val (linked, link) = linkedAndLink()
+      val resolvedIndexedEvent = readAllEventsSucceed(Position.Last, 1, resolveLinkTos = false).resolvedEvents.head
+      resolvedIndexedEvent.eventRecord mustEqual link
+      resolvedIndexedEvent.link must beNone
+    }
+
+    "read linked events if resolveLinkTos = true" in new TestConnectionScope {
+      val (linked, link) = linkedAndLink()
+      val resolvedIndexedEvent = readAllEventsSucceed(Position.Last, 1, resolveLinkTos = true).resolvedEvents.head
+      resolvedIndexedEvent.eventRecord mustEqual linked
+      resolvedIndexedEvent.link must beSome(link)
     }
   }
 }

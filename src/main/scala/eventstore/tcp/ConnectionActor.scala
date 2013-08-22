@@ -13,6 +13,9 @@ import scala.concurrent.duration._
  * @author Yaroslav Klymko
  */
 class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
+
+  def this() = this(Settings())
+
   import Tcp._
   import context.system
   import context.dispatcher

@@ -11,7 +11,9 @@ class CatchUpSubscriptionActor(connection: ActorRef,
                                client: ActorRef,
                                fromPositionExclusive: Option[Position.Exact],
                                resolveLinkTos: Boolean,
-                               readBatchSize: Int = 500) extends Actor with ActorLogging {
+                               readBatchSize: Int) extends Actor with ActorLogging {
+
+  def this(connection: ActorRef, client: ActorRef) = this(connection, client, None, false, 500)
 
   val streamId = EventStream.All
 

@@ -12,6 +12,10 @@ class ReadStreamEventsForwardSpec extends TestConnectionSpec {
       readStreamEventsFailed(EventNumber.First, -1) must throwAn[IllegalArgumentException]
     }
 
+    "fail if count > MacBatchSize" in new TestConnectionScope {
+      readStreamEventsFailed(EventNumber.First, MaxBatchSize + 1) must throwAn[IllegalArgumentException]
+    }
+
     "fail if from == EventNumber.Last " in new TestConnectionScope {
       readStreamEventsSucceed(EventNumber.Last, 1) must throwAn[IllegalArgumentException]
     }
@@ -41,14 +45,9 @@ class ReadStreamEventsForwardSpec extends TestConnectionSpec {
       readStreamEvents(EventNumber.First, 1000) must haveSize(1)
     }
 
-    "get partial slice if not enough events in stream and called with Int.Max count" in new TestConnectionScope {
-      appendEventToCreateStream()
-      readStreamEvents(EventNumber.First, Int.MaxValue) must haveSize(1)
-    }
-
     "get events in same order as written" in new TestConnectionScope {
       val events = appendMany()
-      readStreamEvents(EventNumber.First, Int.MaxValue) mustEqual events
+      readStreamEvents(EventNumber.First, 1000) mustEqual events
     }
 
     "be able to read single event from arbitrary position" in new TestConnectionScope {
@@ -85,6 +84,20 @@ class ReadStreamEventsForwardSpec extends TestConnectionSpec {
       val r1 = read()
       val r2 = read()
       r1.resolvedIndexedEvents mustEqual r2.resolvedIndexedEvents
+    }
+
+    "not read linked events if resolveLinkTos = false" in new TestConnectionScope {
+      val (linked, link) = linkedAndLink()
+      val resolvedIndexedEvent = readStreamEventsSucceed(EventNumber(2), 1, resolveLinkTos = false).resolvedIndexedEvents.head
+      resolvedIndexedEvent.eventRecord mustEqual link
+      resolvedIndexedEvent.link must beNone
+    }
+
+    "read linked events if resolveLinkTos = true" in new TestConnectionScope {
+      val (linked, link) = linkedAndLink()
+      val resolvedIndexedEvent = readStreamEventsSucceed(EventNumber(2), 1, resolveLinkTos = true).resolvedIndexedEvents.head
+      resolvedIndexedEvent.eventRecord mustEqual linked
+      resolvedIndexedEvent.link must beSome(link)
     }
   }
 }
