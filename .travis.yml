@@ -1,4 +1,4 @@
 language: scala
-script: "mvn clean compile & sbt clean compile"
+script: "sbt clean compile"
 scala:
   - "2.10.2"
