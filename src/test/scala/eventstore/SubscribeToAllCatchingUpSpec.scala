@@ -1,9 +1,10 @@
 package eventstore
 
-import akka.testkit.{TestKitBase, TestProbe, TestActorRef}
+import akka.testkit.{TestProbe, TestActorRef}
 import scala.concurrent.duration._
 import scala.concurrent.Future
 import scala.annotation.tailrec
+import ReadDirection.Backward
 
 
 /**
@@ -47,9 +48,9 @@ class SubscribeToAllCatchingUpSpec extends TestConnectionSpec {
     } */
 
     "read all existing events and keep listening to new ones" in new SubscribeToAllCatchingUpScope {
-      write()
+      appendMany()
 
-      val existing = readAllEventsSucceed(Position.First, 1000)(ReadDirection.Backward)
+      val existing = readAllEventsSucceed(Position.First, 1000)(Backward)
         .resolvedEvents.map(_.eventRecord.event).reverse
       val subscriptionActor = newSubscription()
       expectEventsAppeared(existing)
@@ -64,9 +65,9 @@ class SubscribeToAllCatchingUpSpec extends TestConnectionSpec {
     }
 
     "filter events and keep listening to new ones" in new SubscribeToAllCatchingUpScope {
-      val many = 100
-      write(many)
-      val position = readAllEventsSucceed(Position.First, many)(ReadDirection.Forward).position
+      val many = 10
+      appendMany(many)
+      val position = allStreamsResolvedEvents()(Backward).take(many).last.position
       val subscriptionActor = newSubscription(Some(position))
 
       val processingStartedPosition = fishForLiveProcessingStarted(position)
@@ -79,9 +80,9 @@ class SubscribeToAllCatchingUpSpec extends TestConnectionSpec {
     }
 
     "filter events and work if nothing was written after subscription" in new SubscribeToAllCatchingUpScope {
-      val many = 100
-      write(many)
-      val position = readAllEventsSucceed(Position.First, many)(ReadDirection.Forward).position
+      val many = 10
+      appendMany(many)
+      val position = allStreamsResolvedEvents()(Backward).take(many).last.position
       val subscriptionActor = newSubscription(Some(position))
 
       fishForLiveProcessingStarted(position)
@@ -91,13 +92,33 @@ class SubscribeToAllCatchingUpSpec extends TestConnectionSpec {
       expectMsg(SubscriptionDropped(SubscriptionDropped.Unsubscribed))
     }
 
-    "resolveLinkTos = true" in todo
+    "catch link events if resolveLinkTos = false" in new SubscribeToAllCatchingUpScope {
+      val position = allStreamsResolvedEvents()(Backward).head.position
+      val (linked, link) = linkedAndLink()
+      newSubscription(Some(position), resolveLinkTos = false)
+      expectMsgType[ResolvedEvent].eventRecord mustEqual linked
+      expectMsgType[ResolvedEvent]
+      val resolvedEvent = expectMsgType[ResolvedEvent]
+      resolvedEvent.eventRecord mustEqual link
+      resolvedEvent.link must beEmpty
+    }
+
+    "catch link events if resolveLinkTos = true" in new SubscribeToAllCatchingUpScope {
+      val position = allStreamsResolvedEvents()(Backward).head.position
+      val (linked, link) = linkedAndLink()
+      newSubscription(Some(position), resolveLinkTos = true)
+      expectMsgType[ResolvedEvent].eventRecord mustEqual linked
+      expectMsgType[ResolvedEvent]
+      val resolvedEvent = expectMsgType[ResolvedEvent]
+      resolvedEvent.eventRecord mustEqual linked
+      resolvedEvent.link must beSome(link)
+    }
   }
 
   trait SubscribeToAllCatchingUpScope extends TestConnectionScope {
 
-    def newSubscription(fromPositionExclusive: Option[Position.Exact] = None) =
-      TestActorRef(new CatchUpSubscriptionActor(actor, testActor, fromPositionExclusive, false, 500))
+    def newSubscription(fromPositionExclusive: Option[Position.Exact] = None, resolveLinkTos: Boolean = false) =
+      TestActorRef(new CatchUpSubscriptionActor(actor, testActor, fromPositionExclusive, resolveLinkTos, 500))
 
     def expectEventsAppeared(events: Seq[Event], position: Position = Position.First): Seq[ResolvedEvent] = {
 
@@ -132,12 +153,6 @@ class SubscribeToAllCatchingUpSpec extends TestConnectionSpec {
           x.position must beGreaterThanOrEqualTo(position)
           fishForLiveProcessingStarted(x.position)
       }
-    }
-
-    def write(size: Int = 20, streamId: EventStream.Id = streamId, testKit: TestKitBase = this): Seq[Event] = {
-      val events = (1 to size).map(_ => newEvent)
-      appendToStreamSucceed(events, streamId = streamId, testKit = testKit)
-      events
     }
 
     def writeAsync(size: Int = 20): Seq[Event] = {
