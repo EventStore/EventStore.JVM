@@ -27,16 +27,16 @@ class StreamCatchUpSubscriptionActorSpec extends Specification with Mockito {
       connection expectMsg readStreamEvents(0)
 
       actor ! readStreamEventsSucceed(3, false, event0, event1, event2)
-      expectEvent(event0)
-      expectEvent(event1)
-      expectEvent(event2)
+      expectMsg(event0)
+      expectMsg(event1)
+      expectMsg(event2)
 
       connection expectMsg readStreamEvents(3)
 
       actor ! readStreamEventsSucceed(5, false, event0, event1, event2, event3, event4)
 
-      expectEvent(event3)
-      expectEvent(event4)
+      expectMsg(event3)
+      expectMsg(event4)
 
       connection expectMsg readStreamEvents(5)
 
@@ -50,7 +50,7 @@ class StreamCatchUpSubscriptionActorSpec extends Specification with Mockito {
       connection expectMsg readStreamEvents(1)
 
       actor ! readStreamEventsSucceed(3, false, event0, event1, event2)
-      expectEvent(event2)
+      expectMsg(event2)
       expectNoMsg(duration)
 
       connection expectMsg readStreamEvents(3)
@@ -60,7 +60,7 @@ class StreamCatchUpSubscriptionActorSpec extends Specification with Mockito {
       connection expectMsg readStreamEvents(0)
       actor ! readStreamEventsSucceed(2, false, event1)
 
-      expectEvent(event1)
+      expectMsg(event1)
 
       connection expectMsg readStreamEvents(2)
       actor ! readStreamEventsSucceed(2, true)
@@ -108,8 +108,8 @@ class StreamCatchUpSubscriptionActorSpec extends Specification with Mockito {
       val position = 1
       actor ! readStreamEventsSucceed(2, false, event0, event1)
 
-      expectEvent(event0)
-      expectEvent(event1)
+      expectMsg(event0)
+      expectMsg(event1)
 
       connection expectMsg readStreamEvents(2)
       actor ! readStreamEventsSucceed(2, true)
@@ -127,7 +127,7 @@ class StreamCatchUpSubscriptionActorSpec extends Specification with Mockito {
       expectNoMsg(duration)
 
       actor ! readStreamEventsSucceed(3, false, event1, event2)
-      expectEvent(event2)
+      expectMsg(event2)
 
       connection expectMsg readStreamEvents(3)
 
@@ -137,11 +137,11 @@ class StreamCatchUpSubscriptionActorSpec extends Specification with Mockito {
 
       actor ! readStreamEventsSucceed(6, false, event3, event4, event5)
 
-      expectEvent(event3)
-      expectEvent(event4)
+      expectMsg(event3)
+      expectMsg(event4)
       expectMsg(LiveProcessingStarted)
-      expectEvent(event5)
-      expectEvent(event6)
+      expectMsg(event5)
+      expectMsg(event6)
 
       actor ! streamEventAppeared(event5)
       actor ! streamEventAppeared(event6)
@@ -201,8 +201,8 @@ class StreamCatchUpSubscriptionActorSpec extends Specification with Mockito {
       val position = 1
       actor ! readStreamEventsSucceed(2, false, event0, event1)
 
-      expectEvent(event0)
-      expectEvent(event1)
+      expectMsg(event0)
+      expectMsg(event1)
 
       connection expectMsg readStreamEvents(2)
 
@@ -279,14 +279,14 @@ class StreamCatchUpSubscriptionActorSpec extends Specification with Mockito {
       expectMsg(LiveProcessingStarted)
 
       actor ! streamEventAppeared(event1)
-      expectEvent(event1)
+      expectMsg(event1)
 
       expectNoMsg(duration)
 
       actor ! streamEventAppeared(event2)
       actor ! streamEventAppeared(event3)
-      expectEvent(event2)
-      expectEvent(event3)
+      expectMsg(event2)
+      expectMsg(event3)
     }
 
     "ignore wrong events while subscribed" in new StreamCatchUpScope(Some(1)) {
@@ -306,13 +306,13 @@ class StreamCatchUpSubscriptionActorSpec extends Specification with Mockito {
       actor ! streamEventAppeared(event1)
       actor ! streamEventAppeared(event1)
       actor ! streamEventAppeared(event2)
-      expectEvent(event2)
+      expectMsg(event2)
       actor ! streamEventAppeared(event2)
       actor ! streamEventAppeared(event1)
       actor ! streamEventAppeared(event3)
-      expectEvent(event3)
+      expectMsg(event3)
       actor ! streamEventAppeared(event5)
-      expectEvent(event5)
+      expectMsg(event5)
       actor ! streamEventAppeared(event4)
       expectNoMsg(duration)
     }
@@ -328,7 +328,7 @@ class StreamCatchUpSubscriptionActorSpec extends Specification with Mockito {
       expectMsg(LiveProcessingStarted)
 
       actor ! streamEventAppeared(event2)
-      expectEvent(event2)
+      expectMsg(event2)
 
       actor ! Stop
       connection.expectMsg(UnsubscribeFromStream)
@@ -338,8 +338,6 @@ class StreamCatchUpSubscriptionActorSpec extends Specification with Mockito {
 
       expectNoActivity
     }
-
-    "handle properly linked events resolveLinkTos = true" in todo
   }
 
   abstract class StreamCatchUpScope(eventNumber: Option[Int] = None)
@@ -385,11 +383,6 @@ class StreamCatchUpSubscriptionActorSpec extends Specification with Mockito {
     def expectNoActivity {
       expectNoMsg(duration)
       connection.expectNoMsg(duration)
-    }
-
-    // TODO
-    def expectEvent(x: Event) {
-      expectMsg(x)
     }
 
     def streamEventAppeared(x: Event) = StreamEventAppeared(IndexedEvent(x, Position(x.number.value)))
