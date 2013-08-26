@@ -1,6 +1,6 @@
 package eventstore.util
 
-import akka.util.{ByteString, ByteIterator, ByteStringBuilder}
+import akka.util.{ ByteString, ByteIterator, ByteStringBuilder }
 import annotation.implicitNotFound
 
 /**

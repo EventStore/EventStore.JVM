@@ -27,11 +27,9 @@ object Event {
   }
 }
 
-
 case class EventRecord(streamId: EventStream.Id, number: EventNumber.Exact, data: EventData) extends Event {
   def record = this
 }
-
 
 case class ResolvedEvent(linkedEvent: EventRecord, linkEvent: EventRecord) extends Event {
   def streamId = linkedEvent.streamId
@@ -40,13 +38,13 @@ case class ResolvedEvent(linkedEvent: EventRecord, linkEvent: EventRecord) exten
   def record = linkEvent
 }
 
-
-case class EventData(eventId: Uuid,
-                     eventType: String,
-                     //                 dataContentType: Int, // TODO
-                     data: ByteString,
-                     //                 metadataContentType: Int, // TODO
-                     metadata: ByteString) extends BetterToString
+case class EventData(
+  eventId: Uuid,
+  eventType: String,
+  //                 dataContentType: Int, // TODO
+  data: ByteString,
+  //                 metadataContentType: Int, // TODO
+  metadata: ByteString) extends BetterToString
 
 object EventData {
   def apply(eventId: Uuid, eventType: String): EventData = EventData(eventId, eventType, ByteString.empty, ByteString.empty)
@@ -58,11 +56,9 @@ object EventData {
   }
 }
 
-
 case class IndexedEvent(event: Event, position: Position.Exact) extends Ordered[IndexedEvent] {
   def compare(that: IndexedEvent) = this.position compare that.position
 }
-
 
 object EvenType {
   val streamDeleted = "$streamDeleted" // TODO

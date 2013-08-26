@@ -1,8 +1,8 @@
 package eventstore
 package tcp
 
-import util.{BytesWriter, BytesReader, BytesFormat}
-import akka.util.{ByteStringBuilder, ByteIterator}
+import util.{ BytesWriter, BytesReader, BytesFormat }
+import akka.util.{ ByteStringBuilder, ByteIterator }
 
 /**
  * @author Yaroslav Klymko

@@ -3,7 +3,6 @@ package eventstore.examples
 import akka.actor.Actor
 import scala.concurrent.duration._
 
-
 /**
  * @author Yaroslav Klymko
  */

@@ -1,11 +1,10 @@
 package eventstore
 package tcp
 
-import akka.util.{ByteStringBuilder, ByteIterator}
-import util.{BytesWriter, BytesReader}
+import akka.util.{ ByteStringBuilder, ByteIterator }
+import util.{ BytesWriter, BytesReader }
 import EventStoreFormats._
 import ReadDirection._
-
 
 /**
  * @author Yaroslav Klymko
@@ -56,10 +55,10 @@ object MarkerByte {
 
     //    ScavengeDatabase = 0xD0,
     0xF0 -> reader[BadRequest.type] // TODO add test
-    //    DeniedToRoute = 0xF1
+  //    DeniedToRoute = 0xF1
   ).map {
-    case (key, value) => key.toByte -> value
-  }
+      case (key, value) => key.toByte -> value
+    }
 
   type Writer = ByteStringBuilder => Unit
 
@@ -74,10 +73,10 @@ object MarkerByte {
   }
 
   def writeMessage(out: Out): (Writer, Writer) = out match {
-    case x@HeartbeatRequestCommand => writer[HeartbeatRequestCommand.type](0x01, x)
-    case x@HeartbeatResponseCommand => writer[HeartbeatResponseCommand.type](0x02, x)
-    case x@Ping => writer[Ping.type](0x03, x)
-    case x@Pong => writer[Pong.type](0x04, x)
+    case x @ HeartbeatRequestCommand => writer[HeartbeatRequestCommand.type](0x01, x)
+    case x @ HeartbeatResponseCommand => writer[HeartbeatResponseCommand.type](0x02, x)
+    case x @ Ping => writer[Ping.type](0x03, x)
+    case x @ Pong => writer[Pong.type](0x04, x)
     //    PrepareAck = 0x05,
     //    CommitAck = 0x06,
     //
@@ -103,7 +102,7 @@ object MarkerByte {
       case Backward => writer(0xB8, x)
     }
     case x: SubscribeTo => writer(0xC0, x)
-    case x@UnsubscribeFromStream => writer(0xC3, x)
-    case x@ScavengeDatabase => writer(0xD0, x) // TODO
+    case x @ UnsubscribeFromStream => writer(0xC3, x)
+    case x @ ScavengeDatabase => writer(0xD0, x) // TODO
   }
 }

@@ -2,10 +2,9 @@ package eventstore
 package proto
 
 import net.sandrogrzicic.scalabuff.MessageBuilder
-import akka.util.{ByteStringBuilder, ByteIterator}
-import com.google.protobuf.{MessageLite, ByteString => ProtoByteString}
-import eventstore.util.{BytesWriter, BytesReader, DefaultFormats}
-
+import akka.util.{ ByteStringBuilder, ByteIterator }
+import com.google.protobuf.{ MessageLite, ByteString => ProtoByteString }
+import util.{ BytesWriter, BytesReader, DefaultFormats }
 
 /**
  * @author Yaroslav Klymko
@@ -14,7 +13,7 @@ object DefaultProtoFormats extends DefaultProtoFormats
 
 trait DefaultProtoFormats extends DefaultFormats {
 
-  abstract class ProtoReader[T, P <: MessageBuilder[P]](obj: {def defaultInstance: P}) extends BytesReader[T] {
+  abstract class ProtoReader[T, P <: MessageBuilder[P]](obj: { def defaultInstance: P }) extends BytesReader[T] {
     def fromProto(x: P): T
 
     def read(bi: ByteIterator): T = fromProto(obj.defaultInstance.mergeFrom(bi.toArray[Byte]))

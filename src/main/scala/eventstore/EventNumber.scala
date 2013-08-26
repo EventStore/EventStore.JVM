@@ -4,7 +4,7 @@ package eventstore
  * @author Yaroslav Klymko
  */
 // TODO check all "event numbers in messages"
-sealed trait EventNumber extends Ordered[EventNumber]// TODO same rules as in Position.First = 0, Position.Last = -1
+sealed trait EventNumber extends Ordered[EventNumber] // TODO same rules as in Position.First = 0, Position.Last = -1
 
 object EventNumber {
   val First = Exact(0)
@@ -17,7 +17,6 @@ object EventNumber {
   def apply(eventNumber: Int): Exact = Exact(eventNumber)
 
   def apply(expectedVersion: ExpectedVersion.Exact): Exact = Exact(expectedVersion.value)
-
 
   case object Last extends EventNumber {
     def compare(that: EventNumber) = if (that.isInstanceOf[Last.type]) 0 else 1

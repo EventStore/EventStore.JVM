@@ -1,6 +1,7 @@
 import sbt._
 import Keys._
 import scalabuff.ScalaBuffPlugin._
+import com.typesafe.sbt.SbtScalariform.scalariformSettings
 
 object build extends Build {
   val akkaVersion = "2.2.0"
@@ -26,7 +27,7 @@ object build extends Build {
 
   lazy val IntegrationTest = config("it") extend Test
 
-  lazy val root = Project("main", file("."), settings = basicSettings ++ Defaults.defaultSettings ++ scalabuffSettings)
+  lazy val root = Project("main", file("."), settings = basicSettings ++ Defaults.defaultSettings ++ scalabuffSettings ++ scalariformSettings)
     .configs(ScalaBuff, IntegrationTest)
     .settings(inConfig(IntegrationTest)(Defaults.testTasks): _*)
     .settings(

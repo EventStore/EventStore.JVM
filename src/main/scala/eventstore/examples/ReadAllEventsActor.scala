@@ -1,7 +1,7 @@
 package eventstore
 package examples
 
-import akka.actor.{ActorLogging, Actor}
+import akka.actor.{ ActorLogging, Actor }
 import akka.io.Tcp
 import scala.concurrent.duration._
 
@@ -22,7 +22,7 @@ class ReadAllEventsActor extends Actor with ActorLogging {
       context.become {
         case HeartbeatRequestCommand => sender ! HeartbeatResponseCommand
         case x: ReadAllEventsCompleted =>
-//          sender ! readAllEvents
+          //          sender ! readAllEvents
           context.system.scheduler.scheduleOnce(5.seconds, sender, readAllEvents)
         //        case x: SubscriptionConfirmation =>
         case x => log.warning(x.toString)

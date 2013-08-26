@@ -3,8 +3,9 @@ package eventstore.util
 /**
  * @author Yaroslav Klymko
  */
-case class BidirectionalMap[X, Y](xy: Map[X, Y] = Map.empty[X, Y],
-                                  yx: Map[Y, X] = Map.empty[Y, X]) {
+case class BidirectionalMap[X, Y](
+    xy: Map[X, Y] = Map.empty[X, Y],
+    yx: Map[Y, X] = Map.empty[Y, X]) {
 
   def +(x: X, y: Y) =
     if ((xy contains x) && (yx contains y)) this

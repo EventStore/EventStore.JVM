@@ -1,7 +1,7 @@
 package eventstore
 package examples
 
-import akka.actor.{ActorRef, Props, ActorLogging, Actor}
+import akka.actor.{ ActorRef, Props, ActorLogging, Actor }
 
 /**
  * @author Yaroslav Klymko

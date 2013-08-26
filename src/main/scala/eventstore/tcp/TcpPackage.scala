@@ -1,7 +1,6 @@
 package eventstore
 package tcp
 
-
 /**
  * @author Yaroslav Klymko
  */

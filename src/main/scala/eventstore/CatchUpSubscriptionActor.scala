@@ -1,6 +1,6 @@
 package eventstore
 
-import akka.actor.{ActorLogging, Actor, ActorRef}
+import akka.actor.{ ActorLogging, Actor, ActorRef }
 import scala.collection.immutable.Queue
 import ReadDirection.Forward
 import CatchUpSubscription._
@@ -8,11 +8,12 @@ import CatchUpSubscription._
 /**
  * @author Yaroslav Klymko
  */
-class CatchUpSubscriptionActor(connection: ActorRef,
-                               client: ActorRef,
-                               fromPositionExclusive: Option[Position.Exact],
-                               resolveLinkTos: Boolean,
-                               readBatchSize: Int) extends Actor with ActorLogging {
+class CatchUpSubscriptionActor(
+    connection: ActorRef,
+    client: ActorRef,
+    fromPositionExclusive: Option[Position.Exact],
+    resolveLinkTos: Boolean,
+    readBatchSize: Int) extends Actor with ActorLogging {
 
   def this(connection: ActorRef, client: ActorRef) = this(connection, client, None, false, 500)
 
@@ -65,10 +66,11 @@ class CatchUpSubscriptionActor(connection: ActorRef,
     }
   }
 
-  def catchUp(lastPosition: Option[Position.Exact],
-              nextPosition: Position,
-              subscriptionLastCommit: Long,
-              stash: Queue[IndexedEvent] = Queue()): Receive = {
+  def catchUp(
+    lastPosition: Option[Position.Exact],
+    nextPosition: Position,
+    subscriptionLastCommit: Long,
+    stash: Queue[IndexedEvent] = Queue()): Receive = {
 
     readEventsFrom(nextPosition)
 

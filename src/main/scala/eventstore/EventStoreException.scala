@@ -31,7 +31,7 @@ class EventStoreException extends Exception {
 }
 
 class StreamDeletedException(streamId: String) extends EventStoreException {
-/*using EventStore.ClientAPI.Common.Utils;
+  /*using EventStore.ClientAPI.Common.Utils;
 
 namespace EventStore.ClientAPI.Exceptions
 {
@@ -76,7 +76,4 @@ class WrongExpectedVersionException extends EventStoreException {
 }
 */
 }
-
-
-
 

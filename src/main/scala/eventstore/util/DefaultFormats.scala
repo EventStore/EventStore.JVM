@@ -1,7 +1,7 @@
 package eventstore
 package util
 
-import akka.util.{ByteIterator, ByteStringBuilder}
+import akka.util.{ ByteIterator, ByteStringBuilder }
 
 /**
  * @author Yaroslav Klymko

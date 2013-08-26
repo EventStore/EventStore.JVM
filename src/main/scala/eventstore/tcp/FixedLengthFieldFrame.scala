@@ -2,15 +2,15 @@ package eventstore
 package tcp
 
 import java.nio.ByteOrder
-import akka.io.{SymmetricPipePair, PipelineContext, LengthFieldFrame}
+import akka.io.{ SymmetricPipePair, PipelineContext, LengthFieldFrame }
 
 /**
  * @author Yaroslav Klymko
  */
 class FixedLengthFieldFrame(maxSize: Int,
-                            byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN,
-                            lengthIncludesHeader: Boolean = true)
-  extends LengthFieldFrame(maxSize, byteOrder, 4, lengthIncludesHeader) {
+  byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN,
+  lengthIncludesHeader: Boolean = true)
+    extends LengthFieldFrame(maxSize, byteOrder, 4, lengthIncludesHeader) {
 
   override def apply(ctx: PipelineContext) = {
     val superPipePair = super.apply(ctx)

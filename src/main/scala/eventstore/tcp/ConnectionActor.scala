@@ -1,11 +1,11 @@
 package eventstore
 package tcp
 
-import akka.actor.{Actor, ActorRef, ActorLogging}
+import akka.actor.{ Actor, ActorRef, ActorLogging }
 import akka.io._
-import akka.io.TcpPipelineHandler.{WithinActorContext, Init}
+import akka.io.TcpPipelineHandler.{ WithinActorContext, Init }
 import java.nio.ByteOrder
-import util.{CancellableAdapter, BidirectionalMap}
+import util.{ CancellableAdapter, BidirectionalMap }
 import scala.collection.immutable.Queue
 import scala.concurrent.duration._
 
@@ -75,10 +75,11 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
       context become connecting(stash enqueue pack)
   }
 
-  def connected(connection: ActorRef,
-                send: TcpPackageOut => Unit,
-                init: Init[WithinActorContext, TcpPackageOut, TcpPackageIn],
-                packNumber: Int = -1): Receive = {
+  def connected(
+    connection: ActorRef,
+    send: TcpPackageOut => Unit,
+    init: Init[WithinActorContext, TcpPackageOut, TcpPackageIn],
+    packNumber: Int = -1): Receive = {
 
     val scheduled = CancellableAdapter(
       system.scheduler.scheduleOnce(heartbeatTimeout, self, HeartbeatTimeout(packNumber)),
@@ -93,7 +94,7 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
     }
 
     {
-      case init.Event(pack@TcpPackageIn(correlationId, msg)) =>
+      case init.Event(pack @ TcpPackageIn(correlationId, msg)) =>
         log.debug(pack.toString)
         scheduled.cancel()
         msg match {
