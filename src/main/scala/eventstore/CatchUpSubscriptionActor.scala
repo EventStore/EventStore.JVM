@@ -19,6 +19,8 @@ class CatchUpSubscriptionActor(
 
   val streamId = EventStream.All
 
+  var subscribed = false
+
   // val maxPushQueueSize = 10000 // TODO implement
 
   def receive = read(
@@ -31,8 +33,6 @@ class CatchUpSubscriptionActor(
   }
 
   def read(lastPosition: Option[Position.Exact]): Receive = {
-    case Stop => unsubscribed(SubscriptionDropped.Unsubscribed)
-
     case ReadAllEventsSucceed(_, events, nextPosition, Forward) => context become (
       if (events.nonEmpty) read(lastPosition = process(lastPosition, events), nextPosition = nextPosition)
       else subscribe(lastPosition = lastPosition, nextPosition = nextPosition))
@@ -45,13 +45,16 @@ class CatchUpSubscriptionActor(
     connection ! SubscribeTo(streamId, resolveLinkTos = resolveLinkTos)
 
     def subscriptionFailed: Receive = {
-      case SubscriptionDropped(x) =>
-        log.warning(s"$streamId: subscription failed: $x, lastPosition: $lastPosition")
-        unsubscribed(x)
+      case SubscriptionDropped(reason) =>
+        subscribed = false
+        log.warning(s"$streamId: subscription failed: $reason, lastPosition: $lastPosition")
+        client ! SubscriptionDropped(reason)
+        context stop self
     }
 
     subscriptionFailed orElse {
       case SubscribeToAllCompleted(lastCommit) =>
+        subscribed = true
         debug(s"subscribed at lastCommit: $lastCommit")
         context become (
           if (lastPosition.exists(_.commitPosition >= lastCommit)) liveProcessing(lastPosition, Queue())
@@ -59,10 +62,6 @@ class CatchUpSubscriptionActor(
             debug(s"catch up events from lastPosition: $lastPosition to subscription lastCommit: $lastCommit")
             catchUp(lastPosition, nextPosition, lastCommit)
           })
-
-      case Stop => context become subscriptionFailed.orElse {
-        case _: SubscribeToAllCompleted => unsubscribe()
-      }
     }
   }
 
@@ -97,8 +96,6 @@ class CatchUpSubscriptionActor(
       case StreamEventAppeared(x) if x.position.commitPosition > subscriptionLastCommit =>
         debug(s"catching up: adding appeared event to stash(${stash.size}): $x")
         context become catchingUp(stash enqueue x)
-
-      case Stop => unsubscribe()
     }
 
     catchingUp(stash)
@@ -110,7 +107,6 @@ class CatchUpSubscriptionActor(
 
     def liveProcessing(lastPosition: Option[Position.Exact]): Receive = {
       case StreamEventAppeared(event) => context become liveProcessing(process(lastPosition, event))
-      case Stop => unsubscribe()
     }
     liveProcessing(process(lastPosition, stash))
   }
@@ -158,5 +154,12 @@ class CatchUpSubscriptionActor(
 
   def debug(msg: => String) {
     log.debug(s"$streamId: $msg")
+  }
+
+  override def postStop() {
+    if (subscribed) {
+      debug("unsubscribing")
+      connection ! UnsubscribeFromStream
+    }
   }
 }

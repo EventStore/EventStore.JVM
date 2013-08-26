@@ -14,8 +14,8 @@ class SubscribeCatchingUpITest extends TestConnection {
 
     "be able to subscribe to non existing stream" in new SubscribeCatchingUpScope {
       val subscriptionActor = newSubscription()
-      subscriptionActor ! Stop
-      expectMsg(SubscriptionDropped(SubscriptionDropped.Unsubscribed))
+      subscriptionActor.stop()
+      subscriptionActor.underlying.isTerminated must beTrue
       expectNoEvents()
     }
 
@@ -25,8 +25,8 @@ class SubscribeCatchingUpITest extends TestConnection {
       expectNoEvents()
       val event = append(newEventData)
       expectMsgType[Event] mustEqual event
-      subscriptionActor ! Stop
-      expectMsg(SubscriptionDropped(SubscriptionDropped.Unsubscribed))
+      subscriptionActor.stop()
+      subscriptionActor.underlying.isTerminated must beTrue
       expectNoEvents()
     }
 
@@ -37,8 +37,8 @@ class SubscribeCatchingUpITest extends TestConnection {
       expectNoEvents()
       val event = append(newEventData)
       expectMsgType[Event] mustEqual event
-      subscriptionActor ! Stop
-      expectMsg(SubscriptionDropped(SubscriptionDropped.Unsubscribed))
+      subscriptionActor.stop()
+      subscriptionActor.underlying.isTerminated must beTrue
       expectNoEvents()
     }
 

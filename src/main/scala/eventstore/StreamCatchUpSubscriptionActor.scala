@@ -21,6 +21,8 @@ class StreamCatchUpSubscriptionActor(
 
   // val maxPushQueueSize = 10000 // TODO implement
 
+  var subscribed = false
+
   def receive = read(
     lastNumber = fromNumberExclusive,
     nextNumber = fromNumberExclusive getOrElse EventNumber.First)
@@ -29,8 +31,6 @@ class StreamCatchUpSubscriptionActor(
     readEventsFrom(nextNumber)
 
     {
-      case Stop => unsubscribed(SubscriptionDropped.Unsubscribed)
-
       case msg: ReadStreamEventsCompleted => context become (msg match {
         case ReadStreamEventsSucceed(events, next, _, endOfStream, _, Forward) =>
           val last = process(lastNumber, events) // TODO
@@ -55,13 +55,16 @@ class StreamCatchUpSubscriptionActor(
     connection ! SubscribeTo(streamId, resolveLinkTos = resolveLinkTos)
 
     def subscriptionFailed: Receive = {
-      case SubscriptionDropped(x) =>
-        log.warning(s"$streamId: subscription failed: $x, lastEventNumber: $lastNumber")
-        unsubscribed(x)
+      case SubscriptionDropped(reason) =>
+        subscribed = false
+        log.warning(s"$streamId: subscription failed: $reason, lastEventNumber: $lastNumber")
+        client ! SubscriptionDropped(reason)
+        context stop self
     }
 
     subscriptionFailed orElse {
       case SubscribeToStreamCompleted(_, subscriptionNumber) =>
+        subscribed = true
         debug(s"subscribed at eventNumber: $subscriptionNumber")
         /*TODO refactor*/ context become ((lastNumber, subscriptionNumber) match {
           case (None, None) => liveProcessing(lastNumber)
@@ -76,10 +79,6 @@ class StreamCatchUpSubscriptionActor(
               catchUp(lastNumber = lastNumber, nextNumber = nextNumber, subscriptionNumber = y)
             }
         })
-
-      case Stop => context become subscriptionFailed.orElse {
-        case _: SubscribeToStreamCompleted => unsubscribe()
-      }
     }
   }
 
@@ -114,8 +113,6 @@ class StreamCatchUpSubscriptionActor(
       case StreamEventAppeared(x) if getNumber(x.event) > subscriptionNumber => // TODO
         debug(s"catching up: adding appeared event to stash(${stash.size}): $x")
         context become catchingUp(stash enqueue x.event)
-
-      case Stop => unsubscribe()
     }
 
     catchingUp(stash)
@@ -127,25 +124,8 @@ class StreamCatchUpSubscriptionActor(
 
     def liveProcessing(lastNumber: Option[EventNumber.Exact]): Receive = {
       case StreamEventAppeared(x) => context become liveProcessing(process(lastNumber, x.event))
-      case Stop => unsubscribe()
     }
     liveProcessing(process(lastNumber, stash))
-  }
-
-  def unsubscribe() {
-    debug("unsubscribing")
-    connection ! UnsubscribeFromStream
-    context become {
-      case SubscriptionDropped(SubscriptionDropped.Unsubscribed) => unsubscribed(SubscriptionDropped.Unsubscribed)
-    }
-  }
-
-  def unsubscribed(reason: SubscriptionDropped.Value) {
-    debug("unsubscribed")
-    client ! SubscriptionDropped(reason)
-    context become {
-      case msg => debug(s"received while unsubscribed $msg")
-    }
   }
 
   @deprecated
@@ -185,5 +165,12 @@ class StreamCatchUpSubscriptionActor(
 
   def debug(msg: => String) {
     log.debug(s"$streamId: $msg")
+  }
+
+  override def postStop() {
+    if (subscribed) {
+      debug("unsubscribing")
+      connection ! UnsubscribeFromStream
+    }
   }
 }

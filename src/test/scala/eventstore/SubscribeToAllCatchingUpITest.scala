@@ -16,17 +16,6 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
   sequential
 
   "subscribe to all catching up" should {
-    "call dropped callback after stop method call" in new SubscribeToAllCatchingUpScope {
-      val subscriptionActor = newSubscription()
-
-      subscriptionActor ! Stop
-      fishForMessage() {
-        case _: ResolvedEvent => false
-        case SubscriptionDropped(SubscriptionDropped.Unsubscribed) => true
-      }
-      expectNoEvents()
-    }
-
     /*"be able to subscribe to empty db" in {
     todo how to setup empty db ???
                 var subscription = store.SubscribeToAllFrom(null,
@@ -61,9 +50,6 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
 
       val newEvents = writeAsync()
       expectEvents(newEvents)
-
-      subscriptionActor ! Stop
-      expectMsg(SubscriptionDropped(SubscriptionDropped.Unsubscribed))
     }
 
     "filter events and keep listening to new ones" in new SubscribeToAllCatchingUpScope {
@@ -76,9 +62,6 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
 
       val events = writeAsync()
       expectEvents(events, processingStartedPosition)
-
-      subscriptionActor ! Stop
-      expectMsg(SubscriptionDropped(SubscriptionDropped.Unsubscribed))
     }
 
     "filter events and work if nothing was written after subscription" in new SubscribeToAllCatchingUpScope {
@@ -89,9 +72,6 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
 
       fishForLiveProcessingStarted(position)
       expectNoEvents()
-
-      subscriptionActor ! Stop
-      expectMsg(SubscriptionDropped(SubscriptionDropped.Unsubscribed))
     }
 
     "allow multiple subscriptions" in new SubscribeToAllCatchingUpScope {

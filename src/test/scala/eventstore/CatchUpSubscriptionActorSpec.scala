@@ -85,21 +85,7 @@ class CatchUpSubscriptionActorSpec extends Specification with Mockito {
 
     "stop reading events as soon as stop received" in new CatchUpScope {
       connection expectMsg readAllEvents(0)
-
-      actor ! Stop
-      expectMsg(SubscriptionDropped(SubscriptionDropped.Unsubscribed))
-
-      expectNoActivity
-    }
-
-    "ignore read events after stop received" in new CatchUpScope {
-      connection expectMsg readAllEvents(0)
-
-      actor ! Stop
-      expectMsg(SubscriptionDropped(SubscriptionDropped.Unsubscribed))
-
-      actor ! readAllEventsSucceed(1, 2, event1)
-
+      actor.stop()
       expectNoActivity
     }
 
@@ -155,17 +141,7 @@ class CatchUpSubscriptionActorSpec extends Specification with Mockito {
       actor ! readAllEventsSucceed(0, 0)
 
       connection.expectMsg(subscribeTo)
-      actor ! Stop
-
-      expectNoActivity
-
-      actor ! SubscribeToAllCompleted(1)
-
-      connection.expectMsg(UnsubscribeFromStream)
-
-      actor ! SubscriptionDropped(SubscriptionDropped.Unsubscribed)
-      expectMsg(SubscriptionDropped(SubscriptionDropped.Unsubscribed))
-
+      actor.stop()
       expectNoActivity
     }
 
@@ -177,21 +153,16 @@ class CatchUpSubscriptionActorSpec extends Specification with Mockito {
       actor ! SubscriptionDropped(SubscriptionDropped.AccessDenied)
 
       expectMsg(SubscriptionDropped(SubscriptionDropped.AccessDenied))
-
       expectNoActivity
+      actor.underlying.isTerminated must beTrue
     }
 
     "not unsubscribe if subscription failed if stop received " in new CatchUpScope() {
       connection expectMsg readAllEvents(0)
       actor ! readAllEventsSucceed(0, 0)
 
-      actor ! Stop
+      actor.stop()
       connection.expectMsg(subscribeTo)
-
-      expectNoActivity
-
-      actor ! SubscriptionDropped(SubscriptionDropped.AccessDenied)
-      expectMsg(SubscriptionDropped(SubscriptionDropped.AccessDenied))
 
       expectNoActivity
     }
@@ -219,14 +190,10 @@ class CatchUpSubscriptionActorSpec extends Specification with Mockito {
       actor ! StreamEventAppeared(event3)
       actor ! StreamEventAppeared(event4)
 
-      actor ! Stop
+      actor.stop()
 
       expectNoMsg(duration)
       connection.expectMsg(UnsubscribeFromStream)
-
-      actor ! SubscriptionDropped(SubscriptionDropped.Unsubscribed)
-      expectMsg(SubscriptionDropped(SubscriptionDropped.Unsubscribed))
-
       expectNoActivity
     }
 
@@ -331,12 +298,14 @@ class CatchUpSubscriptionActorSpec extends Specification with Mockito {
       actor ! StreamEventAppeared(event2)
       expectMsg(event2)
 
-      actor ! Stop
+      actor.stop()
       connection.expectMsg(UnsubscribeFromStream)
+      expectNoActivity
+    }
 
-      actor ! SubscriptionDropped(SubscriptionDropped.Unsubscribed)
-      expectMsg(SubscriptionDropped(SubscriptionDropped.Unsubscribed))
-
+    "not stop subscription if actor stopped and not yet subscribed" in new CatchUpScope {
+      connection expectMsg readAllEvents(0)
+      actor.stop()
       expectNoActivity
     }
   }
