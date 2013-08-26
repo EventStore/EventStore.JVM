@@ -49,7 +49,6 @@ object EventRecord {
   }
 }
 
-
 // TODO has common with ResolvedIndexedEvent structure.
 case class ResolvedEvent(eventRecord: EventRecord,
                          link: Option[EventRecord], // TODO change the way links are provided to user

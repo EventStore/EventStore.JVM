@@ -8,6 +8,16 @@ import scala.concurrent.duration._
  */
 class SubscribeSpec extends TestConnectionSpec {
   "subscribe" should {
+
+    "be able to subscribe" in new SubscribeScope {
+      append(newEvent)
+      subscribeToStream(testKit = TestProbe()).lastEventNumber must beSome(EventNumber(0))
+      append(newEvent)
+      subscribeToStream(testKit = TestProbe()).lastEventNumber must beSome(EventNumber(1))
+      append(newEvent)
+      subscribeToStream(testKit = TestProbe()).lastEventNumber must beSome(EventNumber(2))
+    }
+
     "succeed for deleted stream but should not receive any events" in new SubscribeScope {
       appendEventToCreateStream()
       deleteStream()
@@ -28,8 +38,8 @@ class SubscribeSpec extends TestConnectionSpec {
     }
 
     "allow multiple subscriptions to the same stream" in new SubscribeScope {
-      subscribeToStream(testKit = TestProbe()).lastEventNumber must beEmpty
-      subscribeToStream(testKit = TestProbe()).lastEventNumber must beEmpty
+      subscribeToStream(testKit = TestProbe()).lastEventNumber must beNone
+      subscribeToStream(testKit = TestProbe()).lastEventNumber must beNone
     }
 
     "be able to unsubscribe from existing stream" in new SubscribeScope {
@@ -39,13 +49,13 @@ class SubscribeSpec extends TestConnectionSpec {
     }
 
     "be able to unsubscribe from not existing stream" in new SubscribeScope {
-      subscribeToStream().lastEventNumber must beEmpty
+      subscribeToStream().lastEventNumber must beNone
       unsubscribeFromStream()
     }
 
     "catch stream deleted events" in new SubscribeScope {
       val subscribed = subscribeToStream()
-      subscribed.lastEventNumber must beEmpty
+      subscribed.lastEventNumber must beNone
       appendEventToCreateStream()
       expectEventAppeared().eventRecord.number mustEqual EventNumber.First
       deleteStream()

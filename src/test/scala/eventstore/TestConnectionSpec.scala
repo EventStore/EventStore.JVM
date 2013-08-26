@@ -7,6 +7,7 @@ import org.specs2.mutable.{SpecificationWithJUnit, After}
 import org.specs2.time.NoDurationConversions
 import scala.concurrent.duration._
 import ReadDirection._
+import scala.annotation.tailrec
 
 
 /**
@@ -116,16 +117,18 @@ abstract class TestConnectionSpec extends SpecificationWithJUnit with NoDuration
     def readStreamEventsFailed(implicit direction: ReadDirection.Value): ReadStreamEventsFailed =
       readStreamEventsFailed(EventNumber.start(direction), 500)
 
-    def streamEvents(implicit direction: ReadDirection.Value = Forward): Stream[Event] = {
+    def streamEvents(implicit direction: ReadDirection.Value = Forward): Stream[Event] =
+      streamEventRecords(direction).map(_.event)
+
+    def streamEventRecords(implicit direction: ReadDirection.Value = Forward): Stream[EventRecord] = {
       def loop(position: EventNumber): Stream[ResolvedIndexedEvent] = {
         val result = readStreamEventsSucceed(position, 500)
         val resolvedIndexedEvents = result.resolvedIndexedEvents
         if (resolvedIndexedEvents.isEmpty || result.endOfStream) resolvedIndexedEvents.toStream
         else resolvedIndexedEvents.toStream #::: loop(result.nextEventNumber)
       }
-      loop(EventNumber.start(direction)).map(_.eventRecord.event)
+      loop(EventNumber.start(direction)).map(_.eventRecord)
     }
-
 
     def expectEventAppeared(testKit: TestKitBase = this) = {
       val resolvedEvent = testKit.expectMsgType[StreamEventAppeared].resolvedEvent
@@ -206,6 +209,5 @@ abstract class TestConnectionSpec extends SpecificationWithJUnit with NoDuration
       // TODO
     }
   }
-
 }
 

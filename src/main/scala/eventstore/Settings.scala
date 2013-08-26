@@ -104,7 +104,17 @@ case class Settings(address: InetSocketAddress = new InetSocketAddress("127.0.0.
                     backpressureLowWatermark: Int = 100,
                     backpressureHighWatermark: Int = 10000,
                     backpressureMaxCapacity: Int = 1000000) {
-  require(heartbeatInterval < heartbeatTimeout, s"heartbeatInterval must be < heartbeatTimeout, but $heartbeatInterval >= $heartbeatTimeout")
+  require(
+    heartbeatInterval < heartbeatTimeout,
+    s"heartbeatInterval must be < heartbeatTimeout, but $heartbeatInterval >= $heartbeatTimeout")
+
+  require(backpressureLowWatermark >= 0, s"backpressureLowWatermark must be >= 0, but is $backpressureLowWatermark")
+  require(
+    backpressureHighWatermark >= backpressureLowWatermark,
+    s"backpressureHighWatermark must be >= backpressureLowWatermark, but $backpressureHighWatermark < $backpressureLowWatermark")
+  require(
+    backpressureMaxCapacity >= backpressureHighWatermark,
+    s"backpressureMaxCapacity >= backpressureHighWatermark, but $backpressureMaxCapacity < $backpressureHighWatermark")
 }
 
 object Settings {

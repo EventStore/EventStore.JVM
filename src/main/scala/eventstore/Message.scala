@@ -47,7 +47,7 @@ case class AppendToStreamSucceed(firstEventNumber: EventNumber.Exact) extends Ap
 case class AppendToStreamFailed(reason: OperationFailed.Value, message: Option[String]) extends AppendToStreamCompleted
 
 
-
+// TODO check softDelete
 case class DeleteStream(streamId: EventStream.Id,
                         expectedVersion: ExpectedVersion.Existing,
                         requireMaster: Boolean = true) extends Out
@@ -125,8 +125,9 @@ object ReadEventFailed extends Enumeration {
 
 
 
+// TODO create readSettings
 case class ReadStreamEvents(streamId: EventStream.Id,
-                            fromEventNumber: EventNumber,
+                            fromEventNumber: EventNumber, // TODO rename to fromNumber
                             maxCount: Int,
                             direction: ReadDirection.Value,
                             resolveLinkTos: Boolean = false,
@@ -142,6 +143,7 @@ sealed trait ReadStreamEventsCompleted extends In {
   def direction: ReadDirection.Value
 }
 
+// TODO change order/rename
 case class ReadStreamEventsSucceed(resolvedIndexedEvents: Seq[ResolvedIndexedEvent],
                                    nextEventNumber: EventNumber,
                                    lastEventNumber: EventNumber.Exact,
@@ -164,7 +166,7 @@ object ReadStreamEventsFailed extends Enumeration {
 }
 
 
-case class ReadAllEvents(position: Position,
+case class ReadAllEvents(position: Position, // TODO rename to fromposition
                          maxCount: Int,
                          direction: ReadDirection.Value,
                          resolveLinkTos: Boolean = false,
@@ -178,6 +180,7 @@ sealed trait ReadAllEventsCompleted extends In {
   def direction: ReadDirection.Value
 }
 
+// TODO change order
 case class ReadAllEventsSucceed(position: Position.Exact,
                                 resolvedEvents: Seq[ResolvedEvent],
                                 nextPosition: Position.Exact,

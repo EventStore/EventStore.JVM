@@ -143,7 +143,7 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
   def tcpPackage(message: Out) = {
     val correlationId = binding.y(sender).getOrElse {
       val x = newUuid
-      log.info(s"add sender $sender for $x")
+      log.debug(s"add sender $sender for $x")
       binding = binding.+(x, sender)
       x
     }
