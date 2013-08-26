@@ -5,59 +5,66 @@ import util.BetterToString
 /**
  * @author Yaroslav Klymko
  */
-case class Event(eventId: Uuid,
-                 eventType: String,
-                 //                 dataContentType: Int, // TODO
-                 data: ByteString,
-                 //                 metadataContentType: Int, // TODO
-                 metadata: ByteString) extends BetterToString
+sealed trait Event extends Ordered[Event] {
+  def streamId: EventStream.Id
+  def number: EventNumber.Exact
+  def data: EventData
+  def record: EventRecord
 
-object Event {
+  def compare(that: Event) = this.number.value compare that.number.value
 
-  def apply(eventId: Uuid, eventType: String): Event = Event(eventId, eventType, ByteString.empty, ByteString.empty)
-
-  object StreamDeleted {
-    def unapply(x: Event): Option[Uuid] = PartialFunction.condOpt(x) {
-      case Event(eventId, EvenType.streamDeleted, ByteString.empty, ByteString.empty) => eventId
-    }
-  }
-
-}
-
-
-object EvenType {
-  val streamDeleted = "$streamDeleted" // TODO
-  val streamCreated = "$streamCreated" // TODO
-}
-
-
-case class EventRecord(streamId: EventStream.Id, number: EventNumber.Exact, event: Event) extends Ordered[EventRecord] {
-  def compare(that: EventRecord) = this.number.value compare that.number.value
-
-  def link(eventId: Uuid, metadata: ByteString = ByteString()): Event = Event(
+  def link(eventId: Uuid, metadata: ByteString = ByteString()): EventData = EventData(
     eventId = eventId,
     eventType = "$>",
     data = ByteString(s"${number.value}@${streamId.value}"),
     metadata = metadata)
 }
 
-object EventRecord {
+object Event {
   object StreamDeleted {
-    def unapply(x: EventRecord): Option[(EventStream.Id, EventNumber.Exact, Uuid)] = PartialFunction.condOpt(x) {
-      case EventRecord(streamId, eventNumber, Event.StreamDeleted(uuid)) => (streamId, eventNumber, uuid)
+    def unapply(x: Event): Option[(EventStream.Id, EventNumber.Exact, Uuid)] =
+      EventData.StreamDeleted.unapply(x.data).map(uuid => (x.streamId, x.number, uuid))
+  }
+}
+
+
+case class EventRecord(streamId: EventStream.Id, number: EventNumber.Exact, data: EventData) extends Event {
+  def record = this
+}
+
+
+case class ResolvedEvent(linkedEvent: EventRecord, linkEvent: EventRecord) extends Event {
+  def streamId = linkedEvent.streamId
+  def number = linkedEvent.number
+  def data = linkedEvent.data
+  def record = linkEvent
+}
+
+
+case class EventData(eventId: Uuid,
+                     eventType: String,
+                     //                 dataContentType: Int, // TODO
+                     data: ByteString,
+                     //                 metadataContentType: Int, // TODO
+                     metadata: ByteString) extends BetterToString
+
+object EventData {
+  def apply(eventId: Uuid, eventType: String): EventData = EventData(eventId, eventType, ByteString.empty, ByteString.empty)
+
+  object StreamDeleted {
+    def unapply(x: EventData): Option[Uuid] = PartialFunction.condOpt(x) {
+      case EventData(eventId, EvenType.streamDeleted, ByteString.empty, ByteString.empty) => eventId
     }
   }
 }
 
-// TODO has common with ResolvedIndexedEvent structure.
-case class ResolvedEvent(eventRecord: EventRecord,
-                         link: Option[EventRecord], // TODO change the way links are provided to user
-                         position: Position.Exact) extends Ordered[ResolvedEvent] {
-  def compare(that: ResolvedEvent) = this.position compare that.position
+
+case class IndexedEvent(event: Event, position: Position.Exact) extends Ordered[IndexedEvent] {
+  def compare(that: IndexedEvent) = this.position compare that.position
 }
 
-// TODO has common with ResolvedEvent structure.
-// TODO change the way links are provided to user
-case class ResolvedIndexedEvent(eventRecord: EventRecord, link: Option[EventRecord]) extends Ordered[ResolvedIndexedEvent] {
-  def compare(that: ResolvedIndexedEvent) = this.eventRecord compare that.eventRecord
+
+object EvenType {
+  val streamDeleted = "$streamDeleted" // TODO
+  val streamCreated = "$streamCreated" // TODO
 }

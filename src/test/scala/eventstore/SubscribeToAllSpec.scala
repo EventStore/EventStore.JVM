@@ -14,51 +14,46 @@ class SubscribeToAllSpec extends TestConnectionSpec {
       appendEventToCreateStream()
       val clients = List(TestProbe(), TestProbe(), TestProbe()).map(client => client -> subscribeToAll(testKit = client))
 
-      val event = newEvent
-      append(event)
+      val eventData = newEventData
+      append(eventData)
 
       clients.foreach {
         case (client, commitPosition) =>
-          val resolvedEvent = expectEventAppeared(client)
-          resolvedEvent.position.commitPosition must >(commitPosition)
-          resolvedEvent.eventRecord.number mustEqual EventNumber(1)
+          val indexedEvent = expectStreamEventAppeared(client)
+          indexedEvent.position.commitPosition must >(commitPosition)
+          val event = indexedEvent.event
+          event.number mustEqual EventNumber(1)
+          event.data mustEqual eventData
       }
     }
 
     "catch created and deleted events as well" in new SubscribeToAll {
       val lastCommitPosition = subscribeToAll()
       appendEventToCreateStream()
-      expectEventAppeared().eventRecord.number mustEqual EventNumber.First
+      expectStreamEventAppeared().event.number mustEqual EventNumber.First
       deleteStream()
 
-      val resolvedEvent = expectEventAppeared()
-      resolvedEvent.position.commitPosition must >(lastCommitPosition)
-      val eventRecord = resolvedEvent.eventRecord
-      resolvedEvent.eventRecord must beLike {
-        case EventRecord.StreamDeleted(`streamId`, EventNumber.Exact(Int.MaxValue /*TODO WHY?*/), _) => ok
+      val indexedEvent = expectStreamEventAppeared()
+      indexedEvent.position.commitPosition must >(lastCommitPosition)
+      indexedEvent.event must beLike {
+        case Event.StreamDeleted(`streamId`, EventNumber.Exact(Int.MaxValue /*TODO WHY?*/), _) => ok
       }
     }
 
     "not catch linked events if resolveLinkTos = false" in new SubscribeToAll {
       subscribeToAll(resolveLinkTos = false)
       val (linked, link) = linkedAndLink()
-
-      expectEventAppeared()
-      expectEventAppeared()
-      val resolvedEvent = expectEventAppeared()
-      resolvedEvent.eventRecord mustEqual link
-      resolvedEvent.link must beNone
+      expectStreamEventAppeared().event mustEqual linked
+      expectStreamEventAppeared()
+      expectStreamEventAppeared().event mustEqual link
     }
 
     "catch linked events if resolveLinkTos = true" in new SubscribeToAll {
       subscribeToAll(resolveLinkTos = true)
       val (linked, link) = linkedAndLink()
-
-      expectEventAppeared()
-      expectEventAppeared()
-      val resolvedEvent = expectEventAppeared()
-      resolvedEvent.eventRecord mustEqual linked
-      resolvedEvent.link must beSome(link)
+      expectStreamEventAppeared().event mustEqual linked
+      expectStreamEventAppeared()
+      expectStreamEventAppeared().event mustEqual ResolvedEvent(linked, link)
     }
   }
 

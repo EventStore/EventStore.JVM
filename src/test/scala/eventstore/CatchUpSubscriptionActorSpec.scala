@@ -351,19 +351,19 @@ class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
     val connection = TestProbe()
     val actor = TestActorRef(new CatchUpSubscriptionActor(connection.ref, testActor, position.map(Position.apply), resolveLinkTos, readBatchSize))
 
-    val re0 = resolvedEvent(0)
-    val re1 = resolvedEvent(1)
-    val re2 = resolvedEvent(2)
-    val re3 = resolvedEvent(3)
-    val re4 = resolvedEvent(4)
-    val re5 = resolvedEvent(5)
-    val re6 = resolvedEvent(6)
+    val re0 = indexedEvent(0)
+    val re1 = indexedEvent(1)
+    val re2 = indexedEvent(2)
+    val re3 = indexedEvent(3)
+    val re4 = indexedEvent(4)
+    val re5 = indexedEvent(5)
+    val re6 = indexedEvent(6)
 
-    def resolvedEvent(x: Long) = ResolvedEvent(mock[EventRecord], None, Position(x))
+    def indexedEvent(x: Long) = IndexedEvent(mock[Event], Position(x))
     def readAllEvents(x: Long) = ReadAllEvents(Position(x), readBatchSize, Forward, resolveLinkTos = resolveLinkTos)
     def subscribeTo = SubscribeTo(EventStream.All, resolveLinkTos = resolveLinkTos)
 
-    def readAllEventsSucceed(position: Long, next: Long, events: ResolvedEvent*) =
+    def readAllEventsSucceed(position: Long, next: Long, events: IndexedEvent*) =
       ReadAllEventsSucceed(Position(position), events, Position(next), Forward)
 
     def expectNoActivity {

@@ -10,11 +10,11 @@ class SubscribeSpec extends TestConnectionSpec {
   "subscribe" should {
 
     "be able to subscribe" in new SubscribeScope {
-      append(newEvent)
+      append(newEventData)
       subscribeToStream(testKit = TestProbe()).lastEventNumber must beSome(EventNumber(0))
-      append(newEvent)
+      append(newEventData)
       subscribeToStream(testKit = TestProbe()).lastEventNumber must beSome(EventNumber(1))
-      append(newEvent)
+      append(newEventData)
       subscribeToStream(testKit = TestProbe()).lastEventNumber must beSome(EventNumber(2))
     }
 
@@ -31,9 +31,9 @@ class SubscribeSpec extends TestConnectionSpec {
       val events = appendMany(testKit = TestProbe())
       events.zipWithIndex.foreach {
         case (event, index) =>
-          val resolvedEvent = expectEventAppeared()
-          resolvedEvent.position.commitPosition must >(subscribed.lastCommit)
-          resolvedEvent.eventRecord mustEqual EventRecord(streamId, EventNumber(index), event)
+          val indexedEvent = expectStreamEventAppeared()
+          indexedEvent.position.commitPosition must >(subscribed.lastCommit)
+          indexedEvent.event mustEqual EventRecord(streamId, EventNumber(index), event)
       }
     }
 
@@ -57,12 +57,12 @@ class SubscribeSpec extends TestConnectionSpec {
       val subscribed = subscribeToStream()
       subscribed.lastEventNumber must beNone
       appendEventToCreateStream()
-      expectEventAppeared().eventRecord.number mustEqual EventNumber.First
+      expectStreamEventAppeared().event.number mustEqual EventNumber.First
       deleteStream()
-      val resolvedEvent = expectEventAppeared()
-      resolvedEvent.position.commitPosition must >(subscribed.lastCommit)
-      resolvedEvent.eventRecord must beLike {
-        case EventRecord.StreamDeleted(`streamId`, EventNumber.Exact(Int.MaxValue/*TODO WHY?*/), _) => ok
+      val indexedEvent = expectStreamEventAppeared()
+      indexedEvent.position.commitPosition must >(subscribed.lastCommit)
+      indexedEvent.event must beLike {
+        case Event.StreamDeleted(`streamId`, EventNumber.Exact(Int.MaxValue/*TODO WHY?*/), _) => ok
       }
       expectNoMsg(FiniteDuration(1, SECONDS))
     }
@@ -70,23 +70,17 @@ class SubscribeSpec extends TestConnectionSpec {
     "not catch linked events if resolveLinkTos = false" in new SubscribeScope {
       subscribeToStream(resolveLinkTos = false)
       val (linked, link) = linkedAndLink()
-
-      expectEventAppeared()
-      expectEventAppeared()
-      val resolvedEvent = expectEventAppeared()
-      resolvedEvent.eventRecord mustEqual link
-      resolvedEvent.link must beNone
+      expectStreamEventAppeared().event mustEqual linked
+      expectStreamEventAppeared()
+      expectStreamEventAppeared().event mustEqual link
     }
 
     "catch linked events if resolveLinkTos = true" in new SubscribeScope {
       subscribeToStream(resolveLinkTos = true)
       val (linked, link) = linkedAndLink()
-
-      expectEventAppeared()
-      expectEventAppeared()
-      val resolvedEvent = expectEventAppeared()
-      resolvedEvent.eventRecord mustEqual linked
-      resolvedEvent.link must beSome(link)
+      expectStreamEventAppeared().event mustEqual linked
+      expectStreamEventAppeared()
+      expectStreamEventAppeared().event mustEqual ResolvedEvent(linked, link)
     }
   }
 

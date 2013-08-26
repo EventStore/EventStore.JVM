@@ -68,15 +68,15 @@ class CatchUpSubscriptionActor(connection: ActorRef,
   def catchUp(lastPosition: Option[Position.Exact],
               nextPosition: Position,
               subscriptionLastCommit: Long,
-              stash: Queue[ResolvedEvent] = Queue()): Receive = {
+              stash: Queue[IndexedEvent] = Queue()): Receive = {
 
     readEventsFrom(nextPosition)
 
-    def catchingUp(stash: Queue[ResolvedEvent]): Receive = {
+    def catchingUp(stash: Queue[IndexedEvent]): Receive = {
       case ReadAllEventsSucceed(_, events, next, Forward) => context become (
         if (events.isEmpty) liveProcessing(lastPosition, stash)
         else {
-          def loop(events: List[ResolvedEvent], lastPosition: Option[Position.Exact]): Receive = events match {
+          def loop(events: List[IndexedEvent], lastPosition: Option[Position.Exact]): Receive = events match {
             case Nil => catchUp(lastPosition, next, subscriptionLastCommit, stash)
             case event :: tail =>
               val position = event.position
@@ -102,7 +102,7 @@ class CatchUpSubscriptionActor(connection: ActorRef,
     catchingUp(stash)
   }
 
-  def liveProcessing(lastPosition: Option[Position.Exact], stash: Queue[ResolvedEvent]): Receive = {
+  def liveProcessing(lastPosition: Option[Position.Exact], stash: Queue[IndexedEvent]): Receive = {
     debug(s"live processing started, lastPosition: $lastPosition")
     client ! LiveProcessingStarted
 
@@ -129,10 +129,10 @@ class CatchUpSubscriptionActor(connection: ActorRef,
     }
   }
 
-  def process(lastPosition: Option[Position.Exact], events: Seq[ResolvedEvent]): Option[Position.Exact] =
+  def process(lastPosition: Option[Position.Exact], events: Seq[IndexedEvent]): Option[Position.Exact] =
     events.foldLeft(lastPosition)((lastPosition, event) => process(lastPosition, event))
 
-  def process(lastPosition: Option[Position.Exact], event: ResolvedEvent): Option[Position.Exact] = {
+  def process(lastPosition: Option[Position.Exact], event: IndexedEvent): Option[Position.Exact] = {
     val position = event.position
     lastPosition match {
       case Some(last) if last >= position =>
@@ -149,7 +149,7 @@ class CatchUpSubscriptionActor(connection: ActorRef,
     connection ! ReadAllEvents(position, readBatchSize, Forward, resolveLinkTos = resolveLinkTos)
   }
 
-  def forward(event: ResolvedEvent) {
+  def forward(event: IndexedEvent) {
     debug(s"forwarding $event")
     client ! event // TODO put in to envelope
   }

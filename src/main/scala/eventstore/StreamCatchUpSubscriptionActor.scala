@@ -32,7 +32,7 @@ class StreamCatchUpSubscriptionActor(connection: ActorRef,
 
       case msg: ReadStreamEventsCompleted => context become (msg match {
         case ReadStreamEventsSucceed(events, next, _, endOfStream, _, Forward) =>
-          val last = process_(lastNumber, events) // TODO
+          val last = process(lastNumber, events) // TODO
           if (endOfStream) subscribe(last, next) else read(last, next)
 
         case ReadStreamEventsFailed(reason, _, _, Forward) =>
@@ -86,18 +86,18 @@ class StreamCatchUpSubscriptionActor(connection: ActorRef,
               nextNumber: EventNumber,
               //              subscriptionLastCommit: Long,
               subscriptionNumber: EventNumber.Exact,
-              stash: Queue[ResolvedEvent] = Queue()): Receive = {
+              stash: Queue[Event] = Queue()): Receive = {
 
     readEventsFrom(nextNumber)
 
-    def catchingUp(stash: Queue[ResolvedEvent]): Receive = {
+    def catchingUp(stash: Queue[Event]): Receive = {
       case ReadStreamEventsSucceed(events, next, _, endOfStream, _, Forward) => context become (
-        if (endOfStream) liveProcessing(process_(lastNumber, events), stash) // TODO
+        if (endOfStream) liveProcessing(process(lastNumber, events), stash) // TODO
         else {
-          def loop(events: List[ResolvedIndexedEvent], lastNumber: Option[EventNumber.Exact]): Receive = events match {
+          def loop(events: List[Event], lastNumber: Option[EventNumber.Exact]): Receive = events match {
             case Nil => catchUp(lastNumber = lastNumber, nextNumber = next, subscriptionNumber = subscriptionNumber, stash)
             case event :: tail =>
-              val number = event.eventRecord.number
+              val number = getNumber(event)
               if (lastNumber.exists(_ >= number)) loop(tail, lastNumber)
               else if (number > subscriptionNumber) liveProcessing(lastNumber, stash)
               else {
@@ -110,9 +110,9 @@ class StreamCatchUpSubscriptionActor(connection: ActorRef,
 
       case _: ReadStreamEventsFailed => ??? // TODO
 
-      case StreamEventAppeared(x) if x.eventRecord.number > subscriptionNumber => // TODO
+      case StreamEventAppeared(x) if getNumber(x.event) > subscriptionNumber => // TODO
         debug(s"catching up: adding appeared event to stash(${stash.size}): $x")
-        context become catchingUp(stash enqueue x)
+        context become catchingUp(stash enqueue x.event)
 
       case Stop => unsubscribe()
     }
@@ -120,12 +120,12 @@ class StreamCatchUpSubscriptionActor(connection: ActorRef,
     catchingUp(stash)
   }
 
-  def liveProcessing(lastNumber: Option[EventNumber.Exact], stash: Queue[ResolvedEvent] = Queue()): Receive = {
+  def liveProcessing(lastNumber: Option[EventNumber.Exact], stash: Queue[Event] = Queue()): Receive = {
     debug(s"live processing started, lastEventNumber: $lastNumber")
     client ! LiveProcessingStarted
 
     def liveProcessing(lastNumber: Option[EventNumber.Exact]): Receive = {
-      case StreamEventAppeared(event) => context become liveProcessing(process(lastNumber, event))
+      case StreamEventAppeared(x) => context become liveProcessing(process(lastNumber, x.event))
       case Stop => unsubscribe()
     }
     liveProcessing(process(lastNumber, stash))
@@ -148,20 +148,15 @@ class StreamCatchUpSubscriptionActor(connection: ActorRef,
   }
 
   @deprecated
-  def getNumber(event: ResolvedIndexedEvent): EventNumber.Exact =
-    (event.link getOrElse event.eventRecord).number
+  def getNumber(event: Event): EventNumber.Exact = event match {
+    case x: ResolvedEvent => x.linkEvent.number
+    case x: EventRecord => x.number
+  }
 
-  def process(lastNumber: Option[EventNumber.Exact], events: Seq[ResolvedEvent]): Option[EventNumber.Exact] =
+  def process(lastNumber: Option[EventNumber.Exact], events: Seq[Event]): Option[EventNumber.Exact] =
     events.foldLeft(lastNumber)((lastNumber, event) => process(lastNumber, event))
 
-  def process_(lastNumber: Option[EventNumber.Exact], events: Seq[ResolvedIndexedEvent]): Option[EventNumber.Exact] =
-    events.foldLeft(lastNumber)((lastNumber, event) => process(lastNumber, event))
-
-  @deprecated
-  def process(lastNumber: Option[EventNumber.Exact], event: ResolvedEvent): Option[EventNumber.Exact] =
-    process(lastNumber, ResolvedIndexedEvent(event.eventRecord, event.link))
-
-  def process(lastNumber: Option[EventNumber.Exact], event: ResolvedIndexedEvent): Option[EventNumber.Exact] = {
+  def process(lastNumber: Option[EventNumber.Exact], event: Event): Option[EventNumber.Exact] = {
     val number = getNumber(event)
     lastNumber match {
       case Some(last) if last >= number =>
@@ -178,13 +173,13 @@ class StreamCatchUpSubscriptionActor(connection: ActorRef,
     connection ! ReadStreamEvents(streamId, number, readBatchSize, Forward, resolveLinkTos = resolveLinkTos)
   }
 
-  def forward(event: ResolvedIndexedEvent) {
+  def forward(event: Event) {
     debug(s"forwarding $event")
     client ! event // TODO put in to envelope
   }
 
-  def forward(event: ResolvedEvent) {
-    forward(ResolvedIndexedEvent(event.eventRecord, event.link))
+  def forward(event: IndexedEvent) {
+    forward(event.event)
   }
 
   def debug(msg: => String) {

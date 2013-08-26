@@ -26,13 +26,13 @@ class ReadAllEventsBackwardSpec extends TestConnectionSpec {
 
     "return partial slice if not enough events" in new TestConnectionScope {
       appendMany()
-      val position = allStreamsResolvedEvents()(ReadDirection.Forward).take(5).last.position
+      val position = allStreamsEvents()(ReadDirection.Forward).take(5).last.position
       readAllEvents(position, 10).size must beLessThan(5)
     }
 
     "return events in reversed order compared to written" in new TestConnectionScope {
       val events = appendMany()
-      readAllEvents(startPosition, 10) mustEqual events.reverse
+      readAllEvents(startPosition, 10).map(_.data) mustEqual events.reverse
     }
 
     "be able to read all one by one until end of stream" in new TestConnectionScope {
@@ -46,20 +46,20 @@ class ReadAllEventsBackwardSpec extends TestConnectionSpec {
     "read 'streamDeleted' events" in new TestConnectionScope {
       appendEventToCreateStream()
       deleteStream()
-      readAllEventRecords(Position.Last, 1).head must beLike {
-        case EventRecord.StreamDeleted(`streamId`, EventNumber.Exact(1), _) => ok
+      readAllEvents(Position.Last, 1).head must beLike {
+        case Event.StreamDeleted(`streamId`, EventNumber.Exact(1), _) => ok
       }
     }
 
     "read events from deleted streams" in new TestConnectionScope {
       val event = appendEventToCreateStream()
       deleteStream()
-      val events = readAllEventRecords(startPosition, 10).filter(_.streamId == streamId)
+      val events = readAllEvents(startPosition, 10).filter(_.streamId == streamId)
       events must haveSize(2)
       println(events)
-      events.last.event mustEqual event
+      events.last.data mustEqual event
       events.head must beLike {
-        case EventRecord.StreamDeleted(`streamId`, EventNumber.Exact(1), _) => ok
+        case Event.StreamDeleted(`streamId`, EventNumber.Exact(1), _) => ok
       }
     }
 
@@ -68,7 +68,7 @@ class ReadAllEventsBackwardSpec extends TestConnectionSpec {
 
       val r1 = read()
       val r2 = read()
-      r1.resolvedEvents mustEqual r2.resolvedEvents
+      r1.events mustEqual r2.events
     }
 
     "fail to read from wrong position" in new TestConnectionScope {
@@ -83,16 +83,14 @@ class ReadAllEventsBackwardSpec extends TestConnectionSpec {
 
     "not read linked events if resolveLinkTos = false" in new TestConnectionScope {
       val (linked, link) = linkedAndLink()
-      val resolvedIndexedEvent = readAllEventsSucceed(Position.Last, 1, resolveLinkTos = false).resolvedEvents.head
-      resolvedIndexedEvent.eventRecord mustEqual link
-      resolvedIndexedEvent.link must beNone
+      val event = readAllEventsSucceed(Position.Last, 1, resolveLinkTos = false).events.head.event
+      event mustEqual link
     }
 
     "read linked events if resolveLinkTos = true" in new TestConnectionScope {
       val (linked, link) = linkedAndLink()
-      val resolvedIndexedEvent = readAllEventsSucceed(Position.Last, 1, resolveLinkTos = true).resolvedEvents.head
-      resolvedIndexedEvent.eventRecord mustEqual linked
-      resolvedIndexedEvent.link must beSome(link)
+      val event = readAllEventsSucceed(Position.Last, 1, resolveLinkTos = true).events.head.event
+      event mustEqual ResolvedEvent(linked, link)
     }
   }
 }

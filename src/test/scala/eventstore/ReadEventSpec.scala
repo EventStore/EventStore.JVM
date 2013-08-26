@@ -23,31 +23,24 @@ class ReadEventSpec extends TestConnectionSpec {
 
     "return existing event" in new ReadEventScope {
       appendEventToCreateStream()
-      readEvent(EventNumber.First)
+      readEventData(EventNumber.First)
     }
 
     "return last event in stream if event number is minus one" in new ReadEventScope {
       val events = appendMany()
-      readEvent(EventNumber.Last) mustEqual events.last
+      readEventData(EventNumber.Last) mustEqual events.last
     }
 
     "return link event if resolveLinkTos = false" in new ReadEventScope {
       val (linked, link) = linkedAndLink()
-
-      when(resolveLinkTos = false) {
-        resolvedIndexedEvent =>
-          resolvedIndexedEvent.eventRecord mustEqual link
-          resolvedIndexedEvent.link must beNone
-      }
+      val event = readEventSucceed(EventNumber.Last, resolveLinkTos = false)
+      event mustEqual link
     }
 
     "return linked event if resolveLinkTos = true" in new ReadEventScope {
       val (linked, link) = linkedAndLink()
-      when(resolveLinkTos = true) {
-        resolvedIndexedEvent =>
-          resolvedIndexedEvent.eventRecord mustEqual linked
-          resolvedIndexedEvent.link must beSome(link)
-      }
+      val event = readEventSucceed(EventNumber.Last, resolveLinkTos = true)
+      event mustEqual ResolvedEvent(linked, link)
     }
   }
 
@@ -58,20 +51,15 @@ class ReadEventSpec extends TestConnectionSpec {
       expectMsgType[ReadEventFailed].reason
     }
 
-    def when(resolveLinkTos: Boolean)(f: ResolvedIndexedEvent => Any) {
-      f(readEventSucceed(EventNumber.Last, resolveLinkTos = resolveLinkTos))
-    }
-
     def readEventSucceed(eventNumber: EventNumber, resolveLinkTos: Boolean = false) = {
       actor ! ReadEvent(streamId, eventNumber, resolveLinkTos = resolveLinkTos)
-      val resolvedIndexedEvent = expectMsgType[ReadEventSucceed].resolvedIndexedEvent
-      if (!resolveLinkTos) resolvedIndexedEvent.link must beEmpty
-      val eventRecord = resolvedIndexedEvent.eventRecord
-      eventRecord.streamId mustEqual streamId
-      if (eventNumber != EventNumber.Last) eventRecord.number mustEqual eventNumber
-      resolvedIndexedEvent
+      val event = expectMsgType[ReadEventSucceed].event
+      event.streamId mustEqual streamId
+      if (!resolveLinkTos) event must beAnInstanceOf[EventRecord]
+      if (eventNumber != EventNumber.Last) event.number mustEqual eventNumber
+      event
     }
 
-    def readEvent(eventNumber: EventNumber): Event = readEventSucceed(eventNumber).eventRecord.event
+    def readEventData(eventNumber: EventNumber): EventData = readEventSucceed(eventNumber).data
   }
 }

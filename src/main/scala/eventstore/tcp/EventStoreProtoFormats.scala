@@ -2,7 +2,7 @@ package eventstore
 package tcp
 
 import scala.PartialFunction.condOpt
-import util.DefaultFormats
+import eventstore.util.{BytesReader, DefaultFormats}
 import ReadDirection.{Backward, Forward}
 
 
@@ -13,8 +13,8 @@ object EventStoreProtoFormats extends EventStoreProtoFormats
 
 trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultFormats {
 
-  implicit object EventWriter extends ProtoWriter[Event] {
-    def toProto(x: Event) = proto.NewEvent(
+  implicit object EventDataWriter extends ProtoWriter[EventData] {
+    def toProto(x: EventData) = proto.NewEvent(
       `eventId` = protoByteString(x.eventId),
       `eventType` = x.eventType,
       `dataContentType` = 0,
@@ -29,7 +29,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
     def fromProto(x: proto.EventRecord) = EventRecord(
       streamId = EventStream(x.`eventStreamId`),
       number = EventNumber(x.`eventNumber`),
-      event = Event(
+      data = EventData(
         eventId = uuid(x.`eventId`),
         eventType = x.`eventType`,
         data = byteString(x.`data`),
@@ -37,19 +37,26 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
   }
 
 
-  implicit object ResolvedEventReader
-    extends ProtoReader[ResolvedEvent, proto.ResolvedEvent](proto.ResolvedEvent) {
-    def fromProto(x: proto.ResolvedEvent) = ResolvedEvent(
-      eventRecord = EventRecordReader.fromProto(x.`event`),
-      link = x.`link`.map(EventRecordReader.fromProto),
+  implicit object IndexedEventReader extends ProtoReader[IndexedEvent, proto.ResolvedEvent](proto.ResolvedEvent) {
+    def fromProto(x: proto.ResolvedEvent) = IndexedEvent(
+      event = EventReader.event(x),
       position = Position(commitPosition = x.`commitPosition`, preparePosition = x.`preparePosition`))
   }
 
 
-  implicit object ResolvedIndexedEventReader
-    extends ProtoReader[ResolvedIndexedEvent, proto.ResolvedIndexedEvent](proto.ResolvedIndexedEvent) {
-    def fromProto(x: proto.ResolvedIndexedEvent) =
-      ResolvedIndexedEvent(EventRecordReader.fromProto(x.`event`), x.`link`.map(EventRecordReader.fromProto))
+  implicit object EventReader extends ProtoReader[Event, proto.ResolvedIndexedEvent](proto.ResolvedIndexedEvent) {
+    def fromProto(x: proto.ResolvedIndexedEvent) = event(
+      EventRecordReader.fromProto(x.`event`),
+      x.`link`.map(EventRecordReader.fromProto))
+
+    def event(event: EventRecord, linkEvent: Option[EventRecord]): Event = linkEvent match {
+      case Some(x) => ResolvedEvent(linkedEvent = event, linkEvent = x)
+      case None => event
+    }
+
+    def event(x: {def `event`: proto.EventRecord; def `link`: Option[proto.EventRecord]}): Event = event(
+      EventRecordReader.fromProto(x.`event`),
+      x.`link`.map(EventRecordReader.fromProto))
   }
 
 
@@ -57,7 +64,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
     def toProto(x: AppendToStream) = proto.WriteEvents(
       `eventStreamId` = x.streamId.value,
       `expectedVersion` = expectedVersion(x.expectedVersion),
-      `events` = x.events.map(EventWriter.toProto).toVector,
+      `events` = x.events.map(EventDataWriter.toProto).toVector,
       `requireMaster` = x.requireMaster)
   }
 
@@ -105,7 +112,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
   implicit object TransactionWriteWriter extends ProtoWriter[TransactionWrite] {
     def toProto(x: TransactionWrite) = proto.TransactionWrite(
       `transactionId` = x.transactionId,
-      `events` = x.events.map(EventWriter.toProto).toVector,
+      `events` = x.events.map(EventDataWriter.toProto).toVector,
       `requireMaster` = x.requireMaster)
   }
 
@@ -156,7 +163,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
 
     def fromProto(x: proto.ReadEventCompleted) = reason(x.`result`) match {
       case Some(reason) => ReadEventFailed(reason, message(x.`error`))
-      case None => ReadEventSucceed(ResolvedIndexedEventReader.fromProto(x.`event`))
+      case None => ReadEventSucceed(EventReader.fromProto(x.`event`))
     }
   }
 
@@ -186,7 +193,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
       require(x.`result` != NotModified, "ReadStreamEventsCompleted.NotModified is not supported")
       reason(x.`result`) match {
         case None => ReadStreamEventsSucceed(
-          resolvedIndexedEvents = x.`events`.map(ResolvedIndexedEventReader.fromProto).toList,
+          events = x.`events`.map(EventReader.fromProto).toList,
           nextEventNumber = EventNumberConverter.to(x.`nextEventNumber`),
           lastEventNumber = EventNumber(x.`lastEventNumber`),
           endOfStream = x.`isEndOfStream`,
@@ -239,7 +246,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
       reason(result) match {
         case None => ReadAllEventsSucceed(
           position = position,
-          resolvedEvents = x.`events`.toList.map(ResolvedEventReader.fromProto),
+          events = x.`events`.toList.map(IndexedEventReader.fromProto),
           nextPosition = Position(commitPosition = x.`nextCommitPosition`, preparePosition = x.`nextPreparePosition`),
           direction = direction)
 
@@ -282,7 +289,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
   implicit object StreamEventAppearedReader
     extends ProtoReader[StreamEventAppeared, proto.StreamEventAppeared](proto.StreamEventAppeared) {
     def fromProto(x: proto.StreamEventAppeared) =
-      StreamEventAppeared(resolvedEvent = ResolvedEventReader.fromProto(x.`event`))
+      StreamEventAppeared(event = IndexedEventReader.fromProto(x.`event`))
   }
 
 

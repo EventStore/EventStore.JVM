@@ -13,19 +13,19 @@ class TransactionSpec extends TestConnectionSpec {
   "transaction" should {
     "start on non existing stream with correct exp ver and create stream on commit" in new TransactionScope {
       implicit val transactionId = transactionStart(NoStream)
-      transactionWrite(newEvent)
+      transactionWrite(newEventData)
       transactionCommit
     }
 
     "start on non existing stream with any exp ver and create stream on commit" in new TransactionScope {
       implicit val transactionId = transactionStart(Any)
-      transactionWrite(newEvent)
+      transactionWrite(newEventData)
       transactionCommit
     }
 
     "fail to commit on non existing stream with wrong exp ver" in new TransactionScope {
       implicit val transactionId = transactionStart(ExpectedVersion.First)
-      transactionWrite(newEvent)
+      transactionWrite(newEventData)
       failTransactionCommit(WrongExpectedVersion)
     }
 
@@ -44,7 +44,7 @@ class TransactionSpec extends TestConnectionSpec {
 
     "validate expectations on commit" in new TransactionScope {
       implicit val transactionId = transactionStart(ExpectedVersion(1))
-      transactionWrite(newEvent)
+      transactionWrite(newEventData)
       failTransactionCommit(WrongExpectedVersion)
     }
 
@@ -55,13 +55,13 @@ class TransactionSpec extends TestConnectionSpec {
 
       val probe = TestProbe()
 
-      appendToStreamSucceed(Seq(newEvent), testKit = probe)
+      appendToStreamSucceed(Seq(newEventData), testKit = probe)
 
-      transactionWrite(newEvent)
+      transactionWrite(newEventData)
 
-      appendToStreamSucceed(Seq(newEvent), testKit = probe)
+      appendToStreamSucceed(Seq(newEventData), testKit = probe)
 
-      transactionWrite(newEvent)
+      transactionWrite(newEventData)
       transactionCommit
       streamEvents must haveSize(5)
     }
@@ -69,15 +69,15 @@ class TransactionSpec extends TestConnectionSpec {
     "fail to commit if started with correct ver but committing with bad" in new TransactionScope {
       appendEventToCreateStream()
       implicit val transactionId = transactionStart(ExpectedVersion.First)
-      append(newEvent).number mustEqual EventNumber(1)
-      transactionWrite(newEvent)
+      append(newEventData).number mustEqual EventNumber(1)
+      transactionWrite(newEventData)
       failTransactionCommit(WrongExpectedVersion)
     }
 
     "succeed to commit if started with wrong ver but committing with correct ver" in new TransactionScope {
       appendEventToCreateStream()
       implicit val transactionId = transactionStart(ExpectedVersion(1))
-      append(newEvent).number mustEqual EventNumber(1)
+      append(newEventData).number mustEqual EventNumber(1)
       transactionWrite()
       transactionCommit
     }
@@ -90,7 +90,7 @@ class TransactionSpec extends TestConnectionSpec {
     }
 
     "idempotency is correct for explicit transactions with expected version any" in new TransactionScope {
-      val event = newEvent
+      val event = newEventData
       val transactionId1 = transactionStart(Any)
       transactionWrite(event)(transactionId1)
       transactionCommit(transactionId1)
@@ -109,7 +109,7 @@ class TransactionSpec extends TestConnectionSpec {
       expectMsgType[TransactionStartSucceed].transactionId
     }
 
-    def transactionWrite(events: Event*)(implicit transactionId: Long) {
+    def transactionWrite(events: EventData*)(implicit transactionId: Long) {
       actor ! TransactionWrite(transactionId, events.toList)
       expectMsg(TransactionWriteSucceed(transactionId))
     }

@@ -26,21 +26,21 @@ class StreamCatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Moc
     "ignore read events with event number out of interest" in new StreamCatchUpScope {
       connection expectMsg readStreamEvents(0)
 
-      actor ! readStreamEventsSucceed(3, false, re0, re1, re2)
-      expectEvent(re0)
-      expectEvent(re1)
-      expectEvent(re2)
+      actor ! readStreamEventsSucceed(3, false, event0, event1, event2)
+      expectEvent(event0)
+      expectEvent(event1)
+      expectEvent(event2)
 
       connection expectMsg readStreamEvents(3)
 
-      actor ! readStreamEventsSucceed(5, false, re0, re1, re2, re3, re4)
+      actor ! readStreamEventsSucceed(5, false, event0, event1, event2, event3, event4)
 
-      expectEvent(re3)
-      expectEvent(re4)
+      expectEvent(event3)
+      expectEvent(event4)
 
       connection expectMsg readStreamEvents(5)
 
-      actor ! readStreamEventsSucceed(5, false, re0, re1, re2, re3, re4)
+      actor ! readStreamEventsSucceed(5, false, event0, event1, event2, event3, event4)
 
       expectNoMsg(duration)
       connection expectMsg readStreamEvents(5)
@@ -49,8 +49,8 @@ class StreamCatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Moc
     "ignore read events with event number out of interest when from number is given" in new StreamCatchUpScope(Some(1)) {
       connection expectMsg readStreamEvents(1)
 
-      actor ! readStreamEventsSucceed(3, false, re0, re1, re2)
-      expectEvent(re2)
+      actor ! readStreamEventsSucceed(3, false, event0, event1, event2)
+      expectEvent(event2)
       expectNoMsg(duration)
 
       connection expectMsg readStreamEvents(3)
@@ -58,9 +58,9 @@ class StreamCatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Moc
 
     "read events until none left and subscribe to new ones" in new StreamCatchUpScope {
       connection expectMsg readStreamEvents(0)
-      actor ! readStreamEventsSucceed(2, false, re1)
+      actor ! readStreamEventsSucceed(2, false, event1)
 
-      expectEvent(re1)
+      expectEvent(event1)
 
       connection expectMsg readStreamEvents(2)
       actor ! readStreamEventsSucceed(2, true)
@@ -97,7 +97,7 @@ class StreamCatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Moc
       expectMsg(SubscriptionDropped(SubscriptionDropped.Unsubscribed))
 
       val position = 1
-      actor ! readStreamEventsSucceed(2, false, re1)
+      actor ! readStreamEventsSucceed(2, false, event1)
 
       expectNoActivity
     }
@@ -106,10 +106,10 @@ class StreamCatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Moc
       connection expectMsg readStreamEvents(0)
 
       val position = 1
-      actor ! readStreamEventsSucceed(2, false, re0, re1)
+      actor ! readStreamEventsSucceed(2, false, event0, event1)
 
-      expectEvent(re0)
-      expectEvent(re1)
+      expectEvent(event0)
+      expectEvent(event1)
 
       connection expectMsg readStreamEvents(2)
       actor ! readStreamEventsSucceed(2, true)
@@ -121,30 +121,30 @@ class StreamCatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Moc
 
       connection expectMsg readStreamEvents(2)
 
-      actor ! StreamEventAppeared(re2)
-      actor ! StreamEventAppeared(re3)
-      actor ! StreamEventAppeared(re4)
+      actor ! streamEventAppeared(event2)
+      actor ! streamEventAppeared(event3)
+      actor ! streamEventAppeared(event4)
       expectNoMsg(duration)
 
-      actor ! readStreamEventsSucceed(3, false, re1, re2)
-      expectEvent(re2)
+      actor ! readStreamEventsSucceed(3, false, event1, event2)
+      expectEvent(event2)
 
       connection expectMsg readStreamEvents(3)
 
-      actor ! StreamEventAppeared(re5)
-      actor ! StreamEventAppeared(re6)
+      actor ! streamEventAppeared(event5)
+      actor ! streamEventAppeared(event6)
       expectNoMsg(duration)
 
-      actor ! readStreamEventsSucceed(6, false, re3, re4, re5)
+      actor ! readStreamEventsSucceed(6, false, event3, event4, event5)
 
-      expectEvent(re3)
-      expectEvent(re4)
+      expectEvent(event3)
+      expectEvent(event4)
       expectMsg(LiveProcessingStarted)
-      expectEvent(re5)
-      expectEvent(re6)
+      expectEvent(event5)
+      expectEvent(event6)
 
-      actor ! StreamEventAppeared(re5)
-      actor ! StreamEventAppeared(re6)
+      actor ! streamEventAppeared(event5)
+      actor ! streamEventAppeared(event6)
 
       expectNoActivity
     }
@@ -199,10 +199,10 @@ class StreamCatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Moc
       connection expectMsg readStreamEvents(0)
 
       val position = 1
-      actor ! readStreamEventsSucceed(2, false, re0, re1)
+      actor ! readStreamEventsSucceed(2, false, event0, event1)
 
-      expectEvent(re0)
-      expectEvent(re1)
+      expectEvent(event0)
+      expectEvent(event1)
 
       connection expectMsg readStreamEvents(2)
 
@@ -215,8 +215,8 @@ class StreamCatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Moc
 
       connection expectMsg readStreamEvents(2)
 
-      actor ! StreamEventAppeared(re3)
-      actor ! StreamEventAppeared(re4)
+      actor ! streamEventAppeared(event3)
+      actor ! streamEventAppeared(event4)
 
       actor ! Stop
 
@@ -278,15 +278,15 @@ class StreamCatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Moc
 
       expectMsg(LiveProcessingStarted)
 
-      actor ! StreamEventAppeared(re1)
-      expectEvent(re1)
+      actor ! streamEventAppeared(event1)
+      expectEvent(event1)
 
       expectNoMsg(duration)
 
-      actor ! StreamEventAppeared(re2)
-      actor ! StreamEventAppeared(re3)
-      expectEvent(re2)
-      expectEvent(re3)
+      actor ! streamEventAppeared(event2)
+      actor ! streamEventAppeared(event3)
+      expectEvent(event2)
+      expectEvent(event3)
     }
 
     "ignore wrong events while subscribed" in new StreamCatchUpScope(Some(1)) {
@@ -302,18 +302,18 @@ class StreamCatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Moc
 
       expectMsg(LiveProcessingStarted)
 
-      actor ! StreamEventAppeared(re0)
-      actor ! StreamEventAppeared(re1)
-      actor ! StreamEventAppeared(re1)
-      actor ! StreamEventAppeared(re2)
-      expectEvent(re2)
-      actor ! StreamEventAppeared(re2)
-      actor ! StreamEventAppeared(re1)
-      actor ! StreamEventAppeared(re3)
-      expectEvent(re3)
-      actor ! StreamEventAppeared(re5)
-      expectEvent(re5)
-      actor ! StreamEventAppeared(re4)
+      actor ! streamEventAppeared(event0)
+      actor ! streamEventAppeared(event1)
+      actor ! streamEventAppeared(event1)
+      actor ! streamEventAppeared(event2)
+      expectEvent(event2)
+      actor ! streamEventAppeared(event2)
+      actor ! streamEventAppeared(event1)
+      actor ! streamEventAppeared(event3)
+      expectEvent(event3)
+      actor ! streamEventAppeared(event5)
+      expectEvent(event5)
+      actor ! streamEventAppeared(event4)
       expectNoMsg(duration)
     }
 
@@ -327,8 +327,8 @@ class StreamCatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Moc
       actor ! subscribeToStreamCompleted(1)
       expectMsg(LiveProcessingStarted)
 
-      actor ! StreamEventAppeared(re2)
-      expectEvent(re2)
+      actor ! streamEventAppeared(event2)
+      expectEvent(event2)
 
       actor ! Stop
       connection.expectMsg(UnsubscribeFromStream)
@@ -357,27 +357,24 @@ class StreamCatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Moc
       resolveLinkTos,
       readBatchSize))
 
-    val re0 = resolvedEvent(0)
-    val re1 = resolvedEvent(1)
-    val re2 = resolvedEvent(2)
-    val re3 = resolvedEvent(3)
-    val re4 = resolvedEvent(4)
-    val re5 = resolvedEvent(5)
-    val re6 = resolvedEvent(6)
+    val event0 = newEvent(0)
+    val event1 = newEvent(1)
+    val event2 = newEvent(2)
+    val event3 = newEvent(3)
+    val event4 = newEvent(4)
+    val event5 = newEvent(5)
+    val event6 = newEvent(6)
 
-    def resolvedEvent(number: Int) = {
-      val eventRecord = EventRecord(streamId, EventNumber(number), mock[Event])
-      ResolvedEvent(eventRecord, None, Position(number))
-    }
+    def newEvent(number: Int): Event = EventRecord(streamId, EventNumber(number), mock[EventData])
 
     def readStreamEvents(x: Int) =
       ReadStreamEvents(streamId, EventNumber(x), readBatchSize, Forward, resolveLinkTos = resolveLinkTos)
 
     def subscribeTo = SubscribeTo(streamId, resolveLinkTos = resolveLinkTos)
 
-    def readStreamEventsSucceed(next: Int, endOfStream: Boolean, events: ResolvedEvent*) =
+    def readStreamEventsSucceed(next: Int, endOfStream: Boolean, events: Event*) =
       ReadStreamEventsSucceed(
-        resolvedIndexedEvents = events.map(x => ResolvedIndexedEvent(x.eventRecord, x.link)),
+        events = events,
         nextEventNumber = EventNumber(next),
         lastEventNumber = mock[EventNumber.Exact],
         endOfStream = endOfStream,
@@ -390,16 +387,13 @@ class StreamCatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Moc
       connection.expectNoMsg(duration)
     }
 
-    def expectEvent(x: ResolvedEvent) {
-      expectMsg(ResolvedIndexedEvent(x.eventRecord, x.link))
+    // TODO
+    def expectEvent(x: Event) {
+      expectMsg(x)
     }
+
+    def streamEventAppeared(x: Event) = StreamEventAppeared(IndexedEvent(x, Position(x.number.value)))
 
     def subscribeToStreamCompleted(x: Int) = SubscribeToStreamCompleted(x, Some(EventNumber(x)))
-
-    implicit class RichTestKit(testKit: TestKitBase) {
-      def expectEvent(x: ResolvedEvent) {
-        testKit.expectMsg(ResolvedIndexedEvent(x.eventRecord, x.link))
-      }
-    }
   }
 }

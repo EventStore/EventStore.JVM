@@ -190,8 +190,6 @@ trait EventStoreConnection {
   def getStreamMetadataAsRawBytes(streamId: String, credentials: Option[UserCredentials] = None): Future[RawStreamMetadataResult]
 }
 
-case class EventData()
-
 case class EventStoreTransaction()
 
 case class EventReadResult(){

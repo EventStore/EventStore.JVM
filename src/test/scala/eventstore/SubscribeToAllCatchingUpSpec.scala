@@ -53,7 +53,7 @@ class SubscribeToAllCatchingUpSpec extends TestConnectionSpec {
       appendMany()
 
       val existing = readAllEventsSucceed(Position.First, 1000)(Backward)
-        .resolvedEvents.map(_.eventRecord.event).reverse
+        .events.map(_.event.data).reverse
       val subscriptionActor = newSubscription()
       expectEvents(existing)
 
@@ -69,7 +69,7 @@ class SubscribeToAllCatchingUpSpec extends TestConnectionSpec {
     "filter events and keep listening to new ones" in new SubscribeToAllCatchingUpScope {
       val many = 10
       appendMany(many)
-      val position = allStreamsResolvedEvents()(Backward).take(many).last.position
+      val position = allStreamsEvents()(Backward).take(many).last.position
       val subscriptionActor = newSubscription(Some(position))
 
       val processingStartedPosition = fishForLiveProcessingStarted(position)
@@ -84,7 +84,7 @@ class SubscribeToAllCatchingUpSpec extends TestConnectionSpec {
     "filter events and work if nothing was written after subscription" in new SubscribeToAllCatchingUpScope {
       val many = 10
       appendMany(many)
-      val position = allStreamsResolvedEvents()(Backward).take(many).last.position
+      val position = allStreamsEvents()(Backward).take(many).last.position
       val subscriptionActor = newSubscription(Some(position))
 
       fishForLiveProcessingStarted(position)
@@ -95,40 +95,36 @@ class SubscribeToAllCatchingUpSpec extends TestConnectionSpec {
     }
 
     "allow multiple subscriptions" in new SubscribeToAllCatchingUpScope {
-      val position = allStreamsResolvedEvents()(Backward).take(10).last.position
+      val position = allStreamsEvents()(Backward).take(10).last.position
       val probes = List.fill(5)(TestProbe.apply)
       probes.foreach(x => newSubscription(Some(position), client = x.ref))
       probes.foreach(x => fishForLiveProcessingStarted(testKit = x))
-      val event = append(newEvent).event
+      val event = append(newEventData).data
       probes.foreach(x => expectEvents(Seq(event), testKit = x))
     }
 
     "catch link events if resolveLinkTos = false" in new SubscribeToAllCatchingUpScope {
-      val position = allStreamsResolvedEvents()(Backward).head.position
-      newSubscription(Some(position), resolveLinkTos = false)
+      newSubscription(Some(lastPosition), resolveLinkTos = false)
       fishForLiveProcessingStarted()
       val (linked, link) = linkedAndLink()
-      expectMsgType[ResolvedEvent].eventRecord mustEqual linked
-      expectMsgType[ResolvedEvent]
-      val resolvedEvent = expectMsgType[ResolvedEvent]
-      resolvedEvent.eventRecord mustEqual link
-      resolvedEvent.link must beEmpty
+      expectMsgType[IndexedEvent].event mustEqual linked
+      expectMsgType[IndexedEvent]
+      expectMsgType[IndexedEvent].event mustEqual link
     }
 
     "catch link events if resolveLinkTos = true" in new SubscribeToAllCatchingUpScope {
-      val position = allStreamsResolvedEvents()(Backward).head.position
-      newSubscription(Some(position), resolveLinkTos = true)
+      newSubscription(Some(lastPosition), resolveLinkTos = true)
       fishForLiveProcessingStarted()
       val (linked, link) = linkedAndLink()
-      expectMsgType[ResolvedEvent].eventRecord mustEqual linked
-      expectMsgType[ResolvedEvent]
-      val resolvedEvent = expectMsgType[ResolvedEvent]
-      resolvedEvent.eventRecord mustEqual linked
-      resolvedEvent.link must beSome(link)
+      expectMsgType[IndexedEvent].event mustEqual linked
+      expectMsgType[IndexedEvent]
+      expectMsgType[IndexedEvent].event mustEqual ResolvedEvent(linked, link)
     }
   }
 
   trait SubscribeToAllCatchingUpScope extends TestConnectionScope {
+
+    def lastPosition = allStreamsEvents()(Backward).head.position
 
     def newSubscription(fromPositionExclusive: Option[Position.Exact] = None,
                         resolveLinkTos: Boolean = false,
@@ -139,18 +135,18 @@ class SubscribeToAllCatchingUpSpec extends TestConnectionSpec {
       resolveLinkTos = resolveLinkTos,
       readBatchSize = 500))
 
-    def expectEvents(events: Seq[Event],
+    def expectEvents(events: Seq[EventData],
                              position: Position = Position.First,
-                             testKit: TestKitBase = this): Seq[ResolvedEvent] = {
+                             testKit: TestKitBase = this): Seq[IndexedEvent] = {
 
-      def loop(events: List[Event], position: Position): List[ResolvedEvent] = events match {
+      def loop(events: List[EventData], position: Position): List[IndexedEvent] = events match {
         case Nil => Nil
         case head :: tail =>
-          val resolvedEvent = testKit.expectMsgType[ResolvedEvent]
-          resolvedEvent.position must beGreaterThanOrEqualTo(position)
-          resolvedEvent.link must beEmpty
-          if (resolvedEvent.eventRecord.event == head) resolvedEvent :: loop(tail, resolvedEvent.position)
-          else loop(events, resolvedEvent.position)
+          val indexedEvent = testKit.expectMsgType[IndexedEvent]
+          indexedEvent.position must beGreaterThanOrEqualTo(position)
+          indexedEvent.event must beAnInstanceOf[EventRecord]
+          if (indexedEvent.event.data == head) indexedEvent :: loop(tail, indexedEvent.position)
+          else loop(events, indexedEvent.position)
       }
       loop(events.toList, position)
     }
@@ -159,9 +155,9 @@ class SubscribeToAllCatchingUpSpec extends TestConnectionSpec {
       receiveOne(FiniteDuration(1, SECONDS)) match {
         case null =>
         case msg =>
-          msg must beAnInstanceOf[ResolvedEvent]
-          val resolvedEvent = msg.asInstanceOf[ResolvedEvent]
-          val streamId = resolvedEvent.eventRecord.streamId
+          msg must beAnInstanceOf[IndexedEvent]
+          val indexedEvent = msg.asInstanceOf[IndexedEvent]
+          val streamId = indexedEvent.event.streamId
           streamId.isSystem must beTrue
           expectNoEvents()
       }
@@ -171,13 +167,13 @@ class SubscribeToAllCatchingUpSpec extends TestConnectionSpec {
     final def fishForLiveProcessingStarted(position: Position = Position.First,
                                            testKit: TestKitBase = this): Position = testKit.expectMsgType[AnyRef] match {
       case LiveProcessingStarted => position
-      case x: ResolvedEvent =>
-        x.position must beGreaterThanOrEqualTo(position)
-        fishForLiveProcessingStarted(x.position, testKit)
+      case IndexedEvent(_, x) =>
+        x must beGreaterThanOrEqualTo(position)
+        fishForLiveProcessingStarted(x, testKit)
     }
 
-    def writeAsync(size: Int = 20): Seq[Event] = {
-      val events = (1 to size).map(_ => newEvent)
+    def writeAsync(size: Int = 20): Seq[EventData] = {
+      val events = (1 to size).map(_ => newEventData)
       import system.dispatcher
       Future {
         appendToStreamSucceed(events, testKit = TestProbe())

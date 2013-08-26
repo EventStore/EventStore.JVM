@@ -23,8 +23,8 @@ class SubscribeCatchingUpSpec extends TestConnectionSpec {
       val subscriptionActor = newSubscription()
       expectMsg(LiveProcessingStarted)
       expectNoEvents()
-      val event = append(newEvent)
-      expectMsgType[ResolvedIndexedEvent].eventRecord mustEqual event
+      val event = append(newEventData)
+      expectMsgType[Event] mustEqual event
       subscriptionActor ! Stop
       expectMsg(SubscriptionDropped(SubscriptionDropped.Unsubscribed))
       expectNoEvents()
@@ -32,11 +32,11 @@ class SubscribeCatchingUpSpec extends TestConnectionSpec {
 
     "be able to subscribe to non existing stream from number" in new SubscribeCatchingUpScope {
       val subscriptionActor = newSubscription(Some(EventNumber(0)))
-      append(newEvent)
+      append(newEventData)
       expectMsg(LiveProcessingStarted)
       expectNoEvents()
-      val event = append(newEvent)
-      expectMsgType[ResolvedIndexedEvent].eventRecord mustEqual event
+      val event = append(newEventData)
+      expectMsgType[Event]mustEqual event
       subscriptionActor ! Stop
       expectMsg(SubscriptionDropped(SubscriptionDropped.Unsubscribed))
       expectNoEvents()
@@ -53,8 +53,8 @@ class SubscribeCatchingUpSpec extends TestConnectionSpec {
       val probes = List.fill(5)(TestProbe.apply)
       probes.foreach(x => newSubscription(client = x.ref))
       probes.foreach(_.expectMsg(LiveProcessingStarted))
-      val event = append(newEvent)
-      probes.foreach(_.expectMsgType[ResolvedIndexedEvent].eventRecord mustEqual event)
+      val event = append(newEventData)
+      probes.foreach(_.expectMsgType[Event]mustEqual event)
     }
 
     "call dropped callback after stop method call" in {
@@ -82,37 +82,37 @@ class SubscribeCatchingUpSpec extends TestConnectionSpec {
     }
 
     "read all existing events and keep listening to new ones" in new SubscribeCatchingUpScope {
-      val event = append(newEvent)
+      val event = append(newEventData)
       val subscriptionActor = newSubscription()
-      expectMsgType[ResolvedIndexedEvent].eventRecord mustEqual event
+      expectMsgType[Event]mustEqual event
 
       expectMsg(LiveProcessingStarted)
 
       expectNoEvents()
-      val event2 = append(newEvent)
-      expectMsgType[ResolvedIndexedEvent].eventRecord mustEqual event2
+      val event2 = append(newEventData)
+      expectMsgType[Event]mustEqual event2
     }
 
     "filter events and keep listening to new ones" in new SubscribeCatchingUpScope {
       val subscriptionActor = newSubscription(Some(EventNumber(0)))
       expectMsg(LiveProcessingStarted)
-      append(newEvent)
-      val event = append(newEvent)
-      expectMsgType[ResolvedIndexedEvent].eventRecord mustEqual event
+      append(newEventData)
+      val event = append(newEventData)
+      expectMsgType[Event]mustEqual event
       expectNoEvents()
-      val event2 = append(newEvent)
-      expectMsgType[ResolvedIndexedEvent].eventRecord mustEqual event2
+      val event2 = append(newEventData)
+      expectMsgType[Event]mustEqual event2
     }
 
     "filter events and keep listening to new ones" in new SubscribeCatchingUpScope {
-      append(newEvent)
-      val event = append(newEvent)
+      append(newEventData)
+      val event = append(newEventData)
       val subscriptionActor = newSubscription(Some(EventNumber(0)))
-      expectMsgType[ResolvedIndexedEvent].eventRecord mustEqual event
+      expectMsgType[Event]mustEqual event
       expectMsg(LiveProcessingStarted)
       expectNoEvents()
-      val event2 = append(newEvent)
-      expectMsgType[ResolvedIndexedEvent].eventRecord mustEqual event2
+      val event2 = append(newEventData)
+      expectMsgType[Event]mustEqual event2
     }
 
     "filter events and work if nothing was written after subscription" in {
@@ -167,22 +167,18 @@ class SubscribeCatchingUpSpec extends TestConnectionSpec {
     "read linked events if resolveLinkTos = false" in new SubscribeCatchingUpScope {
       val (linked, link) = linkedAndLink()
       newSubscription(resolveLinkTos = false)
-      expectMsgType[ResolvedIndexedEvent].eventRecord mustEqual linked
-      expectMsgType[ResolvedIndexedEvent]
-      val resolvedEvent = expectMsgType[ResolvedIndexedEvent]
-      resolvedEvent.eventRecord mustEqual link
-      resolvedEvent.link must beEmpty
+      expectMsgType[Event] mustEqual linked
+      expectMsgType[Event]
+      expectMsgType[Event] mustEqual link
       expectMsg(LiveProcessingStarted)
     }
 
     "read linked events if resolveLinkTos = true" in new SubscribeCatchingUpScope {
       val (linked, link) = linkedAndLink()
       newSubscription(resolveLinkTos = true)
-      expectMsgType[ResolvedIndexedEvent].eventRecord mustEqual linked
-      expectMsgType[ResolvedIndexedEvent]
-      val resolvedEvent = expectMsgType[ResolvedIndexedEvent]
-      resolvedEvent.eventRecord mustEqual linked
-      resolvedEvent.link must beSome(link)
+      expectMsgType[Event] mustEqual linked
+      expectMsgType[Event]
+      expectMsgType[Event] mustEqual ResolvedEvent(linked, link)
       expectMsg(LiveProcessingStarted)
     }
 
@@ -190,22 +186,18 @@ class SubscribeCatchingUpSpec extends TestConnectionSpec {
       newSubscription(resolveLinkTos = false)
       expectMsg(LiveProcessingStarted)
       val (linked, link) = linkedAndLink()
-      expectMsgType[ResolvedIndexedEvent].eventRecord mustEqual linked
-      expectMsgType[ResolvedIndexedEvent]
-      val resolvedEvent = expectMsgType[ResolvedIndexedEvent]
-      resolvedEvent.eventRecord mustEqual link
-      resolvedEvent.link must beEmpty
+      expectMsgType[Event] mustEqual linked
+      expectMsgType[Event]
+      expectMsgType[Event] mustEqual link
     }
 
     "catch linked events if resolveLinkTos = true" in new SubscribeCatchingUpScope {
       newSubscription(resolveLinkTos = true)
       expectMsg(LiveProcessingStarted)
       val (linked, link) = linkedAndLink()
-      expectMsgType[ResolvedIndexedEvent].eventRecord mustEqual linked
-      expectMsgType[ResolvedIndexedEvent]
-      val resolvedEvent = expectMsgType[ResolvedIndexedEvent]
-      resolvedEvent.eventRecord mustEqual linked
-      resolvedEvent.link must beSome(link)
+      expectMsgType[Event] mustEqual linked
+      expectMsgType[Event]
+      expectMsgType[Event] mustEqual ResolvedEvent(linked, link)
     }
   }
 
@@ -219,7 +211,7 @@ class SubscribeCatchingUpSpec extends TestConnectionSpec {
       client = client,
       streamId = streamId,
       fromNumberExclusive = fromNumberExclusive,
-      resolveLinkTos = false,
+      resolveLinkTos = resolveLinkTos,
       readBatchSize = 500))
   }
 }

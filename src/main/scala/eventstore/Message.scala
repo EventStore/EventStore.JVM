@@ -39,7 +39,7 @@ case class DeniedToRoute(externalTcpAddress: String,
 
 case class AppendToStream(streamId: EventStream.Id,
                           expectedVersion: ExpectedVersion,
-                          events: Seq[Event],
+                          events: Seq[EventData],
                           requireMaster: Boolean = true) extends Out
 
 sealed trait AppendToStreamCompleted extends In
@@ -73,7 +73,7 @@ case class TransactionStartFailed(reason: OperationFailed.Value,
 
 
 
-case class TransactionWrite(transactionId: Long, events: Seq[Event], requireMaster: Boolean = true) extends Out {
+case class TransactionWrite(transactionId: Long, events: Seq[EventData], requireMaster: Boolean = true) extends Out {
   require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
 }
 
@@ -117,7 +117,7 @@ case class ReadEvent(streamId: EventStream.Id,
                      requireMaster: Boolean = true) extends Out
 
 sealed trait ReadEventCompleted extends In
-case class ReadEventSucceed(resolvedIndexedEvent: ResolvedIndexedEvent) extends ReadEventCompleted
+case class ReadEventSucceed(event: Event) extends ReadEventCompleted
 case class ReadEventFailed(reason: ReadEventFailed.Value, message: Option[String]) extends ReadEventCompleted
 object ReadEventFailed extends Enumeration {
   val NotFound, NoStream, StreamDeleted, Error, AccessDenied = Value
@@ -144,13 +144,13 @@ sealed trait ReadStreamEventsCompleted extends In {
 }
 
 // TODO change order/rename
-case class ReadStreamEventsSucceed(resolvedIndexedEvents: Seq[ResolvedIndexedEvent],
+case class ReadStreamEventsSucceed(events: Seq[Event],
                                    nextEventNumber: EventNumber,
                                    lastEventNumber: EventNumber.Exact,
                                    endOfStream: Boolean,
                                    lastCommitPosition: Long,
                                    direction: ReadDirection.Value) extends ReadStreamEventsCompleted {
-  require(resolvedIndexedEvents.size <= MaxBatchSize, s"resolvedIndexedEvents.size must be <= $MaxBatchSize, but is ${resolvedIndexedEvents.size}")
+  require(events.size <= MaxBatchSize, s"events.size must be <= $MaxBatchSize, but is ${events.size}")
   require(
     direction != ReadDirection.Forward || nextEventNumber != EventNumber.Last,
     s"lastEventNumber must not be EventNumber.Last")
@@ -182,10 +182,10 @@ sealed trait ReadAllEventsCompleted extends In {
 
 // TODO change order
 case class ReadAllEventsSucceed(position: Position.Exact,
-                                resolvedEvents: Seq[ResolvedEvent],
+                                events: Seq[IndexedEvent], // TODO rename
                                 nextPosition: Position.Exact,
                                 direction: ReadDirection.Value) extends ReadAllEventsCompleted{
-  require(resolvedEvents.size <= MaxBatchSize, s"resolvedEvents.size must be <= $MaxBatchSize, but is ${resolvedEvents.size}")
+  require(events.size <= MaxBatchSize, s"events.size must be <= $MaxBatchSize, but is ${events.size}")
 }
 
 case class ReadAllEventsFailed(reason: ReadAllEventsFailed.Value,
@@ -210,7 +210,7 @@ case class SubscribeToStreamCompleted(lastCommit: Long, lastEventNumber: Option[
   require(lastCommit > 0, s"lastCommit must be > 0, but is $lastCommit")
 }
 
-case class StreamEventAppeared(resolvedEvent: ResolvedEvent) extends In
+case class StreamEventAppeared(event: IndexedEvent) extends In
 
 
 
