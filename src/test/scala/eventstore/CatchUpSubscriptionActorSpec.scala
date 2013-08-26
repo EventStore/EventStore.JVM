@@ -26,21 +26,21 @@ class CatchUpSubscriptionActorSpec extends Specification with Mockito {
     "ignore read events with position out of interest" in new CatchUpScope {
       connection expectMsg readAllEvents(0)
 
-      actor ! readAllEventsSucceed(0, 3, re0, re1, re2)
-      expectMsg(re0)
-      expectMsg(re1)
-      expectMsg(re2)
+      actor ! readAllEventsSucceed(0, 3, event0, event1, event2)
+      expectMsg(event0)
+      expectMsg(event1)
+      expectMsg(event2)
 
       connection expectMsg readAllEvents(3)
 
-      actor ! readAllEventsSucceed(3, 5, re0, re1, re2, re3, re4)
+      actor ! readAllEventsSucceed(3, 5, event0, event1, event2, event3, event4)
 
-      expectMsg(re3)
-      expectMsg(re4)
+      expectMsg(event3)
+      expectMsg(event4)
 
       connection expectMsg readAllEvents(5)
 
-      actor ! readAllEventsSucceed(3, 5, re0, re1, re2, re3, re4)
+      actor ! readAllEventsSucceed(3, 5, event0, event1, event2, event3, event4)
 
       expectNoMsg(duration)
       connection expectMsg readAllEvents(5)
@@ -49,8 +49,8 @@ class CatchUpSubscriptionActorSpec extends Specification with Mockito {
     "ignore read events with position out of interest when start position is given" in new CatchUpScope(Some(1)) {
       connection expectMsg readAllEvents(1)
 
-      actor ! readAllEventsSucceed(0, 3, re0, re1, re2)
-      expectMsg(re2)
+      actor ! readAllEventsSucceed(0, 3, event0, event1, event2)
+      expectMsg(event2)
       expectNoMsg(duration)
 
       connection expectMsg readAllEvents(3)
@@ -59,9 +59,9 @@ class CatchUpSubscriptionActorSpec extends Specification with Mockito {
     "read events until none left and subscribe to new ones" in new CatchUpScope {
       connection expectMsg readAllEvents(0)
       val nextPosition = 2
-      actor ! readAllEventsSucceed(1, nextPosition, re1)
+      actor ! readAllEventsSucceed(1, nextPosition, event1)
 
-      expectMsg(re1)
+      expectMsg(event1)
 
       connection expectMsg readAllEvents(nextPosition)
       actor ! readAllEventsSucceed(nextPosition, nextPosition)
@@ -98,7 +98,7 @@ class CatchUpSubscriptionActorSpec extends Specification with Mockito {
       actor ! Stop
       expectMsg(SubscriptionDropped(SubscriptionDropped.Unsubscribed))
 
-      actor ! readAllEventsSucceed(1, 2, re1)
+      actor ! readAllEventsSucceed(1, 2, event1)
 
       expectNoActivity
     }
@@ -107,10 +107,10 @@ class CatchUpSubscriptionActorSpec extends Specification with Mockito {
       connection expectMsg readAllEvents(0)
 
       val position = 1
-      actor ! readAllEventsSucceed(0, 2, re0, re1)
+      actor ! readAllEventsSucceed(0, 2, event0, event1)
 
-      expectMsg(re0)
-      expectMsg(re1)
+      expectMsg(event0)
+      expectMsg(event1)
 
       connection expectMsg readAllEvents(2)
       actor ! readAllEventsSucceed(2, 2)
@@ -122,30 +122,30 @@ class CatchUpSubscriptionActorSpec extends Specification with Mockito {
 
       connection expectMsg readAllEvents(2)
 
-      actor ! StreamEventAppeared(re2)
-      actor ! StreamEventAppeared(re3)
-      actor ! StreamEventAppeared(re4)
+      actor ! StreamEventAppeared(event2)
+      actor ! StreamEventAppeared(event3)
+      actor ! StreamEventAppeared(event4)
       expectNoMsg(duration)
 
-      actor ! readAllEventsSucceed(2, 3, re1, re2)
-      expectMsg(re2)
+      actor ! readAllEventsSucceed(2, 3, event1, event2)
+      expectMsg(event2)
 
       connection expectMsg readAllEvents(3)
 
-      actor ! StreamEventAppeared(re5)
-      actor ! StreamEventAppeared(re6)
+      actor ! StreamEventAppeared(event5)
+      actor ! StreamEventAppeared(event6)
       expectNoMsg(duration)
 
-      actor ! readAllEventsSucceed(3, 6, re3, re4, re5)
+      actor ! readAllEventsSucceed(3, 6, event3, event4, event5)
 
-      expectMsg(re3)
-      expectMsg(re4)
+      expectMsg(event3)
+      expectMsg(event4)
       expectMsg(LiveProcessingStarted)
-      expectMsg(re5)
-      expectMsg(re6)
+      expectMsg(event5)
+      expectMsg(event6)
 
-      actor ! StreamEventAppeared(re5)
-      actor ! StreamEventAppeared(re6)
+      actor ! StreamEventAppeared(event5)
+      actor ! StreamEventAppeared(event6)
 
       expectNoActivity
     }
@@ -200,10 +200,10 @@ class CatchUpSubscriptionActorSpec extends Specification with Mockito {
       connection expectMsg readAllEvents(0)
 
       val position = 1
-      actor ! readAllEventsSucceed(0, 2, re0, re1)
+      actor ! readAllEventsSucceed(0, 2, event0, event1)
 
-      expectMsg(re0)
-      expectMsg(re1)
+      expectMsg(event0)
+      expectMsg(event1)
 
       connection expectMsg readAllEvents(2)
 
@@ -216,8 +216,8 @@ class CatchUpSubscriptionActorSpec extends Specification with Mockito {
 
       connection expectMsg readAllEvents(2)
 
-      actor ! StreamEventAppeared(re3)
-      actor ! StreamEventAppeared(re4)
+      actor ! StreamEventAppeared(event3)
+      actor ! StreamEventAppeared(event4)
 
       actor ! Stop
 
@@ -279,15 +279,15 @@ class CatchUpSubscriptionActorSpec extends Specification with Mockito {
 
       expectMsg(LiveProcessingStarted)
 
-      actor ! StreamEventAppeared(re1)
-      expectMsg(re1)
+      actor ! StreamEventAppeared(event1)
+      expectMsg(event1)
 
       expectNoMsg(duration)
 
-      actor ! StreamEventAppeared(re2)
-      actor ! StreamEventAppeared(re3)
-      expectMsg(re2)
-      expectMsg(re3)
+      actor ! StreamEventAppeared(event2)
+      actor ! StreamEventAppeared(event3)
+      expectMsg(event2)
+      expectMsg(event3)
     }
 
     "ignore wrong events while subscribed" in new CatchUpScope(Some(1)) {
@@ -303,18 +303,18 @@ class CatchUpSubscriptionActorSpec extends Specification with Mockito {
 
       expectMsg(LiveProcessingStarted)
 
-      actor ! StreamEventAppeared(re0)
-      actor ! StreamEventAppeared(re1)
-      actor ! StreamEventAppeared(re1)
-      actor ! StreamEventAppeared(re2)
-      expectMsg(re2)
-      actor ! StreamEventAppeared(re2)
-      actor ! StreamEventAppeared(re1)
-      actor ! StreamEventAppeared(re3)
-      expectMsg(re3)
-      actor ! StreamEventAppeared(re5)
-      expectMsg(re5)
-      actor ! StreamEventAppeared(re4)
+      actor ! StreamEventAppeared(event0)
+      actor ! StreamEventAppeared(event1)
+      actor ! StreamEventAppeared(event1)
+      actor ! StreamEventAppeared(event2)
+      expectMsg(event2)
+      actor ! StreamEventAppeared(event2)
+      actor ! StreamEventAppeared(event1)
+      actor ! StreamEventAppeared(event3)
+      expectMsg(event3)
+      actor ! StreamEventAppeared(event5)
+      expectMsg(event5)
+      actor ! StreamEventAppeared(event4)
       expectNoMsg(duration)
     }
 
@@ -328,8 +328,8 @@ class CatchUpSubscriptionActorSpec extends Specification with Mockito {
       actor ! SubscribeToAllCompleted(1)
       expectMsg(LiveProcessingStarted)
 
-      actor ! StreamEventAppeared(re2)
-      expectMsg(re2)
+      actor ! StreamEventAppeared(event2)
+      expectMsg(event2)
 
       actor ! Stop
       connection.expectMsg(UnsubscribeFromStream)
@@ -351,13 +351,13 @@ class CatchUpSubscriptionActorSpec extends Specification with Mockito {
     val connection = TestProbe()
     val actor = TestActorRef(new CatchUpSubscriptionActor(connection.ref, testActor, position.map(Position.apply), resolveLinkTos, readBatchSize))
 
-    val re0 = indexedEvent(0)
-    val re1 = indexedEvent(1)
-    val re2 = indexedEvent(2)
-    val re3 = indexedEvent(3)
-    val re4 = indexedEvent(4)
-    val re5 = indexedEvent(5)
-    val re6 = indexedEvent(6)
+    val event0 = indexedEvent(0)
+    val event1 = indexedEvent(1)
+    val event2 = indexedEvent(2)
+    val event3 = indexedEvent(3)
+    val event4 = indexedEvent(4)
+    val event5 = indexedEvent(5)
+    val event6 = indexedEvent(6)
 
     def indexedEvent(x: Long) = IndexedEvent(mock[Event], Position(x))
     def readAllEvents(x: Long) = ReadAllEvents(Position(x), readBatchSize, Forward, resolveLinkTos = resolveLinkTos)
