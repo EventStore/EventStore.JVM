@@ -3,11 +3,10 @@ package eventstore
 import akka.testkit._
 import akka.actor.ActorSystem
 import tcp.ConnectionActor
-import org.specs2.mutable.{Specification, After}
+import org.specs2.mutable.{ Specification, After }
 import org.specs2.time.NoDurationConversions
 import scala.concurrent.duration._
 import ReadDirection._
-
 
 /**
  * @author Yaroslav Klymko
@@ -26,14 +25,16 @@ abstract class TestConnection extends Specification with NoDurationConversions {
       probe.expectMsg(DeleteStreamSucceed)
     }
 
-    def newEventData = EventData(newUuid, "test",
-      data = ByteString( """{"data":"data"}"""),
-      metadata = ByteString( """{"metadata":"metadata"}"""))
+    def newEventData = EventData(
+      newUuid, "test",
+      data = ByteString("""{"data":"data"}"""),
+      metadata = ByteString("""{"metadata":"metadata"}"""))
 
-    def appendToStreamSucceed(events: Seq[EventData],
-                              expectedVersion: ExpectedVersion = ExpectedVersion.Any,
-                              streamId: EventStream.Id = streamId,
-                              testKit: TestKitBase = this): EventNumber.Exact = {
+    def appendToStreamSucceed(
+      events: Seq[EventData],
+      expectedVersion: ExpectedVersion = ExpectedVersion.Any,
+      streamId: EventStream.Id = streamId,
+      testKit: TestKitBase = this): EventNumber.Exact = {
       actor.!(AppendToStream(streamId, expectedVersion, events))(testKit.testActor)
       val firstEventNumber = testKit.expectMsgType[AppendToStreamSucceed].firstEventNumber
       if (expectedVersion == ExpectedVersion.NoStream) firstEventNumber mustEqual EventNumber.First
@@ -71,9 +72,7 @@ abstract class TestConnection extends Specification with NoDurationConversions {
       events
     }
 
-
-    def readStreamEventsSucceed(fromEventNumber: EventNumber, maxCount: Int, resolveLinkTos: Boolean = false)
-                               (implicit direction: ReadDirection.Value) = {
+    def readStreamEventsSucceed(fromEventNumber: EventNumber, maxCount: Int, resolveLinkTos: Boolean = false)(implicit direction: ReadDirection.Value) = {
       actor ! ReadStreamEvents(streamId, fromEventNumber, maxCount, direction, resolveLinkTos = resolveLinkTos)
       val result = expectMsgType[ReadStreamEventsSucceed]
       result.direction mustEqual direction
@@ -105,8 +104,7 @@ abstract class TestConnection extends Specification with NoDurationConversions {
       result.events.map(_.data)
     }
 
-    def readStreamEventsFailed(fromEventNumber: EventNumber, maxCount: Int)
-                              (implicit direction: ReadDirection.Value): ReadStreamEventsFailed = {
+    def readStreamEventsFailed(fromEventNumber: EventNumber, maxCount: Int)(implicit direction: ReadDirection.Value): ReadStreamEventsFailed = {
       actor ! ReadStreamEvents(streamId, fromEventNumber, maxCount, direction)
       val failed = expectMsgType[ReadStreamEventsFailed]
       failed.direction mustEqual direction
@@ -146,8 +144,7 @@ abstract class TestConnection extends Specification with NoDurationConversions {
       })
     }
 
-    def readAllEventsSucceed(position: Position, maxCount: Int, resolveLinkTos: Boolean = false)
-                            (implicit direction: ReadDirection.Value) = {
+    def readAllEventsSucceed(position: Position, maxCount: Int, resolveLinkTos: Boolean = false)(implicit direction: ReadDirection.Value) = {
       actor ! ReadAllEvents(position, maxCount, direction, resolveLinkTos = resolveLinkTos)
       val result = expectMsgType[ReadAllEventsSucceed](FiniteDuration(10, SECONDS))
       result.direction mustEqual direction
@@ -175,8 +172,7 @@ abstract class TestConnection extends Specification with NoDurationConversions {
       failed
     }
 
-    def readAllEvents(position: Position, maxCount: Int)
-                           (implicit direction: ReadDirection.Value): Seq[Event] =
+    def readAllEvents(position: Position, maxCount: Int)(implicit direction: ReadDirection.Value): Seq[Event] =
       readAllEventsSucceed(position = position, maxCount = maxCount).events.map(_.event)
 
     def allStreamsEvents(maxCount: Int = 500)(implicit direction: ReadDirection.Value): Stream[IndexedEvent] = {

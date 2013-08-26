@@ -4,14 +4,14 @@ package tcp
 import org.specs2.mutable.Specification
 import org.specs2.specification.Scope
 import org.specs2.time.NoDurationConversions
-import akka.io.{Tcp, IO}
+import akka.io.{ Tcp, IO }
 import akka.io.Tcp._
 import java.net.InetSocketAddress
-import akka.testkit.{TestActorRef, ImplicitSender, TestKit}
-import akka.actor.{ActorRef, ActorSystem}
+import akka.testkit.{ TestActorRef, ImplicitSender, TestKit }
+import akka.actor.{ ActorRef, ActorSystem }
 import scala.concurrent.duration._
 import java.nio.ByteOrder
-import EventStoreFormats.{TcpPackageInReader, TcpPackageOutWriter}
+import EventStoreFormats.{ TcpPackageInReader, TcpPackageOutWriter }
 
 /**
  * @author Yaroslav Klymko
@@ -151,7 +151,6 @@ class ConnectionActorITest extends Specification with NoDurationConversions {
   abstract class TcpScope extends TestKit(ActorSystem()) with ImplicitSender with Scope {
     val (address, socket) = bind()
 
-
     def connect(settings: Settings): (ActorRef, ActorRef) = {
       val client = TestActorRef(new ConnectionActor(settings))
       val connection = {
@@ -176,7 +175,6 @@ class ConnectionActorITest extends Specification with NoDurationConversions {
     }
   }
 
-
   object Frame {
     implicit val byteOrder = ByteOrder.LITTLE_ENDIAN
 
@@ -194,7 +192,6 @@ class ConnectionActorITest extends Specification with NoDurationConversions {
       bb.result()
     }
   }
-
 
   abstract class TcpMockScope extends TestKit(ActorSystem()) with ImplicitSender with Scope {
 

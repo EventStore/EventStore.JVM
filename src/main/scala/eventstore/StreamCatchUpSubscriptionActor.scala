@@ -1,6 +1,6 @@
 package eventstore
 
-import akka.actor.{ ActorLogging, Actor, ActorRef }
+import akka.actor.ActorRef
 import scala.collection.immutable.Queue
 import ReadDirection.Forward
 import CatchUpSubscription._
@@ -9,19 +9,17 @@ import CatchUpSubscription._
  * @author Yaroslav Klymko
  */
 class StreamCatchUpSubscriptionActor(
-    connection: ActorRef,
-    client: ActorRef,
-    streamId: EventStream.Id,
+    val connection: ActorRef,
+    val client: ActorRef,
+    val streamId: EventStream.Id,
     fromNumberExclusive: Option[EventNumber.Exact],
-    resolveLinkTos: Boolean,
-    readBatchSize: Int) extends Actor with ActorLogging {
+    val resolveLinkTos: Boolean,
+    readBatchSize: Int) extends AbstractSubscriptionActor {
 
   def this(connection: ActorRef, client: ActorRef, streamId: EventStream.Id) =
     this(connection, client, streamId, None, false, 500)
 
   // val maxPushQueueSize = 10000 // TODO implement
-
-  var subscribed = false
 
   def receive = read(
     lastNumber = fromNumberExclusive,
@@ -51,18 +49,9 @@ class StreamCatchUpSubscriptionActor(
   }
 
   def subscribe(lastNumber: Option[EventNumber.Exact], nextNumber: EventNumber): Receive = {
-    debug(s"subscribing: lastEventNumber: $lastNumber")
-    connection ! SubscribeTo(streamId, resolveLinkTos = resolveLinkTos)
+    subscribeToStream(s"lastEventNumber: $lastNumber")
 
-    def subscriptionFailed: Receive = {
-      case SubscriptionDropped(reason) =>
-        subscribed = false
-        log.warning(s"$streamId: subscription failed: $reason, lastEventNumber: $lastNumber")
-        client ! SubscriptionDropped(reason)
-        context stop self
-    }
-
-    subscriptionFailed orElse {
+    subscriptionFailed(s"lastEventNumber: $lastNumber") orElse {
       case SubscribeToStreamCompleted(_, subscriptionNumber) =>
         subscribed = true
         debug(s"subscribed at eventNumber: $subscriptionNumber")
@@ -97,7 +86,7 @@ class StreamCatchUpSubscriptionActor(
           def loop(events: List[Event], lastNumber: Option[EventNumber.Exact]): Receive = events match {
             case Nil => catchUp(lastNumber = lastNumber, nextNumber = next, subscriptionNumber = subscriptionNumber, stash)
             case event :: tail =>
-              val number = getNumber(event)
+              val number = event.record.number
               if (lastNumber.exists(_ >= number)) loop(tail, lastNumber)
               else if (number > subscriptionNumber) liveProcessing(lastNumber, stash)
               else {
@@ -110,7 +99,7 @@ class StreamCatchUpSubscriptionActor(
 
       case _: ReadStreamEventsFailed => ??? // TODO
 
-      case StreamEventAppeared(x) if getNumber(x.event) > subscriptionNumber => // TODO
+      case StreamEventAppeared(x) if x.event.record.number > subscriptionNumber =>
         debug(s"catching up: adding appeared event to stash(${stash.size}): $x")
         context become catchingUp(stash enqueue x.event)
     }
@@ -128,20 +117,14 @@ class StreamCatchUpSubscriptionActor(
     liveProcessing(process(lastNumber, stash))
   }
 
-  @deprecated
-  def getNumber(event: Event): EventNumber.Exact = event match {
-    case x: ResolvedEvent => x.linkEvent.number
-    case x: EventRecord => x.number
-  }
-
   def process(lastNumber: Option[EventNumber.Exact], events: Seq[Event]): Option[EventNumber.Exact] =
     events.foldLeft(lastNumber)((lastNumber, event) => process(lastNumber, event))
 
   def process(lastNumber: Option[EventNumber.Exact], event: Event): Option[EventNumber.Exact] = {
-    val number = getNumber(event)
+    val number = event.record.number
     lastNumber match {
       case Some(last) if last >= number =>
-        log.warning(s"$streamId: dropping $event: event.number <= lastNumber: $number <= $last, dropping $event")
+        log.warning(s"$streamId: event.number <= lastNumber: $number <= $last, dropping $event")
         lastNumber
       case _ =>
         forward(event)
@@ -161,16 +144,5 @@ class StreamCatchUpSubscriptionActor(
 
   def forward(event: IndexedEvent) {
     forward(event.event)
-  }
-
-  def debug(msg: => String) {
-    log.debug(s"$streamId: $msg")
-  }
-
-  override def postStop() {
-    if (subscribed) {
-      debug("unsubscribing")
-      connection ! UnsubscribeFromStream
-    }
   }
 }

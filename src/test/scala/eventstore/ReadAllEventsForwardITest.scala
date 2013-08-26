@@ -1,6 +1,5 @@
 package eventstore
 
-
 /**
  * @author Yaroslav Klymko
  */

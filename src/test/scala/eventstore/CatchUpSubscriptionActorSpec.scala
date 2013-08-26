@@ -3,7 +3,7 @@ package eventstore
 import org.specs2.mutable.Specification
 import org.specs2.specification.Scope
 import org.specs2.mock.Mockito
-import akka.testkit.{TestProbe, TestActorRef, ImplicitSender, TestKit}
+import akka.testkit.{ TestProbe, TestActorRef, ImplicitSender, TestKit }
 import akka.actor.ActorSystem
 import ReadDirection.Forward
 import CatchUpSubscription._
@@ -311,7 +311,7 @@ class CatchUpSubscriptionActorSpec extends Specification with Mockito {
   }
 
   abstract class CatchUpScope(position: Option[Long] = None)
-    extends TestKit(ActorSystem()) with ImplicitSender with Scope {
+      extends TestKit(ActorSystem()) with ImplicitSender with Scope {
     val duration = FiniteDuration(1, SECONDS)
     val readBatchSize = 10
     val resolveLinkTos = false

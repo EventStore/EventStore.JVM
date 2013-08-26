@@ -1,7 +1,7 @@
 package eventstore
 
 import akka.actor.ActorRef
-import akka.testkit.{TestProbe, TestActorRef}
+import akka.testkit.{ TestProbe, TestActorRef }
 import scala.concurrent.duration._
 import CatchUpSubscription._
 
@@ -205,8 +205,8 @@ class SubscribeCatchingUpITest extends TestConnection {
     def expectNoEvents() = expectNoMsg(FiniteDuration(1, SECONDS))
 
     def newSubscription(fromNumberExclusive: Option[EventNumber.Exact] = None,
-                        resolveLinkTos: Boolean = false,
-                        client: ActorRef = testActor) = TestActorRef(new StreamCatchUpSubscriptionActor(
+      resolveLinkTos: Boolean = false,
+      client: ActorRef = testActor) = TestActorRef(new StreamCatchUpSubscriptionActor(
       connection = actor,
       client = client,
       streamId = streamId,

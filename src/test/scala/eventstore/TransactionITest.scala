@@ -4,7 +4,6 @@ import OperationFailed._
 import ExpectedVersion._
 import akka.testkit.TestProbe
 
-
 /**
  * @author Yaroslav Klymko
  */

@@ -1,13 +1,12 @@
 package eventstore
 
-import akka.testkit.{TestKitBase, TestProbe, TestActorRef}
+import akka.testkit.{ TestKitBase, TestProbe, TestActorRef }
 import akka.actor.ActorRef
 import scala.concurrent.duration._
 import scala.concurrent.Future
 import scala.annotation.tailrec
 import ReadDirection.Backward
 import CatchUpSubscription._
-
 
 /**
  * @author Yaroslav Klymko
@@ -107,8 +106,8 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
     def lastPosition = allStreamsEvents()(Backward).head.position
 
     def newSubscription(fromPositionExclusive: Option[Position.Exact] = None,
-                        resolveLinkTos: Boolean = false,
-                        client: ActorRef = testActor) = TestActorRef(new CatchUpSubscriptionActor(
+      resolveLinkTos: Boolean = false,
+      client: ActorRef = testActor) = TestActorRef(new CatchUpSubscriptionActor(
       connection = actor,
       client = client,
       fromPositionExclusive = fromPositionExclusive,
@@ -116,8 +115,8 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
       readBatchSize = 500))
 
     def expectEvents(events: Seq[EventData],
-                             position: Position = Position.First,
-                             testKit: TestKitBase = this): Seq[IndexedEvent] = {
+      position: Position = Position.First,
+      testKit: TestKitBase = this): Seq[IndexedEvent] = {
 
       def loop(events: List[EventData], position: Position): List[IndexedEvent] = events match {
         case Nil => Nil
@@ -145,7 +144,7 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
 
     @tailrec
     final def fishForLiveProcessingStarted(position: Position = Position.First,
-                                           testKit: TestKitBase = this): Position = testKit.expectMsgType[AnyRef] match {
+      testKit: TestKitBase = this): Position = testKit.expectMsgType[AnyRef] match {
       case LiveProcessingStarted => position
       case IndexedEvent(_, x) =>
         x must beGreaterThanOrEqualTo(position)

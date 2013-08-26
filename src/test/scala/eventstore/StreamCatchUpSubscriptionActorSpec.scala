@@ -312,7 +312,7 @@ class StreamCatchUpSubscriptionActorSpec extends Specification with Mockito {
   }
 
   abstract class StreamCatchUpScope(eventNumber: Option[Int] = None)
-    extends TestKit(ActorSystem()) with ImplicitSender with Scope {
+      extends TestKit(ActorSystem()) with ImplicitSender with Scope {
     val duration = FiniteDuration(1, SECONDS)
     val readBatchSize = 10
     val resolveLinkTos = false
@@ -349,7 +349,6 @@ class StreamCatchUpSubscriptionActorSpec extends Specification with Mockito {
         endOfStream = endOfStream,
         lastCommitPosition = next /*TODO*/ ,
         direction = Forward)
-
 
     def expectNoActivity {
       expectNoMsg(duration)

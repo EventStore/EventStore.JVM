@@ -3,7 +3,7 @@ package tcp
 
 import org.specs2.mutable.Specification
 import EventStoreFormats._
-import util.{BytesReader, BytesWriter}
+import util.{ BytesReader, BytesWriter }
 
 /**
  * @author Yaroslav Klymko

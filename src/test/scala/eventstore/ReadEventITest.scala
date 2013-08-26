@@ -44,7 +44,6 @@ class ReadEventITest extends TestConnection {
     }
   }
 
-
   trait ReadEventScope extends TestConnectionScope {
     def readEventFailed(eventNumber: EventNumber) = {
       actor ! ReadEvent(streamId, eventNumber)

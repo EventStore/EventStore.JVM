@@ -1,6 +1,6 @@
 package eventstore
 
-import akka.actor.{ ActorLogging, Actor, ActorRef }
+import akka.actor.ActorRef
 import scala.collection.immutable.Queue
 import ReadDirection.Forward
 import CatchUpSubscription._
@@ -9,17 +9,15 @@ import CatchUpSubscription._
  * @author Yaroslav Klymko
  */
 class CatchUpSubscriptionActor(
-    connection: ActorRef,
-    client: ActorRef,
+    val connection: ActorRef,
+    val client: ActorRef,
     fromPositionExclusive: Option[Position.Exact],
-    resolveLinkTos: Boolean,
-    readBatchSize: Int) extends Actor with ActorLogging {
+    val resolveLinkTos: Boolean,
+    readBatchSize: Int) extends AbstractSubscriptionActor {
 
   def this(connection: ActorRef, client: ActorRef) = this(connection, client, None, false, 500)
 
   val streamId = EventStream.All
-
-  var subscribed = false
 
   // val maxPushQueueSize = 10000 // TODO implement
 
@@ -41,18 +39,9 @@ class CatchUpSubscriptionActor(
   }
 
   def subscribe(lastPosition: Option[Position.Exact], nextPosition: Position): Receive = {
-    debug(s"subscribing: lastPosition: $lastPosition")
-    connection ! SubscribeTo(streamId, resolveLinkTos = resolveLinkTos)
+    subscribeToStream(s"lastPosition: $lastPosition")
 
-    def subscriptionFailed: Receive = {
-      case SubscriptionDropped(reason) =>
-        subscribed = false
-        log.warning(s"$streamId: subscription failed: $reason, lastPosition: $lastPosition")
-        client ! SubscriptionDropped(reason)
-        context stop self
-    }
-
-    subscriptionFailed orElse {
+    subscriptionFailed(s"lastPosition: $lastPosition") orElse {
       case SubscribeToAllCompleted(lastCommit) =>
         subscribed = true
         debug(s"subscribed at lastCommit: $lastCommit")
@@ -111,22 +100,6 @@ class CatchUpSubscriptionActor(
     liveProcessing(process(lastPosition, stash))
   }
 
-  def unsubscribe() {
-    debug("unsubscribing")
-    connection ! UnsubscribeFromStream
-    context become {
-      case SubscriptionDropped(SubscriptionDropped.Unsubscribed) => unsubscribed(SubscriptionDropped.Unsubscribed)
-    }
-  }
-
-  def unsubscribed(reason: SubscriptionDropped.Value) {
-    debug("unsubscribed")
-    client ! SubscriptionDropped(reason)
-    context become {
-      case msg => debug(s"received while unsubscribed $msg")
-    }
-  }
-
   def process(lastPosition: Option[Position.Exact], events: Seq[IndexedEvent]): Option[Position.Exact] =
     events.foldLeft(lastPosition)((lastPosition, event) => process(lastPosition, event))
 
@@ -134,7 +107,7 @@ class CatchUpSubscriptionActor(
     val position = event.position
     lastPosition match {
       case Some(last) if last >= position =>
-        log.warning(s"$streamId: dropping $event: event.position <= lastPosition: $position <= $last, dropping $event")
+        log.warning(s"$streamId: event.position <= lastPosition: $position <= $last, dropping $event")
         lastPosition
       case _ =>
         forward(event)
@@ -150,16 +123,5 @@ class CatchUpSubscriptionActor(
   def forward(event: IndexedEvent) {
     debug(s"forwarding $event")
     client ! event // TODO put in to envelope
-  }
-
-  def debug(msg: => String) {
-    log.debug(s"$streamId: $msg")
-  }
-
-  override def postStop() {
-    if (subscribed) {
-      debug("unsubscribing")
-      connection ! UnsubscribeFromStream
-    }
   }
 }

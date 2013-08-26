@@ -2,7 +2,7 @@ package eventstore
 package tcp
 
 import org.specs2.mutable.Specification
-import eventstore.util.{BytesWriter, BytesReader}
+import eventstore.util.{ BytesWriter, BytesReader }
 import EventStoreFormats._
 
 /**
