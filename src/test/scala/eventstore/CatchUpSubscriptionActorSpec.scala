@@ -1,6 +1,6 @@
 package eventstore
 
-import org.specs2.mutable.SpecificationWithJUnit
+import org.specs2.mutable.Specification
 import org.specs2.specification.Scope
 import org.specs2.mock.Mockito
 import akka.testkit.{TestProbe, TestActorRef, ImplicitSender, TestKit}
@@ -12,7 +12,7 @@ import scala.concurrent.duration._
 /**
  * @author Yaroslav Klymko
  */
-class CatchUpSubscriptionActorSpec extends SpecificationWithJUnit with Mockito {
+class CatchUpSubscriptionActorSpec extends Specification with Mockito {
   "catch up subscription actor" should {
 
     "read events from given position" in new CatchUpScope(Some(123)) {

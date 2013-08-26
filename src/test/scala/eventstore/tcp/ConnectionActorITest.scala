@@ -1,7 +1,7 @@
 package eventstore
 package tcp
 
-import org.specs2.mutable.SpecificationWithJUnit
+import org.specs2.mutable.Specification
 import org.specs2.specification.Scope
 import org.specs2.time.NoDurationConversions
 import akka.io.{Tcp, IO}
@@ -16,7 +16,7 @@ import EventStoreFormats.{TcpPackageInReader, TcpPackageOutWriter}
 /**
  * @author Yaroslav Klymko
  */
-class ConnectionActorSpec extends SpecificationWithJUnit with NoDurationConversions {
+class ConnectionActorITest extends Specification with NoDurationConversions {
 
   val off = FiniteDuration(1, MINUTES)
 

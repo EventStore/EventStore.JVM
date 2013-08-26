@@ -1,13 +1,13 @@
 package eventstore
 
-import org.specs2.mutable.SpecificationWithJUnit
+import org.specs2.mutable.Specification
 import org.specs2.specification.Scope
 import Position._
 
 /**
  * @author Yaroslav Klymko
  */
-class PositionSpec extends SpecificationWithJUnit {
+class PositionSpec extends Specification {
   "Position" should {
     ">" in new PositionScope {
       def verify(p1: Position, p2: Position) {

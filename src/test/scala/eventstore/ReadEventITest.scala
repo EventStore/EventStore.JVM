@@ -3,7 +3,7 @@ package eventstore
 /**
  * @author Yaroslav Klymko
  */
-class ReadEventSpec extends TestConnectionSpec {
+class ReadEventITest extends TestConnection {
 
   "read event" should {
     "fail if stream not found" in new ReadEventScope {

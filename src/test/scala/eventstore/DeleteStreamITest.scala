@@ -6,7 +6,7 @@ import ExpectedVersion._
 /**
  * @author Yaroslav Klymko
  */
-class DeleteStreamSpec extends TestConnectionSpec {
+class DeleteStreamITest extends TestConnection {
   "delete stream" should {
     "succeed if doesn't exist when passed ANY for expected version" in new DeleteStreamScope {
       deleteStream(Any)

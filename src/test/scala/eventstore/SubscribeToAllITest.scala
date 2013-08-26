@@ -5,7 +5,7 @@ import akka.testkit.{TestKitBase, TestProbe}
 /**
  * @author Yaroslav Klymko
  */
-class SubscribeToAllSpec extends TestConnectionSpec {
+class SubscribeToAllITest extends TestConnection {
   sequential
 
   "subscribe to all" should {

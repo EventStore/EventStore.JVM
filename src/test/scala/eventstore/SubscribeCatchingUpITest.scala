@@ -8,7 +8,7 @@ import CatchUpSubscription._
 /**
  * @author Yaroslav Klymko
  */
-class SubscribeCatchingUpSpec extends TestConnectionSpec {
+class SubscribeCatchingUpITest extends TestConnection {
 
   "subscribe catching up" should {
 

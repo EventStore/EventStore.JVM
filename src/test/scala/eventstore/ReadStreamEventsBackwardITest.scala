@@ -3,51 +3,42 @@ package eventstore
 /**
  * @author Yaroslav Klymko
  */
-class ReadStreamEventsForwardSpec extends TestConnectionSpec {
-  implicit val direction = ReadDirection.Forward
+class ReadStreamEventsBackwardITest extends TestConnection {
+  implicit val direction = ReadDirection.Backward
 
   "read stream events forward" should {
     "fail if count <= 0" in new TestConnectionScope {
-      readStreamEventsFailed(EventNumber.First, 0) must throwAn[IllegalArgumentException]
-      readStreamEventsFailed(EventNumber.First, -1) must throwAn[IllegalArgumentException]
+      readStreamEventsFailed(EventNumber.Last, 0) must throwAn[IllegalArgumentException]
+      readStreamEventsFailed(EventNumber.Last, -1) must throwAn[IllegalArgumentException]
     }
 
     "fail if count > MacBatchSize" in new TestConnectionScope {
-      readStreamEventsFailed(EventNumber.First, MaxBatchSize + 1) must throwAn[IllegalArgumentException]
-    }
-
-    "fail if from == EventNumber.Last " in new TestConnectionScope {
-      readStreamEventsSucceed(EventNumber.Last, 1) must throwAn[IllegalArgumentException]
+      readStreamEventsFailed(EventNumber.Last, MaxBatchSize + 1) must throwAn[IllegalArgumentException]
     }
 
     "fail if stream not found" in new TestConnectionScope {
-      readStreamEventsFailed(EventNumber.First, 1000).reason mustEqual ReadStreamEventsFailed.NoStream
+      readStreamEventsFailed(EventNumber.Last, 1000).reason mustEqual ReadStreamEventsFailed.NoStream
     }
 
     "fail if stream has been deleted" in new TestConnectionScope {
       appendEventToCreateStream()
       deleteStream()
-      readStreamEventsFailed(EventNumber.First, 1000).reason mustEqual ReadStreamEventsFailed.StreamDeleted
-    }
-
-    "get empty slice if asked to read from end" in new TestConnectionScope {
-      appendEventToCreateStream()
-      readStreamEvents(EventNumber(1), 1000) must beEmpty
+      readStreamEventsFailed(EventNumber.Last, 1000).reason mustEqual ReadStreamEventsFailed.StreamDeleted
     }
 
     "get empty slice if called with non existing range" in new TestConnectionScope {
-      appendEventToCreateStream()
-      readStreamEvents(EventNumber(10), 1000) must beEmpty
+      append(newEventData)
+      readStreamEvents(EventNumber(1000), 10) must beEmpty
     }
 
     "get partial slice if not enough events in stream" in new TestConnectionScope {
-      appendEventToCreateStream()
-      readStreamEvents(EventNumber.First, 1000) must haveSize(1)
+      append(newEventData)
+      readStreamEvents(EventNumber(0), 1000) must haveSize(1)
     }
 
-    "get events in same order as written" in new TestConnectionScope {
+    "get events in reversed order as written" in new TestConnectionScope {
       val events = appendMany()
-      readStreamEvents(EventNumber.First, 1000) mustEqual events
+      readStreamEvents(EventNumber.Last, 10) mustEqual events.reverse
     }
 
     "be able to read single event from arbitrary position" in new TestConnectionScope {
@@ -57,23 +48,23 @@ class ReadStreamEventsForwardSpec extends TestConnectionSpec {
 
     "be able to read slice from arbitrary position" in new TestConnectionScope {
       val events = appendMany()
-      readStreamEvents(EventNumber(5), 3) mustEqual events.slice(5, 8)
+      readStreamEvents(EventNumber(5), 3) mustEqual List(events(5), events(4), events(3))
     }
 
     "be able to read first event" in new TestConnectionScope {
       val events = appendMany()
       val result = readStreamEventsSucceed(EventNumber.First, 1)
       result.events.map(_.data) mustEqual List(events.head)
-      result.endOfStream must beFalse
-      result.nextEventNumber mustEqual EventNumber(1)
+      result.endOfStream must beTrue
+      result.nextEventNumber mustEqual EventNumber.Last
     }
 
     "be able to read last event" in new TestConnectionScope {
       val events = appendMany()
       val result = readStreamEventsSucceed(EventNumber(9), 1)
       result.events.map(_.data) mustEqual List(events.last)
-      result.endOfStream must beTrue
-      result.nextEventNumber mustEqual EventNumber(10)
+      result.endOfStream must beFalse
+      result.nextEventNumber mustEqual EventNumber(8)
     }
 
     "read not modified events" in new TestConnectionScope {
@@ -88,13 +79,13 @@ class ReadStreamEventsForwardSpec extends TestConnectionSpec {
 
     "not read linked events if resolveLinkTos = false" in new TestConnectionScope {
       val (linked, link) = linkedAndLink()
-      val event = readStreamEventsSucceed(EventNumber(2), 1, resolveLinkTos = false).events.head
+      val event = readStreamEventsSucceed(EventNumber.Last, 5, resolveLinkTos = false).events.head
       event mustEqual link
     }
 
     "read linked events if resolveLinkTos = true" in new TestConnectionScope {
       val (linked, link) = linkedAndLink()
-      val event = readStreamEventsSucceed(EventNumber(2), 1, resolveLinkTos = true).events.head
+      val event = readStreamEventsSucceed(EventNumber.Last, 5, resolveLinkTos = true).events.head
       event mustEqual ResolvedEvent(linked, link)
     }
   }

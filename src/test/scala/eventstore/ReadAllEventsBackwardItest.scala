@@ -3,7 +3,7 @@ package eventstore
 /**
  * @author Yaroslav Klymko
  */
-class ReadAllEventsBackwardSpec extends TestConnectionSpec {
+class ReadAllEventsBackwardITest extends TestConnection {
   sequential
 
   implicit val direction = ReadDirection.Backward

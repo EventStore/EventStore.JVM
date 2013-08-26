@@ -8,7 +8,7 @@ import OperationFailed._
  * @author Yaroslav Klymko
  */
 // TODO improve expectMsgType[ReadStreamEventsSucceed]
-class AppendToStreamSpec extends TestConnectionSpec {
+class AppendToStreamITest extends TestConnection {
   "append to stream" should {
     "succeed for zero events" in new AppendToStreamScope {
       appendToStreamSucceed(Nil, NoStream) mustEqual EventNumber.First

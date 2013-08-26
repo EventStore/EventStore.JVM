@@ -1,14 +1,14 @@
 package eventstore
 package tcp
 
-import org.specs2.mutable.SpecificationWithJUnit
+import org.specs2.mutable.Specification
 import EventStoreFormats._
 import util.{BytesReader, BytesWriter}
 
 /**
  * @author Yaroslav Klymko
  */
-class UserCredentialsFormatSpec extends SpecificationWithJUnit {
+class UserCredentialsFormatSpec extends Specification {
   "UserCredentialsFormat" should {
     "read/write" in {
       for {

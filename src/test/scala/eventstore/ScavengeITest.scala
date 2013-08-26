@@ -3,7 +3,7 @@ package eventstore
 /**
  * @author Yaroslav Klymko
  */
-class ScavengeSpec extends TestConnectionSpec {
+class ScavengeITest extends TestConnection {
   "scavenge" should {
     "scavenge database" in new TestConnectionScope {
       actor ! ScavengeDatabase

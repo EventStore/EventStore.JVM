@@ -12,7 +12,7 @@ import CatchUpSubscription._
 /**
  * @author Yaroslav Klymko
  */
-class SubscribeToAllCatchingUpSpec extends TestConnectionSpec {
+class SubscribeToAllCatchingUpITest extends TestConnection {
   sequential
 
   "subscribe to all catching up" should {

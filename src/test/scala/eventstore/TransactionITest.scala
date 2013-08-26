@@ -8,7 +8,7 @@ import akka.testkit.TestProbe
 /**
  * @author Yaroslav Klymko
  */
-class TransactionSpec extends TestConnectionSpec {
+class TransactionITest extends TestConnection {
   implicit val direction = ReadDirection.Forward
   "transaction" should {
     "start on non existing stream with correct exp ver and create stream on commit" in new TransactionScope {

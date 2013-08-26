@@ -1,4 +1,3 @@
 language: scala
-script: "sbt clean compile"
 scala:
   - "2.10.2"

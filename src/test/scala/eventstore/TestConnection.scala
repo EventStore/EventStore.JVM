@@ -3,17 +3,16 @@ package eventstore
 import akka.testkit._
 import akka.actor.ActorSystem
 import tcp.ConnectionActor
-import org.specs2.mutable.{SpecificationWithJUnit, After}
+import org.specs2.mutable.{Specification, After}
 import org.specs2.time.NoDurationConversions
 import scala.concurrent.duration._
 import ReadDirection._
-import scala.annotation.tailrec
 
 
 /**
  * @author Yaroslav Klymko
  */
-abstract class TestConnectionSpec extends SpecificationWithJUnit with NoDurationConversions {
+abstract class TestConnection extends Specification with NoDurationConversions {
 
   abstract class TestConnectionScope extends TestKit(ActorSystem()) with After with ImplicitSender {
     val streamId = newStreamId

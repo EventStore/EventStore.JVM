@@ -1,14 +1,14 @@
 package eventstore
 package tcp
 
-import org.specs2.mutable.SpecificationWithJUnit
+import org.specs2.mutable.Specification
 import eventstore.util.{BytesWriter, BytesReader}
 import EventStoreFormats._
 
 /**
  * @author Yaroslav Klymko
  */
-class TcpPackageFormatSpec extends SpecificationWithJUnit {
+class TcpPackageFormatSpec extends Specification {
   "TcpPackageFormat" should {
     "read/write" in {
       for {

@@ -6,7 +6,7 @@ import scala.concurrent.duration._
 /**
  * @author Yaroslav Klymko
  */
-class SubscribeSpec extends TestConnectionSpec {
+class SubscribeITest extends TestConnection {
   "subscribe" should {
 
     "be able to subscribe" in new SubscribeScope {

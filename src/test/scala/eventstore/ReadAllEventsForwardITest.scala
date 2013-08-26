@@ -4,7 +4,7 @@ package eventstore
 /**
  * @author Yaroslav Klymko
  */
-class ReadAllEventsForwardSpec extends TestConnectionSpec {
+class ReadAllEventsForwardITest extends TestConnection {
   sequential
 
   implicit val direction = ReadDirection.Forward
