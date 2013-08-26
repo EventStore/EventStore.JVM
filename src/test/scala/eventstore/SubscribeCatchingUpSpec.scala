@@ -36,7 +36,7 @@ class SubscribeCatchingUpSpec extends TestConnectionSpec {
       expectMsg(LiveProcessingStarted)
       expectNoEvents()
       val event = append(newEventData)
-      expectMsgType[Event]mustEqual event
+      expectMsgType[Event] mustEqual event
       subscriptionActor ! Stop
       expectMsg(SubscriptionDropped(SubscriptionDropped.Unsubscribed))
       expectNoEvents()
@@ -54,7 +54,7 @@ class SubscribeCatchingUpSpec extends TestConnectionSpec {
       probes.foreach(x => newSubscription(client = x.ref))
       probes.foreach(_.expectMsg(LiveProcessingStarted))
       val event = append(newEventData)
-      probes.foreach(_.expectMsgType[Event]mustEqual event)
+      probes.foreach(_.expectMsgType[Event] mustEqual event)
     }
 
     "call dropped callback after stop method call" in {
@@ -84,13 +84,13 @@ class SubscribeCatchingUpSpec extends TestConnectionSpec {
     "read all existing events and keep listening to new ones" in new SubscribeCatchingUpScope {
       val event = append(newEventData)
       val subscriptionActor = newSubscription()
-      expectMsgType[Event]mustEqual event
+      expectMsgType[Event] mustEqual event
 
       expectMsg(LiveProcessingStarted)
 
       expectNoEvents()
       val event2 = append(newEventData)
-      expectMsgType[Event]mustEqual event2
+      expectMsgType[Event] mustEqual event2
     }
 
     "filter events and keep listening to new ones" in new SubscribeCatchingUpScope {
@@ -98,21 +98,21 @@ class SubscribeCatchingUpSpec extends TestConnectionSpec {
       expectMsg(LiveProcessingStarted)
       append(newEventData)
       val event = append(newEventData)
-      expectMsgType[Event]mustEqual event
+      expectMsgType[Event] mustEqual event
       expectNoEvents()
       val event2 = append(newEventData)
-      expectMsgType[Event]mustEqual event2
+      expectMsgType[Event] mustEqual event2
     }
 
     "filter events and keep listening to new ones" in new SubscribeCatchingUpScope {
       append(newEventData)
       val event = append(newEventData)
       val subscriptionActor = newSubscription(Some(EventNumber(0)))
-      expectMsgType[Event]mustEqual event
+      expectMsgType[Event] mustEqual event
       expectMsg(LiveProcessingStarted)
       expectNoEvents()
       val event2 = append(newEventData)
-      expectMsgType[Event]mustEqual event2
+      expectMsgType[Event] mustEqual event2
     }
 
     "filter events and work if nothing was written after subscription" in {

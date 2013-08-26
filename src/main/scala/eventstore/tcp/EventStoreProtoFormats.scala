@@ -200,15 +200,11 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
           lastCommitPosition = x.`lastCommitPosition`,
           direction = direction)
 
-        case Some(reason) =>
-
-          val z = ReadStreamEventsFailed(
+        case Some(reason) => ReadStreamEventsFailed(
           reason = reason,
           message = message(x.`error`),
           lastCommitPosition = x.`lastCommitPosition`,
           direction = direction)
-          println(z)
-          z
       }
     }
   }

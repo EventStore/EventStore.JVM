@@ -56,7 +56,6 @@ class ReadAllEventsBackwardSpec extends TestConnectionSpec {
       deleteStream()
       val events = readAllEvents(startPosition, 10).filter(_.streamId == streamId)
       events must haveSize(2)
-      println(events)
       events.last.data mustEqual event
       events.head must beLike {
         case Event.StreamDeleted(`streamId`, EventNumber.Exact(1), _) => ok
