@@ -41,24 +41,18 @@ class StreamCatchUpSubscriptionActor(
 
   def subscribe(lastNumber: Option[EventNumber.Exact], nextNumber: EventNumber): Receive = {
     subscribeToStream(s"lastEventNumber: $lastNumber")
-
     subscriptionFailed(s"lastEventNumber: $lastNumber") orElse {
-      case SubscribeToStreamCompleted(_, subscriptionNumber) =>
+      case SubscribeToStreamCompleted(_, subscriptionNumber) => context become {
         subscribed = true
         debug(s"subscribed at eventNumber: $subscriptionNumber")
-        /*TODO refactor*/ context become ((lastNumber, subscriptionNumber) match {
-          case (None, None) => liveProcessing(lastNumber)
-          case (None, Some(x)) =>
+        subscriptionNumber match {
+          case Some(x) if !lastNumber.exists(_ >= x) =>
             debug(s"catch up events from lastNumber: $lastNumber to subscription eventNumber: $subscriptionNumber")
             catchUp(lastNumber = lastNumber, nextNumber = nextNumber, subscriptionNumber = x)
-          case (Some(x), None) => liveProcessing(lastNumber)
-          case (Some(x), Some(y)) =>
-            if (x >= y) liveProcessing(lastNumber)
-            else {
-              debug(s"catch up events from lastNumber: $lastNumber to subscription eventNumber: $subscriptionNumber")
-              catchUp(lastNumber = lastNumber, nextNumber = nextNumber, subscriptionNumber = y)
-            }
-        })
+
+          case _ => liveProcessing(lastNumber)
+        }
+      }
     }
   }
 
