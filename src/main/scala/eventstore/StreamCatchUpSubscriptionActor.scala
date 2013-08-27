@@ -19,8 +19,6 @@ class StreamCatchUpSubscriptionActor(
   def this(connection: ActorRef, client: ActorRef, streamId: EventStream.Id) =
     this(connection, client, streamId, None, false, 500)
 
-  // val maxPushQueueSize = 10000 // TODO implement
-
   def receive = read(
     lastNumber = fromNumberExclusive,
     nextNumber = fromNumberExclusive getOrElse EventNumber.First)
@@ -29,21 +27,14 @@ class StreamCatchUpSubscriptionActor(
     readEventsFrom(nextNumber)
 
     {
-      case msg: ReadStreamEventsCompleted => context become (msg match {
-        case ReadStreamEventsSucceed(events, next, _, endOfStream, _, Forward) =>
-          val last = process(lastNumber, events) // TODO
-          if (endOfStream) subscribe(last, next) else read(last, next)
+      case ReadStreamEventsSucceed(events, next, _, endOfStream, _, Forward) => context become {
+        val last = process(lastNumber, events)
+        if (endOfStream) subscribe(last, next) else read(last, next)
+      }
 
-        case ReadStreamEventsFailed(reason, _, _, Forward) =>
-          reason match {
-            case ReadStreamEventsFailed.NoStream => subscribe(lastNumber, nextNumber)
-            case x =>
-              println(x)
-              ???
-          }
-
-        case _: ReadStreamEventsFailed => ??? // TODO
-
+      case ReadStreamEventsFailed(reason, message, Forward) => context become (reason match {
+        case ReadStreamEventsFailed.NoStream => subscribe(lastNumber, nextNumber)
+        case _ => EventStore.error(reason, message)
       })
     }
   }
@@ -71,9 +62,9 @@ class StreamCatchUpSubscriptionActor(
     }
   }
 
-  def catchUp(lastNumber: Option[EventNumber.Exact],
+  def catchUp(
+    lastNumber: Option[EventNumber.Exact],
     nextNumber: EventNumber,
-    //              subscriptionLastCommit: Long,
     subscriptionNumber: EventNumber.Exact,
     stash: Queue[Event] = Queue()): Receive = {
 
@@ -81,7 +72,7 @@ class StreamCatchUpSubscriptionActor(
 
     def catchingUp(stash: Queue[Event]): Receive = {
       case ReadStreamEventsSucceed(events, next, _, endOfStream, _, Forward) => context become (
-        if (endOfStream) liveProcessing(process(lastNumber, events), stash) // TODO
+        if (endOfStream) liveProcessing(process(lastNumber, events), stash)
         else {
           def loop(events: List[Event], lastNumber: Option[EventNumber.Exact]): Receive = events match {
             case Nil => catchUp(lastNumber = lastNumber, nextNumber = next, subscriptionNumber = subscriptionNumber, stash)
@@ -97,7 +88,7 @@ class StreamCatchUpSubscriptionActor(
           loop(events.toList, lastNumber)
         })
 
-      case _: ReadStreamEventsFailed => ??? // TODO
+      case ReadStreamEventsFailed(reason, message, Forward) => EventStore.error(reason, message)
 
       case StreamEventAppeared(x) if x.event.record.number > subscriptionNumber =>
         debug(s"catching up: adding appeared event to stash(${stash.size}): $x")

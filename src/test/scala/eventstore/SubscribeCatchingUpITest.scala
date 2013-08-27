@@ -1,6 +1,6 @@
 package eventstore
 
-import akka.actor.ActorRef
+import akka.actor.{ Props, SupervisorStrategy, Actor, ActorRef }
 import akka.testkit.{ TestProbe, TestActorRef }
 import scala.concurrent.duration._
 import CatchUpSubscription._
@@ -13,10 +13,7 @@ class SubscribeCatchingUpITest extends TestConnection {
   "subscribe catching up" should {
 
     "be able to subscribe to non existing stream" in new SubscribeCatchingUpScope {
-      val subscriptionActor = newSubscription()
-      subscriptionActor.stop()
-      subscriptionActor.underlying.isTerminated must beTrue
-      expectNoEvents()
+      newSubscription()
     }
 
     "be able to subscribe to non existing stream and then catch event" in new SubscribeCatchingUpScope {
@@ -25,9 +22,6 @@ class SubscribeCatchingUpITest extends TestConnection {
       expectNoEvents()
       val event = append(newEventData)
       expectMsgType[Event] mustEqual event
-      subscriptionActor.stop()
-      subscriptionActor.underlying.isTerminated must beTrue
-      expectNoEvents()
     }
 
     "be able to subscribe to non existing stream from number" in new SubscribeCatchingUpScope {
@@ -37,16 +31,13 @@ class SubscribeCatchingUpITest extends TestConnection {
       expectNoEvents()
       val event = append(newEventData)
       expectMsgType[Event] mustEqual event
-      subscriptionActor.stop()
-      subscriptionActor.underlying.isTerminated must beTrue
-      expectNoEvents()
     }
 
     "fail if stream deleted" in new SubscribeCatchingUpScope {
       appendEventToCreateStream()
       deleteStream()
-      newSubscription()
-      expectMsg("error")
+      val subscriptionActor = newSubscription()
+      expectTerminated(subscriptionActor)
     }
 
     "allow multiple subscriptions to same stream" in new SubscribeCatchingUpScope {
@@ -115,53 +106,13 @@ class SubscribeCatchingUpITest extends TestConnection {
       expectMsgType[Event] mustEqual event2
     }
 
-    "filter events and work if nothing was written after subscription" in {
-      /*public void filter events and work if nothing was written after subscription()
-        {
-            const string stream = "filter events and work if nothing was written after subscription";
-            using (var store = TestConnection.Create( node.TcpEndPoint))
-            {
-                store.Connect();
-
-                var events = new List<ResolvedEvent>();
-                var appeared = new CountdownEvent(10);
-                var dropped = new CountdownEvent(1);
-
-                for (int i = 0; i < 20; ++i)
-                {
-                    store.AppendToStream(stream, i-1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
-                }
-
-                var subscription = store.SubscribeToStreamFrom(stream,
-                                                               9,
-                                                               false,
-                                                               (x, y) =>
-                                                               {
-                                                                   events.Add(y);
-                                                                   appeared.Signal();
-                                                               },
-                                                                 => Log.Info("Live processing started."),
-                                                               (x, y, z) => dropped.Signal());
-                if (!appeared.Wait(Timeout))
-                {
-                    Assert.IsFalse(dropped.Wait(0), "Subscription was dropped prematurely.");
-                    Assert.Fail("Couldn't wait for all events.");
-                }
-
-                Assert.AreEqual(10, events.Count);
-                for (int i = 0; i < 10; ++i)
-                {
-                    Assert.AreEqual("et-" + (i + 10).ToString(), events[i].OriginalEvent.EventType);
-                }
-
-                Assert.IsFalse(dropped.Wait(0));
-                subscription.Stop(Timeout);
-                Assert.IsTrue(dropped.Wait(Timeout));
-
-                Assert.AreEqual(events.Last().OriginalEventNumber, subscription.LastProcessedEventNumber);
-            }
-        }*/
-      todo
+    "filter events and work if nothing was written after subscription" in new SubscribeCatchingUpScope {
+      append(newEventData)
+      val event = append(newEventData)
+      val subscriptionActor = newSubscription(Some(EventNumber(0)))
+      expectMsgType[Event] mustEqual event
+      expectMsg(LiveProcessingStarted)
+      expectNoEvents()
     }
 
     "read linked events if resolveLinkTos = false" in new SubscribeCatchingUpScope {
@@ -204,15 +155,32 @@ class SubscribeCatchingUpITest extends TestConnection {
   trait SubscribeCatchingUpScope extends TestConnectionScope {
     def expectNoEvents() = expectNoMsg(FiniteDuration(1, SECONDS))
 
-    def newSubscription(fromNumberExclusive: Option[EventNumber.Exact] = None,
+    def newSubscription(
+      fromNumberExclusive: Option[EventNumber.Exact] = None,
       resolveLinkTos: Boolean = false,
-      client: ActorRef = testActor) = TestActorRef(new StreamCatchUpSubscriptionActor(
-      connection = actor,
-      client = client,
-      streamId = streamId,
-      fromNumberExclusive = fromNumberExclusive,
-      resolveLinkTos = resolveLinkTos,
-      readBatchSize = 500))
+      client: ActorRef = testActor) = {
+
+      class Supervisor extends Actor {
+        override def supervisorStrategy = SupervisorStrategy.stoppingStrategy
+        def receive = PartialFunction.empty
+      }
+
+      val a = TestActorRef(Props(new StreamCatchUpSubscriptionActor(
+        connection = actor,
+        client = client,
+        streamId = streamId,
+        fromNumberExclusive = fromNumberExclusive,
+        resolveLinkTos = resolveLinkTos,
+        readBatchSize = 500)), TestActorRef(new Supervisor), "")
+      watch(a)
+      a
+    }
+
+    def expectActorTerminated(actor: TestActorRef[_]) {
+      expectTerminated(actor)
+      actor.underlying.isTerminated must beTrue
+      expectNoEvents()
+    }
   }
 }
 

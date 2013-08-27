@@ -19,8 +19,6 @@ class CatchUpSubscriptionActor(
 
   val streamId = EventStream.All
 
-  // val maxPushQueueSize = 10000 // TODO implement
-
   def receive = read(
     lastPosition = fromPositionExclusive,
     nextPosition = fromPositionExclusive getOrElse Position.First)
@@ -30,12 +28,10 @@ class CatchUpSubscriptionActor(
     read(lastPosition)
   }
 
-  def read(lastPosition: Option[Position.Exact]): Receive = {
-    case ReadAllEventsSucceed(_, events, nextPosition, Forward) => context become (
+  def read(lastPosition: Option[Position.Exact]): Receive = readAllEventsCompleted {
+    (events, nextPosition) =>
       if (events.nonEmpty) read(lastPosition = process(lastPosition, events), nextPosition = nextPosition)
-      else subscribe(lastPosition = lastPosition, nextPosition = nextPosition))
-
-    case _: ReadAllEventsFailed => ??? // TODO
+      else subscribe(lastPosition = lastPosition, nextPosition = nextPosition)
   }
 
   def subscribe(lastPosition: Option[Position.Exact], nextPosition: Position): Receive = {
@@ -62,8 +58,8 @@ class CatchUpSubscriptionActor(
 
     readEventsFrom(nextPosition)
 
-    def catchingUp(stash: Queue[IndexedEvent]): Receive = {
-      case ReadAllEventsSucceed(_, events, next, Forward) => context become (
+    def catchingUp(stash: Queue[IndexedEvent]): Receive = readAllEventsCompleted {
+      (events, next) =>
         if (events.isEmpty) liveProcessing(lastPosition, stash)
         else {
           def loop(events: List[IndexedEvent], lastPosition: Option[Position.Exact]): Receive = events match {
@@ -78,15 +74,12 @@ class CatchUpSubscriptionActor(
               }
           }
           loop(events.toList, lastPosition)
-        })
-
-      case _: ReadAllEventsFailed => ??? // TODO
-
+        }
+    } orElse {
       case StreamEventAppeared(x) if x.position.commitPosition > subscriptionLastCommit =>
         debug(s"catching up: adding appeared event to stash(${stash.size}): $x")
         context become catchingUp(stash enqueue x)
     }
-
     catchingUp(stash)
   }
 
@@ -118,6 +111,11 @@ class CatchUpSubscriptionActor(
   def readEventsFrom(position: Position) {
     debug(s"reading events from $position")
     connection ! ReadAllEvents(position, readBatchSize, Forward, resolveLinkTos = resolveLinkTos)
+  }
+
+  def readAllEventsCompleted(f: (Seq[IndexedEvent], Position.Exact) => Receive): Receive = {
+    case ReadAllEventsSucceed(_, events, nextPosition, Forward) => context become f(events, nextPosition)
+    case ReadAllEventsFailed(reason, message, _, Forward) => EventStore.error(reason, message)
   }
 
   def forward(event: IndexedEvent) {

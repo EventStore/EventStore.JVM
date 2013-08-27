@@ -1,18 +1,13 @@
 package eventstore
 
-import org.specs2.mutable.Specification
-import org.specs2.specification.Scope
-import org.specs2.mock.Mockito
-import akka.testkit._
-import akka.actor.ActorSystem
+import akka.testkit.TestProbe
 import ReadDirection.Forward
 import CatchUpSubscription._
-import scala.concurrent.duration._
 
 /**
  * @author Yaroslav Klymko
  */
-class StreamCatchUpSubscriptionActorSpec extends Specification with Mockito {
+class StreamCatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActorSpec {
   "catch up subscription actor" should {
 
     "read events from given position" in new StreamCatchUpScope(Some(123)) {
@@ -65,13 +60,13 @@ class StreamCatchUpSubscriptionActorSpec extends Specification with Mockito {
       connection expectMsg readStreamEvents(2)
       actor ! readStreamEventsSucceed(2, true)
 
-      connection.expectMsg(subscribeTo)
+      connection expectMsg subscribeTo
     }
 
     "subscribe to new events if nothing to read" in new StreamCatchUpScope {
       connection expectMsg readStreamEvents(0)
       actor ! readStreamEventsSucceed(0, true)
-      connection.expectMsg(subscribeTo)
+      connection expectMsg subscribeTo
 
       actor ! subscribeToStreamCompleted(1)
 
@@ -84,7 +79,7 @@ class StreamCatchUpSubscriptionActorSpec extends Specification with Mockito {
     "stop reading events if actor stopped" in new StreamCatchUpScope {
       connection expectMsg readStreamEvents(0)
       actor.stop()
-      expectNoActivity
+      expectActorTerminated()
     }
 
     "catch events that appear in between reading and subscribing" in new StreamCatchUpScope() {
@@ -100,7 +95,7 @@ class StreamCatchUpSubscriptionActorSpec extends Specification with Mockito {
       actor ! readStreamEventsSucceed(2, true)
 
       expectNoMsg(duration)
-      connection.expectMsg(subscribeTo)
+      connection expectMsg subscribeTo
 
       actor ! subscribeToStreamCompleted(4)
 
@@ -137,36 +132,27 @@ class StreamCatchUpSubscriptionActorSpec extends Specification with Mockito {
     "stop subscribing if stop received when subscription not yet confirmed" in new StreamCatchUpScope() {
       connection expectMsg readStreamEvents(0)
       actor ! readStreamEventsSucceed(0, true)
-      connection.expectMsg(subscribeTo)
+      connection expectMsg subscribeTo
       actor.stop()
-      expectNoActivity
+      expectActorTerminated()
     }
 
     "not unsubscribe if subscription failed" in new StreamCatchUpScope() {
       connection expectMsg readStreamEvents(0)
       actor ! readStreamEventsSucceed(0, true)
 
-      connection.expectMsg(subscribeTo)
+      connection expectMsg subscribeTo
       actor ! SubscriptionDropped(SubscriptionDropped.AccessDenied)
-      expectMsg(SubscriptionDropped(SubscriptionDropped.AccessDenied))
-
-      expectNoActivity
-      actor.underlying.isTerminated must beTrue
+      expectActorTerminated()
     }
 
     "not unsubscribe if subscription failed if stop received " in new StreamCatchUpScope() {
       connection expectMsg readStreamEvents(0)
       actor ! readStreamEventsSucceed(0, true)
-
-      connection.expectMsg(subscribeTo)
-
+      connection expectMsg subscribeTo
       expectNoActivity
-
       actor ! SubscriptionDropped(SubscriptionDropped.AccessDenied)
-      expectMsg(SubscriptionDropped(SubscriptionDropped.AccessDenied))
-
-      expectNoActivity
-      actor.underlying.isTerminated must beTrue
+      expectActorTerminated()
     }
 
     "stop catching events that appear in between reading and subscribing if stop received" in new StreamCatchUpScope() {
@@ -183,7 +169,7 @@ class StreamCatchUpSubscriptionActorSpec extends Specification with Mockito {
       actor ! readStreamEventsSucceed(2, true)
 
       expectNoMsg(duration)
-      connection.expectMsg(subscribeTo)
+      connection expectMsg subscribeTo
 
       actor ! subscribeToStreamCompleted(5)
 
@@ -193,10 +179,8 @@ class StreamCatchUpSubscriptionActorSpec extends Specification with Mockito {
       actor ! streamEventAppeared(event4)
 
       actor.stop()
-
-      expectNoMsg(duration)
       connection.expectMsg(UnsubscribeFromStream)
-      expectNoActivity
+      expectActorTerminated()
     }
 
     "continue with subscription if no events appear in between reading and subscribing" in new StreamCatchUpScope() {
@@ -204,7 +188,7 @@ class StreamCatchUpSubscriptionActorSpec extends Specification with Mockito {
       connection expectMsg readStreamEvents(position)
       actor ! readStreamEventsSucceed(position, true)
 
-      connection.expectMsg(subscribeTo)
+      connection expectMsg subscribeTo
       expectNoMsg(duration)
 
       actor ! subscribeToStreamCompleted(1)
@@ -223,7 +207,7 @@ class StreamCatchUpSubscriptionActorSpec extends Specification with Mockito {
 
       actor ! readStreamEventsSucceed(position, true)
 
-      connection.expectMsg(subscribeTo)
+      connection expectMsg subscribeTo
       expectNoMsg(duration)
 
       actor ! subscribeToStreamCompleted(1)
@@ -238,7 +222,7 @@ class StreamCatchUpSubscriptionActorSpec extends Specification with Mockito {
       connection expectMsg readStreamEvents(position)
       actor ! readStreamEventsSucceed(position, true)
 
-      connection.expectMsg(subscribeTo)
+      connection expectMsg subscribeTo
       expectNoMsg(duration)
 
       actor ! subscribeToStreamCompleted(1)
@@ -264,7 +248,7 @@ class StreamCatchUpSubscriptionActorSpec extends Specification with Mockito {
       connection expectMsg readStreamEvents(position)
       actor ! readStreamEventsSucceed(position, true)
 
-      connection.expectMsg(subscribeTo)
+      connection expectMsg subscribeTo
       actor ! subscribeToStreamCompleted(2)
 
       connection expectMsg readStreamEvents(position)
@@ -292,7 +276,7 @@ class StreamCatchUpSubscriptionActorSpec extends Specification with Mockito {
 
       actor ! readStreamEventsSucceed(1, true)
 
-      connection.expectMsg(subscribeTo)
+      connection expectMsg subscribeTo
       actor ! subscribeToStreamCompleted(1)
       expectMsg(LiveProcessingStarted)
 
@@ -301,30 +285,71 @@ class StreamCatchUpSubscriptionActorSpec extends Specification with Mockito {
 
       actor.stop()
       connection.expectMsg(UnsubscribeFromStream)
-      expectNoActivity
+      expectActorTerminated()
+    }
+
+    "stop actor if read error" in new StreamCatchUpScope() {
+      connection expectMsg readStreamEvents(0)
+      actor ! readStreamEventsFailed()
+      expectActorTerminated()
+    }
+
+    "stop actor if subscription error" in new StreamCatchUpScope() {
+      connection expectMsg readStreamEvents(0)
+      actor ! readStreamEventsSucceed(0, true)
+
+      connection expectMsg subscribeTo
+      actor ! SubscriptionDropped(SubscriptionDropped.AccessDenied)
+
+      expectActorTerminated()
+    }
+
+    "stop actor if catchup read error" in new StreamCatchUpScope() {
+      connection expectMsg readStreamEvents(0)
+      actor ! readStreamEventsSucceed(0, true)
+
+      connection expectMsg subscribeTo
+      actor ! subscribeToStreamCompleted(1)
+
+      connection expectMsg readStreamEvents(0)
+      actor ! readStreamEventsFailed(ReadStreamEventsFailed.NoStream)
+
+      connection expectMsg UnsubscribeFromStream
+
+      expectActorTerminated()
+    }
+
+    "stop actor if connection stopped" in new StreamCatchUpScope() {
+      connection expectMsg readStreamEvents(0)
+      system stop connection.ref
+      expectActorTerminated()
+    }
+
+    "stop actor if client stopped" in new StreamCatchUpScope() {
+      connection expectMsg readStreamEvents(0)
+      val probe = TestProbe()
+      probe watch actor
+      system stop testActor
+      expectActorTerminated(probe)
     }
 
     "not stop subscription if actor stopped and not yet subscribed" in new StreamCatchUpScope {
       connection expectMsg readStreamEvents(0)
       actor.stop()
-      expectNoActivity
+      expectActorTerminated()
     }
   }
 
-  abstract class StreamCatchUpScope(eventNumber: Option[Int] = None)
-      extends TestKit(ActorSystem()) with ImplicitSender with Scope {
-    val duration = FiniteDuration(1, SECONDS)
-    val readBatchSize = 10
-    val resolveLinkTos = false
-    val connection = TestProbe()
-    val streamId = EventStream.Id(getClass.getEnclosingClass.getSimpleName + "-" + newUuid.toString)
-    val actor = TestActorRef(new StreamCatchUpSubscriptionActor(
+  abstract class StreamCatchUpScope(eventNumber: Option[Int] = None) extends AbstractScope {
+    lazy val streamId = EventStream.Id(getClass.getEnclosingClass.getSimpleName + "-" + newUuid.toString)
+
+    def newActor = new StreamCatchUpSubscriptionActor(
       connection.ref,
       testActor,
       streamId,
       eventNumber.map(EventNumber.apply),
       resolveLinkTos,
-      readBatchSize))
+      readBatchSize)
 
     val event0 = newEvent(0)
     val event1 = newEvent(1)
@@ -339,8 +364,6 @@ class StreamCatchUpSubscriptionActorSpec extends Specification with Mockito {
     def readStreamEvents(x: Int) =
       ReadStreamEvents(streamId, EventNumber(x), readBatchSize, Forward, resolveLinkTos = resolveLinkTos)
 
-    def subscribeTo = SubscribeTo(streamId, resolveLinkTos = resolveLinkTos)
-
     def readStreamEventsSucceed(next: Int, endOfStream: Boolean, events: Event*) =
       ReadStreamEventsSucceed(
         events = events,
@@ -350,12 +373,8 @@ class StreamCatchUpSubscriptionActorSpec extends Specification with Mockito {
         lastCommitPosition = next /*TODO*/ ,
         direction = Forward)
 
-    def expectNoActivity {
-      expectNoMsg(duration)
-      connection.expectNoMsg(duration)
-    }
-
-    def streamEventAppeared(x: Event) = StreamEventAppeared(IndexedEvent(x, Position(x.number.value)))
+    def readStreamEventsFailed(reason: ReadStreamEventsFailed.Value = ReadStreamEventsFailed.StreamDeleted) =
+      ReadStreamEventsFailed(ReadStreamEventsFailed.StreamDeleted, None, Forward)
 
     def subscribeToStreamCompleted(x: Int) = SubscribeToStreamCompleted(x, Some(EventNumber(x)))
   }

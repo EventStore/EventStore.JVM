@@ -192,7 +192,6 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
         case Some(reason) => ReadStreamEventsFailed(
           reason = reason,
           message = message(x.`error`),
-          lastCommitPosition = x.`lastCommitPosition`,
           direction = direction)
       }
     }

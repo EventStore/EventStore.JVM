@@ -1,6 +1,6 @@
 package eventstore
 
-import akka.actor.{ ActorRef, ActorLogging, Actor }
+import akka.actor.{ SupervisorStrategy, ActorRef, ActorLogging, Actor }
 
 /**
  * @author Yaroslav Klymko
@@ -11,7 +11,12 @@ trait AbstractSubscriptionActor extends Actor with ActorLogging {
   def streamId: EventStream
   def resolveLinkTos: Boolean
 
+  context watch client
+  context watch connection
+
   var subscribed = false
+
+  override def supervisorStrategy = SupervisorStrategy.stoppingStrategy
 
   def subscribeToStream(msg: => String) {
     debug(s"subscribing: $msg")
@@ -22,8 +27,7 @@ trait AbstractSubscriptionActor extends Actor with ActorLogging {
     case SubscriptionDropped(reason) =>
       subscribed = false
       log.warning(s"$streamId: subscription failed: $reason, $msg")
-      client ! SubscriptionDropped(reason)
-      context stop self
+      EventStore.error(reason)
   }
 
   def debug(msg: => String) {

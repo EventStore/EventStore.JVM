@@ -3,6 +3,8 @@ package eventstore
 /**
  * @author Yaroslav Klymko
  */
+
+// TODO not put enums at the same level as case class's apply
 sealed trait Message
 sealed trait In extends Message
 sealed trait Out extends Message
@@ -43,7 +45,7 @@ case class AppendToStreamFailed(reason: OperationFailed.Value, message: Option[S
 // TODO check softDelete
 case class DeleteStream(
   streamId: EventStream.Id,
-  expectedVersion: ExpectedVersion.Existing,
+  expectedVersion: ExpectedVersion.Existing = ExpectedVersion.Any,
   requireMaster: Boolean = true) extends Out
 
 sealed trait DeleteStreamCompleted extends In
@@ -148,7 +150,6 @@ case class ReadStreamEventsSucceed(
 case class ReadStreamEventsFailed(
   reason: ReadStreamEventsFailed.Value,
   message: Option[String],
-  lastCommitPosition: Long,
   direction: ReadDirection.Value) extends ReadStreamEventsCompleted
 
 object ReadStreamEventsFailed extends Enumeration {
@@ -194,11 +195,11 @@ case class SubscribeTo(stream: EventStream, resolveLinkTos: Boolean = false) ext
 sealed trait SubscribeCompleted extends In
 
 case class SubscribeToAllCompleted(lastCommit: Long) extends SubscribeCompleted {
-  require(lastCommit > 0, s"lastCommit must be > 0, but is $lastCommit") // TODO not sure about this restriction
+  require(lastCommit >= 0, s"lastCommit must be >= 0, but is $lastCommit")
 }
 
 case class SubscribeToStreamCompleted(lastCommit: Long, lastEventNumber: Option[EventNumber.Exact]) extends SubscribeCompleted {
-  require(lastCommit > 0, s"lastCommit must be > 0, but is $lastCommit")
+  require(lastCommit >= 0, s"lastCommit must be >= 0, but is $lastCommit")
 }
 
 case class StreamEventAppeared(event: IndexedEvent) extends In

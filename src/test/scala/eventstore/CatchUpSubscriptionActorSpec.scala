@@ -1,18 +1,13 @@
 package eventstore
 
-import org.specs2.mutable.Specification
-import org.specs2.specification.Scope
-import org.specs2.mock.Mockito
-import akka.testkit.{ TestProbe, TestActorRef, ImplicitSender, TestKit }
-import akka.actor.ActorSystem
+import akka.testkit.TestProbe
 import ReadDirection.Forward
 import CatchUpSubscription._
-import scala.concurrent.duration._
 
 /**
  * @author Yaroslav Klymko
  */
-class CatchUpSubscriptionActorSpec extends Specification with Mockito {
+class CatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActorSpec {
   "catch up subscription actor" should {
 
     "read events from given position" in new CatchUpScope(Some(123)) {
@@ -86,7 +81,7 @@ class CatchUpSubscriptionActorSpec extends Specification with Mockito {
     "stop reading events as soon as stop received" in new CatchUpScope {
       connection expectMsg readAllEvents(0)
       actor.stop()
-      expectNoActivity
+      expectActorTerminated()
     }
 
     "catch events that appear in between reading and subscribing" in new CatchUpScope() {
@@ -142,7 +137,7 @@ class CatchUpSubscriptionActorSpec extends Specification with Mockito {
 
       connection.expectMsg(subscribeTo)
       actor.stop()
-      expectNoActivity
+      expectActorTerminated()
     }
 
     "not unsubscribe if subscription failed" in new CatchUpScope() {
@@ -152,19 +147,15 @@ class CatchUpSubscriptionActorSpec extends Specification with Mockito {
       connection.expectMsg(subscribeTo)
       actor ! SubscriptionDropped(SubscriptionDropped.AccessDenied)
 
-      expectMsg(SubscriptionDropped(SubscriptionDropped.AccessDenied))
-      expectNoActivity
-      actor.underlying.isTerminated must beTrue
+      expectActorTerminated()
     }
 
     "not unsubscribe if subscription failed if stop received " in new CatchUpScope() {
       connection expectMsg readAllEvents(0)
       actor ! readAllEventsSucceed(0, 0)
-
-      actor.stop()
       connection.expectMsg(subscribeTo)
-
-      expectNoActivity
+      actor.stop()
+      expectActorTerminated()
     }
 
     "stop catching events that appear in between reading and subscribing if stop received" in new CatchUpScope() {
@@ -191,10 +182,8 @@ class CatchUpSubscriptionActorSpec extends Specification with Mockito {
       actor ! StreamEventAppeared(event4)
 
       actor.stop()
-
-      expectNoMsg(duration)
-      connection.expectMsg(UnsubscribeFromStream)
-      expectNoActivity
+      connection expectMsg UnsubscribeFromStream
+      expectActorTerminated()
     }
 
     "continue with subscription if no events appear in between reading and subscribing" in new CatchUpScope() {
@@ -299,24 +288,70 @@ class CatchUpSubscriptionActorSpec extends Specification with Mockito {
       expectMsg(event2)
 
       actor.stop()
-      connection.expectMsg(UnsubscribeFromStream)
-      expectNoActivity
+      connection expectMsg UnsubscribeFromStream
+      expectActorTerminated()
+    }
+
+    "stop actor if read error" in new CatchUpScope() {
+      connection expectMsg readAllEvents(0)
+      actor ! readAllEventsFailed
+      expectActorTerminated()
+    }
+
+    "stop actor if subscription error" in new CatchUpScope() {
+      connection expectMsg readAllEvents(0)
+      actor ! readAllEventsSucceed(0, 0)
+
+      connection expectMsg subscribeTo
+      actor ! SubscriptionDropped(SubscriptionDropped.AccessDenied)
+
+      expectActorTerminated()
+    }
+
+    "stop actor if catchup read error" in new CatchUpScope() {
+      connection expectMsg readAllEvents(0)
+
+      actor ! readAllEventsSucceed(0, 0)
+      connection expectMsg subscribeTo
+
+      actor ! SubscribeToAllCompleted(1)
+      connection expectMsg readAllEvents(0)
+
+      actor ! readAllEventsFailed
+      connection expectMsg UnsubscribeFromStream
+      expectActorTerminated()
+    }
+
+    "stop actor if connection stopped" in new CatchUpScope() {
+      connection expectMsg readAllEvents(0)
+      system stop connection.ref
+      expectActorTerminated()
     }
 
     "not stop subscription if actor stopped and not yet subscribed" in new CatchUpScope {
       connection expectMsg readAllEvents(0)
       actor.stop()
-      expectNoActivity
+      expectActorTerminated()
+    }
+
+    "stop actor if client stopped" in new CatchUpScope() {
+      connection expectMsg readAllEvents(0)
+      val probe = TestProbe()
+      probe watch actor
+      system stop testActor
+      expectActorTerminated(probe)
     }
   }
 
-  abstract class CatchUpScope(position: Option[Long] = None)
-      extends TestKit(ActorSystem()) with ImplicitSender with Scope {
-    val duration = FiniteDuration(1, SECONDS)
-    val readBatchSize = 10
-    val resolveLinkTos = false
-    val connection = TestProbe()
-    val actor = TestActorRef(new CatchUpSubscriptionActor(connection.ref, testActor, position.map(Position.apply), resolveLinkTos, readBatchSize))
+  abstract class CatchUpScope(position: Option[Long] = None) extends AbstractScope {
+    def newActor = new CatchUpSubscriptionActor(
+      connection = connection.ref,
+      client = testActor,
+      fromPositionExclusive = position.map(Position.apply),
+      resolveLinkTos = resolveLinkTos,
+      readBatchSize = readBatchSize)
+
+    lazy val streamId = EventStream.All
 
     val event0 = indexedEvent(0)
     val event1 = indexedEvent(1)
@@ -327,15 +362,12 @@ class CatchUpSubscriptionActorSpec extends Specification with Mockito {
     val event6 = indexedEvent(6)
 
     def indexedEvent(x: Long) = IndexedEvent(mock[Event], Position(x))
+
     def readAllEvents(x: Long) = ReadAllEvents(Position(x), readBatchSize, Forward, resolveLinkTos = resolveLinkTos)
-    def subscribeTo = SubscribeTo(EventStream.All, resolveLinkTos = resolveLinkTos)
 
     def readAllEventsSucceed(position: Long, next: Long, events: IndexedEvent*) =
       ReadAllEventsSucceed(Position(position), events, Position(next), Forward)
 
-    def expectNoActivity {
-      expectNoMsg(duration)
-      connection.expectNoMsg(duration)
-    }
+    def readAllEventsFailed = ReadAllEventsFailed(ReadAllEventsFailed.Error, None, Position(0), Forward)
   }
 }
