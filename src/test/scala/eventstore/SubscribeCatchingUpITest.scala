@@ -48,28 +48,11 @@ class SubscribeCatchingUpITest extends TestConnection {
       probes.foreach(_.expectMsgType[Event] mustEqual event)
     }
 
-    "call dropped callback after stop method call" in {
-      /*        public void call dropped callback after stop method call()
-        {
-            const string stream = "call dropped callback after stop method call";
-            using (var store = TestConnection.Create( node.TcpEndPoint))
-            {
-                store.Connect();
-
-                var dropped = new CountdownEvent(1);
-                var subscription = store.SubscribeToStreamFrom(stream,
-                                                               null,
-                                                               false,
-                                                               (x, y) => { },
-                                                                 => Log.Info("Live processing started."),
-                                                               (x, y, z) => dropped.Signal());
-                Assert.IsFalse(dropped.Wait(0));
-                subscription.Stop(Timeout);
-                Assert.IsTrue(dropped.Wait(Timeout));
-            }
-        }
-*/
-      todo
+    "stop subscription after actor stopped" in new SubscribeCatchingUpScope {
+      appendEventToCreateStream()
+      val subscriptionActor = newSubscription()
+      subscriptionActor.stop()
+      expectTerminated(subscriptionActor)
     }
 
     "read all existing events and keep listening to new ones" in new SubscribeCatchingUpScope {
