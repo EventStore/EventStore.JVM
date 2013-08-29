@@ -15,7 +15,7 @@ object Build extends Build {
     libraryDependencies ++= Seq(akka, akkaTestkit, scalabuff, junit, specs2, mockito),
     resolvers := Seq("Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"))
 
-  val akkaVersion = "2.2.0"
+  val akkaVersion = "2.2.1"
 
   val akka        = "com.typesafe.akka" %% "akka-actor"        % akkaVersion
   val akkaTestkit = "com.typesafe.akka" %% "akka-testkit"      % akkaVersion % "test"

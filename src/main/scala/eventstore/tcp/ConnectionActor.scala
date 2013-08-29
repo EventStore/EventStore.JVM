@@ -38,7 +38,7 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
 
       val init = TcpPipelineHandler.withLogger(log,
         new MessageByteStringAdapter >>
-          new FixedLengthFieldFrame(
+          new LengthFieldFrame(
             maxSize = 64 * 1024 * 1024,
             byteOrder = ByteOrder.LITTLE_ENDIAN,
             lengthIncludesHeader = false) >>

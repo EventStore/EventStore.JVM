@@ -27,7 +27,7 @@ trait DefaultProtoFormats extends DefaultFormats {
     def message(x: Option[String]): Option[String] = x match {
       case Some("")                  => None
       case Some(s) if s.trim.isEmpty => None
-      case x                         => x
+      case _                         => x
     }
   }
 
