@@ -17,8 +17,8 @@ object EventStream {
     require(value != null, "stream id must be not null")
     require(value.nonEmpty, "stream id must be not empty")
 
-    def isSystem = value.startsWith("$")
-    def isMeta = value.startsWith("$$")
+    def isSystem = value startsWith "$"
+    def isMeta = value startsWith "$$"
 
     override def toString = s"EventStreamId($value)"
   }

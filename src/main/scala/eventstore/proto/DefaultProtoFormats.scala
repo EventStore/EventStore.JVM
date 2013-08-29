@@ -25,9 +25,9 @@ trait DefaultProtoFormats extends DefaultFormats {
     def uuid(bs: ProtoByteString): Uuid = BytesReader[Uuid].read(byteString(bs))
 
     def message(x: Option[String]): Option[String] = x match {
-      case Some("") => None
+      case Some("")                  => None
       case Some(s) if s.trim.isEmpty => None
-      case x => x
+      case x                         => x
     }
   }
 

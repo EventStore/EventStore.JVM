@@ -1,22 +1,22 @@
 package eventstore
 package tcp
 
-import org.specs2.mutable.Specification
+import org.specs2.mutable.{ After, Specification }
 import org.specs2.specification.Scope
 import org.specs2.time.NoDurationConversions
 import akka.io.{ Tcp, IO }
 import akka.io.Tcp._
-import java.net.InetSocketAddress
 import akka.testkit.{ TestActorRef, ImplicitSender, TestKit }
 import akka.actor.{ ActorRef, ActorSystem }
-import scala.concurrent.duration._
+import java.net.InetSocketAddress
 import java.nio.ByteOrder
+import scala.concurrent.duration._
 import EventStoreFormats.{ TcpPackageInReader, TcpPackageOutWriter }
 
 /**
  * @author Yaroslav Klymko
  */
-class ConnectionActorITest extends Specification with NoDurationConversions {
+class ConnectionActorSpec extends Specification with NoDurationConversions {
 
   val off = FiniteDuration(1, MINUTES)
 
@@ -27,6 +27,7 @@ class ConnectionActorITest extends Specification with NoDurationConversions {
       connection ! Abort
       expectMsg(Aborted)
       expectNoMsg()
+      system.shutdown()
     }
 
     "reconnect when connection lost" in new TcpScope {
@@ -34,6 +35,7 @@ class ConnectionActorITest extends Specification with NoDurationConversions {
       connection ! Abort
       expectMsg(Aborted)
       expectMsgType[Connected]
+      system.shutdown()
     }
 
     "keep trying to reconnect for maxReconnections times" in new TcpMockScope {
@@ -73,7 +75,7 @@ class ConnectionActorITest extends Specification with NoDurationConversions {
       req.message mustEqual HeartbeatRequestCommand
       expectMsg(PeerClosed)
       expectMsgType[Connected]
-      unbind(socket)
+      system.shutdown()
     }
 
     "not reconnect if heartbeat response received in time" in new TcpScope {
@@ -85,7 +87,7 @@ class ConnectionActorITest extends Specification with NoDurationConversions {
       connection ! Write(Frame(TcpPackageOut(req.correlationId, HeartbeatResponseCommand)))
       expectTcpPack.message mustEqual HeartbeatRequestCommand
 
-      unbind(socket)
+      system.shutdown()
     }
 
     "close connection if heartbeat timed out and maxReconnections == 0" in new TcpScope {
@@ -93,7 +95,7 @@ class ConnectionActorITest extends Specification with NoDurationConversions {
       expectTcpPack.message mustEqual HeartbeatRequestCommand
       expectMsg(PeerClosed)
       expectNoMsg()
-      unbind(socket)
+      system.shutdown()
     }
 
     "not close connection if heartbeat response received in time" in new TcpScope {
@@ -106,7 +108,7 @@ class ConnectionActorITest extends Specification with NoDurationConversions {
 
       expectTcpPack.message mustEqual HeartbeatRequestCommand
 
-      unbind(socket)
+      system.shutdown()
     }
 
     "respond with HeartbeatResponseCommand on HeartbeatRequestCommand" in new TcpScope {
@@ -118,7 +120,7 @@ class ConnectionActorITest extends Specification with NoDurationConversions {
       res.correlationId mustEqual req.correlationId
       res.message mustEqual HeartbeatResponseCommand
 
-      unbind(socket)
+      system.shutdown()
     }
 
     "ping" in new TcpScope {
@@ -131,7 +133,7 @@ class ConnectionActorITest extends Specification with NoDurationConversions {
 
       connection ! Write(Frame(TcpPackageOut(req.correlationId, Pong)))
 
-      unbind(socket)
+      system.shutdown()
     }
 
     "pong" in new TcpScope {
@@ -140,7 +142,7 @@ class ConnectionActorITest extends Specification with NoDurationConversions {
       connection ! Write(Frame(TcpPackageOut(Ping)))
       expectTcpPack.message mustEqual Pong
 
-      unbind(socket)
+      system.shutdown()
     }
 
     "stash messages while connecting" in todo

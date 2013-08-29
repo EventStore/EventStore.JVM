@@ -114,7 +114,7 @@ class CatchUpSubscriptionActor(
 
   def readAllEventsCompleted(f: (Seq[IndexedEvent], Position.Exact) => Receive): Receive = {
     case ReadAllEventsSucceed(_, events, nextPosition, Forward) => context become f(events, nextPosition)
-    case ReadAllEventsFailed(reason, message, _, Forward) => EventStore.error(reason, message)
+    case ReadAllEventsFailed(reason, message, _, Forward)       => EventStore.error(reason, message)
   }
 
   def forward(event: IndexedEvent) {

@@ -28,12 +28,14 @@ case object PhysicalChunkBulk extends Message
 case object LogicalChunkBulk extends Message
 
 // TODO how to verify ???
-case class DeniedToRoute(externalTcpAddress: String,
+case class DeniedToRoute(
+  externalTcpAddress: String,
   externalTcpPort: Int,
   externalHttpAddress: String,
   externalHttpPort: Int) extends Message
 
-case class AppendToStream(streamId: EventStream.Id,
+case class AppendToStream(
+  streamId: EventStream.Id,
   expectedVersion: ExpectedVersion,
   events: Seq[EventData],
   requireMaster: Boolean = true) extends Out
@@ -64,7 +66,7 @@ case class TransactionStartSucceed(transactionId: Long) extends TransactionStart
 }
 
 case class TransactionStartFailed(reason: OperationFailed.Value,
-  message: Option[String]) extends TransactionStartCompleted
+                                  message: Option[String]) extends TransactionStartCompleted
 
 case class TransactionWrite(transactionId: Long, events: Seq[EventData], requireMaster: Boolean = true) extends Out {
   require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
@@ -102,7 +104,8 @@ case class TransactionCommitFailed(
   require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
 }
 
-case class ReadEvent(streamId: EventStream.Id,
+case class ReadEvent(
+  streamId: EventStream.Id,
   eventNumber: EventNumber,
   resolveLinkTos: Boolean = false,
   requireMaster: Boolean = true) extends Out

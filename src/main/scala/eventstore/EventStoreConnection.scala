@@ -135,10 +135,10 @@ trait EventStoreConnection {
   case class SubscriptionDropReason()
 
   def subscribeToStream(streamId: String,
-    resolveLinkTos: Boolean,
-    eventAppeared: (EventStoreSubscription, ResolvedEvent) => Any,
-    subscriptionDropped: Option[SubscriptionDroppedFunc] = None,
-    credentials: Option[UserCredentials] = None): Future[EventStoreSubscription]
+                        resolveLinkTos: Boolean,
+                        eventAppeared: (EventStoreSubscription, ResolvedEvent) => Any,
+                        subscriptionDropped: Option[SubscriptionDroppedFunc] = None,
+                        credentials: Option[UserCredentials] = None): Future[EventStoreSubscription]
 
   class EventStoreStreamCatchUpSubscription
   class EventStoreCatchUpSubscription
@@ -148,27 +148,27 @@ trait EventStoreConnection {
   type LiveProcessingStarted = EventStoreCatchUpSubscription => Any
 
   def subscribeToStreamFrom(streamId: String,
-    fromEventNumberExclusive: Int,
-    resolveLinkTos: Boolean,
-    eventAppeared: EventAppeared,
-    liveProcessingStarted: Option[LiveProcessingStarted],
-    subscriptionDropped: Option[SubscriptionDroppedFFFFF],
-    credentials: Option[UserCredentials] = None): Future[EventStoreStreamCatchUpSubscription]
+                            fromEventNumberExclusive: Int,
+                            resolveLinkTos: Boolean,
+                            eventAppeared: EventAppeared,
+                            liveProcessingStarted: Option[LiveProcessingStarted],
+                            subscriptionDropped: Option[SubscriptionDroppedFFFFF],
+                            credentials: Option[UserCredentials] = None): Future[EventStoreStreamCatchUpSubscription]
 
   def subscribeToAll(resolveLinkTos: Boolean,
-    eventAppeared: (EventStoreSubscription, ResolvedEvent) => Any,
-    subscriptionDropped: Option[SubscriptionDroppedFunc] = None,
-    credentials: Option[UserCredentials] = None): Future[EventStoreSubscription]
+                     eventAppeared: (EventStoreSubscription, ResolvedEvent) => Any,
+                     subscriptionDropped: Option[SubscriptionDroppedFunc] = None,
+                     credentials: Option[UserCredentials] = None): Future[EventStoreSubscription]
 
   class EventStoreAllCatchUpSubscription
   class StreamMetadata
 
   def subscribeToAllFrom(fromPositionExclusive: Position,
-    resolveLinkTos: Boolean,
-    eventAppeared: EventAppeared,
-    liveProcessingStarted: Option[LiveProcessingStarted] = None,
-    subscriptionDropped: Option[SubscriptionDroppedFFFFF] = None,
-    credentials: Option[UserCredentials] = None): EventStoreAllCatchUpSubscription
+                         resolveLinkTos: Boolean,
+                         eventAppeared: EventAppeared,
+                         liveProcessingStarted: Option[LiveProcessingStarted] = None,
+                         subscriptionDropped: Option[SubscriptionDroppedFFFFF] = None,
+                         credentials: Option[UserCredentials] = None): EventStoreAllCatchUpSubscription
 
   // TODO
   //  def setStreamMetadata(streamId: String, expectedMetastreamVersion: Int, metadata: StreamMetadata, credentials: Option[UserCredentials] = None)

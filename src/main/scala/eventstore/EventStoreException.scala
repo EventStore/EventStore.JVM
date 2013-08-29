@@ -6,7 +6,7 @@ package eventstore
 object EventStore {
   def error(x: Any, msg: Option[String] = None): Nothing = msg match {
     case Some(m) => sys.error(s"$x, $m")
-    case None => sys.error(x.toString)
+    case None    => sys.error(x.toString)
   }
 }
 class EventStoreException extends Exception {

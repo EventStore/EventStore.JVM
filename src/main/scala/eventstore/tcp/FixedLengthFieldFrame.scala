@@ -7,7 +7,8 @@ import akka.io.{ SymmetricPipePair, PipelineContext, LengthFieldFrame }
 /**
  * @author Yaroslav Klymko
  */
-class FixedLengthFieldFrame(maxSize: Int,
+class FixedLengthFieldFrame(
+  maxSize: Int,
   byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN,
   lengthIncludesHeader: Boolean = true)
     extends LengthFieldFrame(maxSize, byteOrder, 4, lengthIncludesHeader) {

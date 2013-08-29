@@ -47,7 +47,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
 
     def event(event: EventRecord, linkEvent: Option[EventRecord]): Event = linkEvent match {
       case Some(x) => ResolvedEvent(linkedEvent = event, linkEvent = x)
-      case None => event
+      case None    => event
     }
 
     def event(x: { def `event`: proto.EventRecord; def `link`: Option[proto.EventRecord] }): Event = event(
@@ -67,7 +67,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
       extends ProtoReader[AppendToStreamCompleted, proto.WriteEventsCompleted](proto.WriteEventsCompleted) {
     def fromProto(x: proto.WriteEventsCompleted) = operationFailed(x.`result`) match {
       case Some(reason) => AppendToStreamFailed(reason, message(x.`message`))
-      case None => AppendToStreamSucceed(EventNumber(x.`firstEventNumber`))
+      case None         => AppendToStreamSucceed(EventNumber(x.`firstEventNumber`))
     }
   }
 
@@ -82,7 +82,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
       extends ProtoReader[DeleteStreamCompleted, proto.DeleteStreamCompleted](proto.DeleteStreamCompleted) {
     def fromProto(x: proto.DeleteStreamCompleted) = operationFailed(x.`result`) match {
       case Some(reason) => DeleteStreamFailed(reason, message(x.`message`))
-      case None => DeleteStreamSucceed
+      case None         => DeleteStreamSucceed
     }
   }
 
@@ -97,7 +97,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
       extends ProtoReader[TransactionStartCompleted, proto.TransactionStartCompleted](proto.TransactionStartCompleted) {
     def fromProto(x: proto.TransactionStartCompleted) = operationFailed(x.`result`) match {
       case Some(failed) => TransactionStartFailed(failed, message(x.`message`))
-      case None => TransactionStartSucceed(x.`transactionId`)
+      case None         => TransactionStartSucceed(x.`transactionId`)
     }
   }
 
@@ -112,7 +112,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
       extends ProtoReader[TransactionWriteCompleted, proto.TransactionWriteCompleted](proto.TransactionWriteCompleted) {
     def fromProto(x: proto.TransactionWriteCompleted) = operationFailed(x.`result`) match {
       case Some(failed) => TransactionWriteFailed(x.`transactionId`, failed, message(x.`message`))
-      case None => TransactionWriteSucceed(x.`transactionId`)
+      case None         => TransactionWriteSucceed(x.`transactionId`)
     }
   }
 
@@ -126,7 +126,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
       extends ProtoReader[TransactionCommitCompleted, proto.TransactionCommitCompleted](proto.TransactionCommitCompleted) {
     def fromProto(x: proto.TransactionCommitCompleted) = operationFailed(x.`result`) match {
       case Some(failed) => TransactionCommitFailed(x.`transactionId`, failed, message(x.`message`))
-      case None => TransactionCommitSucceed(x.`transactionId`)
+      case None         => TransactionCommitSucceed(x.`transactionId`)
     }
   }
 
@@ -144,16 +144,16 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
 
     // TODO test it, what if new enum will be added in proto?
     def reason(x: EnumVal): Option[ReadEventFailed.Value] = condOpt(x) {
-      case NotFound => ReadEventFailed.NotFound
-      case NoStream => ReadEventFailed.NoStream
+      case NotFound      => ReadEventFailed.NotFound
+      case NoStream      => ReadEventFailed.NoStream
       case StreamDeleted => ReadEventFailed.StreamDeleted
-      case Error => ReadEventFailed.Error
-      case AccessDenied => ReadEventFailed.AccessDenied
+      case Error         => ReadEventFailed.Error
+      case AccessDenied  => ReadEventFailed.AccessDenied
     }
 
     def fromProto(x: proto.ReadEventCompleted) = reason(x.`result`) match {
       case Some(reason) => ReadEventFailed(reason, message(x.`error`))
-      case None => ReadEventSucceed(EventReader.fromProto(x.`event`))
+      case None         => ReadEventSucceed(EventReader.fromProto(x.`event`))
     }
   }
 
@@ -172,10 +172,10 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
 
     // TODO test it, what if new enum will be added in proto?
     def reason(x: EnumVal) = condOpt(x) {
-      case NoStream => ReadStreamEventsFailed.NoStream
+      case NoStream      => ReadStreamEventsFailed.NoStream
       case StreamDeleted => ReadStreamEventsFailed.StreamDeleted
-      case Error => ReadStreamEventsFailed.Error
-      case AccessDenied => ReadStreamEventsFailed.AccessDenied
+      case Error         => ReadStreamEventsFailed.Error
+      case AccessDenied  => ReadStreamEventsFailed.AccessDenied
     }
 
     def fromProto(x: proto.ReadStreamEventsCompleted) = {
@@ -218,7 +218,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
 
     // TODO test it, what if new enum will be added in proto?
     def reason(x: EnumVal): Option[ReadAllEventsFailed.Value] = condOpt(x) {
-      case Error => ReadAllEventsFailed.Error
+      case Error        => ReadAllEventsFailed.Error
       case AccessDenied => ReadAllEventsFailed.AccessDenied
     }
 
@@ -248,7 +248,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
   implicit object SubscribeToWriter extends ProtoWriter[SubscribeTo] {
     def toProto(x: SubscribeTo) = {
       val streamId = x.stream match {
-        case EventStream.All => ""
+        case EventStream.All    => ""
         case EventStream.Id(id) => id
       }
       proto.SubscribeToStream(
@@ -284,7 +284,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
     def reason(x: EnumVal): SubscriptionDropped.Value = x match {
       case Unsubscribed => SubscriptionDropped.Unsubscribed
       case AccessDenied => SubscriptionDropped.AccessDenied
-      case _ => default
+      case _            => default
     }
 
     def fromProto(x: proto.SubscriptionDropped) = SubscriptionDropped(reason = x.`reason`.fold(default)(reason))
@@ -294,13 +294,13 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
     import eventstore.proto.OperationResult._
     // TODO test it, what if new enum will be added in proto?
     condOpt(x) { // TODO add plugin to align this way
-      case PrepareTimeout => OperationFailed.PrepareTimeout
-      case CommitTimeout => OperationFailed.CommitTimeout
-      case ForwardTimeout => OperationFailed.ForwardTimeout
+      case PrepareTimeout       => OperationFailed.PrepareTimeout
+      case CommitTimeout        => OperationFailed.CommitTimeout
+      case ForwardTimeout       => OperationFailed.ForwardTimeout
       case WrongExpectedVersion => OperationFailed.WrongExpectedVersion
-      case StreamDeleted => OperationFailed.StreamDeleted
-      case InvalidTransaction => OperationFailed.InvalidTransaction
-      case AccessDenied => OperationFailed.AccessDenied
+      case StreamDeleted        => OperationFailed.StreamDeleted
+      case InvalidTransaction   => OperationFailed.InvalidTransaction
+      case AccessDenied         => OperationFailed.AccessDenied
     }
   }
 
@@ -308,7 +308,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
     import ExpectedVersion._
     x match {
       case NoStream => -1
-      case Any => -2
+      case Any      => -2
       case Exact(v) => v
     }
   }
@@ -323,7 +323,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
 
     def from(x: EventNumber): Int = x match {
       case Exact(value) => value
-      case Last => -1
+      case Last         => -1
     }
 
     def to(x: Int) = if (x == -1) Last else EventNumber(x)
@@ -333,13 +333,13 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
     import Position._
 
     def from(x: Position) = x match {
-      case Last => (-1, -1)
+      case Last        => (-1, -1)
       case Exact(c, p) => (c, p)
     }
 
     def to(x: (Long, Long)) = x match {
       case (-1, -1) => Last
-      case (c, p) => Exact(commitPosition = c, preparePosition = p)
+      case (c, p)   => Exact(commitPosition = c, preparePosition = p)
     }
   }
 }

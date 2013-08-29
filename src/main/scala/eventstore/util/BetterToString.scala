@@ -14,7 +14,7 @@ object ImproveByteString {
     val name = product.productPrefix
     val fields = product.productIterator.map {
       case x: ByteString if x.nonEmpty => "ByteString(..)"
-      case x => x
+      case x                           => x
     }
     s"$name(${fields.mkString(",")}})"
   }

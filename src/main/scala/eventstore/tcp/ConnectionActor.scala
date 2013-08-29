@@ -44,9 +44,9 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
             lengthIncludesHeader = false) >>
           new TcpReadWriteAdapter >>
           new BackpressureBuffer(
-            lowBytes = backpressureLowWatermark,
-            highBytes = backpressureHighWatermark,
-            maxBytes = backpressureMaxCapacity))
+            lowBytes = backpressureSettings.lowWatermark,
+            highBytes = backpressureSettings.highWatermark,
+            maxBytes = backpressureSettings.maxCapacity))
 
       val pipeline = context.actorOf(TcpPipelineHandler.props(init, connection, self))
 
@@ -99,14 +99,14 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
         scheduled.cancel()
         msg match {
           case HeartbeatResponseCommand =>
-          case HeartbeatRequestCommand => send(TcpPackageOut(correlationId, HeartbeatResponseCommand))
-          case Pong =>
-          case Ping => send(TcpPackageOut(correlationId, Pong))
-          case _ => dispatch(pack)
+          case HeartbeatRequestCommand  => send(TcpPackageOut(correlationId, HeartbeatResponseCommand))
+          case Pong                     =>
+          case Ping                     => send(TcpPackageOut(correlationId, Pong))
+          case _                        => dispatch(pack)
         }
         context become connected(connection, send, init, packNumber + 1)
 
-      case out: Out => send(tcpPackage(out))
+      case out: Out          => send(tcpPackage(out))
 
       case HeartbeatInterval => send(TcpPackageOut(HeartbeatRequestCommand))
 

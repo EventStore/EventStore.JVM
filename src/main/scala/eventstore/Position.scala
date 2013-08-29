@@ -12,7 +12,7 @@ object Position {
   def apply(commitPosition: Long, preparePosition: Long): Exact = Exact(commitPosition, preparePosition)
 
   def start(direction: ReadDirection.Value): Position = direction match {
-    case ReadDirection.Forward => First
+    case ReadDirection.Forward  => First
     case ReadDirection.Backward => Last
   }
 

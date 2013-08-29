@@ -6,9 +6,8 @@ import java.net.InetSocketAddress
 /**
  * @author Yaroslav Klymko
  */
-case class Settings(address: InetSocketAddress = new InetSocketAddress("127.0.0.1", 1113),
-    //                    clientAddress: InetSocketAddress = new InetSocketAddress("127.0.0.1", 0),
-
+case class Settings(
+    address: InetSocketAddress = new InetSocketAddress("127.0.0.1", 1113),
     //                             /// <summary>
     //                             /// The <see cref="ILogger"/> that this connection will use
     //                             /// </summary>
@@ -32,22 +31,13 @@ case class Settings(address: InetSocketAddress = new InetSocketAddress("127.0.0.
     //                             public readonly int MaxRetries;
     //                    maxRetries: Int = 10,
 
-    //                             /// <summary>
-    //                             /// The maximum number of times to allow for reconnection
-    //                             /// </summary>
-    //                             public readonly int MaxReconnections;
+    // The maximum number of times to allow for reconnection
     maxReconnections: Int = 10,
 
-    //                             /// <summary>
-    //                             /// Whether or not to require EventStore to refuse serving read or write request if it is not master
-    //                             /// </summary>
-    //                             public readonly bool RequireMaster;
+    // Whether or not to refuse serving read or write request if it is not master
     requireMaster: Boolean = true,
 
-    //                             /// <summary>
-    //                             /// The amount of time to delay before attempting to reconnect
-    //                             /// </summary>
-    //                             public readonly TimeSpan ReconnectionDelay;
+    // The amount of time to delay before attempting to reconnect
     reconnectionDelay: FiniteDuration = 100.millis,
 
     //                             /// <summary>
@@ -94,21 +84,10 @@ case class Settings(address: InetSocketAddress = new InetSocketAddress("127.0.0.
     heartbeatInterval: FiniteDuration = 750.millis,
     heartbeatTimeout: FiniteDuration = 2.seconds,
     connectionTimeout: FiniteDuration = 1.second,
-
-    backpressureLowWatermark: Int = 100,
-    backpressureHighWatermark: Int = 10000,
-    backpressureMaxCapacity: Int = 1000000) {
+    backpressureSettings: BackpressureSettings = BackpressureSettings()) {
   require(
     heartbeatInterval < heartbeatTimeout,
     s"heartbeatInterval must be < heartbeatTimeout, but $heartbeatInterval >= $heartbeatTimeout")
-
-  require(backpressureLowWatermark >= 0, s"backpressureLowWatermark must be >= 0, but is $backpressureLowWatermark")
-  require(
-    backpressureHighWatermark >= backpressureLowWatermark,
-    s"backpressureHighWatermark must be >= backpressureLowWatermark, but $backpressureHighWatermark < $backpressureLowWatermark")
-  require(
-    backpressureMaxCapacity >= backpressureHighWatermark,
-    s"backpressureMaxCapacity >= backpressureHighWatermark, but $backpressureMaxCapacity < $backpressureHighWatermark")
 }
 
 object Settings {
@@ -131,4 +110,16 @@ object Settings {
 
         private bool _failOnNoServerResponse;
         */
+}
+
+/**
+ * see [[akka.io.BackpressureBuffer]]
+ */
+case class BackpressureSettings(
+    lowWatermark: Int = 100,
+    highWatermark: Int = 10000,
+    maxCapacity: Int = 1000000) {
+  require(lowWatermark >= 0, s"lowWatermark must be >= 0, but is $lowWatermark")
+  require(highWatermark >= lowWatermark, s"highWatermark must be >= lowWatermark, but $highWatermark < $lowWatermark")
+  require(maxCapacity >= highWatermark, s"maxCapacity >= highWatermark, but $maxCapacity < $highWatermark")
 }

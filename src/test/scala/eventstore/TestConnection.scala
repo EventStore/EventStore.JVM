@@ -2,10 +2,11 @@ package eventstore
 
 import akka.testkit._
 import akka.actor.ActorSystem
-import tcp.ConnectionActor
-import org.specs2.mutable.{ Specification, After }
+import org.specs2.mutable.Specification
 import org.specs2.time.NoDurationConversions
+import org.specs2.specification.Scope
 import scala.concurrent.duration._
+import tcp.ConnectionActor
 import ReadDirection._
 
 /**
@@ -13,7 +14,7 @@ import ReadDirection._
  */
 abstract class TestConnection extends Specification with NoDurationConversions {
 
-  abstract class TestConnectionScope extends TestKit(ActorSystem()) with After with ImplicitSender {
+  abstract class TestConnectionScope extends TestKit(ActorSystem()) with ImplicitSender with Scope {
     val streamId = newStreamId
 
     val streamMetadata = ByteString(getClass.getEnclosingClass.getSimpleName)
@@ -63,7 +64,7 @@ abstract class TestConnection extends Specification with NoDurationConversions {
       def loop(n: Int) {
         actor.!(AppendToStream(streamId, ExpectedVersion.Any, events))(testKit.testActor)
         testKit.expectMsgPF(duration) {
-          case AppendToStreamSucceed(_) => true
+          case AppendToStreamSucceed(_)                                         => true
           case AppendToStreamFailed(OperationFailed.PrepareTimeout, _) if n < 3 => loop(n + 1) // TODO
         }
       }
@@ -90,7 +91,7 @@ abstract class TestConnection extends Specification with NoDurationConversions {
             number must beLessThanOrEqualTo(result.lastEventNumber)
 
             direction match {
-              case Forward => x.number must beGreaterThanOrEqualTo(fromEventNumber)
+              case Forward  => x.number must beGreaterThanOrEqualTo(fromEventNumber)
               case Backward => x.number must beLessThanOrEqualTo(fromEventNumber)
             }
           }
@@ -134,12 +135,11 @@ abstract class TestConnection extends Specification with NoDurationConversions {
     }
 
     def mustBeSorted[T](xs: Seq[T])(implicit direction: ReadDirection.Value, ordering: Ordering[T]) {
-      // TODO
       xs.map {
         case ResolvedEvent(_, link) => link.asInstanceOf[T]
-        case x => x
+        case x                      => x
       } must beSorted(direction match {
-        case Forward => ordering
+        case Forward  => ordering
         case Backward => ordering.reverse
       })
     }
@@ -155,7 +155,7 @@ abstract class TestConnection extends Specification with NoDurationConversions {
         x =>
           if (!resolveLinkTos) x.event must beAnInstanceOf[EventRecord]
           direction match {
-            case Forward => x.position must beGreaterThanOrEqualTo(position)
+            case Forward  => x.position must beGreaterThanOrEqualTo(position)
             case Backward => x.position must beLessThanOrEqualTo(position)
           }
       }
@@ -190,15 +190,6 @@ abstract class TestConnection extends Specification with NoDurationConversions {
 
     def newStreamId = EventStream.Id(getClass.getEnclosingClass.getSimpleName + "-" + newUuid.toString)
 
-    def after = {
-      /*
-      try actor ! DeleteStream(streamId, AnyVersion, requireMaster = true)
-      catch {
-        case e: Throwable =>
-      }*/
-
-      // TODO
-    }
   }
 }
 

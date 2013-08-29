@@ -105,7 +105,8 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
 
     def lastPosition = allStreamsEvents()(Backward).head.position
 
-    def newSubscription(fromPositionExclusive: Option[Position.Exact] = None,
+    def newSubscription(
+      fromPositionExclusive: Option[Position.Exact] = None,
       resolveLinkTos: Boolean = false,
       client: ActorRef = testActor) = TestActorRef(new CatchUpSubscriptionActor(
       connection = actor,
@@ -114,7 +115,8 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
       resolveLinkTos = resolveLinkTos,
       readBatchSize = 500))
 
-    def expectEvents(events: Seq[EventData],
+    def expectEvents(
+      events: Seq[EventData],
       position: Position = Position.First,
       testKit: TestKitBase = this): Seq[IndexedEvent] = {
 
@@ -143,7 +145,8 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
     }
 
     @tailrec
-    final def fishForLiveProcessingStarted(position: Position = Position.First,
+    final def fishForLiveProcessingStarted(
+      position: Position = Position.First,
       testKit: TestKitBase = this): Position = testKit.expectMsgType[AnyRef] match {
       case LiveProcessingStarted => position
       case IndexedEvent(_, x) =>
