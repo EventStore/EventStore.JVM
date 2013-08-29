@@ -73,10 +73,10 @@ object MarkerByte {
   }
 
   def writeMessage(out: Out): (Writer, Writer) = out match {
-    case x @ HeartbeatRequestCommand  => writer[HeartbeatRequestCommand.type](0x01, x)
-    case x @ HeartbeatResponseCommand => writer[HeartbeatResponseCommand.type](0x02, x)
-    case x @ Ping                     => writer[Ping.type](0x03, x)
-    case x @ Pong                     => writer[Pong.type](0x04, x)
+    case x @ HeartbeatRequestCommand  => writer(0x01, x)
+    case x @ HeartbeatResponseCommand => writer(0x02, x)
+    case x @ Ping                     => writer(0x03, x)
+    case x @ Pong                     => writer(0x04, x)
     //    PrepareAck = 0x05,
     //    CommitAck = 0x06,
     //
