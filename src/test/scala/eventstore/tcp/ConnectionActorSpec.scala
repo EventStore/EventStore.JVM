@@ -1,38 +1,40 @@
 package eventstore
 package tcp
 
-import org.specs2.mutable.{ After, Specification }
+import org.specs2.mutable.Specification
 import org.specs2.specification.Scope
 import org.specs2.time.NoDurationConversions
+import org.specs2.mock.Mockito
 import akka.io.{ Tcp, IO }
 import akka.io.Tcp._
-import akka.testkit.{ TestActorRef, ImplicitSender, TestKit }
-import akka.actor.{ ActorRef, ActorSystem }
+import akka.testkit.{ TestProbe, TestActorRef, ImplicitSender, TestKit }
+import akka.actor.{ Terminated, ActorRef, ActorSystem }
 import java.net.InetSocketAddress
 import java.nio.ByteOrder
 import scala.concurrent.duration._
 import EventStoreFormats.{ TcpPackageInReader, TcpPackageOutWriter }
+import eventstore.util.BytesWriter
 
 /**
  * @author Yaroslav Klymko
  */
-class ConnectionActorSpec extends Specification with NoDurationConversions {
+class ConnectionActorSpec extends Specification with NoDurationConversions with Mockito {
 
   val off = FiniteDuration(1, MINUTES)
 
   "Connection Actor" should {
 
     "not reconnect when connection lost if maxReconnections == 0" in new TcpScope {
-      val (client, connection) = connect(Settings(address = address, maxReconnections = 0))
-      connection ! Abort
+      val (_, tcpConnection) = connect(settings.copy(maxReconnections = 0))
+      tcpConnection ! Abort
       expectMsg(Aborted)
       expectNoMsg()
       system.shutdown()
     }
 
     "reconnect when connection lost" in new TcpScope {
-      val (client, connection) = connect(Settings(address = address, maxReconnections = 1))
-      connection ! Abort
+      val (_, tcpConnection) = connect(settings.copy(maxReconnections = 1))
+      tcpConnection ! Abort
       expectMsg(Aborted)
       expectMsgType[Connected]
       system.shutdown()
@@ -70,7 +72,7 @@ class ConnectionActorSpec extends Specification with NoDurationConversions {
     }
 
     "reconnect if heartbeat timed out" in new TcpScope {
-      val (client, connection) = connect(Settings(address = address))
+      val (_, tcpConnection) = connect()
       val req = expectTcpPack
       req.message mustEqual HeartbeatRequestCommand
       expectMsg(PeerClosed)
@@ -79,19 +81,19 @@ class ConnectionActorSpec extends Specification with NoDurationConversions {
     }
 
     "not reconnect if heartbeat response received in time" in new TcpScope {
-      val (client, connection) = connect(Settings(address = address))
+      val (_, tcpConnection) = connect()
 
       val req = expectTcpPack
       req.message mustEqual HeartbeatRequestCommand
 
-      connection ! Write(Frame(TcpPackageOut(req.correlationId, HeartbeatResponseCommand)))
+      tcpConnection ! write(TcpPackageOut(req.correlationId, HeartbeatResponseCommand))
       expectTcpPack.message mustEqual HeartbeatRequestCommand
 
       system.shutdown()
     }
 
     "close connection if heartbeat timed out and maxReconnections == 0" in new TcpScope {
-      val (client, connection) = connect(Settings(address = address, maxReconnections = 0))
+      val (_, tcpConnection) = connect(settings.copy(maxReconnections = 0))
       expectTcpPack.message mustEqual HeartbeatRequestCommand
       expectMsg(PeerClosed)
       expectNoMsg()
@@ -99,12 +101,12 @@ class ConnectionActorSpec extends Specification with NoDurationConversions {
     }
 
     "not close connection if heartbeat response received in time" in new TcpScope {
-      val (client, connection) = connect(Settings(address = address, maxReconnections = 0))
+      val (_, tcpConnection) = connect(settings.copy(maxReconnections = 0))
 
       val req = expectTcpPack
       req.message mustEqual HeartbeatRequestCommand
 
-      connection ! Write(Frame(TcpPackageOut(req.correlationId, HeartbeatResponseCommand)))
+      tcpConnection ! write(TcpPackageOut(req.correlationId, HeartbeatResponseCommand))
 
       expectTcpPack.message mustEqual HeartbeatRequestCommand
 
@@ -112,9 +114,9 @@ class ConnectionActorSpec extends Specification with NoDurationConversions {
     }
 
     "respond with HeartbeatResponseCommand on HeartbeatRequestCommand" in new TcpScope {
-      val (client, connection) = connect(Settings(address = address, maxReconnections = 0))
+      val (_, tcpConnection) = connect(settings.copy(maxReconnections = 0))
       val req = TcpPackageOut(HeartbeatRequestCommand)
-      connection ! Write(Frame(req))
+      tcpConnection ! write(req)
 
       val res = expectTcpPack
       res.correlationId mustEqual req.correlationId
@@ -124,22 +126,21 @@ class ConnectionActorSpec extends Specification with NoDurationConversions {
     }
 
     "ping" in new TcpScope {
-      val (client, connection) = connect(Settings(address = address))
-
-      client ! Ping
+      val (connection, tcpConnection) = connect()
+      connection ! Ping
 
       val req = expectTcpPack
       req.message mustEqual Ping
 
-      connection ! Write(Frame(TcpPackageOut(req.correlationId, Pong)))
+      tcpConnection ! write(TcpPackageOut(req.correlationId, Pong))
 
       system.shutdown()
     }
 
     "pong" in new TcpScope {
-      val (client, connection) = connect(Settings(address = address))
+      val (client, connection) = connect()
 
-      connection ! Write(Frame(TcpPackageOut(Ping)))
+      connection ! write(TcpPackageOut(Ping))
       expectTcpPack.message mustEqual Pong
 
       system.shutdown()
@@ -148,12 +149,71 @@ class ConnectionActorSpec extends Specification with NoDurationConversions {
     "stash messages while connecting" in todo
     "stash messages while connection lost" in todo
     "send stashed messages when connection restored" in todo
+
+    "bind actor to correlationId" in new TcpScope {
+      val (connection, tcpConnection) = connect()
+
+      Seq.fill(5)(TestProbe.apply).foreach {
+        probe =>
+          val actor = probe.ref
+          connection.tell(Ping, actor)
+
+          val pack = expectTcpPack
+          pack.message mustEqual Ping
+
+          val correlationId = pack.correlationId
+          connection.underlyingActor.binding.x(correlationId) must beSome(actor)
+
+          Seq(HeartbeatResponseCommand, Pong).foreach {
+            msg =>
+              tcpConnection ! write(TcpPackageOut(newUuid, msg))
+              tcpConnection ! write(TcpPackageOut(correlationId, msg))
+              probe expectMsg msg
+          }
+      }
+      system.shutdown()
+    }
+
+    "unbind actor when stopped" in new TcpScope {
+      val (connection, tcpConnection) = connect()
+
+      val probe = TestProbe()
+      val actor = probe.ref
+
+      val deathProbe = TestProbe()
+      deathProbe watch tcpConnection
+      deathProbe watch actor
+      deathProbe watch connection
+
+      connection.tell(Ping, probe.ref)
+
+      val req = expectTcpPack
+      req.message mustEqual Ping
+
+      val res = TcpPackageOut(req.correlationId, Pong)
+      tcpConnection ! write(res)
+      probe expectMsg Pong
+
+      system stop actor
+      deathProbe.expectMsgPF() {
+        case Terminated(`actor`) =>
+      }
+
+      tcpConnection ! write(res)
+      probe expectNoMsg FiniteDuration(1, SECONDS)
+      deathProbe expectNoMsg FiniteDuration(1, SECONDS)
+
+      connection.underlyingActor.binding must beEmpty
+
+      system.shutdown()
+    }
   }
 
   abstract class TcpScope extends TestKit(ActorSystem()) with ImplicitSender with Scope {
     val (address, socket) = bind()
+    val settings = Settings(address = address)
 
-    def connect(settings: Settings): (ActorRef, ActorRef) = {
+    def connect(settings: Settings = settings): (TestActorRef[ConnectionActor], ActorRef) = {
       val client = TestActorRef(new ConnectionActor(settings))
       val connection = {
         expectMsgType[Connected]
@@ -163,6 +223,8 @@ class ConnectionActorSpec extends Specification with NoDurationConversions {
       }
       client -> connection
     }
+
+    def write(x: TcpPackageOut) = Write(Frame(x))
 
     def bind(address: InetSocketAddress = new InetSocketAddress(0)): (InetSocketAddress, ActorRef) = {
       IO(Tcp) ! Bind(self, address)
@@ -188,7 +250,7 @@ class ConnectionActorSpec extends Specification with NoDurationConversions {
 
     def apply(pack: TcpPackageOut): ByteString = {
       val bb = ByteString.newBuilder
-      val data = TcpPackageOutWriter.toByteString(pack)
+      val data = BytesWriter[TcpPackageOut].toByteString(pack)
       bb.putInt(data.length)
       bb.append(data)
       bb.result()

@@ -1,7 +1,7 @@
 package eventstore
 package tcp
 
-import akka.actor.{ Actor, ActorRef, ActorLogging }
+import akka.actor.{ Terminated, Actor, ActorRef, ActorLogging }
 import akka.io._
 import akka.io.TcpPipelineHandler.{ WithinActorContext, Init }
 import java.nio.ByteOrder
@@ -26,11 +26,17 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
     tcp ! connect
   }
 
-  var binding = new BidirectionalMap[Uuid, ActorRef]() // todo clean on expiry or somehow
+  var binding = new BidirectionalMap[Uuid, ActorRef]()
+
+  def terminated: Receive = {
+    case Terminated(actor) => binding = binding - actor
+  }
 
   def receive = connecting()
 
-  def connecting(stash: Queue[TcpPackageOut] = Queue(), reconnectionsLeft: Int = maxReconnections): Receive = {
+  def connecting(
+    stash: Queue[TcpPackageOut] = Queue(),
+    reconnectionsLeft: Int = maxReconnections): Receive = terminated orElse {
     case Connected(remote, _) =>
       log.info(s"connected to $remote")
 
@@ -79,7 +85,7 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
     connection: ActorRef,
     send: TcpPackageOut => Unit,
     init: Init[WithinActorContext, TcpPackageOut, TcpPackageIn],
-    packNumber: Int = -1): Receive = {
+    packNumber: Int = -1): Receive = terminated orElse {
 
     val scheduled = CancellableAdapter(
       system.scheduler.scheduleOnce(heartbeatTimeout, self, HeartbeatTimeout(packNumber)),
@@ -98,11 +104,9 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
         log.debug(pack.toString)
         scheduled.cancel()
         msg match {
-          case HeartbeatResponseCommand =>
-          case HeartbeatRequestCommand  => send(TcpPackageOut(correlationId, HeartbeatResponseCommand))
-          case Pong                     =>
-          case Ping                     => send(TcpPackageOut(correlationId, Pong))
-          case _                        => dispatch(pack)
+          case HeartbeatRequestCommand => send(TcpPackageOut(correlationId, HeartbeatResponseCommand))
+          case Ping                    => send(TcpPackageOut(correlationId, Pong))
+          case _                       => dispatch(pack)
         }
         context become connected(connection, send, init, packNumber + 1)
 
@@ -145,6 +149,7 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
     val correlationId = binding.y(sender).getOrElse {
       val x = newUuid
       log.debug(s"add sender $sender for $x")
+      context watch sender
       binding = binding.+(x, sender)
       x
     }
@@ -154,13 +159,16 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
 
   def dispatch(pack: TcpPackageIn) {
     val msg = pack.message
-    val actor = binding.x(pack.correlationId) match {
-      case Some(channel) => channel
-      case None =>
-        log.warning(s"sender not found for $msg")
-        Actor.noSender
+    val correlationId = pack.correlationId
+    binding.x(correlationId) match {
+      case Some(channel) => channel ! msg
+      case None => msg match {
+        case Pong | HeartbeatResponseCommand =>
+        case _ =>
+          log.warning(s"sender not found by correlationId: $correlationId for $msg")
+          system.deadLetters ! msg
+      }
     }
-    actor ! msg
   }
 
   def connect = Tcp.Connect(address, timeout = Some(connectionTimeout))

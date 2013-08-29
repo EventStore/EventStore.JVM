@@ -10,29 +10,28 @@ sealed trait In extends Message
 sealed trait Out extends Message
 sealed trait InOut extends In with Out
 
-private[eventstore] case object HeartbeatRequestCommand extends InOut
-private[eventstore] case object HeartbeatResponseCommand extends InOut
+case object HeartbeatRequestCommand extends InOut
+case object HeartbeatResponseCommand extends InOut
 
-private[eventstore] case object Ping extends InOut
-private[eventstore] case object Pong extends InOut
+case object Ping extends InOut
+case object Pong extends InOut
 
-case object PrepareAck extends Message
-case object CommitAck extends Message
+//case object PrepareAck extends Message
+//case object CommitAck extends Message
 
-case object SlaveAssignment extends Message
-case object CloneAssignment extends Message
+//case object SlaveAssignment extends Message
+//case object CloneAssignment extends Message
 
-case object SubscribeReplica extends Message
-case object CreateChunk extends Message
-case object PhysicalChunkBulk extends Message
-case object LogicalChunkBulk extends Message
+//case object SubscribeReplica extends Message
+//case object CreateChunk extends Message
+//case object PhysicalChunkBulk extends Message
+//case object LogicalChunkBulk extends Message
 
-// TODO how to verify ???
-case class DeniedToRoute(
-  externalTcpAddress: String,
-  externalTcpPort: Int,
-  externalHttpAddress: String,
-  externalHttpPort: Int) extends Message
+//case class DeniedToRoute(
+//  externalTcpAddress: String,
+//  externalTcpPort: Int,
+//  externalHttpAddress: String,
+//  externalHttpPort: Int) extends Message
 
 case class AppendToStream(
   streamId: EventStream.Id,
