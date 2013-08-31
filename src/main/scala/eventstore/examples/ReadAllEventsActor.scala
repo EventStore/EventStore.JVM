@@ -20,7 +20,7 @@ class ReadAllEventsActor extends Actor with ActorLogging {
       sender ! readAllEvents
 
       context.become {
-        case HeartbeatRequestCommand => sender ! HeartbeatResponseCommand
+        case HeartbeatRequest => sender ! HeartbeatResponse
         case x: ReadAllEventsCompleted =>
           //          sender ! readAllEvents
           context.system.scheduler.scheduleOnce(5.seconds, sender, readAllEvents)

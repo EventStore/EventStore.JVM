@@ -74,7 +74,7 @@ class ConnectionActorSpec extends Specification with NoDurationConversions with 
     "reconnect if heartbeat timed out" in new TcpScope {
       val (_, tcpConnection) = connect()
       val req = expectTcpPack
-      req.message mustEqual HeartbeatRequestCommand
+      req.message mustEqual HeartbeatRequest
       expectMsg(PeerClosed)
       expectMsgType[Connected]
       system.shutdown()
@@ -84,17 +84,17 @@ class ConnectionActorSpec extends Specification with NoDurationConversions with 
       val (_, tcpConnection) = connect()
 
       val req = expectTcpPack
-      req.message mustEqual HeartbeatRequestCommand
+      req.message mustEqual HeartbeatRequest
 
-      tcpConnection ! write(TcpPackageOut(req.correlationId, HeartbeatResponseCommand))
-      expectTcpPack.message mustEqual HeartbeatRequestCommand
+      tcpConnection ! write(TcpPackageOut(req.correlationId, HeartbeatResponse))
+      expectTcpPack.message mustEqual HeartbeatRequest
 
       system.shutdown()
     }
 
     "close connection if heartbeat timed out and maxReconnections == 0" in new TcpScope {
       val (_, tcpConnection) = connect(settings.copy(maxReconnections = 0))
-      expectTcpPack.message mustEqual HeartbeatRequestCommand
+      expectTcpPack.message mustEqual HeartbeatRequest
       expectMsg(PeerClosed)
       expectNoMsg()
       system.shutdown()
@@ -104,23 +104,23 @@ class ConnectionActorSpec extends Specification with NoDurationConversions with 
       val (_, tcpConnection) = connect(settings.copy(maxReconnections = 0))
 
       val req = expectTcpPack
-      req.message mustEqual HeartbeatRequestCommand
+      req.message mustEqual HeartbeatRequest
 
-      tcpConnection ! write(TcpPackageOut(req.correlationId, HeartbeatResponseCommand))
+      tcpConnection ! write(TcpPackageOut(req.correlationId, HeartbeatResponse))
 
-      expectTcpPack.message mustEqual HeartbeatRequestCommand
+      expectTcpPack.message mustEqual HeartbeatRequest
 
       system.shutdown()
     }
 
     "respond with HeartbeatResponseCommand on HeartbeatRequestCommand" in new TcpScope {
       val (_, tcpConnection) = connect(settings.copy(maxReconnections = 0))
-      val req = TcpPackageOut(HeartbeatRequestCommand)
+      val req = TcpPackageOut(HeartbeatRequest)
       tcpConnection ! write(req)
 
       val res = expectTcpPack
       res.correlationId mustEqual req.correlationId
-      res.message mustEqual HeartbeatResponseCommand
+      res.message mustEqual HeartbeatResponse
 
       system.shutdown()
     }
@@ -164,7 +164,7 @@ class ConnectionActorSpec extends Specification with NoDurationConversions with 
           val correlationId = pack.correlationId
           connection.underlyingActor.binding.x(correlationId) must beSome(actor)
 
-          Seq(HeartbeatResponseCommand, Pong).foreach {
+          Seq(HeartbeatResponse, Pong).foreach {
             msg =>
               tcpConnection ! write(TcpPackageOut(newUuid, msg))
               tcpConnection ! write(TcpPackageOut(correlationId, msg))

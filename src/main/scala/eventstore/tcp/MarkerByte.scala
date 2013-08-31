@@ -20,8 +20,8 @@ object MarkerByte {
   def reader[T <: In](implicit reader: BytesReader[T]): Reader = reader.read
 
   val readers: Map[Byte, Reader] = Map[Int, Reader](
-    0x01 -> reader[HeartbeatRequestCommand.type],
-    0x02 -> reader[HeartbeatResponseCommand.type],
+    0x01 -> reader[HeartbeatRequest.type],
+    0x02 -> reader[HeartbeatResponse.type],
     0x03 -> reader[Ping.type],
     0x04 -> reader[Pong.type],
 
@@ -73,10 +73,10 @@ object MarkerByte {
   }
 
   def writeMessage(out: Out): (Writer, Writer) = out match {
-    case x @ HeartbeatRequestCommand  => writer(0x01, x)
-    case x @ HeartbeatResponseCommand => writer(0x02, x)
-    case x @ Ping                     => writer(0x03, x)
-    case x @ Pong                     => writer(0x04, x)
+    case x @ HeartbeatRequest  => writer(0x01, x)
+    case x @ HeartbeatResponse => writer(0x02, x)
+    case x @ Ping              => writer(0x03, x)
+    case x @ Pong              => writer(0x04, x)
     //    PrepareAck = 0x05,
     //    CommitAck = 0x06,
     //
@@ -87,12 +87,12 @@ object MarkerByte {
     //    CreateChunk = 0x11,
     //    PhysicalChunkBulk = 0x12,
     //    LogicalChunkBulk = 0x 13,
-    case x: AppendToStream            => writer(0x82, x)
-    case x: TransactionStart          => writer(0x84, x)
-    case x: TransactionWrite          => writer(0x86, x)
-    case x: TransactionCommit         => writer(0x88, x)
-    case x: DeleteStream              => writer(0x8A, x)
-    case x: ReadEvent                 => writer(0xB0, x)
+    case x: AppendToStream     => writer(0x82, x)
+    case x: TransactionStart   => writer(0x84, x)
+    case x: TransactionWrite   => writer(0x86, x)
+    case x: TransactionCommit  => writer(0x88, x)
+    case x: DeleteStream       => writer(0x8A, x)
+    case x: ReadEvent          => writer(0xB0, x)
     case x: ReadStreamEvents => x.direction match {
       case Forward  => writer(0xB2, x)
       case Backward => writer(0xB4, x)

@@ -15,8 +15,8 @@ trait EventStoreFormats extends EventStoreProtoFormats {
     def write(x: T, builder: ByteStringBuilder) {}
   }
 
-  implicit object HeartbeatRequestCommandFormat extends EmptyFormat(HeartbeatRequestCommand)
-  implicit object HeartbeatResponseCommandFormat extends EmptyFormat(HeartbeatResponseCommand)
+  implicit object HeartbeatRequestFormat extends EmptyFormat(HeartbeatRequest)
+  implicit object HeartbeatResponseFormat extends EmptyFormat(HeartbeatResponse)
   implicit object PingFormat extends EmptyFormat(Ping)
   implicit object PongFormat extends EmptyFormat(Pong)
   implicit object BadRequestFormat extends EmptyFormat(BadRequest)

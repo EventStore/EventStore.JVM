@@ -13,7 +13,7 @@ class TcpPackageFormatSpec extends Specification {
     "read/write" in {
       for {
         correlationId <- List(newUuid, newUuid)
-        msg <- List[InOut](HeartbeatRequestCommand, HeartbeatResponseCommand, Ping, Pong)
+        msg <- List[InOut](HeartbeatRequest, HeartbeatResponse, Ping, Pong)
       } yield {
         val expected = TcpPackageOut(correlationId, msg)
         val bs = BytesWriter[TcpPackageOut].toByteString(expected)

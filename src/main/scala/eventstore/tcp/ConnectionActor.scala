@@ -104,15 +104,15 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
         log.debug(pack.toString)
         scheduled.cancel()
         msg match {
-          case HeartbeatRequestCommand => send(TcpPackageOut(correlationId, HeartbeatResponseCommand))
-          case Ping                    => send(TcpPackageOut(correlationId, Pong))
-          case _                       => dispatch(pack)
+          case HeartbeatRequest => send(TcpPackageOut(correlationId, HeartbeatResponse))
+          case Ping             => send(TcpPackageOut(correlationId, Pong))
+          case _                => dispatch(pack)
         }
         context become connected(connection, send, init, packNumber + 1)
 
       case out: Out          => send(tcpPackage(out))
 
-      case HeartbeatInterval => send(TcpPackageOut(HeartbeatRequestCommand))
+      case HeartbeatInterval => send(TcpPackageOut(HeartbeatRequest))
 
       case HeartbeatTimeout(`packNumber`) =>
         log.error(s"no heartbeat within $heartbeatTimeout")
@@ -163,7 +163,7 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
     binding.x(correlationId) match {
       case Some(channel) => channel ! msg
       case None => msg match {
-        case Pong | HeartbeatResponseCommand =>
+        case Pong | HeartbeatResponse =>
         case _ =>
           log.warning(s"sender not found by correlationId: $correlationId for $msg")
           system.deadLetters ! msg
