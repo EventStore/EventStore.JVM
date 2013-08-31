@@ -141,14 +141,15 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
   implicit object ReadEventCompletedReader
       extends ProtoReader[ReadEventCompleted, proto.ReadEventCompleted](proto.ReadEventCompleted) {
     import eventstore.proto.ReadEventCompleted.ReadEventResult._
+    import ReadEventFailed.Reason
 
     // TODO test it, what if new enum will be added in proto?
-    def reason(x: EnumVal): Option[ReadEventFailed.Value] = condOpt(x) {
-      case NotFound      => ReadEventFailed.NotFound
-      case NoStream      => ReadEventFailed.NoStream
-      case StreamDeleted => ReadEventFailed.StreamDeleted
-      case Error         => ReadEventFailed.Error
-      case AccessDenied  => ReadEventFailed.AccessDenied
+    def reason(x: EnumVal): Option[Reason.Value] = condOpt(x) {
+      case NotFound      => Reason.NotFound
+      case NoStream      => Reason.NoStream
+      case StreamDeleted => Reason.StreamDeleted
+      case Error         => Reason.Error
+      case AccessDenied  => Reason.AccessDenied
     }
 
     def fromProto(x: proto.ReadEventCompleted) = reason(x.`result`) match {
@@ -169,13 +170,14 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
   abstract class ReadStreamEventsCompletedReader(direction: ReadDirection.Value)
       extends ProtoReader[ReadStreamEventsCompleted, proto.ReadStreamEventsCompleted](proto.ReadStreamEventsCompleted) {
     import eventstore.proto.ReadStreamEventsCompleted.ReadStreamResult._
+    import ReadStreamEventsFailed.Reason
 
     // TODO test it, what if new enum will be added in proto?
-    def reason(x: EnumVal) = condOpt(x) {
-      case NoStream      => ReadStreamEventsFailed.NoStream
-      case StreamDeleted => ReadStreamEventsFailed.StreamDeleted
-      case Error         => ReadStreamEventsFailed.Error
-      case AccessDenied  => ReadStreamEventsFailed.AccessDenied
+    def reason(x: EnumVal): Option[Reason.Value] = condOpt(x) {
+      case NoStream      => Reason.NoStream
+      case StreamDeleted => Reason.StreamDeleted
+      case Error         => Reason.Error
+      case AccessDenied  => Reason.AccessDenied
     }
 
     def fromProto(x: proto.ReadStreamEventsCompleted) = {
@@ -215,11 +217,12 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
   abstract class ReadAllEventsCompletedReader(direction: ReadDirection.Value)
       extends ProtoReader[ReadAllEventsCompleted, proto.ReadAllEventsCompleted](proto.ReadAllEventsCompleted) {
     import proto.ReadAllEventsCompleted.ReadAllResult._
+    import ReadAllEventsFailed.Reason
 
     // TODO test it, what if new enum will be added in proto?
-    def reason(x: EnumVal): Option[ReadAllEventsFailed.Value] = condOpt(x) {
-      case Error        => ReadAllEventsFailed.Error
-      case AccessDenied => ReadAllEventsFailed.AccessDenied
+    def reason(x: EnumVal): Option[Reason.Value] = condOpt(x) {
+      case Error        => Reason.Error
+      case AccessDenied => Reason.AccessDenied
     }
 
     def fromProto(x: proto.ReadAllEventsCompleted) = {
@@ -278,12 +281,13 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
   implicit object SubscriptionDroppedReader
       extends ProtoReader[SubscriptionDropped, proto.SubscriptionDropped](proto.SubscriptionDropped) {
     import eventstore.proto.SubscriptionDropped.SubscriptionDropReason._
-    val default = SubscriptionDropped.Unsubscribed
+    import SubscriptionDropped.Reason
+    val default = Reason.Unsubscribed
 
     // TODO test it, what if new enum will be added in proto?
-    def reason(x: EnumVal): SubscriptionDropped.Value = x match {
-      case Unsubscribed => SubscriptionDropped.Unsubscribed
-      case AccessDenied => SubscriptionDropped.AccessDenied
+    def reason(x: EnumVal): Reason.Value = x match {
+      case Unsubscribed => Reason.Unsubscribed
+      case AccessDenied => Reason.AccessDenied
       case _            => default
     }
 

@@ -142,7 +142,7 @@ class StreamCatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActo
       actor ! readStreamEventsSucceed(0, true)
 
       connection expectMsg subscribeTo
-      actor ! SubscriptionDropped(SubscriptionDropped.AccessDenied)
+      actor ! SubscriptionDropped(SubscriptionDropped.Reason.AccessDenied)
       expectActorTerminated()
     }
 
@@ -151,7 +151,7 @@ class StreamCatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActo
       actor ! readStreamEventsSucceed(0, true)
       connection expectMsg subscribeTo
       expectNoActivity
-      actor ! SubscriptionDropped(SubscriptionDropped.AccessDenied)
+      actor ! SubscriptionDropped(SubscriptionDropped.Reason.AccessDenied)
       expectActorTerminated()
     }
 
@@ -299,7 +299,7 @@ class StreamCatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActo
       actor ! readStreamEventsSucceed(0, true)
 
       connection expectMsg subscribeTo
-      actor ! SubscriptionDropped(SubscriptionDropped.AccessDenied)
+      actor ! SubscriptionDropped(SubscriptionDropped.Reason.AccessDenied)
 
       expectActorTerminated()
     }
@@ -312,7 +312,7 @@ class StreamCatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActo
       actor ! subscribeToStreamCompleted(1)
 
       connection expectMsg readStreamEvents(0)
-      actor ! readStreamEventsFailed(ReadStreamEventsFailed.NoStream)
+      actor ! readStreamEventsFailed(ReadStreamEventsFailed.Reason.NoStream)
 
       connection expectMsg UnsubscribeFromStream
 
@@ -373,8 +373,8 @@ class StreamCatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActo
         lastCommitPosition = next /*TODO*/ ,
         direction = Forward)
 
-    def readStreamEventsFailed(reason: ReadStreamEventsFailed.Value = ReadStreamEventsFailed.StreamDeleted) =
-      ReadStreamEventsFailed(ReadStreamEventsFailed.StreamDeleted, None, Forward)
+    def readStreamEventsFailed(reason: ReadStreamEventsFailed.Reason.Value = ReadStreamEventsFailed.Reason.StreamDeleted) =
+      ReadStreamEventsFailed(ReadStreamEventsFailed.Reason.StreamDeleted, None, Forward)
 
     def subscribeToStreamCompleted(x: Int) = SubscribeToStreamCompleted(x, Some(EventNumber(x)))
   }

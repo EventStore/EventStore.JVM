@@ -33,8 +33,8 @@ class StreamCatchUpSubscriptionActor(
       }
 
       case ReadStreamEventsFailed(reason, message, Forward) => context become (reason match {
-        case ReadStreamEventsFailed.NoStream => subscribe(lastNumber, nextNumber)
-        case _                               => EventStore.error(reason, message)
+        case ReadStreamEventsFailed.Reason.NoStream => subscribe(lastNumber, nextNumber)
+        case _                                      => EventStore.error(reason, message)
       })
     }
   }

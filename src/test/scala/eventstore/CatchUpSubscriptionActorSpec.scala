@@ -145,7 +145,7 @@ class CatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActorSpec 
       actor ! readAllEventsSucceed(0, 0)
 
       connection.expectMsg(subscribeTo)
-      actor ! SubscriptionDropped(SubscriptionDropped.AccessDenied)
+      actor ! SubscriptionDropped(SubscriptionDropped.Reason.AccessDenied)
 
       expectActorTerminated()
     }
@@ -303,7 +303,7 @@ class CatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActorSpec 
       actor ! readAllEventsSucceed(0, 0)
 
       connection expectMsg subscribeTo
-      actor ! SubscriptionDropped(SubscriptionDropped.AccessDenied)
+      actor ! SubscriptionDropped(SubscriptionDropped.Reason.AccessDenied)
 
       expectActorTerminated()
     }
@@ -368,6 +368,6 @@ class CatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActorSpec 
     def readAllEventsSucceed(position: Long, next: Long, events: IndexedEvent*) =
       ReadAllEventsSucceed(Position(position), events, Position(next), Forward)
 
-    def readAllEventsFailed = ReadAllEventsFailed(ReadAllEventsFailed.Error, None, Position(0), Forward)
+    def readAllEventsFailed = ReadAllEventsFailed(ReadAllEventsFailed.Reason.Error, None, Position(0), Forward)
   }
 }

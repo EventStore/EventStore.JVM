@@ -31,14 +31,14 @@ class TransactionITest extends TestConnection {
     "do nothing if commits without events to empty stream" in new TransactionScope {
       implicit val transactionId = transactionStart(NoStream)
       transactionCommit
-      readStreamEventsFailed.reason mustEqual ReadStreamEventsFailed.NoStream
+      readStreamEventsFailed.reason mustEqual ReadStreamEventsFailed.Reason.NoStream
     }
 
     "do nothing if commits no events to empty stream" in new TransactionScope {
       implicit val transactionId = transactionStart(NoStream)
       transactionWrite()
       transactionCommit
-      readStreamEventsFailed.reason mustEqual ReadStreamEventsFailed.NoStream
+      readStreamEventsFailed.reason mustEqual ReadStreamEventsFailed.Reason.NoStream
     }
 
     "validate expectations on commit" in new TransactionScope {

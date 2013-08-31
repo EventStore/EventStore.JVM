@@ -3,8 +3,6 @@ package eventstore
 /**
  * @author Yaroslav Klymko
  */
-
-// TODO not put enums at the same level as case class's apply
 sealed trait Message
 sealed trait In extends Message
 sealed trait Out extends Message
@@ -111,9 +109,12 @@ case class ReadEvent(
 
 sealed trait ReadEventCompleted extends In
 case class ReadEventSucceed(event: Event) extends ReadEventCompleted
-case class ReadEventFailed(reason: ReadEventFailed.Value, message: Option[String]) extends ReadEventCompleted
-object ReadEventFailed extends Enumeration {
-  val NotFound, NoStream, StreamDeleted, Error, AccessDenied = Value
+case class ReadEventFailed(reason: ReadEventFailed.Reason.Value, message: Option[String]) extends ReadEventCompleted
+
+object ReadEventFailed {
+  object Reason extends Enumeration {
+    val NotFound, NoStream, StreamDeleted, Error, AccessDenied = Value
+  }
 }
 
 // TODO create readSettings
@@ -150,12 +151,14 @@ case class ReadStreamEventsSucceed(
 }
 
 case class ReadStreamEventsFailed(
-  reason: ReadStreamEventsFailed.Value,
+  reason: ReadStreamEventsFailed.Reason.Value,
   message: Option[String],
   direction: ReadDirection.Value) extends ReadStreamEventsCompleted
 
-object ReadStreamEventsFailed extends Enumeration {
-  val NoStream, StreamDeleted, Error, AccessDenied = Value
+object ReadStreamEventsFailed {
+  object Reason extends Enumeration {
+    val NoStream, StreamDeleted, Error, AccessDenied = Value
+  }
 }
 
 case class ReadAllEvents(
@@ -183,13 +186,15 @@ case class ReadAllEventsSucceed(
 }
 
 case class ReadAllEventsFailed(
-  reason: ReadAllEventsFailed.Value,
+  reason: ReadAllEventsFailed.Reason.Value,
   message: Option[String],
   position: Position.Exact,
   direction: ReadDirection.Value) extends ReadAllEventsCompleted
 
-object ReadAllEventsFailed extends Enumeration {
-  val Error, AccessDenied = Value
+object ReadAllEventsFailed {
+  object Reason extends Enumeration {
+    val Error, AccessDenied = Value
+  }
 }
 
 case class SubscribeTo(stream: EventStream, resolveLinkTos: Boolean = false) extends Out
@@ -207,9 +212,12 @@ case class SubscribeToStreamCompleted(lastCommit: Long, lastEventNumber: Option[
 case class StreamEventAppeared(event: IndexedEvent) extends In
 
 case object UnsubscribeFromStream extends Out
-case class SubscriptionDropped(reason: SubscriptionDropped.Value) extends In
-object SubscriptionDropped extends Enumeration {
-  val Unsubscribed, AccessDenied = Value
+case class SubscriptionDropped(reason: SubscriptionDropped.Reason.Value) extends In
+
+object SubscriptionDropped {
+  object Reason extends Enumeration {
+    val Unsubscribed, AccessDenied = Value
+  }
 }
 
 case object ScavengeDatabase extends Out

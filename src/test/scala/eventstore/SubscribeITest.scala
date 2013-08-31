@@ -92,7 +92,7 @@ class SubscribeITest extends TestConnection {
 
     def unsubscribeFromStream() {
       actor ! UnsubscribeFromStream
-      expectMsg(SubscriptionDropped(SubscriptionDropped.Unsubscribed))
+      expectMsg(SubscriptionDropped(SubscriptionDropped.Reason.Unsubscribed))
     }
   }
 }

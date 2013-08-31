@@ -36,7 +36,7 @@ object Build extends Build {
     .configs(ScalaBuff, IntegrationTest)
     .settings(inConfig(IntegrationTest)(Defaults.testTasks): _*)
     .settings(
-    testOptions       in Test := Seq(Tests.Filter(specFilter)),
+    testOptions       in Test            := Seq(Tests.Filter(specFilter)),
     testOptions       in IntegrationTest := Seq(Tests.Filter(itFilter)),
     parallelExecution in IntegrationTest := false)
 }
