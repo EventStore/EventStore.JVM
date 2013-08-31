@@ -117,10 +117,9 @@ object ReadEventFailed {
   }
 }
 
-// TODO create readSettings
 case class ReadStreamEvents(
     streamId: EventStream.Id,
-    fromEventNumber: EventNumber, // TODO rename to fromNumber
+    fromNumber: EventNumber,
     maxCount: Int,
     direction: ReadDirection.Value,
     resolveLinkTos: Boolean = false,
@@ -128,15 +127,14 @@ case class ReadStreamEvents(
   require(maxCount > 0, s"maxCount must be > 0, but is $maxCount")
   require(maxCount <= MaxBatchSize, s"maxCount must be <= $MaxBatchSize, but is $maxCount")
   require(
-    direction != ReadDirection.Forward || fromEventNumber != EventNumber.Last,
-    s"fromEventNumber must not be EventNumber.Last")
+    direction != ReadDirection.Forward || fromNumber != EventNumber.Last,
+    s"fromNumber must not be EventNumber.Last")
 }
 
 sealed trait ReadStreamEventsCompleted extends In {
   def direction: ReadDirection.Value
 }
 
-// TODO change order/rename
 case class ReadStreamEventsSucceed(
     events: Seq[Event],
     nextEventNumber: EventNumber,
@@ -162,7 +160,7 @@ object ReadStreamEventsFailed {
 }
 
 case class ReadAllEvents(
-    position: Position, // TODO rename to fromposition
+    fromPosition: Position,
     maxCount: Int,
     direction: ReadDirection.Value,
     resolveLinkTos: Boolean = false,
@@ -176,10 +174,9 @@ sealed trait ReadAllEventsCompleted extends In {
   def direction: ReadDirection.Value
 }
 
-// TODO change order
 case class ReadAllEventsSucceed(
+    events: Seq[IndexedEvent],
     position: Position.Exact,
-    events: Seq[IndexedEvent], // TODO rename
     nextPosition: Position.Exact,
     direction: ReadDirection.Value) extends ReadAllEventsCompleted {
   require(events.size <= MaxBatchSize, s"events.size must be <= $MaxBatchSize, but is ${events.size}")

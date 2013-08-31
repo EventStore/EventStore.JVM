@@ -2,7 +2,7 @@ package eventstore
 
 import akka.testkit._
 import akka.actor.ActorSystem
-import org.specs2.mutable.Specification
+import org.specs2.mutable.{ After, Specification }
 import org.specs2.time.NoDurationConversions
 import org.specs2.specification.Scope
 import scala.concurrent.duration._

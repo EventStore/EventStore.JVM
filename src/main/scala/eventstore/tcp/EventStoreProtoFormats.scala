@@ -161,7 +161,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
   implicit object ReadStreamEventsWriter extends ProtoWriter[ReadStreamEvents] {
     def toProto(x: ReadStreamEvents) = proto.ReadStreamEvents(
       `eventStreamId` = x.streamId.value,
-      `fromEventNumber` = EventNumberConverter.from(x.fromEventNumber),
+      `fromEventNumber` = EventNumberConverter.from(x.fromNumber),
       `maxCount` = x.maxCount,
       `resolveLinkTos` = x.resolveLinkTos,
       `requireMaster` = x.requireMaster)
@@ -204,7 +204,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
 
   implicit object ReadAllEventsWriter extends ProtoWriter[ReadAllEvents] {
     def toProto(x: ReadAllEvents) = {
-      val (commitPosition, preparePosition) = PositionConverter.from(x.position)
+      val (commitPosition, preparePosition) = PositionConverter.from(x.fromPosition)
       proto.ReadAllEvents(
         `commitPosition` = commitPosition,
         `preparePosition` = preparePosition,

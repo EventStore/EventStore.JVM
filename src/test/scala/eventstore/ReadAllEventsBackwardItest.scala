@@ -76,7 +76,7 @@ class ReadAllEventsBackwardITest extends TestConnection {
         commitPosition = position.commitPosition - 1,
         preparePosition = position.preparePosition - 1)
       val failed = readAllEventsFailed(wrongPosition, 10)
-      failed.reason mustEqual ReadAllEventsFailed.Error
+      failed.reason mustEqual ReadAllEventsFailed.Reason.Error
       failed.message must beSome
     }
 
