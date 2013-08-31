@@ -133,7 +133,7 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
     }
 
     @tailrec final def expectNoEvents() {
-      receiveOne(FiniteDuration(1, SECONDS)) match {
+      receiveOne(1.second) match {
         case null =>
         case msg =>
           msg must beAnInstanceOf[IndexedEvent]

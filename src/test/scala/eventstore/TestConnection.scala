@@ -1,10 +1,6 @@
 package eventstore
 
 import akka.testkit._
-import akka.actor.ActorSystem
-import org.specs2.mutable.{ After, Specification }
-import org.specs2.time.NoDurationConversions
-import org.specs2.specification.Scope
 import scala.concurrent.duration._
 import tcp.ConnectionActor
 import ReadDirection._
@@ -12,9 +8,9 @@ import ReadDirection._
 /**
  * @author Yaroslav Klymko
  */
-abstract class TestConnection extends Specification with NoDurationConversions {
+abstract class TestConnection extends util.ActorSpec {
 
-  abstract class TestConnectionScope extends TestKit(ActorSystem()) with ImplicitSender with Scope {
+  abstract class TestConnectionScope extends ActorScope {
     val streamId = newStreamId
 
     val streamMetadata = ByteString(getClass.getEnclosingClass.getSimpleName)
@@ -58,12 +54,11 @@ abstract class TestConnection extends Specification with NoDurationConversions {
     }
 
     def appendMany(size: Int = 10, testKit: TestKitBase = this): Seq[EventData] = {
-      val duration = FiniteDuration(10, SECONDS)
       val events = (1 to size).map(_ => newEventData)
 
       def loop(n: Int) {
         actor.!(AppendToStream(streamId, ExpectedVersion.Any, events))(testKit.testActor)
-        testKit.expectMsgPF(duration) {
+        testKit.expectMsgPF(10.seconds) {
           case AppendToStreamSucceed(_)                                         => true
           case AppendToStreamFailed(OperationFailed.PrepareTimeout, _) if n < 3 => loop(n + 1) // TODO
         }
@@ -146,7 +141,7 @@ abstract class TestConnection extends Specification with NoDurationConversions {
 
     def readAllEventsSucceed(position: Position, maxCount: Int, resolveLinkTos: Boolean = false)(implicit direction: ReadDirection.Value) = {
       actor ! ReadAllEvents(position, maxCount, direction, resolveLinkTos = resolveLinkTos)
-      val result = expectMsgType[ReadAllEventsSucceed](FiniteDuration(10, SECONDS))
+      val result = expectMsgType[ReadAllEventsSucceed](10.seconds)
       result.direction mustEqual direction
 
       val events = result.events

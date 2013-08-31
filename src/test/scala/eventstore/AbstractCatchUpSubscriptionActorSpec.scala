@@ -1,19 +1,17 @@
 package eventstore
 
-import org.specs2.mutable.Specification
 import org.specs2.mock.Mockito
-import org.specs2.specification.Scope
 import akka.testkit._
-import akka.actor.{ Props, SupervisorStrategy, Actor, ActorSystem }
+import akka.actor.{ Props, SupervisorStrategy, Actor }
 import scala.concurrent.duration._
 
 /**
  * @author Yaroslav Klymko
  */
-abstract class AbstractCatchUpSubscriptionActorSpec extends Specification with Mockito {
+abstract class AbstractCatchUpSubscriptionActorSpec extends util.ActorSpec with Mockito {
 
-  abstract class AbstractScope extends TestKit(ActorSystem()) with ImplicitSender with Scope {
-    val duration = FiniteDuration(1, SECONDS)
+  abstract class AbstractScope extends ActorScope {
+    val duration = 1.second
     val readBatchSize = 10
     val resolveLinkTos = false
     val connection = TestProbe()

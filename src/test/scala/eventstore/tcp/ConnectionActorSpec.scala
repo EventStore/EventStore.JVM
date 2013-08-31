@@ -1,14 +1,11 @@
 package eventstore
 package tcp
 
-import org.specs2.mutable.Specification
-import org.specs2.specification.Scope
-import org.specs2.time.NoDurationConversions
 import org.specs2.mock.Mockito
 import akka.io.{ Tcp, IO }
 import akka.io.Tcp._
-import akka.testkit.{ TestProbe, TestActorRef, ImplicitSender, TestKit }
-import akka.actor.{ Terminated, ActorRef, ActorSystem }
+import akka.testkit.{ TestProbe, TestActorRef }
+import akka.actor.{ Terminated, ActorRef }
 import java.net.InetSocketAddress
 import java.nio.ByteOrder
 import scala.concurrent.duration._
@@ -18,9 +15,9 @@ import eventstore.util.BytesWriter
 /**
  * @author Yaroslav Klymko
  */
-class ConnectionActorSpec extends Specification with NoDurationConversions with Mockito {
+class ConnectionActorSpec extends util.ActorSpec with Mockito {
 
-  val off = FiniteDuration(1, MINUTES)
+  val off = 1.minute
 
   "Connection Actor" should {
 
@@ -29,7 +26,6 @@ class ConnectionActorSpec extends Specification with NoDurationConversions with 
       tcpConnection ! Abort
       expectMsg(Aborted)
       expectNoMsg()
-      system.shutdown()
     }
 
     "reconnect when connection lost" in new TcpScope {
@@ -37,7 +33,6 @@ class ConnectionActorSpec extends Specification with NoDurationConversions with 
       tcpConnection ! Abort
       expectMsg(Aborted)
       expectMsgType[Connected]
-      system.shutdown()
     }
 
     "keep trying to reconnect for maxReconnections times" in new TcpMockScope {
@@ -59,13 +54,13 @@ class ConnectionActorSpec extends Specification with NoDurationConversions with 
     }
 
     "use reconnectionDelay from settings" in new TcpMockScope {
-      val settings = Settings(maxReconnections = 3, reconnectionDelay = FiniteDuration(2, SECONDS))
+      val settings = Settings(maxReconnections = 3, reconnectionDelay = 2.seconds)
       val client = newClient(settings)
 
       val connect = expectMsgType[Connect]
       client ! CommandFailed(connect)
 
-      expectNoMsg(FiniteDuration(1, SECONDS))
+      expectNoMsg(1.second)
 
       expectMsgType[Connect]
       client ! CommandFailed(connect)
@@ -77,7 +72,6 @@ class ConnectionActorSpec extends Specification with NoDurationConversions with 
       req.message mustEqual HeartbeatRequest
       expectMsg(PeerClosed)
       expectMsgType[Connected]
-      system.shutdown()
     }
 
     "not reconnect if heartbeat response received in time" in new TcpScope {
@@ -88,8 +82,6 @@ class ConnectionActorSpec extends Specification with NoDurationConversions with 
 
       tcpConnection ! write(TcpPackageOut(req.correlationId, HeartbeatResponse))
       expectTcpPack.message mustEqual HeartbeatRequest
-
-      system.shutdown()
     }
 
     "close connection if heartbeat timed out and maxReconnections == 0" in new TcpScope {
@@ -97,7 +89,6 @@ class ConnectionActorSpec extends Specification with NoDurationConversions with 
       expectTcpPack.message mustEqual HeartbeatRequest
       expectMsg(PeerClosed)
       expectNoMsg()
-      system.shutdown()
     }
 
     "not close connection if heartbeat response received in time" in new TcpScope {
@@ -109,8 +100,6 @@ class ConnectionActorSpec extends Specification with NoDurationConversions with 
       tcpConnection ! write(TcpPackageOut(req.correlationId, HeartbeatResponse))
 
       expectTcpPack.message mustEqual HeartbeatRequest
-
-      system.shutdown()
     }
 
     "respond with HeartbeatResponseCommand on HeartbeatRequestCommand" in new TcpScope {
@@ -121,8 +110,6 @@ class ConnectionActorSpec extends Specification with NoDurationConversions with 
       val res = expectTcpPack
       res.correlationId mustEqual req.correlationId
       res.message mustEqual HeartbeatResponse
-
-      system.shutdown()
     }
 
     "ping" in new TcpScope {
@@ -133,8 +120,6 @@ class ConnectionActorSpec extends Specification with NoDurationConversions with 
       req.message mustEqual Ping
 
       tcpConnection ! write(TcpPackageOut(req.correlationId, Pong))
-
-      system.shutdown()
     }
 
     "pong" in new TcpScope {
@@ -142,8 +127,6 @@ class ConnectionActorSpec extends Specification with NoDurationConversions with 
 
       connection ! write(TcpPackageOut(Ping))
       expectTcpPack.message mustEqual Pong
-
-      system.shutdown()
     }
 
     "stash messages while connecting" in todo
@@ -171,7 +154,6 @@ class ConnectionActorSpec extends Specification with NoDurationConversions with 
               probe expectMsg msg
           }
       }
-      system.shutdown()
     }
 
     "unbind actor when stopped" in new TcpScope {
@@ -200,16 +182,14 @@ class ConnectionActorSpec extends Specification with NoDurationConversions with 
       }
 
       tcpConnection ! write(res)
-      probe expectNoMsg FiniteDuration(1, SECONDS)
-      deathProbe expectNoMsg FiniteDuration(1, SECONDS)
+      probe expectNoMsg 1.second
+      deathProbe expectNoMsg 1.second
 
       connection.underlyingActor.binding must beEmpty
-
-      system.shutdown()
     }
   }
 
-  abstract class TcpScope extends TestKit(ActorSystem()) with ImplicitSender with Scope {
+  abstract class TcpScope extends ActorScope {
     val (address, socket) = bind()
     val settings = Settings(address = address)
 
@@ -257,7 +237,7 @@ class ConnectionActorSpec extends Specification with NoDurationConversions with 
     }
   }
 
-  abstract class TcpMockScope extends TestKit(ActorSystem()) with ImplicitSender with Scope {
+  abstract class TcpMockScope extends ActorScope {
 
     def newClient(settings: Settings = Settings()) = TestActorRef(new ConnectionActor(settings) {
       override def tcp = testActor
