@@ -6,7 +6,6 @@ import scala.concurrent.duration._
 import scala.concurrent.Future
 import scala.annotation.tailrec
 import ReadDirection.Backward
-import CatchUpSubscription._
 
 /**
  * @author Yaroslav Klymko
@@ -82,22 +81,42 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
       probes.foreach(x => expectEvents(Seq(event), testKit = x))
     }
 
+    "read link events if resolveLinkTos = false" in new SubscribeToAllCatchingUpScope {
+      val last = lastPosition
+      val (linked, link) = linkedAndLink()
+      newSubscription(Some(last), resolveLinkTos = false)
+      expectMsgType[Cs.AllStreamsEvent].event.event mustEqual linked
+      expectMsgType[Cs.AllStreamsEvent]
+      expectMsgType[Cs.AllStreamsEvent].event.event mustEqual link
+      fishForLiveProcessingStarted(last)
+    }
+
+    "read link events if resolveLinkTos = true" in new SubscribeToAllCatchingUpScope {
+      val last = lastPosition
+      val (linked, link) = linkedAndLink()
+      newSubscription(Some(last), resolveLinkTos = true)
+      expectMsgType[Cs.AllStreamsEvent].event.event mustEqual linked
+      expectMsgType[Cs.AllStreamsEvent]
+      expectMsgType[Cs.AllStreamsEvent].event.event mustEqual ResolvedEvent(linked, link)
+      fishForLiveProcessingStarted(last)
+    }
+
     "catch link events if resolveLinkTos = false" in new SubscribeToAllCatchingUpScope {
       newSubscription(Some(lastPosition), resolveLinkTos = false)
       fishForLiveProcessingStarted()
       val (linked, link) = linkedAndLink()
-      expectMsgType[IndexedEvent].event mustEqual linked
-      expectMsgType[IndexedEvent]
-      expectMsgType[IndexedEvent].event mustEqual link
+      expectMsgType[Cs.AllStreamsEvent].event.event mustEqual linked
+      expectMsgType[Cs.AllStreamsEvent]
+      expectMsgType[Cs.AllStreamsEvent].event.event mustEqual link
     }
 
     "catch link events if resolveLinkTos = true" in new SubscribeToAllCatchingUpScope {
       newSubscription(Some(lastPosition), resolveLinkTos = true)
       fishForLiveProcessingStarted()
       val (linked, link) = linkedAndLink()
-      expectMsgType[IndexedEvent].event mustEqual linked
-      expectMsgType[IndexedEvent]
-      expectMsgType[IndexedEvent].event mustEqual ResolvedEvent(linked, link)
+      expectMsgType[Cs.AllStreamsEvent].event.event mustEqual linked
+      expectMsgType[Cs.AllStreamsEvent]
+      expectMsgType[Cs.AllStreamsEvent].event.event mustEqual ResolvedEvent(linked, link)
     }
   }
 
@@ -123,7 +142,7 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
       def loop(events: List[EventData], position: Position): List[IndexedEvent] = events match {
         case Nil => Nil
         case head :: tail =>
-          val indexedEvent = testKit.expectMsgType[IndexedEvent]
+          val indexedEvent = testKit.expectMsgType[Cs.AllStreamsEvent].event
           indexedEvent.position must beGreaterThanOrEqualTo(position)
           indexedEvent.event must beAnInstanceOf[EventRecord]
           if (indexedEvent.event.data == head) indexedEvent :: loop(tail, indexedEvent.position)
@@ -136,8 +155,8 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
       receiveOne(1.second) match {
         case null =>
         case msg =>
-          msg must beAnInstanceOf[IndexedEvent]
-          val indexedEvent = msg.asInstanceOf[IndexedEvent]
+          msg must beAnInstanceOf[Cs.AllStreamsEvent]
+          val indexedEvent = msg.asInstanceOf[Cs.AllStreamsEvent].event
           val streamId = indexedEvent.event.streamId
           streamId.isSystem must beTrue
           expectNoEvents()
@@ -148,8 +167,8 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
     final def fishForLiveProcessingStarted(
       position: Position = Position.First,
       testKit: TestKitBase = this): Position = testKit.expectMsgType[AnyRef] match {
-      case LiveProcessingStarted => position
-      case IndexedEvent(_, x) =>
+      case Cs.LiveProcessingStarted => position
+      case Cs.AllStreamsEvent(IndexedEvent(_, x)) =>
         x must beGreaterThanOrEqualTo(position)
         fishForLiveProcessingStarted(x, testKit)
     }

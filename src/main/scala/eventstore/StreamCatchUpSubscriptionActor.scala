@@ -3,7 +3,6 @@ package eventstore
 import akka.actor.ActorRef
 import scala.collection.immutable.Queue
 import ReadDirection.Forward
-import CatchUpSubscription._
 
 /**
  * @author Yaroslav Klymko
@@ -94,7 +93,7 @@ class StreamCatchUpSubscriptionActor(
 
   def liveProcessing(lastNumber: Option[EventNumber.Exact], stash: Queue[Event] = Queue()): Receive = {
     debug(s"live processing started, lastEventNumber: $lastNumber")
-    client ! LiveProcessingStarted
+    client ! Cs.LiveProcessingStarted
 
     def liveProcessing(lastNumber: Option[EventNumber.Exact]): Receive = {
       case StreamEventAppeared(x) => context become liveProcessing(process(lastNumber, x.event))
@@ -124,10 +123,6 @@ class StreamCatchUpSubscriptionActor(
 
   def forward(event: Event) {
     debug(s"forwarding $event")
-    client ! event // TODO put in to envelope
-  }
-
-  def forward(event: IndexedEvent) {
-    forward(event.event)
+    client ! Cs.StreamEvent(event)
   }
 }

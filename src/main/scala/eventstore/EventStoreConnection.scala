@@ -660,7 +660,7 @@ case class EventStoreSubscription()
                 fromEventNumberExclusive:Int,
                 resolveLinkTos:Boolean,
                 eventAppeared:Option[EventAppeared],
-                liveProcessingStarted:Option[LiveProcessingStarted],
+                Cus.LiveProcessingStarted:Option[Cus.LiveProcessingStarted],
                 subscriptionDropped:Option[SubscriptionDroppedFFFFF],
                 credentials: Option[UserCredentials] = None);
 
@@ -680,7 +680,7 @@ case class EventStoreSubscription()
                 Position? fromPositionExclusive,
                 resolveLinkTos:Boolean,
                 eventAppeared:Option[EventAppeared],
-                liveProcessingStarted:Option[LiveProcessingStarted],
+                Cus.LiveProcessingStarted:Option[Cus.LiveProcessingStarted],
                 subscriptionDropped:Option[SubscriptionDroppedFFFFF],
                 credentials: Option[UserCredentials] = None);
 

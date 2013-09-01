@@ -1,9 +1,8 @@
 package eventstore
 
 import akka.actor.{ Props, SupervisorStrategy, Actor, ActorRef }
-import akka.testkit.{ TestProbe, TestActorRef }
+import akka.testkit.{ TestKitBase, TestProbe, TestActorRef }
 import scala.concurrent.duration._
-import CatchUpSubscription._
 
 /**
  * @author Yaroslav Klymko
@@ -18,19 +17,19 @@ class SubscribeCatchingUpITest extends TestConnection {
 
     "be able to subscribe to non existing stream and then catch event" in new SubscribeCatchingUpScope {
       val subscriptionActor = newSubscription()
-      expectMsg(LiveProcessingStarted)
+      expectMsg(Cs.LiveProcessingStarted)
       expectNoEvents()
       val event = append(newEventData)
-      expectMsgType[Event] mustEqual event
+      expectEvent(event)
     }
 
     "be able to subscribe to non existing stream from number" in new SubscribeCatchingUpScope {
       val subscriptionActor = newSubscription(Some(EventNumber(0)))
       append(newEventData)
-      expectMsg(LiveProcessingStarted)
+      expectMsg(Cs.LiveProcessingStarted)
       expectNoEvents()
       val event = append(newEventData)
-      expectMsgType[Event] mustEqual event
+      expectEvent(event)
     }
 
     "fail if stream deleted" in new SubscribeCatchingUpScope {
@@ -43,9 +42,9 @@ class SubscribeCatchingUpITest extends TestConnection {
     "allow multiple subscriptions to same stream" in new SubscribeCatchingUpScope {
       val probes = List.fill(5)(TestProbe.apply)
       probes.foreach(x => newSubscription(client = x.ref))
-      probes.foreach(_.expectMsg(LiveProcessingStarted))
+      probes.foreach(_.expectMsg(Cs.LiveProcessingStarted))
       val event = append(newEventData)
-      probes.foreach(_.expectMsgType[Event] mustEqual event)
+      probes.foreach(x => expectEvent(event, x))
     }
 
     "stop subscription after actor stopped" in new SubscribeCatchingUpScope {
@@ -58,80 +57,80 @@ class SubscribeCatchingUpITest extends TestConnection {
     "read all existing events and keep listening to new ones" in new SubscribeCatchingUpScope {
       val event = append(newEventData)
       val subscriptionActor = newSubscription()
-      expectMsgType[Event] mustEqual event
+      expectEvent(event)
 
-      expectMsg(LiveProcessingStarted)
+      expectMsg(Cs.LiveProcessingStarted)
 
       expectNoEvents()
       val event2 = append(newEventData)
-      expectMsgType[Event] mustEqual event2
+      expectEvent(event2)
     }
 
     "filter events and keep listening to new ones" in new SubscribeCatchingUpScope {
       val subscriptionActor = newSubscription(Some(EventNumber(0)))
-      expectMsg(LiveProcessingStarted)
+      expectMsg(Cs.LiveProcessingStarted)
       append(newEventData)
       val event = append(newEventData)
-      expectMsgType[Event] mustEqual event
+      expectEvent(event)
       expectNoEvents()
       val event2 = append(newEventData)
-      expectMsgType[Event] mustEqual event2
+      expectEvent(event2)
     }
 
     "filter events and keep listening to new ones" in new SubscribeCatchingUpScope {
       append(newEventData)
       val event = append(newEventData)
       val subscriptionActor = newSubscription(Some(EventNumber(0)))
-      expectMsgType[Event] mustEqual event
-      expectMsg(LiveProcessingStarted)
+      expectEvent(event)
+      expectMsg(Cs.LiveProcessingStarted)
       expectNoEvents()
       val event2 = append(newEventData)
-      expectMsgType[Event] mustEqual event2
+      expectEvent(event2)
     }
 
     "filter events and work if nothing was written after subscription" in new SubscribeCatchingUpScope {
       append(newEventData)
       val event = append(newEventData)
       val subscriptionActor = newSubscription(Some(EventNumber(0)))
-      expectMsgType[Event] mustEqual event
-      expectMsg(LiveProcessingStarted)
+      expectEvent(event)
+      expectMsg(Cs.LiveProcessingStarted)
       expectNoEvents()
     }
 
     "read linked events if resolveLinkTos = false" in new SubscribeCatchingUpScope {
       val (linked, link) = linkedAndLink()
       newSubscription(resolveLinkTos = false)
-      expectMsgType[Event] mustEqual linked
-      expectMsgType[Event]
-      expectMsgType[Event] mustEqual link
-      expectMsg(LiveProcessingStarted)
+      expectEvent(linked)
+      expectMsgType[Cs.StreamEvent]
+      expectEvent(link)
+      expectMsg(Cs.LiveProcessingStarted)
     }
 
     "read linked events if resolveLinkTos = true" in new SubscribeCatchingUpScope {
       val (linked, link) = linkedAndLink()
       newSubscription(resolveLinkTos = true)
-      expectMsgType[Event] mustEqual linked
-      expectMsgType[Event]
-      expectMsgType[Event] mustEqual ResolvedEvent(linked, link)
-      expectMsg(LiveProcessingStarted)
+      expectEvent(linked)
+      expectMsgType[Cs.StreamEvent]
+      expectEvent(ResolvedEvent(linked, link))
+      expectMsg(Cs.LiveProcessingStarted)
     }
 
     "catch linked events if resolveLinkTos = false" in new SubscribeCatchingUpScope {
       newSubscription(resolveLinkTos = false)
-      expectMsg(LiveProcessingStarted)
+      expectMsg(Cs.LiveProcessingStarted)
       val (linked, link) = linkedAndLink()
-      expectMsgType[Event] mustEqual linked
-      expectMsgType[Event]
-      expectMsgType[Event] mustEqual link
+      expectEvent(linked)
+      expectMsgType[Cs.StreamEvent]
+      expectEvent(link)
     }
 
     "catch linked events if resolveLinkTos = true" in new SubscribeCatchingUpScope {
       newSubscription(resolveLinkTos = true)
-      expectMsg(LiveProcessingStarted)
+      expectMsg(Cs.LiveProcessingStarted)
       val (linked, link) = linkedAndLink()
-      expectMsgType[Event] mustEqual linked
-      expectMsgType[Event]
-      expectMsgType[Event] mustEqual ResolvedEvent(linked, link)
+      expectEvent(linked)
+      expectMsgType[Cs.StreamEvent]
+      expectEvent(ResolvedEvent(linked, link))
     }
   }
 
@@ -164,6 +163,8 @@ class SubscribeCatchingUpITest extends TestConnection {
       actor.underlying.isTerminated must beTrue
       expectNoEvents()
     }
+
+    def expectEvent(x: Event, probe: TestKitBase = this) = probe.expectMsg(Cs.StreamEvent(x))
   }
 }
 
