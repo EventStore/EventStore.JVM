@@ -21,6 +21,18 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
   import context.dispatcher
   import settings._
 
+  val init = TcpPipelineHandler.withLogger(log,
+    new MessageByteStringAdapter >>
+      new LengthFieldFrame(
+        maxSize = 64 * 1024 * 1024,
+        byteOrder = ByteOrder.LITTLE_ENDIAN,
+        lengthIncludesHeader = false) >>
+      new TcpReadWriteAdapter >>
+      new BackpressureBuffer(
+        lowBytes = backpressureSettings.lowWatermark,
+        highBytes = backpressureSettings.highWatermark,
+        maxBytes = backpressureSettings.maxCapacity))
+
   override def preStart() {
     log.debug(s"connecting to $address")
     tcp ! connect
@@ -41,18 +53,6 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
       log.info(s"connected to $remote")
 
       val connection = sender
-
-      val init = TcpPipelineHandler.withLogger(log,
-        new MessageByteStringAdapter >>
-          new LengthFieldFrame(
-            maxSize = 64 * 1024 * 1024,
-            byteOrder = ByteOrder.LITTLE_ENDIAN,
-            lengthIncludesHeader = false) >>
-          new TcpReadWriteAdapter >>
-          new BackpressureBuffer(
-            lowBytes = backpressureSettings.lowWatermark,
-            highBytes = backpressureSettings.highWatermark,
-            maxBytes = backpressureSettings.maxCapacity))
 
       val pipeline = context.actorOf(TcpPipelineHandler.props(init, connection, self))
 
@@ -132,6 +132,11 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
 
           case _ => log.info(s"closing connection to $address")
         }
+
+      case Terminated(`connection`) =>
+        scheduled.cancel()
+        log.error(s"connection lost to $address")
+        maybeReconnect()
     }
   }
 

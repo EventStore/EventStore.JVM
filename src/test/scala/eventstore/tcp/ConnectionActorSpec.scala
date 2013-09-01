@@ -10,7 +10,6 @@ import java.net.InetSocketAddress
 import java.nio.ByteOrder
 import scala.concurrent.duration._
 import EventStoreFormats.{ TcpPackageInReader, TcpPackageOutWriter }
-import eventstore.util.BytesWriter
 
 /**
  * @author Yaroslav Klymko
@@ -32,6 +31,12 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       val (_, tcpConnection) = connect(settings.copy(maxReconnections = 1))
       tcpConnection ! Abort
       expectMsg(Aborted)
+      expectMsgType[Connected]
+    }
+
+    "reconnect when connection actor died" in new TcpScope {
+      val (_, tcpConnection) = connect(settings.copy(maxReconnections = 1))
+      system stop tcpConnection
       expectMsgType[Connected]
     }
 
@@ -123,15 +128,37 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     }
 
     "pong" in new TcpScope {
-      val (client, connection) = connect()
+      val (_, tcpConnection) = connect()
 
-      connection ! write(TcpPackageOut(Ping))
+      tcpConnection ! write(Ping)
       expectTcpPack.message mustEqual Pong
     }
 
-    "stash messages while connecting" in todo
-    "stash messages while connection lost" in todo
-    "send stashed messages when connection restored" in todo
+    "stash messages while connecting" in new TcpScope {
+      val connection = newConnection()
+
+      connection ! Ping
+      connection ! HeartbeatRequest
+
+      val tcpConnection = newTcpConnection()
+
+      expectTcpPack.message mustEqual Ping
+      expectTcpPack.message mustEqual HeartbeatRequest
+    }
+
+    "stash messages while connection lost" in new TcpScope {
+      val (connection, tcpConnection) = connect()
+      tcpConnection ! Close
+      expectMsg(Closed)
+
+      connection ! Ping
+      connection ! HeartbeatRequest
+
+      newTcpConnection()
+
+      expectTcpPack.message mustEqual Ping
+      expectTcpPack.message mustEqual HeartbeatRequest
+    }.pendingUntilFixed
 
     "bind actor to correlationId" in new TcpScope {
       val (connection, tcpConnection) = connect()
@@ -194,17 +221,22 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     val settings = Settings(address = address)
 
     def connect(settings: Settings = settings): (TestActorRef[ConnectionActor], ActorRef) = {
-      val client = TestActorRef(new ConnectionActor(settings))
-      val connection = {
-        expectMsgType[Connected]
-        val connection = lastSender
-        connection ! Register(self)
-        connection
-      }
-      client -> connection
+      val connection = newConnection(settings)
+      val tcpConnection = newTcpConnection()
+      connection -> tcpConnection
     }
 
-    def write(x: TcpPackageOut) = Write(Frame(x))
+    def newConnection(settings: Settings = settings) = TestActorRef(new ConnectionActor(settings))
+
+    def newTcpConnection() = {
+      expectMsgType[Connected]
+      val connection = lastSender
+      connection ! Register(self)
+      connection
+    }
+
+    def write(x: TcpPackageOut): Write = Write(Frame(x))
+    def write(x: Out): Write = write(TcpPackageOut(x))
 
     def bind(address: InetSocketAddress = new InetSocketAddress(0)): (InetSocketAddress, ActorRef) = {
       IO(Tcp) ! Bind(self, address)
@@ -230,7 +262,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
 
     def apply(pack: TcpPackageOut): ByteString = {
       val bb = ByteString.newBuilder
-      val data = BytesWriter[TcpPackageOut].toByteString(pack)
+      val data = util.BytesWriter[TcpPackageOut].toByteString(pack)
       bb.putInt(data.length)
       bb.append(data)
       bb.result()
