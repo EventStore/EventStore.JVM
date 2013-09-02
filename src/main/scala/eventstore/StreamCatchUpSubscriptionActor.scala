@@ -33,7 +33,7 @@ class StreamCatchUpSubscriptionActor(
 
       case ReadStreamEventsFailed(reason, message, Forward) => context become (reason match {
         case ReadStreamEventsFailed.Reason.NoStream => subscribe(lastNumber, nextNumber)
-        case _                                      => EventStore.error(reason, message)
+        case _                                      => throw EventStoreException(streamId, reason, message)
       })
     }
   }
@@ -81,7 +81,7 @@ class StreamCatchUpSubscriptionActor(
           loop(events.toList, lastNumber)
         })
 
-      case ReadStreamEventsFailed(reason, message, Forward) => EventStore.error(reason, message)
+      case ReadStreamEventsFailed(reason, message, Forward) => throw EventStoreException(streamId, reason, message)
 
       case StreamEventAppeared(x) if x.event.record.number > subscriptionNumber =>
         debug(s"catching up: adding appeared event to stash(${stash.size}): $x")

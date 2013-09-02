@@ -27,7 +27,7 @@ trait AbstractSubscriptionActor extends Actor with ActorLogging {
     case SubscriptionDropped(reason) =>
       subscribed = false
       log.warning(s"$streamId: subscription failed: $reason, $msg")
-      EventStore.error(reason)
+      throw EventStoreException(streamId, reason)
   }
 
   def debug(msg: => String) {

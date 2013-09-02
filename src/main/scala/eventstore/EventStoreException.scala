@@ -3,83 +3,57 @@ package eventstore
 /**
  * @author Yaroslav Klymko
  */
-object EventStore {
-  def error(x: Any, msg: Option[String] = None): Nothing = msg match {
-    case Some(m) => sys.error(s"$x, $m")
-    case None    => sys.error(x.toString)
+class EventStoreException(message: String, cause: Option[Throwable] = None)
+  extends Exception(message, cause getOrElse null)
+
+object EventStoreException {
+  def apply(reason: ReadAllEventsFailed.Reason.Value, msg: Option[String] = None): EventStoreException = {
+    import ReadAllEventsFailed.Reason._
+    val cause = reason match {
+      case Error        => new ServerErrorException(msg)
+      case AccessDenied => new AccessDeniedException()
+    }
+    new ReadException(EventStream.All, Some(cause))
+  }
+
+  def apply(
+    streamId: EventStream.Id,
+    reason: ReadStreamEventsFailed.Reason.Value,
+    msg: Option[String]): EventStoreException = {
+    import ReadStreamEventsFailed.Reason._
+
+    val cause = reason match {
+      case NoStream      => new StreamNotFoundException(streamId)
+      case StreamDeleted => new StreamDeletedException(streamId)
+      case Error         => new ServerErrorException(msg)
+      case AccessDenied  => new AccessDeniedException()
+    }
+    new ReadException(streamId, Some(cause))
+  }
+
+  def apply(streamId: EventStream, reason: SubscriptionDropped.Reason.Value) = {
+    import SubscriptionDropped.Reason._
+    val cause = reason match {
+      case Unsubscribed => None
+      case AccessDenied => Some(new AccessDeniedException())
+    }
+    throw new SubscriptionException(streamId, cause)
   }
 }
-class EventStoreException extends Exception {
 
-  /*namespace EventStore.ClientAPI.Exceptions
-  {
-      public class EventStoreConnectionException : Exception
-      {
-          public EventStoreConnectionException()
-          {
-          }
+class ReadException(val streamId: EventStream, cause: Option[Throwable] = None)
+  extends EventStoreException(s"failed to read from $streamId", cause)
 
-          public EventStoreConnectionException(string message): base(message)
-          {
-          }
+class SubscriptionException(val streamId: EventStream, cause: Option[Throwable] = None)
+  extends EventStoreException(s"subscription failed to $streamId", cause)
 
-          public EventStoreConnectionException(string message, Exception innerException): base(message, innerException)
-          {
-          }
+class AccessDeniedException(credentials: UserCredentials = UserCredentials.defaultAdmin)
+  extends EventStoreException(s"access denied for $credentials")
 
-          protected EventStoreConnectionException(SerializationInfo info, StreamingContext context): base(info, context)
-          {
-          }
-      }
-  }
-  */
+class StreamDeletedException(streamId: EventStream.Id)
+  extends EventStoreException(s"$streamId has been deleted")
 
-}
+class StreamNotFoundException(streamId: EventStream.Id)
+  extends EventStoreException(s"$streamId not found")
 
-class StreamDeletedException(streamId: String) extends EventStoreException {
-  /*using EventStore.ClientAPI.Common.Utils;
-
-namespace EventStore.ClientAPI.Exceptions
-{
-    public class StreamDeletedException : EventStoreConnectionException
-    {
-        public readonly string Stream;
-
-        public StreamDeletedException(string stream)
-            : base(string.Format("Event stream '{0}' is deleted.", stream))
-        {
-            Ensure.NotNullOrEmpty(stream, "stream");
-            Stream = stream;
-        }
-
-        public StreamDeletedException()
-            : base("Transaction failed due to underlying stream being deleted.")
-        {
-            Stream = null;
-        }
-    }
-}
-*/
-}
-
-class WrongExpectedVersionException extends EventStoreException {
-  /*namespace EventStore.ClientAPI.Exceptions
-{
-    public class WrongExpectedVersionException : EventStoreConnectionException
-    {
-        public WrongExpectedVersionException(string message) : base(message)
-        {
-        }
-
-        public WrongExpectedVersionException(string message, Exception innerException) : base(message, innerException)
-        {
-        }
-
-        protected WrongExpectedVersionException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-        }
-    }
-}
-*/
-}
-
+class ServerErrorException(message: Option[String]) extends EventStoreException(message getOrElse null)
