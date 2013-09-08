@@ -365,9 +365,8 @@ class StreamCatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActo
     def readStreamEvents(x: Int) =
       ReadStreamEvents(streamId, EventNumber(x), readBatchSize, Forward, resolveLinkTos = resolveLinkTos)
 
-    def readStreamEventsSucceed(next: Int, endOfStream: Boolean, events: Event*) =
-      ReadStreamEventsSucceed(
-        events = events,
+    def readStreamEventsSucceed(next: Int, endOfStream: Boolean, events: Event*) = ReadStreamEventsSucceed(
+        events = Seq(events: _*),
         nextEventNumber = EventNumber(next),
         lastEventNumber = mock[EventNumber.Exact],
         endOfStream = endOfStream,

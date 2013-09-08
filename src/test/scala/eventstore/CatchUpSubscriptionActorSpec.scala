@@ -367,7 +367,7 @@ class CatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActorSpec 
     def readAllEvents(x: Long) = ReadAllEvents(Position(x), readBatchSize, Forward, resolveLinkTos = resolveLinkTos)
 
     def readAllEventsSucceed(position: Long, next: Long, events: IndexedEvent*) =
-      ReadAllEventsSucceed(events, Position(position), Position(next), Forward)
+      ReadAllEventsSucceed(Seq(events: _*), Position(position), Position(next), Forward)
 
     def readAllEventsFailed = ReadAllEventsFailed(ReadAllEventsFailed.Reason.Error, None, Position(0), Forward)
   }
