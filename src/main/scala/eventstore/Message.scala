@@ -3,9 +3,19 @@ package eventstore
 /**
  * @author Yaroslav Klymko
  */
+
+sealed trait OutLike
+
+case class WithCredentials(message: Out, credentials: UserCredentials) extends OutLike
+
 sealed trait Message
 sealed trait In extends Message
-sealed trait Out extends Message
+
+sealed trait Out extends Message with OutLike {
+  def withCredentials(login: String, password: String): WithCredentials = WithCredentials(
+    message = this,
+    credentials = UserCredentials(login = login, password = password))
+}
 sealed trait InOut extends In with Out
 
 case object HeartbeatRequest extends InOut

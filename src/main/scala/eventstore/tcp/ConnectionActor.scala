@@ -75,9 +75,9 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
         context become connecting(stash, reconnectionsLeft - 1)
       }
 
-    case message: Out =>
-      log.debug(s"received $message while not connected, adding to stash")
-      val pack = tcpPackage(message)
+    case x: OutLike =>
+      log.debug(s"received $x while not connected, adding to stash")
+      val pack = tcpPack(x)
       context become connecting(stash enqueue pack)
   }
 
@@ -110,7 +110,7 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
         }
         context become connected(connection, send, init, packNumber + 1)
 
-      case out: Out          => send(tcpPackage(out))
+      case x: OutLike        => send(tcpPack(x))
 
       case HeartbeatInterval => send(TcpPackageOut(HeartbeatRequest))
 
@@ -150,7 +150,7 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
     }
   }
 
-  def tcpPackage(message: Out) = {
+  def tcpPack(message: OutLike): TcpPackageOut = {
     val correlationId = binding.y(sender).getOrElse {
       val x = newUuid
       log.debug(s"add sender $sender for $x")
@@ -159,7 +159,12 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
       x
     }
 
-    TcpPackageOut(correlationId, message, settings.userCredentials)
+    val (out, credentials) = message match {
+      case WithCredentials(x, c) => x -> Some(c)
+      case x: Out                => x -> settings.defaultCredentials
+    }
+
+    TcpPackageOut(correlationId, out, credentials)
   }
 
   def dispatch(pack: TcpPackageIn) {

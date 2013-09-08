@@ -16,7 +16,7 @@ class ReadAllEventsForwardITest extends TestConnection {
       readAllEventsSucceed(Position.First, -1) must throwAn[IllegalArgumentException]
     }
 
-    "fail if count > MacBatchSize" in new TestConnectionScope {
+    "fail if count > MaxBatchSize" in new TestConnectionScope {
       readAllEventsSucceed(Position.First, MaxBatchSize + 1) must throwAn[IllegalArgumentException]
     }
 

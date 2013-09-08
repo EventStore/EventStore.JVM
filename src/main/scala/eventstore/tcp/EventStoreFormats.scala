@@ -61,11 +61,10 @@ trait EventStoreFormats extends EventStoreProtoFormats {
     def write(x: TcpPackageOut, builder: ByteStringBuilder) {
       val (writeMarker, writeMessage) = MarkerByte.writeMessage(x.message)
       writeMarker(builder)
-
-      BytesWriter[Flags].write(Flags(x.userCredentials), builder)
+      val credentials = x.credentials
+      BytesWriter[Flags].write(Flags(credentials), builder)
       BytesWriter[Uuid].write(x.correlationId, builder)
-      x.userCredentials.foreach(x => BytesWriter[UserCredentials].write(x, builder))
-
+      credentials.foreach(x => BytesWriter[UserCredentials].write(x, builder))
       writeMessage(builder)
     }
   }

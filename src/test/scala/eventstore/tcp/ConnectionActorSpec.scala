@@ -6,10 +6,10 @@ import akka.io.{ Tcp, IO }
 import akka.io.Tcp._
 import akka.testkit.{ TestProbe, TestActorRef }
 import akka.actor.{ Terminated, ActorRef }
+import akka.util.ByteIterator
 import java.net.InetSocketAddress
 import java.nio.ByteOrder
 import scala.concurrent.duration._
-import EventStoreFormats.{ TcpPackageInReader, TcpPackageOutWriter }
 
 /**
  * @author Yaroslav Klymko
@@ -73,7 +73,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
 
     "reconnect if heartbeat timed out" in new TcpScope {
       val (_, tcpConnection) = connect()
-      val req = expectTcpPack
+      val req = expectPack
       req.message mustEqual HeartbeatRequest
       expectMsg(PeerClosed)
       expectMsgType[Connected]
@@ -82,16 +82,16 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     "not reconnect if heartbeat response received in time" in new TcpScope {
       val (_, tcpConnection) = connect()
 
-      val req = expectTcpPack
+      val req = expectPack
       req.message mustEqual HeartbeatRequest
 
       tcpConnection ! write(TcpPackageOut(req.correlationId, HeartbeatResponse))
-      expectTcpPack.message mustEqual HeartbeatRequest
+      expectPack.message mustEqual HeartbeatRequest
     }
 
     "close connection if heartbeat timed out and maxReconnections == 0" in new TcpScope {
       val (_, tcpConnection) = connect(settings.copy(maxReconnections = 0))
-      expectTcpPack.message mustEqual HeartbeatRequest
+      expectPack.message mustEqual HeartbeatRequest
       expectMsg(PeerClosed)
       expectNoMsg()
     }
@@ -99,12 +99,12 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     "not close connection if heartbeat response received in time" in new TcpScope {
       val (_, tcpConnection) = connect(settings.copy(maxReconnections = 0))
 
-      val req = expectTcpPack
+      val req = expectPack
       req.message mustEqual HeartbeatRequest
 
       tcpConnection ! write(TcpPackageOut(req.correlationId, HeartbeatResponse))
 
-      expectTcpPack.message mustEqual HeartbeatRequest
+      expectPack.message mustEqual HeartbeatRequest
     }
 
     "respond with HeartbeatResponseCommand on HeartbeatRequestCommand" in new TcpScope {
@@ -112,7 +112,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       val req = TcpPackageOut(HeartbeatRequest)
       tcpConnection ! write(req)
 
-      val res = expectTcpPack
+      val res = expectPack
       res.correlationId mustEqual req.correlationId
       res.message mustEqual HeartbeatResponse
     }
@@ -121,7 +121,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       val (connection, tcpConnection) = connect()
       connection ! Ping
 
-      val req = expectTcpPack
+      val req = expectPack
       req.message mustEqual Ping
 
       tcpConnection ! write(TcpPackageOut(req.correlationId, Pong))
@@ -131,7 +131,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       val (_, tcpConnection) = connect()
 
       tcpConnection ! write(Ping)
-      expectTcpPack.message mustEqual Pong
+      expectPack.message mustEqual Pong
     }
 
     "stash messages while connecting" in new TcpScope {
@@ -142,8 +142,8 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
 
       val tcpConnection = newTcpConnection()
 
-      expectTcpPack.message mustEqual Ping
-      expectTcpPack.message mustEqual HeartbeatRequest
+      expectPack.message mustEqual Ping
+      expectPack.message mustEqual HeartbeatRequest
     }
 
     "stash messages while connection lost" in new TcpScope {
@@ -156,8 +156,8 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
 
       newTcpConnection()
 
-      expectTcpPack.message mustEqual Ping
-      expectTcpPack.message mustEqual HeartbeatRequest
+      expectPack.message mustEqual Ping
+      expectPack.message mustEqual HeartbeatRequest
     }.pendingUntilFixed
 
     "bind actor to correlationId" in new TcpScope {
@@ -168,7 +168,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
           val actor = probe.ref
           connection.tell(Ping, actor)
 
-          val pack = expectTcpPack
+          val pack = expectPack
           pack.message mustEqual Ping
 
           val correlationId = pack.correlationId
@@ -196,7 +196,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
 
       connection.tell(Ping, probe.ref)
 
-      val req = expectTcpPack
+      val req = expectPack
       req.message mustEqual Ping
 
       val res = TcpPackageOut(req.correlationId, Pong)
@@ -213,6 +213,26 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       deathProbe expectNoMsg 1.second
 
       connection.underlyingActor.binding must beEmpty
+    }
+
+    "use default credentials if not provided with message" in new SecurityScope {
+      val x = UserCredentials("login", "password")
+      ?(default = Some(x)) must beSome(x)
+    }
+
+    "use credentials that is provided with message" in new SecurityScope {
+      val c = UserCredentials("login", "password")
+      ?(withMessage = Some(c)) must beSome(c)
+    }
+
+    "use credentials provided with message rather then default" in new SecurityScope {
+      val x1 = UserCredentials("l1", "p2")
+      val x2 = UserCredentials("l2", "p2")
+      ?(withMessage = Some(x1), default = Some(x2)) must beSome(x1)
+    }
+
+    "use no credentials if either not provided with message default" in new SecurityScope {
+      ?(withMessage = None, default = None) must beNone
     }
   }
 
@@ -235,7 +255,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       connection
     }
 
-    def write(x: TcpPackageOut): Write = Write(Frame(x))
+    def write(x: TcpPackageOut): Write = Write(Frame.toByteString(x))
     def write(x: Out): Write = write(TcpPackageOut(x))
 
     def bind(address: InetSocketAddress = new InetSocketAddress(0)): (InetSocketAddress, ActorRef) = {
@@ -243,7 +263,8 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       expectMsgType[Bound].localAddress -> lastSender
     }
 
-    def expectTcpPack = Frame.unapply(expectMsgType[Received].data)
+    def expectPack = Frame.readIn(expectMsgType[Received].data)
+    def expectPackOut = Frame.readOut(expectMsgType[Received].data)
 
     def unbind(socket: ActorRef) {
       socket ! Unbind
@@ -252,15 +273,37 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
   }
 
   object Frame {
+    import EventStoreFormats._
+
     implicit val byteOrder = ByteOrder.LITTLE_ENDIAN
 
-    def unapply(bs: ByteString): TcpPackageIn = {
+    def readIn(bs: ByteString): TcpPackageIn = {
       val iterator = bs.iterator
       val length = iterator.getInt
       TcpPackageInReader.read(iterator)
     }
 
-    def apply(pack: TcpPackageOut): ByteString = {
+    def readOut(bs: ByteString): TcpPackageOut = {
+      def readPack(bi: ByteIterator) = {
+        import util.BytesReader
+        val readMessage = MarkerByte.readMessage(bi)
+
+        val flags = BytesReader[Flags].read(bi)
+        val correlationId = BytesReader[Uuid].read(bi)
+        val credentials =
+          if ((flags & Flag.Auth) == 0) None
+          else Some(BytesReader[UserCredentials].read(bi))
+
+        val message = readMessage(bi)
+        TcpPackageOut(correlationId, message.asInstanceOf[Out], credentials)
+      }
+
+      val iterator = bs.iterator
+      val length = iterator.getInt
+      readPack(iterator)
+    }
+
+    def toByteString(pack: TcpPackageOut): ByteString = {
       val bb = ByteString.newBuilder
       val data = util.BytesWriter[TcpPackageOut].toByteString(pack)
       bb.putInt(data.length)
@@ -281,6 +324,21 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
         lastSender ! CommandFailed(connect)
         verifyReconnections(n - 1)
       }
+    }
+  }
+
+  trait SecurityScope extends TcpScope {
+    def ?(default: Option[UserCredentials] = None, withMessage: Option[UserCredentials] = None) = {
+      val (connection, _) = connect(settings.copy(defaultCredentials = default))
+      val message = Ping
+      val envelope = withMessage match {
+        case Some(x) => WithCredentials(message, x)
+        case None    => message
+      }
+      connection ! envelope
+      val pack = expectPackOut
+      pack.message mustEqual message
+      pack.credentials
     }
   }
 }
