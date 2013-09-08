@@ -21,7 +21,7 @@ object EventNumber {
   case object Last extends EventNumber {
     def compare(that: EventNumber) = if (that.isInstanceOf[Last.type]) 0 else 1
 
-    override def toString = "LastEventNumber"
+    override def toString = "EventNumber.Last"
   }
 
   case class Exact(value: Int) extends EventNumber {

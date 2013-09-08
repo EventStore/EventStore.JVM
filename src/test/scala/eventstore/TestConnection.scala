@@ -22,9 +22,11 @@ abstract class TestConnection extends util.ActorSpec {
       probe.expectMsg(DeleteStreamSucceed)
     }
 
-    def newEventData = EventData(
+    def newEventData: EventData = EventData(
       newUuid, "test",
+      //      dataContentType = ContentType.Json,
       data = ByteString("""{"data":"data"}"""),
+      //      metadataContentType = ContentType.Json,
       metadata = ByteString("""{"metadata":"metadata"}"""))
 
     def appendToStreamSucceed(
@@ -66,6 +68,15 @@ abstract class TestConnection extends util.ActorSpec {
 
       loop(0)
       events
+    }
+
+    def readEventSucceed(eventNumber: EventNumber, resolveLinkTos: Boolean = false) = {
+      actor ! ReadEvent(streamId, eventNumber, resolveLinkTos = resolveLinkTos)
+      val event = expectMsgType[ReadEventSucceed].event
+      event.streamId mustEqual streamId
+      if (!resolveLinkTos) event must beAnInstanceOf[EventRecord]
+      if (eventNumber != EventNumber.Last) event.number mustEqual eventNumber
+      event
     }
 
     def readStreamEventsSucceed(fromEventNumber: EventNumber, maxCount: Int, resolveLinkTos: Boolean = false)(implicit direction: ReadDirection.Value) = {

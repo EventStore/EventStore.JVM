@@ -19,7 +19,7 @@ object Position {
   case object Last extends Position {
     def compare(that: Position) = if (that.isInstanceOf[Last.type]) 0 else 1
 
-    override def toString = "LastPosition"
+    override def toString = "Position.Last"
   }
 
   case class Exact(commitPosition: Long, preparePosition: Long) extends Position {

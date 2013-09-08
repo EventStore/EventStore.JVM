@@ -10,7 +10,7 @@ object EventStream {
   def apply(id: String): Id = Id(id)
 
   case object All extends EventStream {
-    override def toString = "AllEventStreams"
+    override def toString = "Stream.All"
   }
 
   case class Id(value: String) extends EventStream {
@@ -20,6 +20,6 @@ object EventStream {
     def isSystem = value startsWith "$"
     def isMeta = value startsWith "$$"
 
-    override def toString = s"EventStreamId($value)"
+    override def toString = s"Stream($value)"
   }
 }

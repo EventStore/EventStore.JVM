@@ -15,7 +15,7 @@ sealed trait Event extends Ordered[Event] {
 
   def link(eventId: Uuid, metadata: ByteString = ByteString()): EventData = EventData(
     eventId = eventId,
-    eventType = "$>",
+    eventType = EvenType.LinkTo,
     data = ByteString(s"${number.value}@${streamId.value}"),
     metadata = metadata)
 }
@@ -41,17 +41,15 @@ case class ResolvedEvent(linkedEvent: EventRecord, linkEvent: EventRecord) exten
 case class EventData(
   eventId: Uuid,
   eventType: String,
-  //                 dataContentType: Int, // TODO
-  data: ByteString,
-  //                 metadataContentType: Int, // TODO
-  metadata: ByteString) extends BetterToString
+  //  dataContentType: ContentType = ContentType.Binary, TODO not yet implemented in EventStore 2.0.1
+  data: ByteString = ByteString.empty,
+  //  metadataContentType: ContentType = ContentType.Binary, TODO not yet implemented in EventStore 2.0.1
+  metadata: ByteString = ByteString.empty) extends BetterToString
 
 object EventData {
-  def apply(eventId: Uuid, eventType: String): EventData = EventData(eventId, eventType, ByteString.empty, ByteString.empty)
-
   object StreamDeleted {
     def unapply(x: EventData): Option[Uuid] = PartialFunction.condOpt(x) {
-      case EventData(eventId, EvenType.streamDeleted, ByteString.empty, ByteString.empty) => eventId
+      case EventData(eventId, EvenType.StreamDeleted, /*ContentType.Binary,*/ ByteString.empty, /*ContentType.Binary,*/ ByteString.empty) => eventId
     }
   }
 }
@@ -60,7 +58,10 @@ case class IndexedEvent(event: Event, position: Position.Exact) extends Ordered[
   def compare(that: IndexedEvent) = this.position compare that.position
 }
 
+// TODO
 object EvenType {
-  val streamDeleted = "$streamDeleted" // TODO
-  val streamCreated = "$streamCreated" // TODO
+  val StreamDeleted = "$streamDeleted"
+  val StatsCollection = "$statsCollected"
+  val LinkTo = "$>"
+  val StreamMetadata = "$metadata"
 }

@@ -50,15 +50,6 @@ class ReadEventITest extends TestConnection {
       expectMsgType[ReadEventFailed].reason
     }
 
-    def readEventSucceed(eventNumber: EventNumber, resolveLinkTos: Boolean = false) = {
-      actor ! ReadEvent(streamId, eventNumber, resolveLinkTos = resolveLinkTos)
-      val event = expectMsgType[ReadEventSucceed].event
-      event.streamId mustEqual streamId
-      if (!resolveLinkTos) event must beAnInstanceOf[EventRecord]
-      if (eventNumber != EventNumber.Last) event.number mustEqual eventNumber
-      event
-    }
-
     def readEventData(eventNumber: EventNumber): EventData = readEventSucceed(eventNumber).data
   }
 }

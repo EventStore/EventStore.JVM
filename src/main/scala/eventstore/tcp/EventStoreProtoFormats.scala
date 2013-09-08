@@ -16,8 +16,10 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
     def toProto(x: EventData) = proto.NewEvent(
       `eventId` = protoByteString(x.eventId),
       `eventType` = x.eventType,
-      `dataContentType` = 0,
-      `metadataContentType` = 0,
+      //      `dataContentType` = x.dataContentType.value, TODO
+      //      `metadataContentType` = x.metadataContentType.value, TODO
+      `dataContentType` = ContentType.Binary.value,
+      `metadataContentType` = ContentType.Binary.value,
       `data` = protoByteString(x.data),
       `metadata` = protoByteStringOption(x.metadata))
   }
@@ -30,7 +32,9 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
       data = EventData(
         eventId = uuid(x.`eventId`),
         eventType = x.`eventType`,
+        //        dataContentType = ContentType(x.`dataContentType`),
         data = byteString(x.`data`),
+        //        metadataContentType = ContentType(x.`metadataContentType`),
         metadata = byteString(x.`metadata`)))
   }
 
