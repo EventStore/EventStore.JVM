@@ -159,7 +159,7 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
       x
     }
 
-    TcpPackageOut(correlationId, message, Some(UserCredentials.defaultAdmin))
+    TcpPackageOut(correlationId, message, settings.userCredentials)
   }
 
   def dispatch(pack: TcpPackageIn) {

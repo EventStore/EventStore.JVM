@@ -49,7 +49,7 @@ case class Settings(
     //                             /// </summary>
     //                             public readonly TimeSpan OperationTimeoutCheckPeriod;
     //
-    //                             public readonly UserCredentials DefaultUserCredentials;
+    userCredentials: Option[UserCredentials] = Some(UserCredentials.defaultAdmin),
     //                             public readonly bool UseSslConnection;
     //                             public readonly string TargetHost;
     //                             public readonly bool ValidateServer;
