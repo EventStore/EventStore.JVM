@@ -41,11 +41,16 @@ case object Pong extends InOut
 //  externalHttpAddress: String,
 //  externalHttpPort: Int) extends Message
 
+
+// TODO rename to WriteEvents
+// TODO reorder
 case class AppendToStream(
   streamId: EventStream.Id,
-  expectedVersion: ExpectedVersion,
+  expectedVersion: ExpectedVersion = ExpectedVersion.Any,
   events: Seq[EventData],
-  requireMaster: Boolean = true) extends Out
+  requireMaster: Boolean = true) extends Out{
+  require(events.nonEmpty, "AppendToStream.events is empty")
+}
 
 sealed trait AppendToStreamCompleted extends In
 case class AppendToStreamSucceed(firstEventNumber: EventNumber.Exact) extends AppendToStreamCompleted
