@@ -36,7 +36,7 @@ object MarkerByte {
     //    PhysicalChunkBulk = 0x12,
     //    LogicalChunkBulk = 0x13,
     //
-    0x83 -> reader[AppendToStreamCompleted],
+    0x83 -> reader[WriteEventsCompleted],
     0x85 -> reader[TransactionStartCompleted],
     0x87 -> reader[TransactionWriteCompleted],
     0x89 -> reader[TransactionCommitCompleted],
@@ -87,7 +87,7 @@ object MarkerByte {
     //    CreateChunk = 0x11,
     //    PhysicalChunkBulk = 0x12,
     //    LogicalChunkBulk = 0x 13,
-    case x: AppendToStream     => writer(0x82, x)
+    case x: WriteEvents        => writer(0x82, x)
     case x: TransactionStart   => writer(0x84, x)
     case x: TransactionWrite   => writer(0x86, x)
     case x: TransactionCommit  => writer(0x88, x)

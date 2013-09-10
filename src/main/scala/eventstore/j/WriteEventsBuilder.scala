@@ -7,17 +7,15 @@ import scala.collection.JavaConverters._
 /**
  * @author Yaroslav Klymko
  */
-class WriteEventsBuilder(val streamId: String) extends Builder[AppendToStream] {
+class WriteEventsBuilder(val streamId: String) extends Builder[WriteEvents] {
   private val _streamId: EventStream.Id = EventStream(streamId)
   private var _expectedVersion: ExpectedVersion = ExpectedVersion.Any
   private var _events: ListBuffer[EventData] = new ListBuffer()
   private var _requireMaster: Boolean = true
 
-
-//  def streamId(streamId: String) = set {
-//    _streamId = EventStream.Id(streamId)
-//  }
-
+  //  def streamId(streamId: String) = set {
+  //    _streamId = EventStream.Id(streamId)
+  //  }
 
   def addEvent(x: EventData) = set {
     _events += x
@@ -37,7 +35,6 @@ class WriteEventsBuilder(val streamId: String) extends Builder[AppendToStream] {
     addEvents(xs)
   }
 
-
   def expectNoStream = set {
     _expectedVersion = ExpectedVersion.NoStream
   }
@@ -50,12 +47,11 @@ class WriteEventsBuilder(val streamId: String) extends Builder[AppendToStream] {
     _expectedVersion = ExpectedVersion.Exact(x)
   }
 
-
   def requireMaster(x: Boolean) = set {
     _requireMaster = x
   }
 
-  def build(): AppendToStream = AppendToStream(
+  def build(): WriteEvents = WriteEvents(
     streamId = _streamId,
     expectedVersion = _expectedVersion,
     events = Seq(_events: _*),

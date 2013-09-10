@@ -59,19 +59,19 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
       x.`link`.map(EventRecordReader.fromProto))
   }
 
-  implicit object AppendToStreamWriter extends ProtoWriter[AppendToStream] {
-    def toProto(x: AppendToStream) = proto.WriteEvents(
+  implicit object WriteEventsWriter extends ProtoWriter[WriteEvents] {
+    def toProto(x: WriteEvents) = proto.WriteEvents(
       `eventStreamId` = x.streamId.value,
       `expectedVersion` = expectedVersion(x.expectedVersion),
       `events` = x.events.map(EventDataWriter.toProto).toVector,
       `requireMaster` = x.requireMaster)
   }
 
-  implicit object AppendToStreamCompletedReader
-      extends ProtoReader[AppendToStreamCompleted, proto.WriteEventsCompleted](proto.WriteEventsCompleted) {
+  implicit object WriteEventsCompletedReader
+      extends ProtoReader[WriteEventsCompleted, proto.WriteEventsCompleted](proto.WriteEventsCompleted) {
     def fromProto(x: proto.WriteEventsCompleted) = operationFailed(x.`result`) match {
-      case Some(reason) => AppendToStreamFailed(reason, message(x.`message`))
-      case None         => AppendToStreamSucceed(EventNumber(x.`firstEventNumber`))
+      case Some(reason) => WriteEventsFailed(reason, message(x.`message`))
+      case None         => WriteEventsSucceed(EventNumber(x.`firstEventNumber`))
     }
   }
 

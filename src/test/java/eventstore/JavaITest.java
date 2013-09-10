@@ -54,7 +54,7 @@ public class JavaITest {
                     .metadata("{\"metadata\":\"metadata\"}")
                     .build();
 
-            final AppendToStream writeEvents = new WriteEventsBuilder(streamId)
+            final WriteEvents writeEvents = new WriteEventsBuilder(streamId)
                     .expectNoStream()
                     .event(eventData)
                     .requireMaster(true)
@@ -62,7 +62,7 @@ public class JavaITest {
 
             connection.tell(writeEvents, getRef());
 
-            final AppendToStreamSucceed writeEventsSucceed = expectMsgClass(duration("3 seconds"), AppendToStreamSucceed.class);
+            final WriteEventsSucceed writeEventsSucceed = expectMsgClass(duration("3 seconds"), WriteEventsSucceed.class);
 
 //            ByteString$.MODULE$.apply() TODO
 

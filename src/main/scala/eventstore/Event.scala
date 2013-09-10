@@ -39,12 +39,12 @@ case class ResolvedEvent(linkedEvent: EventRecord, linkEvent: EventRecord) exten
 }
 
 case class EventData(
-  eventId: Uuid,
-  eventType: String,
-  //  dataContentType: ContentType = ContentType.Binary, TODO not yet implemented in EventStore 2.0.1
-  data: ByteString = ByteString.empty,
-  //  metadataContentType: ContentType = ContentType.Binary, TODO not yet implemented in EventStore 2.0.1
-  metadata: ByteString = ByteString.empty) extends BetterToString{
+    eventId: Uuid,
+    eventType: String,
+    //  dataContentType: ContentType = ContentType.Binary, TODO not yet implemented in EventStore 2.0.1
+    data: ByteString = ByteString.empty,
+    //  metadataContentType: ContentType = ContentType.Binary, TODO not yet implemented in EventStore 2.0.1
+    metadata: ByteString = ByteString.empty) extends BetterToString {
   require(eventType != null, "eventType is null")
   require(eventType.nonEmpty, "eventType is empty")
 }

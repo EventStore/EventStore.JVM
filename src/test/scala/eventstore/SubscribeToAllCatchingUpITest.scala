@@ -177,7 +177,7 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
       val events = (1 to size).map(_ => newEventData)
       import system.dispatcher
       Future {
-        appendToStreamSucceed(events, testKit = TestProbe())
+        writeEventsSucceed(events, testKit = TestProbe())
       }
       events
     }

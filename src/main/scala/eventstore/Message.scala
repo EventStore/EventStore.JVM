@@ -41,20 +41,18 @@ case object Pong extends InOut
 //  externalHttpAddress: String,
 //  externalHttpPort: Int) extends Message
 
-
-// TODO rename to WriteEvents
 // TODO reorder
-case class AppendToStream(
-  streamId: EventStream.Id,
-  expectedVersion: ExpectedVersion = ExpectedVersion.Any,
-  events: Seq[EventData],
-  requireMaster: Boolean = true) extends Out{
-  require(events.nonEmpty, "AppendToStream.events is empty")
+case class WriteEvents(
+    streamId: EventStream.Id,
+    expectedVersion: ExpectedVersion = ExpectedVersion.Any,
+    events: Seq[EventData],
+    requireMaster: Boolean = true) extends Out {
+  require(events.nonEmpty, "WriteEvents.events is empty")
 }
 
-sealed trait AppendToStreamCompleted extends In
-case class AppendToStreamSucceed(firstEventNumber: EventNumber.Exact) extends AppendToStreamCompleted
-case class AppendToStreamFailed(reason: OperationFailed.Value, message: Option[String]) extends AppendToStreamCompleted
+sealed trait WriteEventsCompleted extends In
+case class WriteEventsSucceed(firstEventNumber: EventNumber.Exact) extends WriteEventsCompleted
+case class WriteEventsFailed(reason: OperationFailed.Value, message: Option[String]) extends WriteEventsCompleted
 
 // TODO check softDelete
 case class DeleteStream(

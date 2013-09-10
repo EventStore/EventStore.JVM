@@ -29,24 +29,24 @@ abstract class TestConnection extends util.ActorSpec {
       //      metadataContentType = ContentType.Json,
       metadata = ByteString("""{"metadata":"metadata"}"""))
 
-    def appendToStreamSucceed(
+    def writeEventsSucceed(
       events: Seq[EventData],
       expectedVersion: ExpectedVersion = ExpectedVersion.Any,
       streamId: EventStream.Id = streamId,
       testKit: TestKitBase = this): EventNumber.Exact = {
-      actor.!(AppendToStream(streamId, expectedVersion, events))(testKit.testActor)
-      val firstEventNumber = testKit.expectMsgType[AppendToStreamSucceed].firstEventNumber
+      actor.!(WriteEvents(streamId, expectedVersion, events))(testKit.testActor)
+      val firstEventNumber = testKit.expectMsgType[WriteEventsSucceed].firstEventNumber
       if (expectedVersion == ExpectedVersion.NoStream) firstEventNumber mustEqual EventNumber.First
       firstEventNumber
     }
 
     def appendEventToCreateStream(): EventData = {
       val event = newEventData.copy(eventType = "first event")
-      appendToStreamSucceed(Seq(event), ExpectedVersion.NoStream, testKit = TestProbe()) mustEqual EventNumber.First
+      writeEventsSucceed(Seq(event), ExpectedVersion.NoStream, testKit = TestProbe()) mustEqual EventNumber.First
       event
     }
 
-    def append(x: EventData): EventRecord = EventRecord(streamId, appendToStreamSucceed(Seq(x), testKit = TestProbe()), x)
+    def append(x: EventData): EventRecord = EventRecord(streamId, writeEventsSucceed(Seq(x), testKit = TestProbe()), x)
 
     def linkedAndLink(): (EventRecord, EventRecord) = {
       val linked = append(newEventData.copy(eventType = "linked"))
@@ -59,10 +59,10 @@ abstract class TestConnection extends util.ActorSpec {
       val events = (1 to size).map(_ => newEventData)
 
       def loop(n: Int) {
-        actor.!(AppendToStream(streamId, ExpectedVersion.Any, events))(testKit.testActor)
+        actor.!(WriteEvents(streamId, ExpectedVersion.Any, events))(testKit.testActor)
         testKit.expectMsgPF(10.seconds) {
-          case AppendToStreamSucceed(_)                                         => true
-          case AppendToStreamFailed(OperationFailed.PrepareTimeout, _) if n < 3 => loop(n + 1) // TODO
+          case WriteEventsSucceed(_)                                         => true
+          case WriteEventsFailed(OperationFailed.PrepareTimeout, _) if n < 3 => loop(n + 1) // TODO
         }
       }
 

@@ -54,11 +54,11 @@ class TransactionITest extends TestConnection {
 
       val probe = TestProbe()
 
-      appendToStreamSucceed(Seq(newEventData), testKit = probe)
+      writeEventsSucceed(Seq(newEventData), testKit = probe)
 
       transactionWrite(newEventData)
 
-      appendToStreamSucceed(Seq(newEventData), testKit = probe)
+      writeEventsSucceed(Seq(newEventData), testKit = probe)
 
       transactionWrite(newEventData)
       transactionCommit

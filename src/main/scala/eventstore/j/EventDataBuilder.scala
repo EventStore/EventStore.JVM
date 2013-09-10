@@ -9,11 +9,9 @@ class EventDataBuilder(val eventType: String) extends Builder[EventData] {
   private var _data: ByteString = ByteString.empty
   private var _metadata: ByteString = ByteString.empty
 
-
   def eventId(x: Uuid) = set {
     _eventId = x
   }
-
 
   def data(x: ByteString) = set {
     _data = x
@@ -27,7 +25,6 @@ class EventDataBuilder(val eventType: String) extends Builder[EventData] {
     _data = ByteString(xs)
   }
 
-
   def metadata(x: ByteString) = set {
     _metadata = x
   }
@@ -39,7 +36,6 @@ class EventDataBuilder(val eventType: String) extends Builder[EventData] {
   def metadata(xs: Array[Byte]) = set {
     _metadata = ByteString(xs)
   }
-
 
   def build = EventData(
     eventId = _eventId,
