@@ -44,8 +44,8 @@ case object Pong extends InOut
 // TODO reorder
 case class WriteEvents(
     streamId: EventStream.Id,
-    expectedVersion: ExpectedVersion = ExpectedVersion.Any,
     events: Seq[EventData],
+    expectedVersion: ExpectedVersion = ExpectedVersion.Any,
     requireMaster: Boolean = true) extends Out {
   require(events.nonEmpty, "WriteEvents.events is empty")
 }

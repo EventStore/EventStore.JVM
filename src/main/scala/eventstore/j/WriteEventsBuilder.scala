@@ -9,8 +9,8 @@ import scala.collection.JavaConverters._
  */
 class WriteEventsBuilder(val streamId: String) extends Builder[WriteEvents] {
   private val _streamId: EventStream.Id = EventStream(streamId)
-  private var _expectedVersion: ExpectedVersion = ExpectedVersion.Any
   private var _events: ListBuffer[EventData] = new ListBuffer()
+  private var _expectedVersion: ExpectedVersion = ExpectedVersion.Any
   private var _requireMaster: Boolean = true
 
   //  def streamId(streamId: String) = set {
@@ -53,7 +53,7 @@ class WriteEventsBuilder(val streamId: String) extends Builder[WriteEvents] {
 
   def build(): WriteEvents = WriteEvents(
     streamId = _streamId,
-    expectedVersion = _expectedVersion,
     events = Seq(_events: _*),
+    expectedVersion = _expectedVersion,
     requireMaster = _requireMaster)
 }

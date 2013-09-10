@@ -95,7 +95,7 @@ class WriteEventsITest extends TestConnection {
     def writeEvent(event: EventData, expVer: ExpectedVersion = Any) = writeEventsSucceed(Seq(event), expVer)
 
     def writeEventsFailed(event: EventData, expVer: ExpectedVersion = Any) = {
-      actor ! WriteEvents(streamId, expVer, Seq(event))
+      actor ! WriteEvents(streamId, Seq(event), expVer)
       expectMsgType[WriteEventsFailed].reason
     }
   }
