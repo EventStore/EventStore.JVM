@@ -2,10 +2,7 @@ package eventstore;
 
 import eventstore.j.*;
 import eventstore.tcp.ConnectionActor;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
@@ -33,20 +30,20 @@ public class JavaITest {
     }
 
 
-    UUID newUuid() {
+    static UUID newUuid() {
         return UUID.randomUUID();
     }
 
 
     // TODO what if 2 events with same ID ?
+    final String eventType = "java-test";
 
     @Test
-    public void testWrite() {
+    public void testWriteEvents() {
 
         new JavaTestKit(system) {{
 
-            final String streamId = "java-write-" + newUuid();
-            final String eventType = "java-test";
+            final String streamId = "java-write-events" + newUuid();
 
             final EventData eventData = new EventDataBuilder(eventType)
                     .eventId(newUuid())
@@ -64,12 +61,57 @@ public class JavaITest {
 
             final WriteEventsSucceed writeEventsSucceed = expectMsgClass(duration("3 seconds"), WriteEventsSucceed.class);
 
-//            ByteString$.MODULE$.apply() TODO
 
             Assert.assertEquals(writeEventsSucceed.firstEventNumber(), EventNumber$.MODULE$.First() /*TODO*/);
         }};
     }
 
+    // TODO what's about using enums from java
+
     @Test
-    public void testReadEvent() { }
+    public void testReadEvent() {
+        new JavaTestKit(system) {{
+
+            final String streamId = "java-read-event" + newUuid();
+
+            final ReadEvent readEvent = new ReadEventBuilder(streamId, 0)
+                    .requireMaster(true)
+                    .resolveLinkTos(false)
+                    .build();
+
+            connection.tell(readEvent, getRef());
+
+            final ReadEventFailed readEventfailed = expectMsgClass(duration("3 seconds"), ReadEventFailed.class);
+
+            Assert.assertEquals(readEventfailed.reason(), ReadEventFailed.Reason$.MODULE$.NoStream());
+
+
+            final EventData eventData = new EventDataBuilder(eventType)
+                    .eventId(newUuid())
+                    .data("{\"data\":\"data\"}")
+                    .metadata("{\"metadata\":\"metadata\"}")
+                    .build();
+
+            final WriteEvents writeEvents = new WriteEventsBuilder(streamId)
+                    .event(eventData)
+                    .build();
+
+
+            connection.tell(writeEvents, getRef());
+
+            expectMsgClass(duration("3 seconds"), WriteEventsSucceed.class);
+
+
+            connection.tell(readEvent, getRef());
+
+            final ReadEventSucceed readEventSucceed = expectMsgClass(duration("3 seconds"), ReadEventSucceed.class);
+
+            final Event event = readEventSucceed.event();
+            Assert.assertEquals(event.number(), EventNumber$.MODULE$.apply(0));
+            Assert.assertEquals(event.streamId(), EventStream$.MODULE$.apply(streamId));
+            Assert.assertEquals(event.data(), eventData);
+        }};
+
+
+    }
 }
