@@ -5,9 +5,9 @@ package j
  * @author Yaroslav Klymko
  */
 class EventDataBuilder(val eventType: String) extends Builder[EventData] {
-  private var _eventId: Uuid = newUuid
-  private var _data: ByteString = ByteString.empty
-  private var _metadata: ByteString = ByteString.empty
+  protected var _eventId: Uuid = newUuid
+  protected var _data: ByteString = ByteString.empty
+  protected var _metadata: ByteString = ByteString.empty
 
   def eventId(x: Uuid) = set {
     _eventId = x

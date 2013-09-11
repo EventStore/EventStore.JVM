@@ -4,18 +4,20 @@ package j
 /**
  * @author Yaroslav Klymko
  */
-class ReadEventBuilder(streamId: String, eventNumber: Int) extends Builder[ReadEvent] {
-  private val _streamId = EventStream(streamId)
-  private val _eventNumber = if (eventNumber < 0) EventNumber.Last else EventNumber(eventNumber) // TODO
-  private var _resolveLinkTos = false
-  private var _requireMaster: Boolean = true
+class ReadEventBuilder(streamId: String) extends ReadBuilder[ReadEvent] {
+  protected val _streamId = EventStream(streamId)
+  protected var _eventNumber: EventNumber = EventNumber.First
 
-  def resolveLinkTos(x: Boolean) = set {
-    _resolveLinkTos = x
+  def eventNumber(x: Int) = set {
+    _eventNumber = if (x < 0) EventNumber.Last else EventNumber(x) // TODO duplicate
   }
 
-  def requireMaster(x: Boolean) = set {
-    _requireMaster = x
+  def eventNumberFirst = set {
+    _eventNumber = EventNumber.First
+  }
+
+  def eventNumberLast = set {
+    _eventNumber = EventNumber.Last
   }
 
   def build = eventstore.ReadEvent(

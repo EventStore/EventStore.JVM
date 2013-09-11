@@ -132,9 +132,9 @@ object ReadEventFailed {
 
 case class ReadStreamEvents(
     streamId: EventStream.Id,
-    fromNumber: EventNumber,
-    maxCount: Int,
-    direction: ReadDirection.Value,
+    fromNumber: EventNumber = EventNumber.First,
+    maxCount: Int = 500,
+    direction: ReadDirection.Value = ReadDirection.Forward,
     resolveLinkTos: Boolean = false,
     requireMaster: Boolean = true) extends Out {
   require(maxCount > 0, s"maxCount must be > 0, but is $maxCount")
@@ -175,7 +175,7 @@ object ReadStreamEventsFailed {
 case class ReadAllEvents(
     fromPosition: Position,
     maxCount: Int,
-    direction: ReadDirection.Value,
+    direction: ReadDirection.Value = ReadDirection.Forward,
     resolveLinkTos: Boolean = false,
     requireMaster: Boolean = true) extends Out {
   require(maxCount > 0, s"maxCount must be > 0, but is $maxCount")
