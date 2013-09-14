@@ -17,33 +17,32 @@ trait ChainSet[T] {
   }
 }
 
-trait ExpectVersionSnippetI[T] {
-  def expectNoStream: T
-  def expectAnyVersion: T
-  def expectVersion(x: Int): T
-}
+object Builder {
+  trait ExpectVersionSnippetI[T] {
+    def expectNoStream: T
+    def expectAnyVersion: T
+    def expectVersion(x: Int): T
+  }
 
-trait ExpectVersionSnippet[T] extends ExpectVersionSnippetI[T] with ChainSet[T] {
-  self: T =>
+  trait ExpectVersionSnippet[T] extends ExpectVersionSnippetI[T] with ChainSet[T] {
+    self: T =>
 
-  val expectedVersionSnippet = new ExpectVersionSnippetI[T] {
-    var value: ExpectedVersion = ExpectedVersion.Any
+    val expectedVersionSnippet = new ExpectVersionSnippetI[T] {
+      var value: ExpectedVersion = ExpectedVersion.Any
 
-    def expectNoStream = set {
-      value = ExpectedVersion.NoStream
-    }
+      def expectNoStream = set {
+        value = ExpectedVersion.NoStream
+      }
 
-    def expectAnyVersion = set {
-      value = ExpectedVersion.Any
-    }
+      def expectAnyVersion = set {
+        value = ExpectedVersion.Any
+      }
 
-    def expectVersion(x: Int) = set {
-      value = ExpectedVersion.Exact(x)
+      def expectVersion(x: Int) = set {
+        value = ExpectedVersion.Exact(x)
+      }
     }
   }
-}
-
-object Builder {
 
   trait ResolveLinkTosSnippetI[T] {
     def resolveLinkTos(x: Boolean): T
