@@ -47,7 +47,7 @@ case class WriteEvents(
     events: Seq[EventData],
     expectedVersion: ExpectedVersion = ExpectedVersion.Any,
     requireMaster: Boolean = true) extends Out {
-  require(events.nonEmpty, "WriteEvents.events is empty")
+  require(events.nonEmpty, "events is empty")
 }
 
 sealed trait WriteEventsCompleted extends In
@@ -66,11 +66,12 @@ case class DeleteStreamFailed(reason: OperationFailed.Value, message: Option[Str
 
 case class TransactionStart(
   streamId: EventStream.Id,
-  expectedVersion: ExpectedVersion,
+  expectedVersion: ExpectedVersion = ExpectedVersion.Any,
   requireMaster: Boolean = true) extends Out
 
 sealed trait TransactionStartCompleted extends In
 
+// TODO what if 2 transactions started at same time?
 case class TransactionStartSucceed(transactionId: Long) extends TransactionStartCompleted {
   require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
 }

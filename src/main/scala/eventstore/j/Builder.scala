@@ -5,24 +5,148 @@ package j
  * @author Yaroslav Klymko
  */
 trait Builder[T] {
-  def set(f: => Any): this.type = {
-    f
-    this
-  }
-
   def build: T
 }
 
-trait ReadBuilder[T] extends Builder[T] {
-  protected var _resolveLinkTos = false
+trait ChainSet[T] {
+  self: T =>
 
-  def resolveLinkTos(x: Boolean) = set {
-    _resolveLinkTos = x
+  def set(f: => Any): T = {
+    f
+    this
+  }
+}
+
+trait ExpectVersionSnippetI[T] {
+  def expectNoStream: T
+  def expectAnyVersion: T
+  def expectVersion(x: Int): T
+}
+
+trait ExpectVersionSnippet[T] extends ExpectVersionSnippetI[T] with ChainSet[T] {
+  self: T =>
+
+  val expectedVersionSnippet = new ExpectVersionSnippetI[T] {
+    var value: ExpectedVersion = ExpectedVersion.Any
+
+    def expectNoStream = set {
+      value = ExpectedVersion.NoStream
+    }
+
+    def expectAnyVersion = set {
+      value = ExpectedVersion.Any
+    }
+
+    def expectVersion(x: Int) = set {
+      value = ExpectedVersion.Exact(x)
+    }
+  }
+}
+
+object Builder {
+
+  trait ResolveLinkTosSnippetI[T] {
+    def resolveLinkTos(x: Boolean): T
   }
 
-  protected var _requireMaster: Boolean = true
+  trait ResolveLinkTosSnippet[T] extends ResolveLinkTosSnippetI[T] with ChainSet[T] {
+    self: T =>
 
-  def requireMaster(x: Boolean) = set {
-    _requireMaster = x
+    val resolveLinkTosSnippet = new ResolveLinkTosSnippetI[T] {
+      var value = false
+
+      def resolveLinkTos(x: Boolean) = set {
+        value = x
+      }
+    }
+  }
+
+  trait RequireMasterSnippetI[T] {
+    def requireMaster(x: Boolean): T
+  }
+
+  trait RequireMasterSnippet[T] extends RequireMasterSnippetI[T] with ChainSet[T] {
+    self: T =>
+
+    val requireMasterSnippet = new RequireMasterSnippetI[T] {
+      var value = true
+
+      def requireMaster(x: Boolean) = set {
+        value = x
+      }
+    }
+  }
+
+  trait EventDataSnippetI[T] {
+    def addEvent(x: EventData): T
+    def addEvents(xs: java.lang.Iterable[EventData]): T
+    def event(x: EventData): T
+    def events(xs: java.lang.Iterable[EventData]): T
+  }
+
+  trait EventDataSnippet[T] extends EventDataSnippetI[T] with ChainSet[T] {
+    self: T =>
+
+    import scala.collection.mutable.ListBuffer
+    import scala.collection.JavaConverters._
+
+    val eventDataSnippet = new EventDataSnippetI[T] {
+      var value: ListBuffer[EventData] = new ListBuffer()
+
+      def addEvent(x: EventData) = set {
+        value += x
+      }
+
+      def addEvents(xs: java.lang.Iterable[EventData]) = set {
+        value ++= xs.asScala
+      }
+
+      def event(x: EventData) = set {
+        value = new ListBuffer()
+        addEvent(x)
+      }
+
+      def events(xs: java.lang.Iterable[EventData]) = set {
+        value = new ListBuffer()
+        addEvents(xs)
+      }
+    }
+  }
+
+  trait MaxCountSnippetI[T] {
+    def maxCount(x: Int): T
+  }
+
+  trait MaxCountSnippet[T] extends MaxCountSnippetI[T] with ChainSet[T] {
+    self: T =>
+
+    val maxCountSnippet = new MaxCountSnippetI[T] {
+      var value = 500
+
+      def maxCount(x: Int) = set {
+        value = x
+      }
+    }
+  }
+
+  trait DirectionSnippetI[T] {
+    def forward: T
+    def backward: T
+  }
+
+  trait DirectionSnippet[T] extends DirectionSnippetI[T] with ChainSet[T] {
+    self: T =>
+
+    val directionSnippet = new DirectionSnippetI[T] {
+      var value: ReadDirection.Value = ReadDirection.Forward
+
+      def forward = set {
+        value = ReadDirection.Forward
+      }
+
+      def backward = set {
+        value = ReadDirection.Backward
+      }
+    }
   }
 }

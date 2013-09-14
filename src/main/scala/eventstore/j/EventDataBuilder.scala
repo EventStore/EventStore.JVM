@@ -4,7 +4,7 @@ package j
 /**
  * @author Yaroslav Klymko
  */
-class EventDataBuilder(val eventType: String) extends Builder[EventData] {
+class EventDataBuilder(val eventType: String) extends Builder[EventData] with ChainSet[EventDataBuilder] {
   protected var _eventId: Uuid = newUuid
   protected var _data: ByteString = ByteString.empty
   protected var _metadata: ByteString = ByteString.empty

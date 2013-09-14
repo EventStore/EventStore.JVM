@@ -1,55 +1,33 @@
 package eventstore
 package j
 
-import scala.collection.mutable.ListBuffer
-import scala.collection.JavaConverters._
+import Builder._
+import java.lang.Iterable
 
 /**
  * @author Yaroslav Klymko
  */
-class WriteEventsBuilder(val streamId: String) extends Builder[WriteEvents] {
+class WriteEventsBuilder(streamId: String) extends Builder[WriteEvents]
+    with EventDataSnippet[WriteEventsBuilder]
+    with ExpectVersionSnippet[WriteEventsBuilder]
+    with RequireMasterSnippet[WriteEventsBuilder] {
+
   protected val _streamId: EventStream.Id = EventStream(streamId)
-  protected var _events: ListBuffer[EventData] = new ListBuffer()
-  protected var _expectedVersion: ExpectedVersion = ExpectedVersion.Any
-  protected var _requireMaster: Boolean = true
 
-  def addEvent(x: EventData) = set {
-    _events += x
-  }
+  def addEvent(x: EventData) = eventDataSnippet.addEvent(x)
+  def addEvents(xs: Iterable[EventData]) = eventDataSnippet.addEvents(xs)
+  def event(x: EventData) = eventDataSnippet.event(x)
+  def events(xs: Iterable[EventData]) = eventDataSnippet.events(xs)
 
-  def addEvents(xs: java.lang.Iterable[EventData]) = set {
-    _events ++= xs.asScala
-  }
+  def expectNoStream = expectedVersionSnippet.expectNoStream
+  def expectAnyVersion = expectedVersionSnippet.expectAnyVersion
+  def expectVersion(x: Int) = expectedVersionSnippet.expectVersion(x)
 
-  def event(x: EventData) = set {
-    _events = new ListBuffer()
-    addEvent(x)
-  }
+  def requireMaster(x: Boolean) = requireMasterSnippet.requireMaster(x)
 
-  def events(xs: java.lang.Iterable[EventData]) = set {
-    _events = new ListBuffer()
-    addEvents(xs)
-  }
-
-  def expectNoStream = set {
-    _expectedVersion = ExpectedVersion.NoStream
-  }
-
-  def expectAnyVersion = set {
-    _expectedVersion = ExpectedVersion.Any
-  }
-
-  def expectVersion(x: Int) = set {
-    _expectedVersion = ExpectedVersion.Exact(x)
-  }
-
-  def requireMaster(x: Boolean) = set {
-    _requireMaster = x
-  }
-
-  def build(): WriteEvents = WriteEvents(
+  def build: WriteEvents = WriteEvents(
     streamId = _streamId,
-    events = Seq(_events: _*),
-    expectedVersion = _expectedVersion,
-    requireMaster = _requireMaster)
+    events = Seq(eventDataSnippet.value: _*),
+    expectedVersion = expectedVersionSnippet.value,
+    requireMaster = requireMasterSnippet.value)
 }

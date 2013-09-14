@@ -62,13 +62,52 @@ public class JavaITest {
                     .build();
 
             connection.tell(writeEvents, getRef());
-            final WriteEventsSucceed succeed = expectMsgClass(duration("3 seconds"), WriteEventsSucceed.class);
+            final WriteEventsSucceed succeed = expectMsgClass(WriteEventsSucceed.class);
 
             assertEquals(succeed.firstEventNumber(), EventNumber$.MODULE$.First() /*TODO*/);
         }};
     }
 
     // TODO what's about using enums from java
+
+    @Test
+    public void testTransactionWrite() {
+        new JavaTestKit(system) {{
+
+            final String streamId = "java-transaction-write" + newUuid();
+
+            final TransactionStart transactionStart = new TransactionStartBuilder(streamId)
+                    .expectNoStream()
+                    .requireMaster(true)
+                    .build();
+
+            connection.tell(transactionStart, getRef());
+            final long transactionId = expectMsgClass(TransactionStartSucceed.class).transactionId();
+
+            final EventData eventData = new EventDataBuilder(eventType)
+                    .eventId(newUuid())
+                    .data("{\"data\":\"data\"}")
+                    .metadata("{\"metadata\":\"metadata\"}")
+                    .build();
+
+            final TransactionWrite transactionWrite = new TransactionWriteBuilder(transactionId)
+                    .addEvent(eventData)
+                    .requireMaster(true)
+                    .build();
+
+            connection.tell(transactionWrite, getRef());
+            final TransactionWriteSucceed transactionWriteSucceed = expectMsgClass(TransactionWriteSucceed.class);
+
+            assertEquals(transactionWriteSucceed.transactionId(), transactionId);
+
+            final TransactionCommit transactionCommit = new TransactionCommitBuilder(transactionId).build();
+
+            connection.tell(transactionCommit, getRef());
+            final TransactionCommitSucceed transactionCommitSucceed = expectMsgClass(TransactionCommitSucceed.class);
+
+            assertEquals(transactionCommitSucceed.transactionId(), transactionId);
+        }};
+    }
 
     @Test
     public void testReadEvent() {
@@ -83,7 +122,7 @@ public class JavaITest {
                     .build();
 
             connection.tell(readEvent, getRef());
-            final ReadEventFailed failed = expectMsgClass(duration("3 seconds"), ReadEventFailed.class);
+            final ReadEventFailed failed = expectMsgClass(ReadEventFailed.class);
 
             assertEquals(failed.reason(), ReadEventFailed.Reason$.MODULE$.NoStream());
 
@@ -98,11 +137,11 @@ public class JavaITest {
                     .build();
 
             connection.tell(writeEvents, getRef());
-            expectMsgClass(duration("3 seconds"), WriteEventsSucceed.class);
+            expectMsgClass(WriteEventsSucceed.class);
 
 
             connection.tell(readEvent, getRef());
-            final ReadEventSucceed succeed = expectMsgClass(duration("3 seconds"), ReadEventSucceed.class);
+            final ReadEventSucceed succeed = expectMsgClass(ReadEventSucceed.class);
 
             final Event event = succeed.event();
             assertEquals(event.number(), EventNumber$.MODULE$.apply(0));
@@ -119,6 +158,7 @@ public class JavaITest {
 
             final ReadStreamEvents readStreamEvents = new ReadStreamEventsBuilder(streamId)
                     .fromNumber(0)
+                    .maxCount(2)
                     .forward()
                     .requireMaster(true)
                     .resolveLinkTos(false)
@@ -155,5 +195,26 @@ public class JavaITest {
             assertEquals(succeed.events().length(), 2);
         }};
 
+    }
+
+
+    @Test
+    public void testReadAllEvents() {
+        new JavaTestKit(system) {{
+            final ReadAllEvents readAllEvents = new ReadAllEventsBuilder()
+                    .fromFirstPosition()
+                    .maxCount(2)
+                    .forward()
+                    .resolveLinkTos(false)
+                    .requireMaster(true)
+                    .build();
+
+            connection.tell(readAllEvents, getRef());
+            final ReadAllEventsSucceed succeed = expectMsgClass(ReadAllEventsSucceed.class);
+
+            // TODO work with Position
+            assertTrue(succeed.position().$greater(Position$.MODULE$.First()));
+            assertEquals(succeed.direction(), ReadDirection$.MODULE$.Forward());
+        }};
     }
 }

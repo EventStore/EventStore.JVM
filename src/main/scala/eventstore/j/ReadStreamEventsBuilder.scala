@@ -1,13 +1,19 @@
 package eventstore
 package j
 
+import Builder._
+
 /**
  * @author Yaroslav Klymko
  */
-class ReadStreamEventsBuilder(streamId: String) extends ReadBuilder[ReadStreamEvents] {
+class ReadStreamEventsBuilder(streamId: String) extends Builder[ReadStreamEvents]
+    with MaxCountSnippet[ReadStreamEventsBuilder]
+    with DirectionSnippet[ReadStreamEventsBuilder]
+    with RequireMasterSnippet[ReadStreamEventsBuilder]
+    with ResolveLinkTosSnippet[ReadStreamEventsBuilder] {
+
   protected val _streamId = EventStream(streamId)
   protected var _fromNumber: EventNumber = EventNumber.First
-  protected var _direction = ReadDirection.Forward
 
   def fromNumber(x: Int) = set {
     _fromNumber = if (x < 0) EventNumber.Last else EventNumber(x) // TODO duplicate
@@ -19,28 +25,23 @@ class ReadStreamEventsBuilder(streamId: String) extends ReadBuilder[ReadStreamEv
 
   def fromLast = set {
     _fromNumber = EventNumber.Last
-    _direction = ReadDirection.Backward
+    backward
   }
 
-  protected var _maxCount = 500
+  def maxCount(x: Int) = maxCountSnippet.maxCount(x)
 
-  def maxCount(x: Int) = set {
-    _maxCount = x
-  }
+  def forward = directionSnippet.forward
+  def backward = directionSnippet.backward
 
-  def forward = set {
-    _direction = ReadDirection.Forward
-  }
+  def resolveLinkTos(x: Boolean) = resolveLinkTosSnippet.resolveLinkTos(x)
 
-  def backward = {
-    _direction = ReadDirection.Backward
-  }
+  def requireMaster(x: Boolean) = requireMasterSnippet.requireMaster(x)
 
   def build = ReadStreamEvents(
     streamId = _streamId,
     fromNumber = _fromNumber,
-    maxCount = _maxCount,
-    direction = _direction,
-    resolveLinkTos = _resolveLinkTos,
-    requireMaster = _requireMaster)
+    maxCount = maxCountSnippet.value,
+    direction = directionSnippet.value,
+    resolveLinkTos = resolveLinkTosSnippet.value,
+    requireMaster = requireMasterSnippet.value)
 }
