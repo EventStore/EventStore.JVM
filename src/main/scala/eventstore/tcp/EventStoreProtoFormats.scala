@@ -1,6 +1,7 @@
 package eventstore
 package tcp
 
+import scala.language.reflectiveCalls
 import scala.PartialFunction.condOpt
 import eventstore.util.DefaultFormats
 import ReadDirection.{ Backward, Forward }

@@ -27,7 +27,7 @@ object Builder {
   trait ExpectVersionSnippet[T] extends ExpectVersionSnippetI[T] with ChainSet[T] {
     self: T =>
 
-    val expectedVersionSnippet = new ExpectVersionSnippetI[T] {
+    object ExpectedVersionSnippet extends ExpectVersionSnippetI[T] {
       var value: ExpectedVersion = ExpectedVersion.Any
 
       def expectNoStream = set {
@@ -51,7 +51,7 @@ object Builder {
   trait ResolveLinkTosSnippet[T] extends ResolveLinkTosSnippetI[T] with ChainSet[T] {
     self: T =>
 
-    val resolveLinkTosSnippet = new ResolveLinkTosSnippetI[T] {
+    object ResolveLinkTosSnippet extends ResolveLinkTosSnippetI[T] {
       var value = false
 
       def resolveLinkTos(x: Boolean) = set {
@@ -67,7 +67,7 @@ object Builder {
   trait RequireMasterSnippet[T] extends RequireMasterSnippetI[T] with ChainSet[T] {
     self: T =>
 
-    val requireMasterSnippet = new RequireMasterSnippetI[T] {
+    object RequireMasterSnippet extends RequireMasterSnippetI[T] {
       var value = true
 
       def requireMaster(x: Boolean) = set {
@@ -89,7 +89,7 @@ object Builder {
     import scala.collection.mutable.ListBuffer
     import scala.collection.JavaConverters._
 
-    val eventDataSnippet = new EventDataSnippetI[T] {
+    object EventDataSnippet extends EventDataSnippetI[T] {
       var value: ListBuffer[EventData] = new ListBuffer()
 
       def addEvent(x: EventData) = set {
@@ -119,7 +119,7 @@ object Builder {
   trait MaxCountSnippet[T] extends MaxCountSnippetI[T] with ChainSet[T] {
     self: T =>
 
-    object MaxCount extends MaxCountSnippetI[T] {
+    object MaxCountSnippet extends MaxCountSnippetI[T] {
       var value = 500
 
       def maxCount(x: Int) = set {
@@ -136,7 +136,7 @@ object Builder {
   trait DirectionSnippet[T] extends DirectionSnippetI[T] with ChainSet[T] {
     self: T =>
 
-    object directionSnippet extends DirectionSnippetI[T] {
+    object DirectionSnippet extends DirectionSnippetI[T] {
       var value: ReadDirection.Value = ReadDirection.Forward
 
       def forward = set {

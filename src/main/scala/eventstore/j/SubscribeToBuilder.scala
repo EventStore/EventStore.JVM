@@ -17,9 +17,9 @@ class SubscribeToBuilder extends Builder[SubscribeTo] with ResolveLinkTosSnippet
     _stream = EventStream(streamId)
   }
 
-  def resolveLinkTos(x: Boolean) = resolveLinkTosSnippet.resolveLinkTos(x)
+  def resolveLinkTos(x: Boolean) = ResolveLinkTosSnippet.resolveLinkTos(x)
 
   def build = SubscribeTo(
     stream = _stream,
-    resolveLinkTos = resolveLinkTosSnippet.value)
+    resolveLinkTos = ResolveLinkTosSnippet.value)
 }

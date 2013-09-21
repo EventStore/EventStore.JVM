@@ -14,20 +14,20 @@ class WriteEventsBuilder(streamId: String) extends Builder[WriteEvents]
 
   protected val _streamId: EventStream.Id = EventStream(streamId)
 
-  def addEvent(x: EventData) = eventDataSnippet.addEvent(x)
-  def addEvents(xs: Iterable[EventData]) = eventDataSnippet.addEvents(xs)
-  def event(x: EventData) = eventDataSnippet.event(x)
-  def events(xs: Iterable[EventData]) = eventDataSnippet.events(xs)
+  def addEvent(x: EventData) = EventDataSnippet.addEvent(x)
+  def addEvents(xs: Iterable[EventData]) = EventDataSnippet.addEvents(xs)
+  def event(x: EventData) = EventDataSnippet.event(x)
+  def events(xs: Iterable[EventData]) = EventDataSnippet.events(xs)
 
-  def expectNoStream = expectedVersionSnippet.expectNoStream
-  def expectAnyVersion = expectedVersionSnippet.expectAnyVersion
-  def expectVersion(x: Int) = expectedVersionSnippet.expectVersion(x)
+  def expectNoStream = ExpectedVersionSnippet.expectNoStream
+  def expectAnyVersion = ExpectedVersionSnippet.expectAnyVersion
+  def expectVersion(x: Int) = ExpectedVersionSnippet.expectVersion(x)
 
-  def requireMaster(x: Boolean) = requireMasterSnippet.requireMaster(x)
+  def requireMaster(x: Boolean) = RequireMasterSnippet.requireMaster(x)
 
   def build: WriteEvents = WriteEvents(
     streamId = _streamId,
-    events = Seq(eventDataSnippet.value: _*),
-    expectedVersion = expectedVersionSnippet.value,
-    requireMaster = requireMasterSnippet.value)
+    events = Seq(EventDataSnippet.value: _*),
+    expectedVersion = ExpectedVersionSnippet.value,
+    requireMaster = RequireMasterSnippet.value)
 }

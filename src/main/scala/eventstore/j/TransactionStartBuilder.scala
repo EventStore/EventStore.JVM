@@ -12,14 +12,14 @@ class TransactionStartBuilder(streamId: String) extends Builder[TransactionStart
 
   private val _streamId = EventStream(streamId)
 
-  def expectNoStream = expectedVersionSnippet.expectNoStream
-  def expectAnyVersion = expectedVersionSnippet.expectAnyVersion
-  def expectVersion(x: Int) = expectedVersionSnippet.expectVersion(x)
+  def expectNoStream = ExpectedVersionSnippet.expectNoStream
+  def expectAnyVersion = ExpectedVersionSnippet.expectAnyVersion
+  def expectVersion(x: Int) = ExpectedVersionSnippet.expectVersion(x)
 
-  def requireMaster(x: Boolean) = requireMasterSnippet.requireMaster(x)
+  def requireMaster(x: Boolean) = RequireMasterSnippet.requireMaster(x)
 
   def build = TransactionStart(
     streamId = _streamId,
-    expectedVersion = expectedVersionSnippet.value,
-    requireMaster = requireMasterSnippet.value)
+    expectedVersion = ExpectedVersionSnippet.value,
+    requireMaster = RequireMasterSnippet.value)
 }

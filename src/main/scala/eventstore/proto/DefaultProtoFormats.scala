@@ -1,6 +1,7 @@
 package eventstore
 package proto
 
+import scala.language.reflectiveCalls
 import net.sandrogrzicic.scalabuff.MessageBuilder
 import akka.util.{ ByteStringBuilder, ByteIterator }
 import com.google.protobuf.{ MessageLite, ByteString => ProtoByteString }
