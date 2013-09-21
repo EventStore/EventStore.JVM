@@ -1,30 +1,8 @@
-# Event Store JVM Client [![Build Status](https://travis-ci.org/EventStore/eventstorejvmclient.png?branch=master)](https://travis-ci.org/EventStore/eventstorejvmclient)
+package eventstore.javaexamples;
 
-<table border="0">
-  <tr>
-    <td>Scala </td>
-    <td>2.10.2</td>
-  </tr>
-  <tr>
-    <td>Akka </td>
-    <td>2.2.1</td>
-  </tr>
-</table>
-
-## Status
-
-Currently the only API available is Actor-like via sending/receiving messages to actors.
-This is not a user friendliest one, but if you need as much performance as possible, then use Actor-like api.
-
-However we will provide more convenient API based on `scala.concurrent.Future`.
-
-## Examples
-
-### ReadEvent (Java)
-
-```java
 import akka.actor.*;
-import akka.event.*;
+import akka.event.Logging;
+import akka.event.LoggingAdapter;
 import eventstore.*;
 import eventstore.j.*;
 import eventstore.tcp.ConnectionActor;
@@ -81,37 +59,3 @@ public class ReadEventExample {
         }
     }
 }
-```
-
-### ReadEvent (Scala)
-
-```scala
-import java.net.InetSocketAddress
-import akka.actor._
-import eventstore.tcp.ConnectionActor
-import eventstore._
-
-
-object ReadEventExample extends App {
-  val system = ActorSystem()
-
-  val settings = Settings(
-    address = new InetSocketAddress("127.0.0.1", 1113),
-    defaultCredentials = Some(UserCredentials("admin", "changeit")))
-
-  val connection = system.actorOf(Props(classOf[ConnectionActor], settings))
-  system.actorOf(Props(classOf[ReadEventActor], connection))
-}
-
-class ReadEventActor(connection: ActorRef) extends Actor with ActorLogging {
-
-  connection ! ReadEvent(
-    streamId = EventStream.Id("my-stream"),
-    eventNumber = EventNumber.First)
-
-  def receive = {
-    case ReadEventSucceed(event) => log.info(s"SUCCEED: $event")
-    case ReadEventFailed(reason, message) => log.error(s"FAILED: reason $reason, message: $message")
-  }
-}
-```

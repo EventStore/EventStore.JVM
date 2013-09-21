@@ -12,9 +12,9 @@ import scala.concurrent.duration._
 /**
  * @author Yaroslav Klymko
  */
-class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
+class ConnectionActor(settings: Settings = Settings.Default) extends Actor with ActorLogging {
 
-  def this() = this(Settings())
+  def this() = this(Settings.Default)
 
   import Tcp._
   import context.system
