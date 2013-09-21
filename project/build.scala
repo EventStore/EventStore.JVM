@@ -25,7 +25,7 @@ object Build extends Build {
   val akkaTestkit = "com.typesafe.akka" %% "akka-testkit"      % V.akka      % "test"
   val scalabuff   = "net.sandrogrzicic" %% "scalabuff-runtime" % V.scalabuff
   val junit       = "junit"             %  "junit"             % "4.11"      % "test"
-  val specs2      = "org.specs2"        %% "specs2"            % "2.1.1"     % "test"
+  val specs2      = "org.specs2"        %% "specs2"            % "2.2.2"     % "test"
   val mockito     = "org.mockito"       %  "mockito-all"       % "1.9.5"     % "test"
 
   def itFilter(name: String): Boolean = name endsWith "ITest"
