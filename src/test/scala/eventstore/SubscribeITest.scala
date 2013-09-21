@@ -85,9 +85,9 @@ class SubscribeITest extends TestConnection {
   }
 
   trait SubscribeScope extends TestConnectionScope {
-    def subscribeToStream(resolveLinkTos: Boolean = false, testKit: TestKitBase = this): SubscribeToStreamCompleted = {
+    def subscribeToStream(resolveLinkTos: Boolean = false, testKit: TestKitBase = this): SubscribeToStreamSucceed = {
       actor.!(SubscribeTo(streamId, resolveLinkTos = resolveLinkTos))(testKit.testActor)
-      testKit.expectMsgType[SubscribeToStreamCompleted]
+      testKit.expectMsgType[SubscribeToStreamSucceed]
     }
 
     def unsubscribeFromStream() {

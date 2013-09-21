@@ -7,6 +7,8 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.testkit.JavaTestKit;
+import scala.None;
+import scala.None$;
 
 import java.util.UUID;
 
@@ -213,8 +215,36 @@ public class JavaITest {
             final ReadAllEventsSucceed succeed = expectMsgClass(ReadAllEventsSucceed.class);
 
             // TODO work with Position
-            assertTrue(succeed.position().$greater(Position$.MODULE$.First()));
+            assertTrue(succeed.position().$greater$eq(Position$.MODULE$.First()));
             assertEquals(succeed.direction(), ReadDirection$.MODULE$.Forward());
+        }};
+    }
+
+    @Test
+    public void testSubscribeTo() {
+        new JavaTestKit(system) {{
+
+            final SubscribeTo subscribeToAll = new SubscribeToBuilder()
+                    .toAll()
+                    .resolveLinkTos(false)
+                    .build();
+
+            connection.tell(subscribeToAll, getRef());
+            final SubscribeToAllSucceed subscribeToAllSucceed = expectMsgClass(SubscribeToAllSucceed.class);
+
+            assertTrue(subscribeToAllSucceed.lastCommit() > 0);
+
+
+            final SubscribeTo subscribeToStream = new SubscribeToBuilder()
+                    .toStream("java-subscribe-to-stream")
+                    .resolveLinkTos(false)
+                    .build();
+
+            connection.tell(subscribeToStream, getRef());
+            final SubscribeToStreamSucceed subscribeToStreamSucceed = expectMsgClass(SubscribeToStreamSucceed.class);
+
+            assertTrue(subscribeToStreamSucceed.lastCommit() > 0);
+            assertTrue(subscribeToStreamSucceed.lastEventNumber().isEmpty());
         }};
     }
 }

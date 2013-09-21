@@ -69,7 +69,7 @@ class CatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActorSpec 
       actor ! readAllEventsSucceed(position, position)
       connection.expectMsg(subscribeTo)
 
-      actor ! SubscribeToAllCompleted(1)
+      actor ! SubscribeToAllSucceed(1)
 
       connection expectMsg readAllEvents(0)
       actor ! readAllEventsSucceed(position, position)
@@ -98,7 +98,7 @@ class CatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActorSpec 
       expectNoMsg(duration)
       connection.expectMsg(subscribeTo)
 
-      actor ! SubscribeToAllCompleted(4)
+      actor ! SubscribeToAllSucceed(4)
 
       connection expectMsg readAllEvents(2)
 
@@ -173,7 +173,7 @@ class CatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActorSpec 
       expectNoMsg(duration)
       connection.expectMsg(subscribeTo)
 
-      actor ! SubscribeToAllCompleted(5)
+      actor ! SubscribeToAllSucceed(5)
 
       connection expectMsg readAllEvents(2)
 
@@ -193,7 +193,7 @@ class CatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActorSpec 
       connection.expectMsg(subscribeTo)
       expectNoMsg(duration)
 
-      actor ! SubscribeToAllCompleted(1)
+      actor ! SubscribeToAllSucceed(1)
 
       connection expectMsg readAllEvents(position)
       actor ! readAllEventsSucceed(position, position)
@@ -212,7 +212,7 @@ class CatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActorSpec 
       connection.expectMsg(subscribeTo)
       expectNoMsg(duration)
 
-      actor ! SubscribeToAllCompleted(1)
+      actor ! SubscribeToAllSucceed(1)
 
       expectMsg(Cs.LiveProcessingStarted)
 
@@ -227,7 +227,7 @@ class CatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActorSpec 
       connection.expectMsg(subscribeTo)
       expectNoMsg(duration)
 
-      actor ! SubscribeToAllCompleted(1)
+      actor ! SubscribeToAllSucceed(1)
 
       connection expectMsg readAllEvents(position)
       actor ! readAllEventsSucceed(position, position)
@@ -251,7 +251,7 @@ class CatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActorSpec 
       actor ! readAllEventsSucceed(position, position)
 
       connection.expectMsg(subscribeTo)
-      actor ! SubscribeToAllCompleted(2)
+      actor ! SubscribeToAllSucceed(2)
 
       connection expectMsg readAllEvents(position)
       actor ! readAllEventsSucceed(position, position)
@@ -280,7 +280,7 @@ class CatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActorSpec 
       actor ! readAllEventsSucceed(position, position)
 
       connection.expectMsg(subscribeTo)
-      actor ! SubscribeToAllCompleted(1)
+      actor ! SubscribeToAllSucceed(1)
       expectMsg(Cs.LiveProcessingStarted)
 
       actor ! StreamEventAppeared(event2)
@@ -313,7 +313,7 @@ class CatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActorSpec 
       actor ! readAllEventsSucceed(0, 0)
       connection expectMsg subscribeTo
 
-      actor ! SubscribeToAllCompleted(1)
+      actor ! SubscribeToAllSucceed(1)
       connection expectMsg readAllEvents(0)
 
       actor ! readAllEventsFailed

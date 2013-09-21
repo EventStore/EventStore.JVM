@@ -376,6 +376,6 @@ class StreamCatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActo
     def readStreamEventsFailed(reason: ReadStreamEventsFailed.Reason.Value = ReadStreamEventsFailed.Reason.StreamDeleted) =
       ReadStreamEventsFailed(ReadStreamEventsFailed.Reason.StreamDeleted, None, Forward)
 
-    def subscribeToStreamCompleted(x: Int) = SubscribeToStreamCompleted(x, Some(EventNumber(x)))
+    def subscribeToStreamCompleted(x: Int) = SubscribeToStreamSucceed(x, Some(EventNumber(x)))
   }
 }

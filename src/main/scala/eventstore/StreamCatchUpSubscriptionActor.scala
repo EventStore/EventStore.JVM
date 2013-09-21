@@ -41,7 +41,7 @@ class StreamCatchUpSubscriptionActor(
   def subscribe(lastNumber: Option[EventNumber.Exact], nextNumber: EventNumber): Receive = {
     subscribeToStream(s"lastEventNumber: $lastNumber")
     subscriptionFailed(s"lastEventNumber: $lastNumber") orElse {
-      case SubscribeToStreamCompleted(_, subscriptionNumber) => context become {
+      case SubscribeToStreamSucceed(_, subscriptionNumber) => context become {
         subscribed = true
         debug(s"subscribed at eventNumber: $subscriptionNumber")
         subscriptionNumber match {

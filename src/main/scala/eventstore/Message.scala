@@ -212,11 +212,11 @@ case class SubscribeTo(stream: EventStream, resolveLinkTos: Boolean = false) ext
 
 sealed trait SubscribeCompleted extends In
 
-case class SubscribeToAllCompleted(lastCommit: Long) extends SubscribeCompleted {
+case class SubscribeToAllSucceed(lastCommit: Long) extends SubscribeCompleted {
   require(lastCommit >= 0, s"lastCommit must be >= 0, but is $lastCommit")
 }
 
-case class SubscribeToStreamCompleted(lastCommit: Long, lastEventNumber: Option[EventNumber.Exact]) extends SubscribeCompleted {
+case class SubscribeToStreamSucceed(lastCommit: Long, lastEventNumber: Option[EventNumber.Exact]) extends SubscribeCompleted {
   require(lastCommit >= 0, s"lastCommit must be >= 0, but is $lastCommit")
 }
 

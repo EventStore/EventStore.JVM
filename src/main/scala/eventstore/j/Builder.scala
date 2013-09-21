@@ -119,7 +119,7 @@ object Builder {
   trait MaxCountSnippet[T] extends MaxCountSnippetI[T] with ChainSet[T] {
     self: T =>
 
-    val maxCountSnippet = new MaxCountSnippetI[T] {
+    object MaxCount extends MaxCountSnippetI[T] {
       var value = 500
 
       def maxCount(x: Int) = set {
@@ -136,7 +136,7 @@ object Builder {
   trait DirectionSnippet[T] extends DirectionSnippetI[T] with ChainSet[T] {
     self: T =>
 
-    val directionSnippet = new DirectionSnippetI[T] {
+    object directionSnippet extends DirectionSnippetI[T] {
       var value: ReadDirection.Value = ReadDirection.Forward
 
       def forward = set {

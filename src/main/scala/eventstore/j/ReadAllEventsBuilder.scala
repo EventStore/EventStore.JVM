@@ -27,7 +27,7 @@ class ReadAllEventsBuilder extends Builder[ReadAllEvents]
     _fromPosition = Position(commitPosition, preparePosition)
   }
 
-  def maxCount(x: Int) = maxCountSnippet.maxCount(x)
+  def maxCount(x: Int) = MaxCount.maxCount(x)
 
   def forward = directionSnippet.forward
   def backward = directionSnippet.backward
@@ -38,7 +38,7 @@ class ReadAllEventsBuilder extends Builder[ReadAllEvents]
 
   def build = ReadAllEvents(
     fromPosition = _fromPosition,
-    maxCount = maxCountSnippet.value,
+    maxCount = MaxCount.value,
     direction = directionSnippet.value,
     resolveLinkTos = resolveLinkTosSnippet.value,
     requireMaster = requireMasterSnippet.value)

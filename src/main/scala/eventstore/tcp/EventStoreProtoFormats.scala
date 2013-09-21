@@ -268,8 +268,8 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
       extends ProtoReader[SubscribeCompleted, proto.SubscriptionConfirmation](proto.SubscriptionConfirmation) {
 
     def fromProto(x: proto.SubscriptionConfirmation) = x.`lastEventNumber` match {
-      case None => SubscribeToAllCompleted(x.`lastCommitPosition`)
-      case Some(eventNumber) => SubscribeToStreamCompleted(
+      case None => SubscribeToAllSucceed(x.`lastCommitPosition`)
+      case Some(eventNumber) => SubscribeToStreamSucceed(
         lastCommit = x.`lastCommitPosition`,
         lastEventNumber = if (eventNumber == -1) None else Some(EventNumber(eventNumber)))
     }

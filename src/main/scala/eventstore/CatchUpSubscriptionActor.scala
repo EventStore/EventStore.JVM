@@ -36,7 +36,7 @@ class CatchUpSubscriptionActor(
   def subscribe(lastPosition: Option[Position.Exact], nextPosition: Position): Receive = {
     subscribeToStream(s"lastPosition: $lastPosition")
     subscriptionFailed(s"lastPosition: $lastPosition") orElse {
-      case SubscribeToAllCompleted(lastCommit) =>
+      case SubscribeToAllSucceed(lastCommit) =>
         subscribed = true
         debug(s"subscribed at lastCommit: $lastCommit")
         context become (
