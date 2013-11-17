@@ -42,12 +42,10 @@ case object Pong extends InOut
 //  externalHttpPort: Int) extends Message
 
 case class WriteEvents(
-    streamId: EventStream.Id,
-    events: Seq[EventData],
-    expectedVersion: ExpectedVersion = ExpectedVersion.Any,
-    requireMaster: Boolean = true) extends Out {
-  require(events.nonEmpty, "events is empty")
-}
+  streamId: EventStream.Id,
+  events: Seq[EventData],
+  expectedVersion: ExpectedVersion = ExpectedVersion.Any,
+  requireMaster: Boolean = true) extends Out
 
 sealed trait WriteEventsCompleted extends In
 case class WriteEventsSucceed(firstEventNumber: EventNumber.Exact) extends WriteEventsCompleted
@@ -80,7 +78,6 @@ case class TransactionStartFailed(reason: OperationFailed.Value,
 
 case class TransactionWrite(transactionId: Long, events: Seq[EventData], requireMaster: Boolean = true) extends Out {
   require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
-  require(events.nonEmpty, "events is empty")
 }
 
 sealed trait TransactionWriteCompleted extends In {

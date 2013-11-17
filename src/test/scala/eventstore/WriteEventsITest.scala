@@ -10,8 +10,8 @@ import OperationFailed._
 // TODO improve expectMsgType[ReadStreamEventsSucceed]
 class WriteEventsITest extends TestConnection {
   "append to stream" should {
-    "fail for zero events" in new WriteEventsScope {
-      writeEventsSucceed(Nil, NoStream) must throwA[IllegalArgumentException]
+    "not fail for zero events" in new WriteEventsScope {
+      writeEventsSucceed(Nil, NoStream)
     }
 
     "create stream with NoStream exp ver on first write if does not exist" in new WriteEventsScope {
