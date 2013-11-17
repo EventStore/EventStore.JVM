@@ -7,7 +7,7 @@ object Build extends Build {
     name                 := "eventstore-client",
     organization         := "com.geteventstore",
     version              := "0.1-SNAPSHOT",
-    scalaVersion         := "2.10.2",
+    scalaVersion         := "2.10.3",
     organizationHomepage := Some(new URL("http://geteventstore.com")),
     description          := "Event Store JVM Client",
     startYear            := Some(2013),
@@ -17,7 +17,7 @@ object Build extends Build {
     scalabuffVersion := "1.3.6")
 
   object V {
-    val akka = "2.2.1"
+    val akka = "2.2.3"
     val scalabuff = "1.3.6"
   }
 
@@ -25,7 +25,7 @@ object Build extends Build {
   val akkaTestkit = "com.typesafe.akka" %% "akka-testkit"      % V.akka      % "test"
   val scalabuff   = "net.sandrogrzicic" %% "scalabuff-runtime" % V.scalabuff
   val junit       = "junit"             %  "junit"             % "4.11"      % "test"
-  val specs2      = "org.specs2"        %% "specs2"            % "2.2.2"     % "test"
+  val specs2      = "org.specs2"        %% "specs2"            % "2.3.4"     % "test"
   val mockito     = "org.mockito"       %  "mockito-all"       % "1.9.5"     % "test"
 
   def itFilter(name: String): Boolean = name endsWith "ITest"
