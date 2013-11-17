@@ -41,7 +41,6 @@ case object Pong extends InOut
 //  externalHttpAddress: String,
 //  externalHttpPort: Int) extends Message
 
-// TODO reorder
 case class WriteEvents(
     streamId: EventStream.Id,
     events: Seq[EventData],
@@ -81,6 +80,7 @@ case class TransactionStartFailed(reason: OperationFailed.Value,
 
 case class TransactionWrite(transactionId: Long, events: Seq[EventData], requireMaster: Boolean = true) extends Out {
   require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
+  require(events.nonEmpty, "events is empty")
 }
 
 sealed trait TransactionWriteCompleted extends In {

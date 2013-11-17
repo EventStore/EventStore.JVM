@@ -18,6 +18,7 @@ case class Settings(
     heartbeatInterval: FiniteDuration = 750.millis,
     heartbeatTimeout: FiniteDuration = 2.seconds,
     connectionTimeout: FiniteDuration = 1.second,
+    responseTimeout: FiniteDuration = 5.seconds, // TODO 4J
     backpressureSettings: BackpressureSettings = BackpressureSettings()) {
   require(
     heartbeatInterval < heartbeatTimeout,
