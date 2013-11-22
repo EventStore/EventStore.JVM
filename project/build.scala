@@ -8,12 +8,13 @@ object Build extends Build {
     organization         := "com.geteventstore",
     version              := "0.1-SNAPSHOT",
     scalaVersion         := "2.10.3",
+    licenses             := Seq("BSD 3-Clause" -> url("http://raw.github.com/EventStore/eventstorejvmclient/master/LICENSE")),
+    homepage             := Some(new URL("http://github.com/EventStore/eventstorejvmclient")),
     organizationHomepage := Some(new URL("http://geteventstore.com")),
     description          := "Event Store JVM Client",
     startYear            := Some(2013),
     scalacOptions        := Seq("-encoding", "UTF-8", "-unchecked", "-deprecation", "-feature"),
     libraryDependencies ++= Seq(akka, akkaTestkit, scalabuff, junit, specs2, mockito),
-    resolvers := Seq("Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"),
     scalabuffVersion := "1.3.6")
 
   object V {
@@ -36,7 +37,7 @@ object Build extends Build {
   lazy val root = Project(
     "main",
     file("."),
-    settings = basicSettings ++ Defaults.defaultSettings ++ scalabuffSettings ++ Format.settings)
+    settings = basicSettings ++ Defaults.defaultSettings ++ scalabuffSettings ++ Format.settings ++ Publish.settings)
     .configs(ScalaBuff, IntegrationTest)
     .settings(inConfig(IntegrationTest)(Defaults.testTasks): _*)
     .settings(
