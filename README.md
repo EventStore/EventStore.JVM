@@ -3,11 +3,11 @@
 <table border="0">
   <tr>
     <td>Scala </td>
-    <td>2.10.2</td>
+    <td>2.10.3</td>
   </tr>
   <tr>
     <td>Akka </td>
-    <td>2.2.1</td>
+    <td>2.2.3</td>
   </tr>
 </table>
 
