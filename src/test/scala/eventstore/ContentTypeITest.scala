@@ -21,7 +21,7 @@ class ContentTypeITest extends TestConnection {
           //          metadataContentType = metadataContentType,
           metadata = ByteString(s"""{"metadata":"metadata", "contentType":"$metadataContentType"}"""))).number
 
-        val actual = readEventSucceed(number).data
+        val actual = readEventCompleted(number).data
         //        actual.dataContentType mustEqual dataContentType
         //        actual.metadataContentType mustEqual metadataContentType
         todo

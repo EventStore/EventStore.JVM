@@ -4,6 +4,7 @@ import akka.testkit._
 import scala.concurrent.duration._
 import tcp.ConnectionActor
 import ReadDirection._
+import akka.actor.Status.Failure
 
 /**
  * @author Yaroslav Klymko
@@ -19,7 +20,7 @@ abstract class TestConnection extends util.ActorSpec {
     def deleteStream(expVer: ExpectedVersion.Existing = ExpectedVersion.Any) {
       val probe = TestProbe()
       actor.!(DeleteStream(streamId, expVer))(probe.ref)
-      probe.expectMsg(DeleteStreamSucceed)
+      probe.expectMsg(DeleteStreamCompleted)
     }
 
     def newEventData: EventData = EventData(
@@ -29,24 +30,24 @@ abstract class TestConnection extends util.ActorSpec {
       //      metadataContentType = ContentType.Json,
       metadata = ByteString("""{"metadata":"metadata"}"""))
 
-    def writeEventsSucceed(
+    def writeEventsCompleted(
       events: Seq[EventData],
       expectedVersion: ExpectedVersion = ExpectedVersion.Any,
       streamId: EventStream.Id = streamId,
       testKit: TestKitBase = this): EventNumber.Exact = {
       actor.!(WriteEvents(streamId, events, expectedVersion))(testKit.testActor)
-      val firstEventNumber = testKit.expectMsgType[WriteEventsSucceed].firstEventNumber
+      val firstEventNumber = testKit.expectMsgType[WriteEventsCompleted].firstEventNumber
       if (expectedVersion == ExpectedVersion.NoStream) firstEventNumber mustEqual EventNumber.First
       firstEventNumber
     }
 
     def appendEventToCreateStream(): EventData = {
       val event = newEventData.copy(eventType = "first event")
-      writeEventsSucceed(Seq(event), ExpectedVersion.NoStream, testKit = TestProbe()) mustEqual EventNumber.First
+      writeEventsCompleted(Seq(event), ExpectedVersion.NoStream, testKit = TestProbe()) mustEqual EventNumber.First
       event
     }
 
-    def append(x: EventData): EventRecord = EventRecord(streamId, writeEventsSucceed(Seq(x), testKit = TestProbe()), x)
+    def append(x: EventData): EventRecord = EventRecord(streamId, writeEventsCompleted(Seq(x), testKit = TestProbe()), x)
 
     def linkedAndLink(): (EventRecord, EventRecord) = {
       val linked = append(newEventData.copy(eventType = "linked"))
@@ -61,27 +62,28 @@ abstract class TestConnection extends util.ActorSpec {
       def loop(n: Int) {
         actor.!(WriteEvents(streamId, events, ExpectedVersion.Any))(testKit.testActor)
         testKit.expectMsgPF(10.seconds) {
-          case WriteEventsSucceed(_)                                         => true
-          case WriteEventsFailed(OperationFailed.PrepareTimeout, _) if n < 3 => loop(n + 1) // TODO
+          case WriteEventsCompleted(_) => true
+          case Failure(EventStoreException(EventStoreError.PrepareTimeout, _, _)) if n < 3 => loop(n + 1) // TODO
         }
       }
 
       loop(0)
       events
     }
+    // TODO rename all `succeed`
 
-    def readEventSucceed(eventNumber: EventNumber, resolveLinkTos: Boolean = false) = {
+    def readEventCompleted(eventNumber: EventNumber, resolveLinkTos: Boolean = false) = {
       actor ! ReadEvent(streamId, eventNumber, resolveLinkTos = resolveLinkTos)
-      val event = expectMsgType[ReadEventSucceed].event
+      val event = expectMsgType[ReadEventCompleted].event
       event.streamId mustEqual streamId
       if (!resolveLinkTos) event must beAnInstanceOf[EventRecord]
       if (eventNumber != EventNumber.Last) event.number mustEqual eventNumber
       event
     }
 
-    def readStreamEventsSucceed(fromEventNumber: EventNumber, maxCount: Int, resolveLinkTos: Boolean = false)(implicit direction: ReadDirection.Value) = {
+    def readStreamEventsCompleted(fromEventNumber: EventNumber, maxCount: Int, resolveLinkTos: Boolean = false)(implicit direction: ReadDirection.Value) = {
       actor ! ReadStreamEvents(streamId, fromEventNumber, maxCount, direction, resolveLinkTos = resolveLinkTos)
-      val result = expectMsgType[ReadStreamEventsSucceed]
+      val result = expectMsgType[ReadStreamEventsCompleted]
       result.direction mustEqual direction
 
       val events = result.events
@@ -107,18 +109,20 @@ abstract class TestConnection extends util.ActorSpec {
     }
 
     def readStreamEvents(fromEventNumber: EventNumber, maxCount: Int)(implicit direction: ReadDirection.Value) = {
-      val result = readStreamEventsSucceed(fromEventNumber = fromEventNumber, maxCount = maxCount)
+      val result = readStreamEventsCompleted(fromEventNumber = fromEventNumber, maxCount = maxCount)
       result.events.map(_.data)
     }
 
-    def readStreamEventsFailed(fromEventNumber: EventNumber, maxCount: Int)(implicit direction: ReadDirection.Value): ReadStreamEventsFailed = {
-      actor ! ReadStreamEvents(streamId, fromEventNumber, maxCount, direction)
-      val failed = expectMsgType[ReadStreamEventsFailed]
-      failed.direction mustEqual direction
-      failed
+    def expectException(): EventStoreError.Value = expectMsgPF() {
+      case Failure(e: EventStoreException) => e.reason
     }
 
-    def readStreamEventsFailed(implicit direction: ReadDirection.Value): ReadStreamEventsFailed =
+    def readStreamEventsFailed(fromEventNumber: EventNumber, maxCount: Int)(implicit direction: ReadDirection.Value): EventStoreError.Value = {
+      actor ! ReadStreamEvents(streamId, fromEventNumber, maxCount, direction)
+      expectException()
+    }
+
+    def readStreamEventsFailed(implicit direction: ReadDirection.Value): EventStoreError.Value =
       readStreamEventsFailed(EventNumber.start(direction), 500)
 
     def streamEvents(implicit direction: ReadDirection.Value = Forward): Stream[EventData] =
@@ -126,7 +130,7 @@ abstract class TestConnection extends util.ActorSpec {
 
     def streamEventRecords(implicit direction: ReadDirection.Value = Forward): Stream[Event] = {
       def loop(position: EventNumber): Stream[Event] = {
-        val result = readStreamEventsSucceed(position, 500)
+        val result = readStreamEventsCompleted(position, 500)
         val resolvedIndexedEvents = result.events
         if (resolvedIndexedEvents.isEmpty || result.endOfStream) resolvedIndexedEvents.toStream
         else resolvedIndexedEvents.toStream #::: loop(result.nextEventNumber)
@@ -150,9 +154,9 @@ abstract class TestConnection extends util.ActorSpec {
       })
     }
 
-    def readAllEventsSucceed(position: Position, maxCount: Int, resolveLinkTos: Boolean = false)(implicit direction: ReadDirection.Value) = {
+    def readAllEventsCompleted(position: Position, maxCount: Int, resolveLinkTos: Boolean = false)(implicit direction: ReadDirection.Value) = {
       actor ! ReadAllEvents(position, maxCount, direction, resolveLinkTos = resolveLinkTos)
-      val result = expectMsgType[ReadAllEventsSucceed](10.seconds)
+      val result = expectMsgType[ReadAllEventsCompleted](10.seconds)
       result.direction mustEqual direction
 
       val events = result.events
@@ -172,18 +176,15 @@ abstract class TestConnection extends util.ActorSpec {
 
     def readAllEventsFailed(position: Position, maxCount: Int)(implicit direction: ReadDirection.Value) = {
       actor ! ReadAllEvents(position, maxCount, direction)
-      val failed = expectMsgType[ReadAllEventsFailed]
-      failed.direction mustEqual direction
-      failed.position mustEqual position
-      failed
+      expectException()
     }
 
     def readAllEvents(position: Position, maxCount: Int)(implicit direction: ReadDirection.Value): Seq[Event] =
-      readAllEventsSucceed(position = position, maxCount = maxCount).events.map(_.event)
+      readAllEventsCompleted(position = position, maxCount = maxCount).events.map(_.event)
 
     def allStreamsEvents(maxCount: Int = 500)(implicit direction: ReadDirection.Value): Stream[IndexedEvent] = {
       def loop(position: Position): Stream[IndexedEvent] = {
-        val result = readAllEventsSucceed(position, maxCount)
+        val result = readAllEventsCompleted(position, maxCount)
         val events = result.events
         if (events.isEmpty) Stream()
         else events.toStream #::: loop(result.nextPosition)
@@ -195,7 +196,6 @@ abstract class TestConnection extends util.ActorSpec {
       allStreamsEvents(maxCount).map(_.event.data)
 
     def newStreamId = EventStream.Id(getClass.getEnclosingClass.getSimpleName + "-" + newUuid.toString)
-
   }
 }
 

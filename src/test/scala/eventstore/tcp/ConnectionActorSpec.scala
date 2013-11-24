@@ -10,6 +10,7 @@ import akka.util.ByteIterator
 import java.net.InetSocketAddress
 import java.nio.ByteOrder
 import scala.concurrent.duration._
+import scala.util.Success
 
 /**
  * @author Yaroslav Klymko
@@ -74,7 +75,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     "reconnect if heartbeat timed out" in new TcpScope {
       val (_, tcpConnection) = connect()
       val req = expectPack
-      req.message mustEqual HeartbeatRequest
+      req.message mustEqual Success(HeartbeatRequest)
       expectMsg(PeerClosed)
       expectMsgType[Connected]
     }
@@ -83,15 +84,15 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       val (_, tcpConnection) = connect()
 
       val req = expectPack
-      req.message mustEqual HeartbeatRequest
+      req.message mustEqual Success(HeartbeatRequest)
 
       tcpConnection ! write(TcpPackageOut(req.correlationId, HeartbeatResponse))
-      expectPack.message mustEqual HeartbeatRequest
+      expectPack.message mustEqual Success(HeartbeatRequest)
     }
 
     "close connection if heartbeat timed out and maxReconnections == 0" in new TcpScope {
       val (_, tcpConnection) = connect(settings.copy(maxReconnections = 0))
-      expectPack.message mustEqual HeartbeatRequest
+      expectPack.message mustEqual Success(HeartbeatRequest)
       expectMsg(PeerClosed)
       expectNoMsg()
     }
@@ -100,11 +101,11 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       val (_, tcpConnection) = connect(settings.copy(maxReconnections = 0))
 
       val req = expectPack
-      req.message mustEqual HeartbeatRequest
+      req.message mustEqual Success(HeartbeatRequest)
 
       tcpConnection ! write(TcpPackageOut(req.correlationId, HeartbeatResponse))
 
-      expectPack.message mustEqual HeartbeatRequest
+      expectPack.message mustEqual Success(HeartbeatRequest)
     }
 
     "respond with HeartbeatResponseCommand on HeartbeatRequestCommand" in new TcpScope {
@@ -114,7 +115,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
 
       val res = expectPack
       res.correlationId mustEqual req.correlationId
-      res.message mustEqual HeartbeatResponse
+      res.message mustEqual Success(HeartbeatResponse)
     }
 
     "ping" in new TcpScope {
@@ -122,7 +123,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       connection ! Ping
 
       val req = expectPack
-      req.message mustEqual Ping
+      req.message mustEqual Success(Ping)
 
       tcpConnection ! write(TcpPackageOut(req.correlationId, Pong))
     }
@@ -131,7 +132,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       val (_, tcpConnection) = connect()
 
       tcpConnection ! write(Ping)
-      expectPack.message mustEqual Pong
+      expectPack.message mustEqual Success(Pong)
     }
 
     "stash messages while connecting" in new TcpScope {
@@ -142,8 +143,8 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
 
       val tcpConnection = newTcpConnection()
 
-      expectPack.message mustEqual Ping
-      expectPack.message mustEqual HeartbeatRequest
+      expectPack.message mustEqual Success(Ping)
+      expectPack.message mustEqual Success(HeartbeatRequest)
     }
 
     "stash messages while connection lost" in new TcpScope {
@@ -169,7 +170,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
           connection.tell(Ping, actor)
 
           val pack = expectPack
-          pack.message mustEqual Ping
+          pack.message mustEqual Success(Ping)
 
           val correlationId = pack.correlationId
           connection.underlyingActor.binding.x(correlationId) must beSome(actor)
@@ -197,7 +198,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       connection.tell(Ping, probe.ref)
 
       val req = expectPack
-      req.message mustEqual Ping
+      req.message mustEqual Success(Ping)
 
       val res = TcpPackageOut(req.correlationId, Pong)
       tcpConnection ! write(res)
@@ -295,7 +296,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
           else Some(BytesReader[UserCredentials].read(bi))
 
         val message = readMessage(bi)
-        TcpPackageOut(correlationId, message.asInstanceOf[Out], credentials)
+        TcpPackageOut(correlationId, message.get.asInstanceOf[Out], credentials)
       }
 
       val iterator = bs.iterator

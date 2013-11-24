@@ -1,6 +1,7 @@
 package eventstore
 
 import akka.actor.{ SupervisorStrategy, ActorRef, ActorLogging, Actor }
+import akka.actor.Status.Failure
 
 /**
  * @author Yaroslav Klymko
@@ -23,11 +24,14 @@ trait AbstractSubscriptionActor extends Actor with ActorLogging {
     connection ! SubscribeTo(streamId, resolveLinkTos = resolveLinkTos)
   }
 
-  def subscriptionFailed(msg: => String): Receive = {
-    case SubscriptionDropped(reason) =>
+  def subscriptionFailed: Receive = {
+    case UnsubscribeCompleted =>
       subscribed = false
-      log.warning(s"$streamId: subscription failed: $reason, $msg")
-      throw EventStoreException(streamId, reason)
+      context stop self
+
+    case Failure(e: EventStoreException) =>
+      subscribed = false
+      throw e
   }
 
   def debug(msg: => String) {

@@ -18,7 +18,7 @@ object OutInTag {
   implicit object PingPongTag extends AbstractTag[Ping.type, Pong.type]
   implicit object HeartbeatTag extends AbstractTag[HeartbeatRequest.type, HeartbeatResponse.type]
   implicit object WriteEventsTag extends AbstractTag[WriteEvents, WriteEventsCompleted]
-  implicit object DeleteStreamTag extends AbstractTag[DeleteStream, DeleteStreamCompleted]
+  implicit object DeleteStreamTag extends AbstractTag[DeleteStream, DeleteStreamCompleted.type]
   implicit object TransactionStartTag extends AbstractTag[TransactionStart, TransactionStartCompleted]
   implicit object TransactionWriteTag extends AbstractTag[TransactionWrite, TransactionWriteCompleted]
   implicit object TransactionCommitTag extends AbstractTag[TransactionCommit, TransactionCommitCompleted]

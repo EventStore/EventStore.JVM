@@ -1,10 +1,11 @@
 package eventstore
 package examples
 
-import java.net.InetSocketAddress
+import akka.actor.Status.Failure
 import akka.actor._
-import eventstore.tcp.ConnectionActor
 import eventstore._
+import eventstore.tcp.ConnectionActor
+import java.net.InetSocketAddress
 
 object ReadEventExample extends App {
   val system = ActorSystem()
@@ -24,7 +25,7 @@ class ReadEventActor(connection: ActorRef) extends Actor with ActorLogging {
     eventNumber = EventNumber.First)
 
   def receive = {
-    case ReadEventSucceed(event)          => log.info(s"SUCCEED: $event")
-    case ReadEventFailed(reason, message) => log.error(s"FAILED: reason $reason, message: $message")
+    case ReadEventCompleted(event)                        => log.info(s"SUCCEED: $event")
+    case Failure(EventStoreException(reason, message, _)) => log.error(s"FAILED: reason $reason, message: $message")
   }
 }

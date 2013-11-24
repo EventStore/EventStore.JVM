@@ -4,7 +4,7 @@ import scalabuff.ScalaBuffPlugin._
 
 object Build extends Build {
   lazy val basicSettings = Seq(
-    name                 := "eventstore-client",
+    name                 := "eventstore-client", // TODO  <artifactId>main_2.10</artifactId>
     organization         := "com.geteventstore",
     version              := "0.1-SNAPSHOT",
     scalaVersion         := "2.10.3",

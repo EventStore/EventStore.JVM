@@ -1,6 +1,6 @@
 package eventstore
 
-import OperationFailed._
+import EventStoreError.{ WrongExpectedVersion, StreamDeleted }
 import ExpectedVersion._
 import akka.testkit.TestProbe
 
@@ -31,14 +31,14 @@ class TransactionITest extends TestConnection {
     "do nothing if commits without events to empty stream" in new TransactionScope {
       implicit val transactionId = transactionStart(NoStream)
       transactionCommit
-      readStreamEventsFailed.reason mustEqual ReadStreamEventsFailed.Reason.NoStream
+      readStreamEventsFailed mustEqual EventStoreError.StreamNotFound
     }
 
     "do nothing if commits no events to empty stream" in new TransactionScope {
       implicit val transactionId = transactionStart(NoStream)
       transactionWrite()
       transactionCommit
-      readStreamEventsFailed.reason mustEqual ReadStreamEventsFailed.Reason.NoStream
+      readStreamEventsFailed mustEqual EventStoreError.StreamNotFound
     }
 
     "validate expectations on commit" in new TransactionScope {
@@ -54,11 +54,11 @@ class TransactionITest extends TestConnection {
 
       val probe = TestProbe()
 
-      writeEventsSucceed(Seq(newEventData), testKit = probe)
+      writeEventsCompleted(Seq(newEventData), testKit = probe)
 
       transactionWrite(newEventData)
 
-      writeEventsSucceed(Seq(newEventData), testKit = probe)
+      writeEventsCompleted(Seq(newEventData), testKit = probe)
 
       transactionWrite(newEventData)
       transactionCommit
@@ -105,24 +105,22 @@ class TransactionITest extends TestConnection {
 
     def transactionStart(expVer: ExpectedVersion = Any): Long = {
       actor ! TransactionStart(streamId, expVer)
-      expectMsgType[TransactionStartSucceed].transactionId
+      expectMsgType[TransactionStartCompleted].transactionId
     }
 
     def transactionWrite(events: EventData*)(implicit transactionId: Long) {
       actor ! TransactionWrite(transactionId, events.toList)
-      expectMsg(TransactionWriteSucceed(transactionId))
+      expectMsg(TransactionWriteCompleted(transactionId))
     }
 
     def transactionCommit(implicit transactionId: Long) {
       actor ! TransactionCommit(transactionId)
-      expectMsg(TransactionCommitSucceed(transactionId))
+      expectMsg(TransactionCommitCompleted(transactionId))
     }
 
-    def failTransactionCommit(result: Value)(implicit transactionId: Long) {
+    def failTransactionCommit(reason: EventStoreError.Value)(implicit transactionId: Long) {
       actor ! TransactionCommit(transactionId)
-      expectMsgPF() {
-        case TransactionCommitFailed(`transactionId`, `result`, Some(_)) => true
-      }
+      expectException()
     }
   }
 }

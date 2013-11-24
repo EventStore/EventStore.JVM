@@ -1,13 +1,14 @@
 package eventstore
 package tcp
 
-import akka.actor.{ Terminated, Actor, ActorRef, ActorLogging }
+import akka.actor.{ Terminated, Actor, ActorRef, ActorLogging, Status }
 import akka.io._
 import akka.io.TcpPipelineHandler.{ WithinActorContext, Init }
 import java.nio.ByteOrder
 import util.{ CancellableAdapter, BidirectionalMap }
 import scala.collection.immutable.Queue
 import scala.concurrent.duration._
+import scala.util.{ Failure, Success }
 
 /**
  * @author Yaroslav Klymko
@@ -104,9 +105,9 @@ class ConnectionActor(settings: Settings = Settings.Default) extends Actor with 
         log.debug(pack.toString)
         scheduled.cancel()
         msg match {
-          case HeartbeatRequest => send(TcpPackageOut(correlationId, HeartbeatResponse))
-          case Ping             => send(TcpPackageOut(correlationId, Pong))
-          case _                => dispatch(pack)
+          case Success(HeartbeatRequest) => send(TcpPackageOut(correlationId, HeartbeatResponse))
+          case Success(Ping)             => send(TcpPackageOut(correlationId, Pong))
+          case _                         => dispatch(pack)
         }
         context become connected(connection, send, init, packNumber + 1)
 
@@ -168,7 +169,10 @@ class ConnectionActor(settings: Settings = Settings.Default) extends Actor with 
   }
 
   def dispatch(pack: TcpPackageIn) {
-    val msg = pack.message
+    val msg = pack.message match {
+      case Success(x) => x
+      case Failure(x) => Status.Failure(x)
+    }
     val correlationId = pack.correlationId
     binding.x(correlationId) match {
       case Some(channel) => channel ! msg

@@ -10,31 +10,31 @@ import scala.util.Success
 class EventStoreConnectionSpec extends ActorSpec with Mockito {
   "EventStoreConnection" should {
     "write events" in new TestScope {
-      verifyOutIn(mock[WriteEvents], mock[WriteEventsSucceed])
+      verifyOutIn(mock[WriteEvents], mock[WriteEventsCompleted])
     }
 
     "delete stream" in new TestScope {
-      verifyOutIn(mock[DeleteStream], DeleteStreamSucceed)
+      verifyOutIn(mock[DeleteStream], DeleteStreamCompleted)
     }
 
     "transaction start" in new TestScope {
-      verifyOutIn(mock[TransactionStart], mock[TransactionStartSucceed])
+      verifyOutIn(mock[TransactionStart], mock[TransactionStartCompleted])
     }
 
     "transaction write" in new TestScope {
-      verifyOutIn(mock[TransactionWrite], mock[TransactionWriteSucceed])
+      verifyOutIn(mock[TransactionWrite], mock[TransactionWriteCompleted])
     }
 
     "transaction commit" in new TestScope {
-      verifyOutIn(mock[TransactionCommit], mock[TransactionCommitSucceed])
+      verifyOutIn(mock[TransactionCommit], mock[TransactionCommitCompleted])
     }
 
     "read event" in new TestScope {
-      verifyOutIn(mock[ReadEvent], mock[ReadEventSucceed])
+      verifyOutIn(mock[ReadEvent], mock[ReadEventCompleted])
     }
 
     "read stream events" in new TestScope {
-      verifyOutIn(mock[ReadStreamEvents], mock[ReadStreamEventsSucceed])
+      verifyOutIn(mock[ReadStreamEvents], mock[ReadStreamEventsCompleted])
     }
 
     "read all events" in new TestScope {
@@ -42,7 +42,7 @@ class EventStoreConnectionSpec extends ActorSpec with Mockito {
     }
 
     "subscribe to" in new TestScope {
-      verifyOutIn(mock[SubscribeTo], mock[SubscribeToStreamSucceed])
+      verifyOutIn(mock[SubscribeTo], mock[SubscribeToStreamCompleted])
     }
   }
 

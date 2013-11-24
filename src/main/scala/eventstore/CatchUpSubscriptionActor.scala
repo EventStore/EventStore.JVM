@@ -3,6 +3,7 @@ package eventstore
 import akka.actor.ActorRef
 import scala.collection.immutable.Queue
 import ReadDirection.Forward
+import akka.actor.Status.Failure
 
 /**
  * @author Yaroslav Klymko
@@ -35,8 +36,8 @@ class CatchUpSubscriptionActor(
 
   def subscribe(lastPosition: Option[Position.Exact], nextPosition: Position): Receive = {
     subscribeToStream(s"lastPosition: $lastPosition")
-    subscriptionFailed(s"lastPosition: $lastPosition") orElse {
-      case SubscribeToAllSucceed(lastCommit) =>
+    subscriptionFailed orElse {
+      case SubscribeToAllCompleted(lastCommit) =>
         subscribed = true
         debug(s"subscribed at lastCommit: $lastCommit")
         context become (
@@ -112,8 +113,8 @@ class CatchUpSubscriptionActor(
   }
 
   def readAllEventsCompleted(f: (Seq[IndexedEvent], Position.Exact) => Receive): Receive = {
-    case ReadAllEventsSucceed(events, _, nextPosition, Forward) => context become f(events, nextPosition)
-    case ReadAllEventsFailed(reason, message, _, Forward)       => throw EventStoreException(reason, message)
+    case ReadAllEventsCompleted(events, _, nextPosition, Forward) => context become f(events, nextPosition)
+    case Failure(e: EventStoreException)                          => throw e
   }
 
   def forward(event: IndexedEvent) {

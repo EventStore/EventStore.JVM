@@ -5,6 +5,8 @@ import scala.language.reflectiveCalls
 import scala.PartialFunction.condOpt
 import eventstore.util.DefaultFormats
 import ReadDirection.{ Backward, Forward }
+import scala.util.Try
+import eventstore.proto.OperationResult
 
 /**
  * @author Yaroslav Klymko
@@ -12,6 +14,46 @@ import ReadDirection.{ Backward, Forward }
 object EventStoreProtoFormats extends EventStoreProtoFormats
 
 trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultFormats {
+
+  type OperationMessage[T] = Message[T] {
+    def `result`: OperationResult.EnumVal
+    def `message`: Option[String]
+  }
+
+  trait ProtoTryReader[T, P <: Message[P]] extends ProtoReader[Try[T], P] {
+    import scala.util.Failure
+
+    def failure(reason: Option[EventStoreError.Value], errMsg: Option[String]): Failure[T] =
+      failure(EventStoreException(reason getOrElse EventStoreError.Error, message(errMsg)))
+
+    def failure(e: Throwable): Failure[T] = Failure(e)
+  }
+
+  trait ProtoOperationReader[T, P <: OperationMessage[P]] extends ProtoTryReader[T, P] {
+
+    import scala.util.Success
+
+    def error(x: proto.OperationResult.EnumVal): Option[EventStoreError.Value] = {
+      import eventstore.proto.OperationResult._
+      // TODO test it, what if new enum will be added in proto?
+      condOpt(x) {
+        case PrepareTimeout       => EventStoreError.PrepareTimeout
+        case CommitTimeout        => EventStoreError.CommitTimeout
+        case ForwardTimeout       => EventStoreError.ForwardTimeout
+        case WrongExpectedVersion => EventStoreError.WrongExpectedVersion
+        case StreamDeleted        => EventStoreError.StreamDeleted
+        case InvalidTransaction   => EventStoreError.InvalidTransaction
+        case AccessDenied         => EventStoreError.AccessDenied
+      }
+    }
+
+    def fromProto(x: P): Try[T] = x.`result` match {
+      case OperationResult.Success => Success(success(x))
+      case _                       => failure(error(x.`result`), x.`message`)
+    }
+
+    def success(x: P): T
+  }
 
   implicit object EventDataWriter extends ProtoWriter[EventData] {
     def toProto(x: EventData) = proto.NewEvent(
@@ -25,8 +67,10 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
       `metadata` = protoByteStringOption(x.metadata))
   }
 
-  implicit object EventRecordReader
-      extends ProtoReader[EventRecord, proto.EventRecord](proto.EventRecord) {
+  implicit object EventRecordReader extends ProtoReader[EventRecord, proto.EventRecord] {
+
+    def provider = proto.EventRecord
+
     def fromProto(x: proto.EventRecord) = EventRecord(
       streamId = EventStream(x.`eventStreamId`),
       number = EventNumber(x.`eventNumber`),
@@ -39,13 +83,19 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
         metadata = byteString(x.`metadata`)))
   }
 
-  implicit object IndexedEventReader extends ProtoReader[IndexedEvent, proto.ResolvedEvent](proto.ResolvedEvent) {
+  implicit object IndexedEventReader extends ProtoReader[IndexedEvent, proto.ResolvedEvent] {
+
+    def provider = proto.ResolvedEvent
+
     def fromProto(x: proto.ResolvedEvent) = IndexedEvent(
       event = EventReader.event(x),
       position = Position(commitPosition = x.`commitPosition`, preparePosition = x.`preparePosition`))
   }
 
-  implicit object EventReader extends ProtoReader[Event, proto.ResolvedIndexedEvent](proto.ResolvedIndexedEvent) {
+  implicit object EventReader extends ProtoReader[Event, proto.ResolvedIndexedEvent] {
+
+    def provider = proto.ResolvedIndexedEvent
+
     def fromProto(x: proto.ResolvedIndexedEvent) = event(
       EventRecordReader.fromProto(x.`event`),
       x.`link`.map(EventRecordReader.fromProto))
@@ -68,12 +118,9 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
       `requireMaster` = x.requireMaster)
   }
 
-  implicit object WriteEventsCompletedReader
-      extends ProtoReader[WriteEventsCompleted, proto.WriteEventsCompleted](proto.WriteEventsCompleted) {
-    def fromProto(x: proto.WriteEventsCompleted) = operationFailed(x.`result`) match {
-      case Some(reason) => WriteEventsFailed(reason, message(x.`message`))
-      case None         => WriteEventsSucceed(EventNumber(x.`firstEventNumber`))
-    }
+  implicit object WriteEventsCompletedReader extends ProtoOperationReader[WriteEventsCompleted, proto.WriteEventsCompleted] {
+    def provider = proto.WriteEventsCompleted
+    def success(x: proto.WriteEventsCompleted) = WriteEventsCompleted(EventNumber(x.`firstEventNumber`))
   }
 
   implicit object DeleteStreamWriter extends ProtoWriter[DeleteStream] {
@@ -84,11 +131,9 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
   }
 
   implicit object DeleteStreamCompletedReader
-      extends ProtoReader[DeleteStreamCompleted, proto.DeleteStreamCompleted](proto.DeleteStreamCompleted) {
-    def fromProto(x: proto.DeleteStreamCompleted) = operationFailed(x.`result`) match {
-      case Some(reason) => DeleteStreamFailed(reason, message(x.`message`))
-      case None         => DeleteStreamSucceed
-    }
+      extends ProtoOperationReader[DeleteStreamCompleted.type, proto.DeleteStreamCompleted] {
+    def provider = proto.DeleteStreamCompleted
+    def success(x: proto.DeleteStreamCompleted) = DeleteStreamCompleted
   }
 
   implicit object TransactionStartWriter extends ProtoWriter[TransactionStart] {
@@ -99,11 +144,9 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
   }
 
   implicit object TransactionStartCompletedReader
-      extends ProtoReader[TransactionStartCompleted, proto.TransactionStartCompleted](proto.TransactionStartCompleted) {
-    def fromProto(x: proto.TransactionStartCompleted) = operationFailed(x.`result`) match {
-      case Some(failed) => TransactionStartFailed(failed, message(x.`message`))
-      case None         => TransactionStartSucceed(x.`transactionId`)
-    }
+      extends ProtoOperationReader[TransactionStartCompleted, proto.TransactionStartCompleted] {
+    def provider = proto.TransactionStartCompleted
+    def success(x: proto.TransactionStartCompleted) = TransactionStartCompleted(x.`transactionId`)
   }
 
   implicit object TransactionWriteWriter extends ProtoWriter[TransactionWrite] {
@@ -114,11 +157,9 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
   }
 
   implicit object TransactionWriteCompletedReader
-      extends ProtoReader[TransactionWriteCompleted, proto.TransactionWriteCompleted](proto.TransactionWriteCompleted) {
-    def fromProto(x: proto.TransactionWriteCompleted) = operationFailed(x.`result`) match {
-      case Some(failed) => TransactionWriteFailed(x.`transactionId`, failed, message(x.`message`))
-      case None         => TransactionWriteSucceed(x.`transactionId`)
-    }
+      extends ProtoOperationReader[TransactionWriteCompleted, proto.TransactionWriteCompleted] {
+    def provider = proto.TransactionWriteCompleted
+    def success(x: proto.TransactionWriteCompleted) = TransactionWriteCompleted(x.`transactionId`)
   }
 
   implicit object TransactionCommitWriter extends ProtoWriter[TransactionCommit] {
@@ -128,11 +169,9 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
   }
 
   implicit object TransactionCommitCompletedReader
-      extends ProtoReader[TransactionCommitCompleted, proto.TransactionCommitCompleted](proto.TransactionCommitCompleted) {
-    def fromProto(x: proto.TransactionCommitCompleted) = operationFailed(x.`result`) match {
-      case Some(failed) => TransactionCommitFailed(x.`transactionId`, failed, message(x.`message`))
-      case None         => TransactionCommitSucceed(x.`transactionId`)
-    }
+      extends ProtoOperationReader[TransactionCommitCompleted, proto.TransactionCommitCompleted] {
+    def provider = proto.TransactionCommitCompleted
+    def success(x: proto.TransactionCommitCompleted) = TransactionCommitCompleted(x.`transactionId`)
   }
 
   implicit object ReadEventWriter extends ProtoWriter[ReadEvent] {
@@ -143,23 +182,23 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
       `requireMaster` = x.requireMaster)
   }
 
-  implicit object ReadEventCompletedReader
-      extends ProtoReader[ReadEventCompleted, proto.ReadEventCompleted](proto.ReadEventCompleted) {
-    import eventstore.proto.ReadEventCompleted.ReadEventResult._
-    import ReadEventFailed.Reason
+  implicit object ReadEventCompletedReader extends ProtoTryReader[ReadEventCompleted, proto.ReadEventCompleted] {
+    import proto.ReadEventCompleted.ReadEventResult._
+
+    def provider = proto.ReadEventCompleted
 
     // TODO test it, what if new enum will be added in proto?
-    def reason(x: EnumVal): Option[Reason.Value] = condOpt(x) {
-      case NotFound      => Reason.NotFound
-      case NoStream      => Reason.NoStream
-      case StreamDeleted => Reason.StreamDeleted
-      case Error         => Reason.Error
-      case AccessDenied  => Reason.AccessDenied
+    def error(x: EnumVal): Option[EventStoreError.Value] = condOpt(x) {
+      case NotFound      => EventStoreError.EventNotFound
+      case NoStream      => EventStoreError.StreamNotFound
+      case StreamDeleted => EventStoreError.StreamDeleted
+      case Error         => EventStoreError.Error
+      case AccessDenied  => EventStoreError.AccessDenied
     }
 
-    def fromProto(x: proto.ReadEventCompleted) = reason(x.`result`) match {
-      case Some(reason) => ReadEventFailed(reason, message(x.`error`))
-      case None         => ReadEventSucceed(EventReader.fromProto(x.`event`))
+    def fromProto(x: proto.ReadEventCompleted) = x.`result` match {
+      case Success => Try(ReadEventCompleted(EventReader.fromProto(x.`event`)))
+      case _       => failure(error(x.`result`), x.`error`)
     }
   }
 
@@ -173,34 +212,31 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
   }
 
   abstract class ReadStreamEventsCompletedReader(direction: ReadDirection.Value)
-      extends ProtoReader[ReadStreamEventsCompleted, proto.ReadStreamEventsCompleted](proto.ReadStreamEventsCompleted) {
+      extends ProtoTryReader[ReadStreamEventsCompleted, proto.ReadStreamEventsCompleted] {
     import eventstore.proto.ReadStreamEventsCompleted.ReadStreamResult._
-    import ReadStreamEventsFailed.Reason
+
+    def provider = proto.ReadStreamEventsCompleted
 
     // TODO test it, what if new enum will be added in proto?
-    def reason(x: EnumVal): Option[Reason.Value] = condOpt(x) {
-      case NoStream      => Reason.NoStream
-      case StreamDeleted => Reason.StreamDeleted
-      case Error         => Reason.Error
-      case AccessDenied  => Reason.AccessDenied
+    def error(x: EnumVal): Option[EventStoreError.Value] = condOpt(x) {
+      case NoStream      => EventStoreError.StreamNotFound
+      case StreamDeleted => EventStoreError.StreamDeleted
+      case Error         => EventStoreError.Error
+      case AccessDenied  => EventStoreError.AccessDenied
     }
 
-    def fromProto(x: proto.ReadStreamEventsCompleted) = {
-      require(x.`result` != NotModified, "ReadStreamEventsCompleted.NotModified is not supported")
-      reason(x.`result`) match {
-        case None => ReadStreamEventsSucceed(
-          events = x.`events`.map(EventReader.fromProto).toList,
-          nextEventNumber = EventNumberConverter.to(x.`nextEventNumber`),
-          lastEventNumber = EventNumber(x.`lastEventNumber`),
-          endOfStream = x.`isEndOfStream`,
-          lastCommitPosition = x.`lastCommitPosition`,
-          direction = direction)
+    def fromProto(x: proto.ReadStreamEventsCompleted) = x.`result` match {
+      case Success => Try(ReadStreamEventsCompleted(
+        events = x.`events`.map(EventReader.fromProto).toList,
+        nextEventNumber = EventNumberConverter.to(x.`nextEventNumber`),
+        lastEventNumber = EventNumber(x.`lastEventNumber`),
+        endOfStream = x.`isEndOfStream`,
+        lastCommitPosition = x.`lastCommitPosition`,
+        direction = direction))
 
-        case Some(reason) => ReadStreamEventsFailed(
-          reason = reason,
-          message = message(x.`error`),
-          direction = direction)
-      }
+      case NotModified => failure(new IllegalArgumentException("ReadStreamEventsCompleted.NotModified is not supported"))
+
+      case _           => failure(error(x.`result`), x.`error`)
     }
   }
 
@@ -220,33 +256,25 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
   }
 
   abstract class ReadAllEventsCompletedReader(direction: ReadDirection.Value)
-      extends ProtoReader[ReadAllEventsCompleted, proto.ReadAllEventsCompleted](proto.ReadAllEventsCompleted) {
+      extends ProtoTryReader[ReadAllEventsCompleted, proto.ReadAllEventsCompleted] {
     import proto.ReadAllEventsCompleted.ReadAllResult._
-    import ReadAllEventsFailed.Reason
+
+    def provider = proto.ReadAllEventsCompleted
 
     // TODO test it, what if new enum will be added in proto?
-    def reason(x: EnumVal): Option[Reason.Value] = condOpt(x) {
-      case Error        => Reason.Error
-      case AccessDenied => Reason.AccessDenied
+    def error(x: EnumVal): Option[EventStoreError.Value] = condOpt(x) {
+      case Error        => EventStoreError.Error
+      case AccessDenied => EventStoreError.AccessDenied
     }
 
-    def fromProto(x: proto.ReadAllEventsCompleted) = {
-      val result = x.`result` getOrElse Success
-      require(result != NotModified, "ReadAllEventsCompleted.NotModified is not supported")
-      val position = Position(commitPosition = x.`commitPosition`, preparePosition = x.`preparePosition`)
-      reason(result) match {
-        case None => ReadAllEventsSucceed(
-          position = position,
-          events = x.`events`.toList.map(IndexedEventReader.fromProto),
-          nextPosition = Position(commitPosition = x.`nextCommitPosition`, preparePosition = x.`nextPreparePosition`),
-          direction = direction)
-
-        case Some(reason) => ReadAllEventsFailed(
-          reason = reason,
-          position = position,
-          direction = direction,
-          message = message(x.`error`))
-      }
+    def fromProto(x: proto.ReadAllEventsCompleted) = x.`result` getOrElse Success match {
+      case Success => Try(ReadAllEventsCompleted(
+        position = Position(commitPosition = x.`commitPosition`, preparePosition = x.`preparePosition`),
+        events = x.`events`.toList.map(IndexedEventReader.fromProto),
+        nextPosition = Position(commitPosition = x.`nextCommitPosition`, preparePosition = x.`nextPreparePosition`),
+        direction = direction))
+      case NotModified => failure(new IllegalArgumentException("ReadAllEventsCompleted.NotModified is not supported"))
+      case result      => failure(error(result), x.`error`)
     }
   }
 
@@ -265,51 +293,35 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
     }
   }
 
-  implicit object SubscribeCompletedReader
-      extends ProtoReader[SubscribeCompleted, proto.SubscriptionConfirmation](proto.SubscriptionConfirmation) {
+  implicit object SubscribeCompletedReader extends ProtoReader[SubscribeCompleted, proto.SubscriptionConfirmation] {
+
+    def provider = proto.SubscriptionConfirmation
 
     def fromProto(x: proto.SubscriptionConfirmation) = x.`lastEventNumber` match {
-      case None => SubscribeToAllSucceed(x.`lastCommitPosition`)
-      case Some(eventNumber) => SubscribeToStreamSucceed(
+      case None => SubscribeToAllCompleted(x.`lastCommitPosition`)
+      case Some(eventNumber) => SubscribeToStreamCompleted(
         lastCommit = x.`lastCommitPosition`,
         lastEventNumber = if (eventNumber == -1) None else Some(EventNumber(eventNumber)))
     }
   }
 
-  implicit object StreamEventAppearedReader
-      extends ProtoReader[StreamEventAppeared, proto.StreamEventAppeared](proto.StreamEventAppeared) {
+  implicit object StreamEventAppearedReader extends ProtoReader[StreamEventAppeared, proto.StreamEventAppeared] {
+
+    def provider = proto.StreamEventAppeared
 
     def fromProto(x: proto.StreamEventAppeared) =
       StreamEventAppeared(event = IndexedEventReader.fromProto(x.`event`))
   }
 
-  implicit object SubscriptionDroppedReader
-      extends ProtoReader[SubscriptionDropped, proto.SubscriptionDropped](proto.SubscriptionDropped) {
+  implicit object SubscriptionDroppedReader extends ProtoTryReader[UnsubscribeCompleted.type, proto.SubscriptionDropped] {
     import eventstore.proto.SubscriptionDropped.SubscriptionDropReason._
-    import SubscriptionDropped.Reason
-    val default = Reason.Unsubscribed
 
-    // TODO test it, what if new enum will be added in proto?
-    def reason(x: EnumVal): Reason.Value = x match {
-      case Unsubscribed => Reason.Unsubscribed
-      case AccessDenied => Reason.AccessDenied
-      case _            => default
-    }
+    def provider = proto.SubscriptionDropped
 
-    def fromProto(x: proto.SubscriptionDropped) = SubscriptionDropped(reason = x.`reason`.fold(default)(reason))
-  }
-
-  private def operationFailed(x: proto.OperationResult.EnumVal): Option[OperationFailed.Value] = {
-    import eventstore.proto.OperationResult._
-    // TODO test it, what if new enum will be added in proto?
-    condOpt(x) { // TODO add plugin to align this way
-      case PrepareTimeout       => OperationFailed.PrepareTimeout
-      case CommitTimeout        => OperationFailed.CommitTimeout
-      case ForwardTimeout       => OperationFailed.ForwardTimeout
-      case WrongExpectedVersion => OperationFailed.WrongExpectedVersion
-      case StreamDeleted        => OperationFailed.StreamDeleted
-      case InvalidTransaction   => OperationFailed.InvalidTransaction
-      case AccessDenied         => OperationFailed.AccessDenied
+    def fromProto(x: proto.SubscriptionDropped) = x.`reason` match {
+      case None | Some(Unsubscribed) => Try(UnsubscribeCompleted)
+      case Some(AccessDenied)        => failure(Some(EventStoreError.AccessDenied), None)
+      case _                         => failure(None, None)
     }
   }
 

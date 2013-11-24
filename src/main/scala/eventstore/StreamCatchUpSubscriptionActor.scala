@@ -3,6 +3,7 @@ package eventstore
 import akka.actor.ActorRef
 import scala.collection.immutable.Queue
 import ReadDirection.Forward
+import akka.actor.Status.Failure
 
 /**
  * @author Yaroslav Klymko
@@ -26,22 +27,22 @@ class StreamCatchUpSubscriptionActor(
     readEventsFrom(nextNumber)
 
     {
-      case ReadStreamEventsSucceed(events, next, _, endOfStream, _, Forward) => context become {
+      case ReadStreamEventsCompleted(events, next, _, endOfStream, _, Forward) => context become {
         val last = process(lastNumber, events)
         if (endOfStream) subscribe(last, next) else read(last, next)
       }
 
-      case ReadStreamEventsFailed(reason, message, Forward) => context become (reason match {
-        case ReadStreamEventsFailed.Reason.NoStream => subscribe(lastNumber, nextNumber)
-        case _                                      => throw EventStoreException(streamId, reason, message)
+      case Failure(e: EventStoreException) => context become (e.reason match {
+        case EventStoreError.StreamNotFound => subscribe(lastNumber, nextNumber)
+        case _                              => throw e
       })
     }
   }
 
   def subscribe(lastNumber: Option[EventNumber.Exact], nextNumber: EventNumber): Receive = {
     subscribeToStream(s"lastEventNumber: $lastNumber")
-    subscriptionFailed(s"lastEventNumber: $lastNumber") orElse {
-      case SubscribeToStreamSucceed(_, subscriptionNumber) => context become {
+    subscriptionFailed orElse {
+      case SubscribeToStreamCompleted(_, subscriptionNumber) => context become {
         subscribed = true
         debug(s"subscribed at eventNumber: $subscriptionNumber")
         subscriptionNumber match {
@@ -64,7 +65,7 @@ class StreamCatchUpSubscriptionActor(
     readEventsFrom(nextNumber)
 
     def catchingUp(stash: Queue[Event]): Receive = {
-      case ReadStreamEventsSucceed(events, next, _, endOfStream, _, Forward) => context become (
+      case ReadStreamEventsCompleted(events, next, _, endOfStream, _, Forward) => context become (
         if (endOfStream) liveProcessing(process(lastNumber, events), stash)
         else {
           def loop(events: List[Event], lastNumber: Option[EventNumber.Exact]): Receive = events match {
@@ -81,7 +82,7 @@ class StreamCatchUpSubscriptionActor(
           loop(events.toList, lastNumber)
         })
 
-      case ReadStreamEventsFailed(reason, message, Forward) => throw EventStoreException(streamId, reason, message)
+      case Failure(e: EventStoreException) => throw e
 
       case StreamEventAppeared(x) if x.event.record.number > subscriptionNumber =>
         debug(s"catching up: adding appeared event to stash(${stash.size}): $x")

@@ -2,6 +2,7 @@ package eventstore
 
 import akka.testkit.TestProbe
 import ReadDirection.Forward
+import akka.actor.Status.Failure
 
 /**
  * @author Yaroslav Klymko
@@ -20,21 +21,21 @@ class CatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActorSpec 
     "ignore read events with position out of interest" in new CatchUpScope {
       connection expectMsg readAllEvents(0)
 
-      actor ! readAllEventsSucceed(0, 3, event0, event1, event2)
+      actor ! readAllEventsCompleted(0, 3, event0, event1, event2)
       expectEvent(event0)
       expectEvent(event1)
       expectEvent(event2)
 
       connection expectMsg readAllEvents(3)
 
-      actor ! readAllEventsSucceed(3, 5, event0, event1, event2, event3, event4)
+      actor ! readAllEventsCompleted(3, 5, event0, event1, event2, event3, event4)
 
       expectEvent(event3)
       expectEvent(event4)
 
       connection expectMsg readAllEvents(5)
 
-      actor ! readAllEventsSucceed(3, 5, event0, event1, event2, event3, event4)
+      actor ! readAllEventsCompleted(3, 5, event0, event1, event2, event3, event4)
 
       expectNoMsg(duration)
       connection expectMsg readAllEvents(5)
@@ -43,7 +44,7 @@ class CatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActorSpec 
     "ignore read events with position out of interest when start position is given" in new CatchUpScope(Some(1)) {
       connection expectMsg readAllEvents(1)
 
-      actor ! readAllEventsSucceed(0, 3, event0, event1, event2)
+      actor ! readAllEventsCompleted(0, 3, event0, event1, event2)
       expectEvent(event2)
       expectNoMsg(duration)
 
@@ -53,12 +54,12 @@ class CatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActorSpec 
     "read events until none left and subscribe to new ones" in new CatchUpScope {
       connection expectMsg readAllEvents(0)
       val nextPosition = 2
-      actor ! readAllEventsSucceed(1, nextPosition, event1)
+      actor ! readAllEventsCompleted(1, nextPosition, event1)
 
       expectEvent(event1)
 
       connection expectMsg readAllEvents(nextPosition)
-      actor ! readAllEventsSucceed(nextPosition, nextPosition)
+      actor ! readAllEventsCompleted(nextPosition, nextPosition)
 
       connection.expectMsg(subscribeTo)
     }
@@ -66,13 +67,13 @@ class CatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActorSpec 
     "subscribe to new events if nothing to read" in new CatchUpScope {
       connection expectMsg readAllEvents(0)
       val position = 0
-      actor ! readAllEventsSucceed(position, position)
+      actor ! readAllEventsCompleted(position, position)
       connection.expectMsg(subscribeTo)
 
-      actor ! SubscribeToAllSucceed(1)
+      actor ! SubscribeToAllCompleted(1)
 
       connection expectMsg readAllEvents(0)
-      actor ! readAllEventsSucceed(position, position)
+      actor ! readAllEventsCompleted(position, position)
 
       expectMsg(Cs.LiveProcessingStarted)
     }
@@ -87,18 +88,18 @@ class CatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActorSpec 
       connection expectMsg readAllEvents(0)
 
       val position = 1
-      actor ! readAllEventsSucceed(0, 2, event0, event1)
+      actor ! readAllEventsCompleted(0, 2, event0, event1)
 
       expectEvent(event0)
       expectEvent(event1)
 
       connection expectMsg readAllEvents(2)
-      actor ! readAllEventsSucceed(2, 2)
+      actor ! readAllEventsCompleted(2, 2)
 
       expectNoMsg(duration)
       connection.expectMsg(subscribeTo)
 
-      actor ! SubscribeToAllSucceed(4)
+      actor ! SubscribeToAllCompleted(4)
 
       connection expectMsg readAllEvents(2)
 
@@ -107,7 +108,7 @@ class CatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActorSpec 
       actor ! StreamEventAppeared(event4)
       expectNoMsg(duration)
 
-      actor ! readAllEventsSucceed(2, 3, event1, event2)
+      actor ! readAllEventsCompleted(2, 3, event1, event2)
       expectEvent(event2)
 
       connection expectMsg readAllEvents(3)
@@ -116,7 +117,7 @@ class CatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActorSpec 
       actor ! StreamEventAppeared(event6)
       expectNoMsg(duration)
 
-      actor ! readAllEventsSucceed(3, 6, event3, event4, event5)
+      actor ! readAllEventsCompleted(3, 6, event3, event4, event5)
 
       expectEvent(event3)
       expectEvent(event4)
@@ -132,7 +133,7 @@ class CatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActorSpec 
 
     "stop subscribing if stop received when subscription not yet confirmed" in new CatchUpScope() {
       connection expectMsg readAllEvents(0)
-      actor ! readAllEventsSucceed(0, 0)
+      actor ! readAllEventsCompleted(0, 0)
 
       connection.expectMsg(subscribeTo)
       actor.stop()
@@ -141,17 +142,17 @@ class CatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActorSpec 
 
     "not unsubscribe if subscription failed" in new CatchUpScope() {
       connection expectMsg readAllEvents(0)
-      actor ! readAllEventsSucceed(0, 0)
+      actor ! readAllEventsCompleted(0, 0)
 
       connection.expectMsg(subscribeTo)
-      actor ! SubscriptionDropped(SubscriptionDropped.Reason.AccessDenied)
+      actor ! Failure(EventStoreException(EventStoreError.AccessDenied))
 
       expectActorTerminated()
     }
 
     "not unsubscribe if subscription failed if stop received " in new CatchUpScope() {
       connection expectMsg readAllEvents(0)
-      actor ! readAllEventsSucceed(0, 0)
+      actor ! readAllEventsCompleted(0, 0)
       connection.expectMsg(subscribeTo)
       actor.stop()
       expectActorTerminated()
@@ -161,19 +162,19 @@ class CatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActorSpec 
       connection expectMsg readAllEvents(0)
 
       val position = 1
-      actor ! readAllEventsSucceed(0, 2, event0, event1)
+      actor ! readAllEventsCompleted(0, 2, event0, event1)
 
       expectEvent(event0)
       expectEvent(event1)
 
       connection expectMsg readAllEvents(2)
 
-      actor ! readAllEventsSucceed(2, 2)
+      actor ! readAllEventsCompleted(2, 2)
 
       expectNoMsg(duration)
       connection.expectMsg(subscribeTo)
 
-      actor ! SubscribeToAllSucceed(5)
+      actor ! SubscribeToAllCompleted(5)
 
       connection expectMsg readAllEvents(2)
 
@@ -188,15 +189,15 @@ class CatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActorSpec 
     "continue with subscription if no events appear in between reading and subscribing" in new CatchUpScope() {
       val position = 0
       connection expectMsg readAllEvents(position)
-      actor ! readAllEventsSucceed(position, position)
+      actor ! readAllEventsCompleted(position, position)
 
       connection.expectMsg(subscribeTo)
       expectNoMsg(duration)
 
-      actor ! SubscribeToAllSucceed(1)
+      actor ! SubscribeToAllCompleted(1)
 
       connection expectMsg readAllEvents(position)
-      actor ! readAllEventsSucceed(position, position)
+      actor ! readAllEventsCompleted(position, position)
 
       expectMsg(Cs.LiveProcessingStarted)
 
@@ -207,12 +208,12 @@ class CatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActorSpec 
       val position = 1
       connection expectMsg readAllEvents(position)
 
-      actor ! readAllEventsSucceed(position, position)
+      actor ! readAllEventsCompleted(position, position)
 
       connection.expectMsg(subscribeTo)
       expectNoMsg(duration)
 
-      actor ! SubscribeToAllSucceed(1)
+      actor ! SubscribeToAllCompleted(1)
 
       expectMsg(Cs.LiveProcessingStarted)
 
@@ -222,15 +223,15 @@ class CatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActorSpec 
     "forward events while subscribed" in new CatchUpScope() {
       val position = 0
       connection expectMsg readAllEvents(position)
-      actor ! readAllEventsSucceed(position, position)
+      actor ! readAllEventsCompleted(position, position)
 
       connection.expectMsg(subscribeTo)
       expectNoMsg(duration)
 
-      actor ! SubscribeToAllSucceed(1)
+      actor ! SubscribeToAllCompleted(1)
 
       connection expectMsg readAllEvents(position)
-      actor ! readAllEventsSucceed(position, position)
+      actor ! readAllEventsCompleted(position, position)
 
       expectMsg(Cs.LiveProcessingStarted)
 
@@ -248,13 +249,13 @@ class CatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActorSpec 
     "ignore wrong events while subscribed" in new CatchUpScope(Some(1)) {
       val position = 1
       connection expectMsg readAllEvents(position)
-      actor ! readAllEventsSucceed(position, position)
+      actor ! readAllEventsCompleted(position, position)
 
       connection.expectMsg(subscribeTo)
-      actor ! SubscribeToAllSucceed(2)
+      actor ! SubscribeToAllCompleted(2)
 
       connection expectMsg readAllEvents(position)
-      actor ! readAllEventsSucceed(position, position)
+      actor ! readAllEventsCompleted(position, position)
 
       expectMsg(Cs.LiveProcessingStarted)
 
@@ -277,10 +278,10 @@ class CatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActorSpec 
       connection expectMsg readAllEvents(1)
 
       val position = 1
-      actor ! readAllEventsSucceed(position, position)
+      actor ! readAllEventsCompleted(position, position)
 
       connection.expectMsg(subscribeTo)
-      actor ! SubscribeToAllSucceed(1)
+      actor ! SubscribeToAllCompleted(1)
       expectMsg(Cs.LiveProcessingStarted)
 
       actor ! StreamEventAppeared(event2)
@@ -299,10 +300,10 @@ class CatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActorSpec 
 
     "stop actor if subscription error" in new CatchUpScope() {
       connection expectMsg readAllEvents(0)
-      actor ! readAllEventsSucceed(0, 0)
+      actor ! readAllEventsCompleted(0, 0)
 
       connection expectMsg subscribeTo
-      actor ! SubscriptionDropped(SubscriptionDropped.Reason.AccessDenied)
+      actor ! UnsubscribeCompleted
 
       expectActorTerminated()
     }
@@ -310,10 +311,10 @@ class CatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActorSpec 
     "stop actor if catchup read error" in new CatchUpScope() {
       connection expectMsg readAllEvents(0)
 
-      actor ! readAllEventsSucceed(0, 0)
+      actor ! readAllEventsCompleted(0, 0)
       connection expectMsg subscribeTo
 
-      actor ! SubscribeToAllSucceed(1)
+      actor ! SubscribeToAllCompleted(1)
       connection expectMsg readAllEvents(0)
 
       actor ! readAllEventsFailed
@@ -366,9 +367,9 @@ class CatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActorSpec 
 
     def readAllEvents(x: Long) = ReadAllEvents(Position(x), readBatchSize, Forward, resolveLinkTos = resolveLinkTos)
 
-    def readAllEventsSucceed(position: Long, next: Long, events: IndexedEvent*) =
-      ReadAllEventsSucceed(Seq(events: _*), Position(position), Position(next), Forward)
+    def readAllEventsCompleted(position: Long, next: Long, events: IndexedEvent*) =
+      ReadAllEventsCompleted(Seq(events: _*), Position(position), Position(next), Forward)
 
-    def readAllEventsFailed = ReadAllEventsFailed(ReadAllEventsFailed.Reason.Error, None, Position(0), Forward)
+    def readAllEventsFailed = Failure(EventStoreException(EventStoreError.Error))
   }
 }

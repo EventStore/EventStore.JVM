@@ -24,6 +24,7 @@ However we will provide more convenient API based on `scala.concurrent.Future`.
 
 ```java
 import akka.actor.*;
+import akka.actor.Status.Failure;
 import akka.event.*;
 import eventstore.*;
 import eventstore.j.*;
@@ -67,15 +68,14 @@ public class ReadEventExample {
         }
 
         public void onReceive(Object message) throws Exception {
-            if (message instanceof ReadEventSucceed) {
-                final ReadEventSucceed succeed = (ReadEventSucceed) message;
-                final Event event = succeed.event();
-                log.info("SUCCEED: " + event.toString());
-
-            } else if (message instanceof ReadEventFailed) {
-                final ReadEventFailed failed = (ReadEventFailed) message;
-                log.error("FAILED: reason: {}, message: {}", failed.reason(), failed.message());
-
+            if (message instanceof ReadEventCompleted) {
+                final ReadEventCompleted completed = (ReadEventCompleted) message;
+                final Event event = completed.event();
+                log.info("EVENT: " + event.toString());
+            } else if (message instanceof Failure) {
+                final Failure failure = ((Failure) message);
+                final EventStoreException exception = (EventStoreException) failure.cause();
+                log.error("FAILED: reason: {}, message: {}", exception.reason(), exception.message());
             } else
                 unhandled(message);
         }
@@ -86,11 +86,11 @@ public class ReadEventExample {
 ### ReadEvent (Scala)
 
 ```scala
-import java.net.InetSocketAddress
+import akka.actor.Status.Failure
 import akka.actor._
-import eventstore.tcp.ConnectionActor
 import eventstore._
-
+import eventstore.tcp.ConnectionActor
+import java.net.InetSocketAddress
 
 object ReadEventExample extends App {
   val system = ActorSystem()
@@ -110,8 +110,8 @@ class ReadEventActor(connection: ActorRef) extends Actor with ActorLogging {
     eventNumber = EventNumber.First)
 
   def receive = {
-    case ReadEventSucceed(event) => log.info(s"SUCCEED: $event")
-    case ReadEventFailed(reason, message) => log.error(s"FAILED: reason $reason, message: $message")
+    case ReadEventCompleted(event)                        => log.info(s"SUCCEED: $event")
+    case Failure(EventStoreException(reason, message, _)) => log.error(s"FAILED: reason $reason, message: $message")
   }
 }
 ```

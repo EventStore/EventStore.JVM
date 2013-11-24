@@ -16,6 +16,6 @@ class SubscribeActor(connection: ActorRef) extends Actor with ActorLogging {
 
   def receive = {
     case x: StreamEventAppeared => stats ! x
-    case SubscriptionDropped    => sender ! subscribeToStream
+    case UnsubscribeCompleted   => sender ! subscribeToStream
   }
 }

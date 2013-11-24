@@ -17,13 +17,13 @@ class ReadStreamEventsBackwardITest extends TestConnection {
     }
 
     "fail if stream not found" in new TestConnectionScope {
-      readStreamEventsFailed(EventNumber.Last, 1000).reason mustEqual ReadStreamEventsFailed.Reason.NoStream
+      readStreamEventsFailed(EventNumber.Last, 1000) mustEqual EventStoreError.StreamNotFound
     }
 
     "fail if stream has been deleted" in new TestConnectionScope {
       appendEventToCreateStream()
       deleteStream()
-      readStreamEventsFailed(EventNumber.Last, 1000).reason mustEqual ReadStreamEventsFailed.Reason.StreamDeleted
+      readStreamEventsFailed(EventNumber.Last, 1000) mustEqual EventStoreError.StreamDeleted
     }
 
     "get empty slice if called with non existing range" in new TestConnectionScope {
@@ -53,7 +53,7 @@ class ReadStreamEventsBackwardITest extends TestConnection {
 
     "be able to read first event" in new TestConnectionScope {
       val events = appendMany()
-      val result = readStreamEventsSucceed(EventNumber.First, 1)
+      val result = readStreamEventsCompleted(EventNumber.First, 1)
       result.events.map(_.data) mustEqual List(events.head)
       result.endOfStream must beTrue
       result.nextEventNumber mustEqual EventNumber.Last
@@ -61,7 +61,7 @@ class ReadStreamEventsBackwardITest extends TestConnection {
 
     "be able to read last event" in new TestConnectionScope {
       val events = appendMany()
-      val result = readStreamEventsSucceed(EventNumber(9), 1)
+      val result = readStreamEventsCompleted(EventNumber(9), 1)
       result.events.map(_.data) mustEqual List(events.last)
       result.endOfStream must beFalse
       result.nextEventNumber mustEqual EventNumber(8)
@@ -70,7 +70,7 @@ class ReadStreamEventsBackwardITest extends TestConnection {
     "read not modified events" in new TestConnectionScope {
       appendMany()
 
-      def read() = readStreamEventsSucceed(EventNumber.First, 1)
+      def read() = readStreamEventsCompleted(EventNumber.First, 1)
 
       val r1 = read()
       val r2 = read()
@@ -79,13 +79,13 @@ class ReadStreamEventsBackwardITest extends TestConnection {
 
     "not read linked events if resolveLinkTos = false" in new TestConnectionScope {
       val (linked, link) = linkedAndLink()
-      val event = readStreamEventsSucceed(EventNumber.Last, 5, resolveLinkTos = false).events.head
+      val event = readStreamEventsCompleted(EventNumber.Last, 5, resolveLinkTos = false).events.head
       event mustEqual link
     }
 
     "read linked events if resolveLinkTos = true" in new TestConnectionScope {
       val (linked, link) = linkedAndLink()
-      val event = readStreamEventsSucceed(EventNumber.Last, 5, resolveLinkTos = true).events.head
+      val event = readStreamEventsCompleted(EventNumber.Last, 5, resolveLinkTos = true).events.head
       event mustEqual ResolvedEvent(linked, link)
     }
   }

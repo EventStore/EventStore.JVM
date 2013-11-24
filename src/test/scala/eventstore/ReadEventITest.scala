@@ -7,18 +7,18 @@ class ReadEventITest extends TestConnection {
 
   "read event" should {
     "fail if stream not found" in new ReadEventScope {
-      readEventFailed(EventNumber(5)) mustEqual ReadEventFailed.Reason.NoStream
+      readEventFailed(EventNumber(5)) mustEqual EventStoreError.StreamNotFound
     }
 
     "fail if stream deleted" in new ReadEventScope {
       appendEventToCreateStream()
       deleteStream()
-      readEventFailed(EventNumber(5)) mustEqual ReadEventFailed.Reason.StreamDeleted
+      readEventFailed(EventNumber(5)) mustEqual EventStoreError.StreamDeleted
     }
 
     "fail if stream does not have such event" in new ReadEventScope {
       appendEventToCreateStream()
-      readEventFailed(EventNumber(5)) mustEqual ReadEventFailed.Reason.NotFound
+      readEventFailed(EventNumber(5)) mustEqual EventStoreError.EventNotFound
     }
 
     "return existing event" in new ReadEventScope {
@@ -33,13 +33,13 @@ class ReadEventITest extends TestConnection {
 
     "return link event if resolveLinkTos = false" in new ReadEventScope {
       val (linked, link) = linkedAndLink()
-      val event = readEventSucceed(EventNumber.Last, resolveLinkTos = false)
+      val event = readEventCompleted(EventNumber.Last, resolveLinkTos = false)
       event mustEqual link
     }
 
     "return linked event if resolveLinkTos = true" in new ReadEventScope {
       val (linked, link) = linkedAndLink()
-      val event = readEventSucceed(EventNumber.Last, resolveLinkTos = true)
+      val event = readEventCompleted(EventNumber.Last, resolveLinkTos = true)
       event mustEqual ResolvedEvent(linked, link)
     }
   }
@@ -47,9 +47,9 @@ class ReadEventITest extends TestConnection {
   trait ReadEventScope extends TestConnectionScope {
     def readEventFailed(eventNumber: EventNumber) = {
       actor ! ReadEvent(streamId, eventNumber)
-      expectMsgType[ReadEventFailed].reason
+      expectException()
     }
 
-    def readEventData(eventNumber: EventNumber): EventData = readEventSucceed(eventNumber).data
+    def readEventData(eventNumber: EventNumber): EventData = readEventCompleted(eventNumber).data
   }
 }

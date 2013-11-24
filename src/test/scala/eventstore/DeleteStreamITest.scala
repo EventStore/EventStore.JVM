@@ -1,6 +1,6 @@
 package eventstore
 
-import OperationFailed._
+import EventStoreError._
 import ExpectedVersion._
 
 /**
@@ -44,7 +44,7 @@ class DeleteStreamITest extends TestConnection {
   abstract class DeleteStreamScope extends TestConnectionScope {
     def deleteStreamFailed(expVer: ExpectedVersion.Existing = Any) = {
       actor ! DeleteStream(streamId, expVer)
-      expectMsgType[DeleteStreamFailed].reason
+      expectException()
     }
   }
 }

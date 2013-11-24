@@ -17,17 +17,17 @@ class ReadStreamEventsForwardITest extends TestConnection {
     }
 
     "fail if from == EventNumber.Last " in new TestConnectionScope {
-      readStreamEventsSucceed(EventNumber.Last, 1) must throwAn[IllegalArgumentException]
+      readStreamEventsCompleted(EventNumber.Last, 1) must throwAn[IllegalArgumentException]
     }
 
     "fail if stream not found" in new TestConnectionScope {
-      readStreamEventsFailed(EventNumber.First, 1000).reason mustEqual ReadStreamEventsFailed.Reason.NoStream
+      readStreamEventsFailed(EventNumber.First, 1000) mustEqual EventStoreError.StreamNotFound
     }
 
     "fail if stream has been deleted" in new TestConnectionScope {
       appendEventToCreateStream()
       deleteStream()
-      readStreamEventsFailed(EventNumber.First, 1000).reason mustEqual ReadStreamEventsFailed.Reason.StreamDeleted
+      readStreamEventsFailed(EventNumber.First, 1000) mustEqual EventStoreError.StreamDeleted
     }
 
     "get empty slice if asked to read from end" in new TestConnectionScope {
@@ -62,7 +62,7 @@ class ReadStreamEventsForwardITest extends TestConnection {
 
     "be able to read first event" in new TestConnectionScope {
       val events = appendMany()
-      val result = readStreamEventsSucceed(EventNumber.First, 1)
+      val result = readStreamEventsCompleted(EventNumber.First, 1)
       result.events.map(_.data) mustEqual List(events.head)
       result.endOfStream must beFalse
       result.nextEventNumber mustEqual EventNumber(1)
@@ -70,7 +70,7 @@ class ReadStreamEventsForwardITest extends TestConnection {
 
     "be able to read last event" in new TestConnectionScope {
       val events = appendMany()
-      val result = readStreamEventsSucceed(EventNumber(9), 1)
+      val result = readStreamEventsCompleted(EventNumber(9), 1)
       result.events.map(_.data) mustEqual List(events.last)
       result.endOfStream must beTrue
       result.nextEventNumber mustEqual EventNumber(10)
@@ -79,7 +79,7 @@ class ReadStreamEventsForwardITest extends TestConnection {
     "read not modified events" in new TestConnectionScope {
       appendMany()
 
-      def read() = readStreamEventsSucceed(EventNumber.First, 1)
+      def read() = readStreamEventsCompleted(EventNumber.First, 1)
 
       val r1 = read()
       val r2 = read()
@@ -88,13 +88,13 @@ class ReadStreamEventsForwardITest extends TestConnection {
 
     "not read linked events if resolveLinkTos = false" in new TestConnectionScope {
       val (linked, link) = linkedAndLink()
-      val event = readStreamEventsSucceed(EventNumber(2), 1, resolveLinkTos = false).events.head
+      val event = readStreamEventsCompleted(EventNumber(2), 1, resolveLinkTos = false).events.head
       event mustEqual link
     }
 
     "read linked events if resolveLinkTos = true" in new TestConnectionScope {
       val (linked, link) = linkedAndLink()
-      val event = readStreamEventsSucceed(EventNumber(2), 1, resolveLinkTos = true).events.head
+      val event = readStreamEventsCompleted(EventNumber(2), 1, resolveLinkTos = true).events.head
       event mustEqual ResolvedEvent(linked, link)
     }
   }

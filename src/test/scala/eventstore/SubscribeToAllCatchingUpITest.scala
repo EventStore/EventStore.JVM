@@ -39,7 +39,7 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
     "read all existing events and keep listening to new ones" in new SubscribeToAllCatchingUpScope {
       appendMany()
 
-      val existing = readAllEventsSucceed(Position.First, 1000)(Backward)
+      val existing = readAllEventsCompleted(Position.First, 1000)(Backward)
         .events.map(_.event.data).reverse
       val subscriptionActor = newSubscription()
       expectEvents(existing)
@@ -177,7 +177,7 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
       val events = (1 to size).map(_ => newEventData)
       import system.dispatcher
       Future {
-        writeEventsSucceed(events, testKit = TestProbe())
+        writeEventsCompleted(events, testKit = TestProbe())
       }
       events
     }

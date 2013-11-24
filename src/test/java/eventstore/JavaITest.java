@@ -1,14 +1,13 @@
 package eventstore;
 
-import eventstore.j.*;
-import eventstore.tcp.ConnectionActor;
-import org.junit.*;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
+import akka.actor.Status.Failure;
 import akka.testkit.JavaTestKit;
-import scala.None;
-import scala.None$;
+import eventstore.j.*;
+import eventstore.tcp.ConnectionActor;
+import org.junit.*;
 
 import java.util.UUID;
 
@@ -64,9 +63,9 @@ public class JavaITest {
                     .build();
 
             connection.tell(writeEvents, getRef());
-            final WriteEventsSucceed succeed = expectMsgClass(WriteEventsSucceed.class);
+            final WriteEventsCompleted completed = expectMsgClass(WriteEventsCompleted.class);
 
-            assertEquals(succeed.firstEventNumber(), EventNumber$.MODULE$.First() /*TODO*/);
+            assertEquals(completed.firstEventNumber(), EventNumber$.MODULE$.First() /*TODO*/);
         }};
     }
 
@@ -84,7 +83,7 @@ public class JavaITest {
                     .build();
 
             connection.tell(transactionStart, getRef());
-            final long transactionId = expectMsgClass(TransactionStartSucceed.class).transactionId();
+            final long transactionId = expectMsgClass(TransactionStartCompleted.class).transactionId();
 
             final EventData eventData = new EventDataBuilder(eventType)
                     .eventId(newUuid())
@@ -98,16 +97,16 @@ public class JavaITest {
                     .build();
 
             connection.tell(transactionWrite, getRef());
-            final TransactionWriteSucceed transactionWriteSucceed = expectMsgClass(TransactionWriteSucceed.class);
+            final TransactionWriteCompleted transactionWriteCompleted = expectMsgClass(TransactionWriteCompleted.class);
 
-            assertEquals(transactionWriteSucceed.transactionId(), transactionId);
+            assertEquals(transactionWriteCompleted.transactionId(), transactionId);
 
             final TransactionCommit transactionCommit = new TransactionCommitBuilder(transactionId).build();
 
             connection.tell(transactionCommit, getRef());
-            final TransactionCommitSucceed transactionCommitSucceed = expectMsgClass(TransactionCommitSucceed.class);
+            final TransactionCommitCompleted transactionCommitCompleted = expectMsgClass(TransactionCommitCompleted.class);
 
-            assertEquals(transactionCommitSucceed.transactionId(), transactionId);
+            assertEquals(transactionCommitCompleted.transactionId(), transactionId);
         }};
     }
 
@@ -124,9 +123,9 @@ public class JavaITest {
                     .build();
 
             connection.tell(readEvent, getRef());
-            final ReadEventFailed failed = expectMsgClass(ReadEventFailed.class);
+            final Failure failed = expectMsgClass(Failure.class);
 
-            assertEquals(failed.reason(), ReadEventFailed.Reason$.MODULE$.NoStream());
+            assertEquals(((EventStoreException) failed.cause()).reason(), EventStoreError.StreamNotFound());
 
             final EventData eventData = new EventDataBuilder(eventType)
                     .eventId(newUuid())
@@ -139,13 +138,13 @@ public class JavaITest {
                     .build();
 
             connection.tell(writeEvents, getRef());
-            expectMsgClass(WriteEventsSucceed.class);
+            expectMsgClass(WriteEventsCompleted.class);
 
 
             connection.tell(readEvent, getRef());
-            final ReadEventSucceed succeed = expectMsgClass(ReadEventSucceed.class);
+            final ReadEventCompleted completed = expectMsgClass(ReadEventCompleted.class);
 
-            final Event event = succeed.event();
+            final Event event = completed.event();
             assertEquals(event.number(), EventNumber$.MODULE$.apply(0));
             assertEquals(event.streamId(), EventStream$.MODULE$.apply(streamId));
             assertEquals(event.data(), eventData);
@@ -167,11 +166,9 @@ public class JavaITest {
                     .build();
 
             connection.tell(readStreamEvents, getRef());
-            final ReadStreamEventsFailed failed = expectMsgClass(ReadStreamEventsFailed.class);
+            final Failure failed = expectMsgClass(Failure.class);
 
-            assertEquals(failed.reason(), ReadStreamEventsFailed.Reason$.MODULE$.NoStream());
-            assertEquals(failed.direction(), ReadDirection$.MODULE$.Forward());
-
+            assertEquals(((EventStoreException) failed.cause()).reason(), EventStoreError.StreamNotFound());
 
             final WriteEventsBuilder builder = new WriteEventsBuilder(streamId);
             for (int x = 0; x < 2; x++) {
@@ -186,15 +183,15 @@ public class JavaITest {
 
             }
             connection.tell(builder.build(), getRef());
-            expectMsgClass(WriteEventsSucceed.class);
+            expectMsgClass(WriteEventsCompleted.class);
 
             connection.tell(readStreamEvents, getRef());
-            final ReadStreamEventsSucceed succeed = expectMsgClass(ReadStreamEventsSucceed.class);
+            final ReadStreamEventsCompleted completed = expectMsgClass(ReadStreamEventsCompleted.class);
 
-            assertEquals(succeed.direction(), ReadDirection$.MODULE$.Forward());
-            assertTrue(succeed.endOfStream());
-            assertEquals(succeed.lastEventNumber(), EventNumber$.MODULE$.apply(1));
-            assertEquals(succeed.events().length(), 2);
+            assertEquals(completed.direction(), ReadDirection$.MODULE$.Forward());
+            assertTrue(completed.endOfStream());
+            assertEquals(completed.lastEventNumber(), EventNumber$.MODULE$.apply(1));
+            assertEquals(completed.events().length(), 2);
         }};
 
     }
@@ -212,11 +209,11 @@ public class JavaITest {
                     .build();
 
             connection.tell(readAllEvents, getRef());
-            final ReadAllEventsSucceed succeed = expectMsgClass(ReadAllEventsSucceed.class);
+            final ReadAllEventsCompleted completed = expectMsgClass(ReadAllEventsCompleted.class);
 
             // TODO work with Position
-            assertTrue(succeed.position().$greater$eq(Position$.MODULE$.First()));
-            assertEquals(succeed.direction(), ReadDirection$.MODULE$.Forward());
+            assertTrue(completed.position().$greater$eq(Position$.MODULE$.First()));
+            assertEquals(completed.direction(), ReadDirection$.MODULE$.Forward());
         }};
     }
 
@@ -230,9 +227,9 @@ public class JavaITest {
                     .build();
 
             connection.tell(subscribeToAll, getRef());
-            final SubscribeToAllSucceed subscribeToAllSucceed = expectMsgClass(SubscribeToAllSucceed.class);
+            final SubscribeToAllCompleted subscribeToAllCompleted = expectMsgClass(SubscribeToAllCompleted.class);
 
-            assertTrue(subscribeToAllSucceed.lastCommit() > 0);
+            assertTrue(subscribeToAllCompleted.lastCommit() > 0);
 
 
             final SubscribeTo subscribeToStream = new SubscribeToBuilder()
@@ -241,10 +238,10 @@ public class JavaITest {
                     .build();
 
             connection.tell(subscribeToStream, getRef());
-            final SubscribeToStreamSucceed subscribeToStreamSucceed = expectMsgClass(SubscribeToStreamSucceed.class);
+            final SubscribeToStreamCompleted subscribeToStreamCompleted = expectMsgClass(SubscribeToStreamCompleted.class);
 
-            assertTrue(subscribeToStreamSucceed.lastCommit() > 0);
-            assertTrue(subscribeToStreamSucceed.lastEventNumber().isEmpty());
+            assertTrue(subscribeToStreamCompleted.lastCommit() > 0);
+            assertTrue(subscribeToStreamCompleted.lastEventNumber().isEmpty());
         }};
     }
 }

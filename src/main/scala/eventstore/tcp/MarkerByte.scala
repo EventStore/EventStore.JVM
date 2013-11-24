@@ -1,23 +1,26 @@
 package eventstore
 package tcp
 
-import akka.util.{ ByteStringBuilder, ByteIterator }
-import util.{ BytesWriter, BytesReader }
 import EventStoreFormats._
 import ReadDirection._
+import akka.util.{ ByteStringBuilder, ByteIterator }
+import scala.util.{ Success, Try }
+import util.{ BytesWriter, BytesReader }
 
 /**
  * @author Yaroslav Klymko
  */
 object MarkerByte {
-  type Reader = ByteIterator => In
+  type Reader = ByteIterator => Try[In]
 
-  def readMessage(bi: ByteIterator): (ByteIterator => In) = {
+  def readMessage(bi: ByteIterator): Reader = {
     val markerByte = bi.getByte
     readers.get(markerByte).getOrElse(sys.error(s"unknown marker byte: ${"0x%02X".format(markerByte)}"))
   }
 
-  def reader[T <: In](implicit reader: BytesReader[T]): Reader = reader.read
+  def reader[T <: In](implicit reader: BytesReader[T]): Reader = (bi: ByteIterator) => Success(reader.read(bi))
+
+  def readerTry[T <: In](implicit reader: BytesReader[Try[T]]): Reader = reader.read
 
   val readers: Map[Byte, Reader] = Map[Int, Reader](
     0x01 -> reader[HeartbeatRequest.type],
@@ -36,22 +39,22 @@ object MarkerByte {
     //    PhysicalChunkBulk = 0x12,
     //    LogicalChunkBulk = 0x13,
     //
-    0x83 -> reader[WriteEventsCompleted],
-    0x85 -> reader[TransactionStartCompleted],
-    0x87 -> reader[TransactionWriteCompleted],
-    0x89 -> reader[TransactionCommitCompleted],
-    0x8B -> reader[DeleteStreamCompleted],
-    0xB1 -> reader[ReadEventCompleted],
+    0x83 -> readerTry[WriteEventsCompleted],
+    0x85 -> readerTry[TransactionStartCompleted],
+    0x87 -> readerTry[TransactionWriteCompleted],
+    0x89 -> readerTry[TransactionCommitCompleted],
+    0x8B -> readerTry[DeleteStreamCompleted.type],
+    0xB1 -> readerTry[ReadEventCompleted],
 
-    0xB3 -> reader[ReadStreamEventsCompleted](ReadStreamEventsForwardCompletedReader),
-    0xB5 -> reader[ReadStreamEventsCompleted](ReadStreamEventsBackwardCompletedReader),
+    0xB3 -> readerTry[ReadStreamEventsCompleted](ReadStreamEventsForwardCompletedReader),
+    0xB5 -> readerTry[ReadStreamEventsCompleted](ReadStreamEventsBackwardCompletedReader),
 
-    0xB7 -> reader[ReadAllEventsCompleted](ReadAllEventsForwardCompletedReader),
-    0xB9 -> reader[ReadAllEventsCompleted](ReadAllEventsBackwardCompletedReader),
+    0xB7 -> readerTry[ReadAllEventsCompleted](ReadAllEventsForwardCompletedReader),
+    0xB9 -> readerTry[ReadAllEventsCompleted](ReadAllEventsBackwardCompletedReader),
 
     0xC1 -> reader[SubscribeCompleted],
     0xC2 -> reader[StreamEventAppeared],
-    0xC4 -> reader[SubscriptionDropped],
+    0xC4 -> readerTry[UnsubscribeCompleted.type],
 
     //    ScavengeDatabase = 0xD0,
     0xF0 -> reader[BadRequest.type] // TODO add test

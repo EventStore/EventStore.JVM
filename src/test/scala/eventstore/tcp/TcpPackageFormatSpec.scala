@@ -1,9 +1,10 @@
 package eventstore
 package tcp
 
-import org.specs2.mutable.Specification
-import eventstore.util.{ BytesWriter, BytesReader }
 import EventStoreFormats._
+import eventstore.util.{ BytesWriter, BytesReader }
+import org.specs2.mutable.Specification
+import scala.util.Success
 
 /**
  * @author Yaroslav Klymko
@@ -19,7 +20,7 @@ class TcpPackageFormatSpec extends Specification {
         val bs = BytesWriter[TcpPackageOut].toByteString(expected)
         val actual = BytesReader[TcpPackageIn].read(bs)
         actual.correlationId mustEqual expected.correlationId
-        actual.message mustEqual expected.message
+        actual.message mustEqual Success(expected.message)
       }
     }
   }

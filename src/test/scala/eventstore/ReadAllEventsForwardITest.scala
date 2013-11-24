@@ -12,12 +12,12 @@ class ReadAllEventsForwardITest extends TestConnection {
   "read all events forward" should {
     "fail if count <= 0" in new TestConnectionScope {
       // TODO server does not validate maxCount, WHY?
-      readAllEventsSucceed(Position.First, 0) must throwAn[IllegalArgumentException]
-      readAllEventsSucceed(Position.First, -1) must throwAn[IllegalArgumentException]
+      readAllEventsCompleted(Position.First, 0) must throwAn[IllegalArgumentException]
+      readAllEventsCompleted(Position.First, -1) must throwAn[IllegalArgumentException]
     }
 
     "fail if count > MaxBatchSize" in new TestConnectionScope {
-      readAllEventsSucceed(Position.First, MaxBatchSize + 1) must throwAn[IllegalArgumentException]
+      readAllEventsCompleted(Position.First, MaxBatchSize + 1) must throwAn[IllegalArgumentException]
     }
 
     "return empty slice if asked to read from end" in new TestConnectionScope {
@@ -69,7 +69,7 @@ class ReadAllEventsForwardITest extends TestConnection {
     }
 
     "read not modified events" in new TestConnectionScope {
-      def read() = readAllEventsSucceed(startPosition, 10)
+      def read() = readAllEventsCompleted(startPosition, 10)
 
       val r1 = read()
       val r2 = read()
@@ -77,26 +77,25 @@ class ReadAllEventsForwardITest extends TestConnection {
     }
 
     "fail to read from wrong position" in new TestConnectionScope {
-      val position = readAllEventsSucceed(startPosition, 10).nextPosition
+      val position = readAllEventsCompleted(startPosition, 10).nextPosition
       val wrongPosition = Position(
         commitPosition = position.commitPosition - 1,
         preparePosition = position.preparePosition - 1)
       val failed = readAllEventsFailed(wrongPosition, 10)
-      failed.reason mustEqual ReadAllEventsFailed.Reason.Error
-      failed.message must beSome
+      failed mustEqual EventStoreError.Error
     }
 
     "not read linked events if resolveLinkTos = false" in new TestConnectionScope {
       val (linked, link) = linkedAndLink()
       val position = allStreamsEvents()(ReadDirection.Backward).head.position
-      val event = readAllEventsSucceed(position, 1, resolveLinkTos = false).events.last.event
+      val event = readAllEventsCompleted(position, 1, resolveLinkTos = false).events.last.event
       event mustEqual link
     }
 
     "read linked events if resolveLinkTos = true" in new TestConnectionScope {
       val (linked, link) = linkedAndLink()
       val position = allStreamsEvents()(ReadDirection.Backward).head.position
-      val event = readAllEventsSucceed(position, 1, resolveLinkTos = true).events.last.event
+      val event = readAllEventsCompleted(position, 1, resolveLinkTos = true).events.last.event
       event mustEqual ResolvedEvent(linked, link)
     }
   }

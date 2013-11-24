@@ -2,7 +2,7 @@ package eventstore
 
 import akka.testkit.TestProbe
 import ExpectedVersion._
-import OperationFailed._
+import EventStoreError._
 
 /**
  * @author Yaroslav Klymko
@@ -11,7 +11,7 @@ import OperationFailed._
 class WriteEventsITest extends TestConnection {
   "append to stream" should {
     "not fail for zero events" in new WriteEventsScope {
-      writeEventsSucceed(Nil, NoStream)
+      writeEventsCompleted(Nil, NoStream)
     }
 
     "create stream with NoStream exp ver on first write if does not exist" in new WriteEventsScope {
@@ -74,7 +74,7 @@ class WriteEventsITest extends TestConnection {
       val size = 100
       appendMany(size = size)
       actor ! ReadStreamEvents(streamId, EventNumber.Last, 1, ReadDirection.Backward)
-      expectMsgType[ReadStreamEventsSucceed].events.head.number mustEqual EventNumber(size - 1)
+      expectMsgType[ReadStreamEventsCompleted].events.head.number mustEqual EventNumber(size - 1)
       deleteStream()
     }
 
@@ -85,18 +85,18 @@ class WriteEventsITest extends TestConnection {
       Seq.fill(n)(TestProbe()).foreach(x => appendMany(size = size, testKit = x))
 
       actor ! ReadStreamEvents(streamId, EventNumber.Last, 1, ReadDirection.Backward)
-      expectMsgType[ReadStreamEventsSucceed].events.head.number mustEqual EventNumber(size * n - 1)
+      expectMsgType[ReadStreamEventsCompleted].events.head.number mustEqual EventNumber(size * n - 1)
 
       deleteStream()
     }
   }
 
   trait WriteEventsScope extends TestConnectionScope {
-    def writeEvent(event: EventData, expVer: ExpectedVersion = Any) = writeEventsSucceed(Seq(event), expVer)
+    def writeEvent(event: EventData, expVer: ExpectedVersion = Any) = writeEventsCompleted(Seq(event), expVer)
 
     def writeEventsFailed(event: EventData, expVer: ExpectedVersion = Any) = {
       actor ! WriteEvents(streamId, Seq(event), expVer)
-      expectMsgType[WriteEventsFailed].reason
+      expectException()
     }
   }
 }

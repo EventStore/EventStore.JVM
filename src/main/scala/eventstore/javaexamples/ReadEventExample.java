@@ -1,8 +1,8 @@
 package eventstore.javaexamples;
 
 import akka.actor.*;
-import akka.event.Logging;
-import akka.event.LoggingAdapter;
+import akka.actor.Status.Failure;
+import akka.event.*;
 import eventstore.*;
 import eventstore.j.*;
 import eventstore.tcp.ConnectionActor;
@@ -45,15 +45,14 @@ public class ReadEventExample {
         }
 
         public void onReceive(Object message) throws Exception {
-            if (message instanceof ReadEventSucceed) {
-                final ReadEventSucceed succeed = (ReadEventSucceed) message;
-                final Event event = succeed.event();
-                log.info("SUCCEED: " + event.toString());
-
-            } else if (message instanceof ReadEventFailed) {
-                final ReadEventFailed failed = (ReadEventFailed) message;
-                log.error("FAILED: reason: {}, message: {}", failed.reason(), failed.message());
-
+            if (message instanceof ReadEventCompleted) {
+                final ReadEventCompleted completed = (ReadEventCompleted) message;
+                final Event event = completed.event();
+                log.info("EVENT: " + event.toString());
+            } else if (message instanceof Failure) {
+                final Failure failure = ((Failure) message);
+                final EventStoreException exception = (EventStoreException) failure.cause();
+                log.error("FAILED: reason: {}, message: {}", exception.reason(), exception.message());
             } else
                 unhandled(message);
         }
