@@ -1,6 +1,7 @@
 import sbt._
 import Keys._
 import scalabuff.ScalaBuffPlugin._
+import sbtrelease.ReleasePlugin._
 
 object Build extends Build {
   lazy val basicSettings = Seq(
@@ -37,7 +38,7 @@ object Build extends Build {
   lazy val root = Project(
     "eventstore-client",
     file("."),
-    settings = basicSettings ++ Defaults.defaultSettings ++ scalabuffSettings ++ Format.settings ++ Publish.settings)
+    settings = basicSettings ++ Defaults.defaultSettings ++ releaseSettings ++ scalabuffSettings ++ Format.settings ++ Publish.settings)
     .configs(ScalaBuff, IntegrationTest)
     .settings(inConfig(IntegrationTest)(Defaults.testTasks): _*)
     .settings(
