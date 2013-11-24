@@ -120,14 +120,14 @@ class ReadEventActor(connection: ActorRef) extends Actor with ActorLogging {
 
 * Maven:
 ```xml
-<dependency>
-    <groupId>com.geteventstore</groupId>
-    <artifactId>eventstore-client_2.10</artifactId>
-    <version>0.1</version>
-</dependency>
+    <dependency>
+        <groupId>com.geteventstore</groupId>
+        <artifactId>eventstore-client_2.10</artifactId>
+        <version>0.1</version>
+    </dependency>
 ```
 
 * Sbt
 ```scala
-libraryDependencies += "com.geteventstore" % "eventstore-client_2.10" % "0.1"
+    libraryDependencies += "com.geteventstore" % "eventstore-client_2.10" % "0.1"
 ```
