@@ -4,7 +4,7 @@ import scalabuff.ScalaBuffPlugin._
 
 object Build extends Build {
   lazy val basicSettings = Seq(
-    name                 := "eventstore-client", // TODO  <artifactId>main_2.10</artifactId>
+    name                 := "eventstore-client",
     organization         := "com.geteventstore",
     version              := "0.1-SNAPSHOT",
     scalaVersion         := "2.10.3",
@@ -35,7 +35,7 @@ object Build extends Build {
   lazy val IntegrationTest = config("it") extend Test
 
   lazy val root = Project(
-    "main",
+    "eventstore-client",
     file("."),
     settings = basicSettings ++ Defaults.defaultSettings ++ scalabuffSettings ++ Format.settings ++ Publish.settings)
     .configs(ScalaBuff, IntegrationTest)
