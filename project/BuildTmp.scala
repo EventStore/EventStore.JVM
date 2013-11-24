@@ -2,7 +2,7 @@ import sbt._
 import Keys._
 import scalabuff.ScalaBuffPlugin._
 
-object Build extends Build {
+object BuildTmp extends Build {
   lazy val basicSettings = Seq(
     name                 := "eventstore-client",
     organization         := "com.geteventstore",
