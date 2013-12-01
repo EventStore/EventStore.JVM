@@ -29,7 +29,7 @@ trait AbstractSubscriptionActor extends Actor with ActorLogging {
       subscribed = false
       context stop self
 
-    case Failure(e: EventStoreException) =>
+    case Failure(e) =>
       subscribed = false
       throw e
   }

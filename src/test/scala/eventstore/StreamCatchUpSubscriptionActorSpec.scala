@@ -1,8 +1,8 @@
 package eventstore
 
-import akka.testkit.TestProbe
 import ReadDirection.Forward
 import akka.actor.Status.Failure
+import akka.testkit.TestProbe
 
 /**
  * @author Yaroslav Klymko
@@ -343,13 +343,13 @@ class StreamCatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActo
   abstract class StreamCatchUpScope(eventNumber: Option[Int] = None) extends AbstractScope {
     lazy val streamId = EventStream.Id(getClass.getEnclosingClass.getSimpleName + "-" + newUuid.toString)
 
-    def newActor = new StreamCatchUpSubscriptionActor(
-      connection.ref,
-      testActor,
-      streamId,
-      eventNumber.map(EventNumber.apply),
-      resolveLinkTos,
-      readBatchSize)
+    def props = StreamCatchUpSubscriptionActor.props(
+      connection = connection.ref,
+      client = testActor,
+      streamId = streamId,
+      fromNumberExclusive = eventNumber.map(EventNumber.apply),
+      resolveLinkTos = resolveLinkTos,
+      readBatchSize = readBatchSize)
 
     val event0 = newEvent(0)
     val event1 = newEvent(1)

@@ -1,8 +1,8 @@
 package eventstore
 
-import org.specs2.mock.Mockito
-import akka.testkit._
 import akka.actor.{ Props, SupervisorStrategy, Actor }
+import akka.testkit._
+import org.specs2.mock.Mockito
 import scala.concurrent.duration._
 
 /**
@@ -23,12 +23,12 @@ abstract class AbstractCatchUpSubscriptionActorSpec extends util.ActorSpec with 
 
     val actor = {
       val supervisor = TestActorRef(new Supervisor)
-      val actor = TestActorRef(Props(newActor), supervisor, "test")
+      val actor = TestActorRef(props, supervisor, "test")
       watch(actor)
       actor
     }
 
-    def newActor: Actor
+    def props: Props
 
     def streamId: EventStream
 

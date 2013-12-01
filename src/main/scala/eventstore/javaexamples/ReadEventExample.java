@@ -17,7 +17,6 @@ public class ReadEventExample {
         final Settings settings = new SettingsBuilder()
                 .address(new InetSocketAddress("127.0.0.1", 1113))
                 .defaultCredentials("admin", "changeit")
-                .requireMaster(true)
                 .build();
         final ActorRef connection = system.actorOf(Props.create(ConnectionActor.class, settings));
         final ActorRef readEventActor = system.actorOf(Props.create(ReadEventActor.class, connection));

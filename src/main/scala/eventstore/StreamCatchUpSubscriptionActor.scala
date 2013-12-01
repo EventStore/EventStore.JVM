@@ -1,13 +1,24 @@
 package eventstore
 
-import akka.actor.ActorRef
-import scala.collection.immutable.Queue
-import ReadDirection.Forward
+import akka.actor.{ Props, ActorRef }
 import akka.actor.Status.Failure
+import ReadDirection.Forward
+import scala.collection.immutable.Queue
 
 /**
  * @author Yaroslav Klymko
  */
+object StreamCatchUpSubscriptionActor {
+  def props(
+    connection: ActorRef,
+    client: ActorRef,
+    streamId: EventStream.Id,
+    fromNumberExclusive: Option[EventNumber.Exact] = None,
+    resolveLinkTos: Boolean = false,
+    readBatchSize: Int = 500): Props = Props(classOf[StreamCatchUpSubscriptionActor], connection, client,
+    streamId, fromNumberExclusive, resolveLinkTos, readBatchSize)
+}
+
 class StreamCatchUpSubscriptionActor(
     val connection: ActorRef,
     val client: ActorRef,
@@ -15,9 +26,6 @@ class StreamCatchUpSubscriptionActor(
     fromNumberExclusive: Option[EventNumber.Exact],
     val resolveLinkTos: Boolean,
     readBatchSize: Int) extends AbstractSubscriptionActor {
-
-  def this(connection: ActorRef, client: ActorRef, streamId: EventStream.Id) =
-    this(connection, client, streamId, None, false, 500)
 
   def receive = read(
     lastNumber = fromNumberExclusive,
@@ -32,10 +40,12 @@ class StreamCatchUpSubscriptionActor(
         if (endOfStream) subscribe(last, next) else read(last, next)
       }
 
-      case Failure(e: EventStoreException) => context become (e.reason match {
-        case EventStoreError.StreamNotFound => subscribe(lastNumber, nextNumber)
-        case _                              => throw e
-      })
+      case Failure(e) => e match {
+        case e: EventStoreException if e.reason == EventStoreError.StreamNotFound =>
+          context become subscribe(lastNumber, nextNumber)
+
+        case _ => throw e
+      }
     }
   }
 
@@ -82,7 +92,7 @@ class StreamCatchUpSubscriptionActor(
           loop(events.toList, lastNumber)
         })
 
-      case Failure(e: EventStoreException) => throw e
+      case Failure(e) => throw e
 
       case StreamEventAppeared(x) if x.event.record.number > subscriptionNumber =>
         debug(s"catching up: adding appeared event to stash(${stash.size}): $x")

@@ -1,21 +1,28 @@
 package eventstore
 
-import akka.actor.ActorRef
-import scala.collection.immutable.Queue
 import ReadDirection.Forward
+import akka.actor.{ Props, ActorRef }
 import akka.actor.Status.Failure
+import scala.collection.immutable.Queue
 
 /**
  * @author Yaroslav Klymko
  */
+object CatchUpSubscriptionActor {
+  def props(
+    connection: ActorRef,
+    client: ActorRef,
+    fromPositionExclusive: Option[Position.Exact] = None,
+    resolveLinkTos: Boolean = false,
+    readBatchSize: Int = 500): Props =
+    Props(classOf[CatchUpSubscriptionActor], connection, client, fromPositionExclusive, resolveLinkTos, readBatchSize)
+}
 class CatchUpSubscriptionActor(
     val connection: ActorRef,
     val client: ActorRef,
     fromPositionExclusive: Option[Position.Exact],
     val resolveLinkTos: Boolean,
     readBatchSize: Int) extends AbstractSubscriptionActor {
-
-  def this(connection: ActorRef, client: ActorRef) = this(connection, client, None, false, 500)
 
   val streamId = EventStream.All
 
@@ -114,7 +121,7 @@ class CatchUpSubscriptionActor(
 
   def readAllEventsCompleted(f: (Seq[IndexedEvent], Position.Exact) => Receive): Receive = {
     case ReadAllEventsCompleted(events, _, nextPosition, Forward) => context become f(events, nextPosition)
-    case Failure(e: EventStoreException)                          => throw e
+    case Failure(e) => throw e
   }
 
   def forward(event: IndexedEvent) {

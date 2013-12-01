@@ -344,7 +344,7 @@ class CatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActorSpec 
   }
 
   abstract class CatchUpScope(position: Option[Long] = None) extends AbstractScope {
-    def newActor = new CatchUpSubscriptionActor(
+    def props = CatchUpSubscriptionActor.props(
       connection = connection.ref,
       client = testActor,
       fromPositionExclusive = position.map(Position.apply),
