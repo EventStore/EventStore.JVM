@@ -42,7 +42,7 @@ public class ReadEventExample {
                 .defaultCredentials("admin", "changeit")
                 .requireMaster(true)
                 .build();
-        final ActorRef connection = system.actorOf(Props.create(ConnectionActor.class, settings));
+        final ActorRef connection = system.actorOf(ConnectionActor.props(settings));
         final ActorRef readEventActor = system.actorOf(Props.create(ReadEventActor.class, connection));
     }
 
@@ -99,7 +99,7 @@ object ReadEventExample extends App {
     address = new InetSocketAddress("127.0.0.1", 1113),
     defaultCredentials = Some(UserCredentials("admin", "changeit")))
 
-  val connection = system.actorOf(Props(classOf[ConnectionActor], settings))
+  val connection = system.actorOf(ConnectionActor.props(settings))
   system.actorOf(Props(classOf[ReadEventActor], connection))
 }
 

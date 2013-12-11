@@ -10,7 +10,7 @@ import akka.util.ByteIterator
 import java.net.InetSocketAddress
 import java.nio.ByteOrder
 import scala.concurrent.duration._
-import scala.util.Success
+import scala.util.{ Try, Success }
 
 /**
  * @author Yaroslav Klymko
@@ -29,16 +29,34 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     }
 
     "reconnect when connection lost" in new TcpScope {
-      val (_, tcpConnection) = connect(settings.copy(maxReconnections = 1))
+      val (_, tcpConnection) = connect(settings.copy(maxReconnections = 1, reconnectionDelay = Duration.Zero))
       tcpConnection ! Abort
       expectMsg(Aborted)
       expectMsgType[Connected]
     }
 
-    "reconnect when connection actor died" in new TcpScope {
-      val (_, tcpConnection) = connect(settings.copy(maxReconnections = 1))
-      system stop tcpConnection
-      expectMsgType[Connected]
+    "reconnect when connection actor died" in new TcpMockScope {
+      val settings = Settings(maxReconnections = 1, reconnectionDelay = Duration.Zero)
+      val client = newClient(settings)
+      val connect = expectMsgType[Connect]
+      val connection = TestProbe()
+      client.tell(Connected(connect.remoteAddress, new InetSocketAddress(0)), connection.ref)
+      connection.expectMsgType[Register]
+      system stop connection.ref
+      verifyReconnections(settings.maxReconnections)
+      expectNoMsg()
+    }
+
+    "reconnect when pipeline actor died" in new TcpMockScope {
+      val settings = Settings(maxReconnections = 1, reconnectionDelay = Duration.Zero)
+      val client = newClient(settings)
+      val connect = expectMsgType[Connect]
+      val connection = TestProbe()
+      client.tell(Connected(connect.remoteAddress, new InetSocketAddress(0)), connection.ref)
+      val pipeline = connection.expectMsgType[Register].handler
+      system stop pipeline
+      verifyReconnections(settings.maxReconnections)
+      expectNoMsg()
     }
 
     "keep trying to reconnect for maxReconnections times" in new TcpMockScope {
@@ -216,6 +234,37 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       connection.underlyingActor.binding must beEmpty
     }
 
+    "stop subscription if initiator actor died" in new TcpMockScope {
+      val settings = Settings(maxReconnections = 1)
+      val client = TestActorRef(new ConnectionActor(settings) {
+        override def tcp = testActor
+        override def newPipeline(connection: ActorRef) = testActor
+      })
+
+      val connect = expectMsgType[Connect]
+      client ! Connected(connect.remoteAddress, new InetSocketAddress(0))
+      expectMsgType[Register]
+
+      foreach(List(EventStream.All, EventStream.Id("stream"))) {
+        stream =>
+
+          val probe = TestProbe()
+
+          val subscribeTo = SubscribeTo(EventStream.All)
+          client.tell(subscribeTo, probe.ref)
+          val init = client.underlyingActor.init
+          val correlationId = expectMsgPF() {
+            case init.Command(TcpPackageOut(x, `subscribeTo`, _)) => x
+          }
+          client ! TcpPackageIn(correlationId, Try(SubscribeToStreamCompleted(0)))
+          system stop probe.ref
+
+          expectMsgPF() {
+            case init.Command(TcpPackageOut(x, UnsubscribeFromStream, _)) => x
+          } mustEqual correlationId
+      }
+    }.pendingUntilFixed // TODO
+
     "use default credentials if not provided with message" in new SecurityScope {
       val x = UserCredentials("login", "password")
       ?(default = Some(x)) must beSome(x)
@@ -232,7 +281,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       ?(withMessage = Some(x1), default = Some(x2)) must beSome(x1)
     }
 
-    "use no credentials if either not provided with message default" in new SecurityScope {
+    "use no credentials if either not provided with message and default" in new SecurityScope {
       ?(withMessage = None, default = None) must beNone
     }
   }
@@ -314,7 +363,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
   }
 
   abstract class TcpMockScope extends ActorScope {
-
+    //    val pipeline = TestProbe()
     def newClient(settings: Settings = Settings()) = TestActorRef(new ConnectionActor(settings) {
       override def tcp = testActor
     })

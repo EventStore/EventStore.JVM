@@ -1,9 +1,8 @@
 package eventstore
 package tcp
 
-import akka.actor.{ Terminated, Actor, ActorRef, ActorLogging, Status }
+import akka.actor.{ IO => _, _ }
 import akka.io._
-import akka.io.TcpPipelineHandler.{ WithinActorContext, Init }
 import java.nio.ByteOrder
 import util.{ CancellableAdapter, BidirectionalMap }
 import scala.collection.immutable.Queue
@@ -13,11 +12,12 @@ import scala.util.{ Failure, Success }
 /**
  * @author Yaroslav Klymko
  */
-class ConnectionActor(settings: Settings = Settings.Default) extends Actor with ActorLogging {
+object ConnectionActor {
+  def props(settings: Settings = Settings.Default): Props = Props(classOf[ConnectionActor], settings)
+}
 
-  def this() = this(Settings.Default)
+class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
 
-  import Tcp._
   import context.system
   import context.dispatcher
   import settings._
@@ -41,66 +41,74 @@ class ConnectionActor(settings: Settings = Settings.Default) extends Actor with 
 
   var binding = new BidirectionalMap[Uuid, ActorRef]()
 
-  def terminated: Receive = {
-    case Terminated(actor) => binding = binding - actor
+  def receiveTerminated: Receive = {
+    case Terminated(actor) => binding = binding - actor // TODO unsubscribe if subscription sender is dead
   }
 
   def receive = connecting()
 
+  def newPipeline(connection: ActorRef): ActorRef =
+    context.actorOf(TcpPipelineHandler.props(init, connection, self))
+
   def connecting(
     stash: Queue[TcpPackageOut] = Queue(),
-    reconnectionsLeft: Int = maxReconnections): Receive = terminated orElse {
-    case Connected(remote, _) =>
-      log.info(s"connected to $remote")
+    reconnectionsLeft: Int = maxReconnections): Receive = {
+    val receive: Receive = {
+      case Tcp.Connected(remote, _) =>
+        log.info(s"connected to $remote")
 
-      val connection = sender
+        val connection = sender
+        val pipeline = newPipeline(connection)
+        connection ! Tcp.Register(pipeline)
+        context watch connection
+        context watch pipeline
 
-      val pipeline = context.actorOf(TcpPipelineHandler.props(init, connection, self))
+        def send(pack: TcpPackageOut) {
+          log.debug(pack.toString)
+          pipeline ! init.command(pack)
+        }
 
-      connection ! Register(pipeline)
+        stash.foreach(send)
 
-      def send(pack: TcpPackageOut) {
-        log.debug(pack.toString)
-        pipeline ! init.command(pack)
-      }
+        context become connected(connection, pipeline, send)
 
-      stash.foreach(send)
+      case Tcp.CommandFailed(_: Tcp.Connect) =>
+        log.error(s"connection failed to $address")
+        if (reconnectionsLeft == 0) context stop self
+        else {
+          reconnect()
+          context become connecting(stash, reconnectionsLeft - 1)
+        }
 
-      context become connected(connection, send, init)
+      case x: OutLike =>
+        log.debug(s"received $x while not connected, adding to stash")
+        val pack = tcpPack(x)
+        context become connecting(stash enqueue pack)
+    }
 
-    case CommandFailed(_: Connect) =>
-      log.error(s"connection failed to $address")
-      if (reconnectionsLeft == 0) context stop self
-      else {
-        reconnect()
-        context become connecting(stash, reconnectionsLeft - 1)
-      }
-
-    case x: OutLike =>
-      log.debug(s"received $x while not connected, adding to stash")
-      val pack = tcpPack(x)
-      context become connecting(stash enqueue pack)
+    receive orElse receiveTerminated
   }
 
-  def connected(
-    connection: ActorRef,
-    send: TcpPackageOut => Unit,
-    init: Init[WithinActorContext, TcpPackageOut, TcpPackageIn],
-    packNumber: Int = -1): Receive = terminated orElse {
+  def connected(connection: ActorRef, pipeline: ActorRef, send: TcpPackageOut => Unit, packNumber: Int = -1): Receive = {
 
     val scheduled = CancellableAdapter(
       system.scheduler.scheduleOnce(heartbeatTimeout, self, HeartbeatTimeout(packNumber)),
       system.scheduler.scheduleOnce(heartbeatInterval, self, HeartbeatInterval))
 
-    def maybeReconnect() {
-      if (settings.maxReconnections == 0) context stop self
-      else {
+    def maybeReconnect(reason: String) {
+      if (!scheduled.isCancelled) scheduled.cancel()
+      val msg = s"connection lost to $address: $reason"
+      if (settings.maxReconnections == 0) {
+        log.error(msg)
+        context stop self
+      } else {
+        log.warning(msg)
         reconnect()
         context become connecting()
       }
     }
 
-    {
+    val receive: Receive = {
       case init.Event(pack @ TcpPackageIn(correlationId, msg)) =>
         log.debug(pack.toString)
         scheduled.cancel()
@@ -109,36 +117,30 @@ class ConnectionActor(settings: Settings = Settings.Default) extends Actor with 
           case Success(Ping)             => send(TcpPackageOut(correlationId, Pong))
           case _                         => dispatch(pack)
         }
-        context become connected(connection, send, init, packNumber + 1)
+        context become connected(connection, pipeline, send, packNumber + 1)
 
-      case x: OutLike        => send(tcpPack(x))
+      case x: OutLike               => send(tcpPack(x))
 
-      case HeartbeatInterval => send(TcpPackageOut(HeartbeatRequest))
+      case HeartbeatInterval        => send(TcpPackageOut(HeartbeatRequest))
+
+      case Terminated(`connection`) => maybeReconnect("connection actor died")
+
+      case Terminated(`pipeline`) =>
+        connection ! Tcp.Abort
+        maybeReconnect("pipeline actor died")
 
       case HeartbeatTimeout(`packNumber`) =>
-        log.error(s"no heartbeat within $heartbeatTimeout")
-        connection ! Close
-        maybeReconnect()
+        connection ! Tcp.Close
+        maybeReconnect(s"no heartbeat within $heartbeatTimeout")
 
-      case closed: ConnectionClosed =>
-        scheduled.cancel()
-        closed match {
-          case PeerClosed =>
-            log.error(s"connection lost to $address")
-            maybeReconnect()
-
-          case ErrorClosed(error) =>
-            log.error(s"connection lost to $address due to error: $error")
-            maybeReconnect()
-
-          case _ => log.info(s"closing connection to $address")
-        }
-
-      case Terminated(`connection`) =>
-        scheduled.cancel()
-        log.error(s"connection lost to $address")
-        maybeReconnect()
+      case closed: Tcp.ConnectionClosed => closed match {
+        case Tcp.PeerClosed         => maybeReconnect("peer closed")
+        case Tcp.ErrorClosed(error) => maybeReconnect(error.toString)
+        case _                      => log.info(s"closing connection to $address")
+      }
     }
+
+    receive orElse receiveTerminated
   }
 
   def reconnect() {

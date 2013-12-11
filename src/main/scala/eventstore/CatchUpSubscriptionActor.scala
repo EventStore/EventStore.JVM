@@ -15,7 +15,7 @@ object CatchUpSubscriptionActor {
     fromPositionExclusive: Option[Position.Exact] = None,
     resolveLinkTos: Boolean = false,
     readBatchSize: Int = 500): Props =
-    Props(classOf[CatchUpSubscriptionActor], connection, client, fromPositionExclusive, resolveLinkTos, readBatchSize)
+    Props(classOf[CatchUpSubscriptionActor], connection, client /*TODO client or parent*/ , fromPositionExclusive, resolveLinkTos, readBatchSize)
 }
 class CatchUpSubscriptionActor(
     val connection: ActorRef,
