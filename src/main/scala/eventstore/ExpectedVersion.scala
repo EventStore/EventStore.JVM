@@ -26,7 +26,7 @@ object ExpectedVersion {
 
   // States that the last event written to the stream should have a sequence number matching your expected value.
   case class Exact(value: Int) extends Existing {
-    require(value >= 0, s"expected version must be >= 0, but is $value}")
+    require(value >= 0, s"expected version must be >= 0, but is $value")
 
     override def toString = s"Expected.Version($value)"
   }
