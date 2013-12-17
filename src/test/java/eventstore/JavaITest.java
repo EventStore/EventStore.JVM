@@ -1,12 +1,8 @@
 package eventstore;
 
-import akka.actor.ActorRef;
-import akka.actor.ActorSystem;
-import akka.actor.Props;
 import akka.actor.Status.Failure;
-import akka.testkit.JavaTestKit;
 import eventstore.j.*;
-import eventstore.tcp.ConnectionActor;
+import eventstore.util.ActorTest;
 import org.junit.*;
 
 import java.util.UUID;
@@ -16,49 +12,30 @@ import static org.junit.Assert.*;
 /**
  * @author Yaroslav Klymko
  */
-public class JavaITest {
+public class JavaITest extends ActorTest {
 
-    static ActorSystem system;
-    static ActorRef connection;
-
-
-    @BeforeClass
-    public static void setup() {
-        system = ActorSystem.create();
-        connection = system.actorOf(Props.create(ConnectionActor.class));
-    }
-
-    @AfterClass
-    public static void shutdown() {
-        JavaTestKit.shutdownActorSystem(system);
-        system = null;
-    }
-
-
-    static UUID newUuid() {
+    UUID newUuid() {
         return UUID.randomUUID();
     }
 
-
-    // TODO what if 2 events with same ID ?
-    final String eventType = "java-test";
+    EventData newEventData() {
+        return new EventDataBuilder("java-test")
+                .eventId(newUuid())
+                .data("{\"data\":\"data\"}")
+                .metadata("{\"metadata\":\"metadata\"}")
+                .build();
+    }
 
     @Test
     public void testWriteEvents() {
 
-        new JavaTestKit(system) {{
+        new TestKit() {{
 
-            final String streamId = "java-write-events" + newUuid();
-
-            final EventData eventData = new EventDataBuilder(eventType)
-                    .eventId(newUuid())
-                    .data("{\"data\":\"data\"}")
-                    .metadata("{\"metadata\":\"metadata\"}")
-                    .build();
+            final String streamId = "java-write-events-" + newUuid();
 
             final WriteEvents writeEvents = new WriteEventsBuilder(streamId)
                     .expectNoStream()
-                    .event(eventData)
+                    .event(newEventData())
                     .requireMaster(true)
                     .build();
 
@@ -73,9 +50,9 @@ public class JavaITest {
 
     @Test
     public void testTransactionWrite() {
-        new JavaTestKit(system) {{
+        new TestKit() {{
 
-            final String streamId = "java-transaction-write" + newUuid();
+            final String streamId = "java-transaction-write-" + newUuid();
 
             final TransactionStart transactionStart = new TransactionStartBuilder(streamId)
                     .expectNoStream()
@@ -85,14 +62,8 @@ public class JavaITest {
             connection.tell(transactionStart, getRef());
             final long transactionId = expectMsgClass(TransactionStartCompleted.class).transactionId();
 
-            final EventData eventData = new EventDataBuilder(eventType)
-                    .eventId(newUuid())
-                    .data("{\"data\":\"data\"}")
-                    .metadata("{\"metadata\":\"metadata\"}")
-                    .build();
-
             final TransactionWrite transactionWrite = new TransactionWriteBuilder(transactionId)
-                    .addEvent(eventData)
+                    .addEvent(newEventData())
                     .requireMaster(true)
                     .build();
 
@@ -112,9 +83,9 @@ public class JavaITest {
 
     @Test
     public void testReadEvent() {
-        new JavaTestKit(system) {{
+        new TestKit() {{
 
-            final String streamId = "java-read-event" + newUuid();
+            final String streamId = "java-read-event-" + newUuid();
 
             final ReadEvent readEvent = new ReadEventBuilder(streamId)
                     .eventNumber(0)
@@ -127,11 +98,7 @@ public class JavaITest {
 
             assertEquals(((EventStoreException) failed.cause()).reason(), EventStoreError.StreamNotFound());
 
-            final EventData eventData = new EventDataBuilder(eventType)
-                    .eventId(newUuid())
-                    .data("{\"data\":\"data\"}")
-                    .metadata("{\"metadata\":\"metadata\"}")
-                    .build();
+            final EventData eventData = newEventData();
 
             final WriteEvents writeEvents = new WriteEventsBuilder(streamId)
                     .event(eventData)
@@ -153,9 +120,9 @@ public class JavaITest {
 
     @Test
     public void testReadStreamEvents() {
-        new JavaTestKit(system) {{
+        new TestKit() {{
 
-            final String streamId = "java-read-stream-events" + newUuid();
+            final String streamId = "java-read-stream-events-" + newUuid();
 
             final ReadStreamEvents readStreamEvents = new ReadStreamEventsBuilder(streamId)
                     .fromNumber(0)
@@ -172,15 +139,7 @@ public class JavaITest {
 
             final WriteEventsBuilder builder = new WriteEventsBuilder(streamId);
             for (int x = 0; x < 2; x++) {
-
-                final EventData eventData = new EventDataBuilder(eventType)
-                        .eventId(newUuid())
-                        .data("{\"data\":\"data\"}")
-                        .metadata("{\"metadata\":\"metadata\"}")
-                        .build();
-
-                builder.addEvent(eventData);
-
+                builder.addEvent(newEventData());
             }
             connection.tell(builder.build(), getRef());
             expectMsgClass(WriteEventsCompleted.class);
@@ -199,7 +158,7 @@ public class JavaITest {
 
     @Test
     public void testReadAllEvents() {
-        new JavaTestKit(system) {{
+        new TestKit() {{
             final ReadAllEvents readAllEvents = new ReadAllEventsBuilder()
                     .fromFirstPosition()
                     .maxCount(2)
@@ -219,7 +178,7 @@ public class JavaITest {
 
     @Test
     public void testSubscribeTo() {
-        new JavaTestKit(system) {{
+        new TestKit() {{
 
             final SubscribeTo subscribeToAll = new SubscribeToBuilder()
                     .toAll()
@@ -230,7 +189,6 @@ public class JavaITest {
             final SubscribeToAllCompleted subscribeToAllCompleted = expectMsgClass(SubscribeToAllCompleted.class);
 
             assertTrue(subscribeToAllCompleted.lastCommit() > 0);
-
 
             final SubscribeTo subscribeToStream = new SubscribeToBuilder()
                     .toStream("java-subscribe-to-stream")
