@@ -1,5 +1,7 @@
 # Event Store JVM Client [![Build Status](https://travis-ci.org/EventStore/eventstorejvmclient.png?branch=master)](https://travis-ci.org/EventStore/eventstorejvmclient)
 
+**JVM Client works nicely with EventStore 2.0.1**
+
 <table border="0">
   <tr>
     <td>Scala </td>
