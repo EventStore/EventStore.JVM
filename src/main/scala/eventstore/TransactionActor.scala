@@ -13,10 +13,10 @@ object TransactionActor {
   case class Start(data: TransactionStart) extends Kickoff
   case class Continue(transactionId: Long) extends Kickoff
 
-  sealed trait Command
-
   case object GetTransactionId
   case class TransactionId(value: Long)
+
+  sealed trait Command
 
   case class Write(events: Seq[EventData]) extends Command
   case object WriteCompleted
