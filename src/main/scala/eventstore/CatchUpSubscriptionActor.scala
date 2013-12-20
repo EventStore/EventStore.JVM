@@ -24,7 +24,7 @@ class CatchUpSubscriptionActor(
     val resolveLinkTos: Boolean,
     readBatchSize: Int) extends AbstractSubscriptionActor {
 
-  val streamId = EventStream.All
+  val streamId: EventStream = EventStream.All
 
   def receive = read(
     lastPosition = fromPositionExclusive,
