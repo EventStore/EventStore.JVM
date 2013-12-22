@@ -123,8 +123,6 @@ class ReadEventActor(connection: ActorRef) extends Actor with ActorLogging {
 ### Start transaction
 
 ```scala
-package eventstore.examples
-
 import akka.actor.ActorSystem
 import eventstore.TransactionActor._
 import eventstore.tcp.ConnectionActor
