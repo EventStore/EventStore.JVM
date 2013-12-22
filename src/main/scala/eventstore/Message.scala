@@ -1,5 +1,7 @@
 package eventstore
 
+import scala.collection.JavaConverters._
+
 /**
  * @author Yaroslav Klymko
  */
@@ -66,7 +68,7 @@ case class TransactionStartCompleted(transactionId: Long) extends In {
   require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
 }
 
-case class TransactionWrite(transactionId: Long, events: Seq[EventData], requireMaster: Boolean = true) extends Out {
+case class TransactionWrite(transactionId: Long, events: Seq[EventData], requireMaster: Boolean = true) extends Out { // TODO Seq => List
   require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
 }
 
@@ -105,7 +107,7 @@ case class ReadStreamEvents(
 }
 
 case class ReadStreamEventsCompleted(
-    events: Seq[Event],
+    events: Seq[Event], // TODO use concrete collection
     nextEventNumber: EventNumber,
     lastEventNumber: EventNumber.Exact,
     endOfStream: Boolean,
@@ -115,6 +117,8 @@ case class ReadStreamEventsCompleted(
   require(
     direction != ReadDirection.Forward || nextEventNumber != EventNumber.Last,
     s"lastEventNumber must not be EventNumber.Last")
+
+  def eventsJava: java.util.List[Event] = events.asJava
 }
 
 case class ReadAllEvents(
@@ -133,17 +137,22 @@ case class ReadAllEventsCompleted(
     nextPosition: Position.Exact,
     direction: ReadDirection.Value) extends In {
   require(events.size <= MaxBatchSize, s"events.size must be <= $MaxBatchSize, but is ${events.size}")
+
+  def eventsJava: java.util.List[IndexedEvent] = events.asJava
 }
 
 case class SubscribeTo(stream: EventStream, resolveLinkTos: Boolean = false) extends Out
 
+// TODO what if sender is dead, need to close subscription.
 sealed trait SubscribeCompleted extends In
 
 case class SubscribeToAllCompleted(lastCommit: Long) extends SubscribeCompleted {
   require(lastCommit >= 0, s"lastCommit must be >= 0, but is $lastCommit")
 }
 
-case class SubscribeToStreamCompleted(lastCommit: Long, lastEventNumber: Option[EventNumber.Exact]) extends SubscribeCompleted {
+case class SubscribeToStreamCompleted(
+    lastCommit: Long,
+    lastEventNumber: Option[EventNumber.Exact] = None) extends SubscribeCompleted {
   require(lastCommit >= 0, s"lastCommit must be >= 0, but is $lastCommit")
 }
 
