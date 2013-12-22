@@ -75,7 +75,7 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
       probes.foreach(x => newSubscription(Some(position), client = x.ref))
       probes.foreach(x => fishForLiveProcessingStarted(testKit = x))
       val event = append(newEventData).data
-      probes.foreach(x => expectEvents(Seq(event), testKit = x))
+      probes.foreach(x => expectEvents(List(event), testKit = x))
     }
 
     "read link events if resolveLinkTos = false" in new SubscribeToAllCatchingUpScope {
@@ -132,9 +132,9 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
       readBatchSize = 500))
 
     def expectEvents(
-      events: Seq[EventData],
+      events: List[EventData],
       position: Position = Position.First,
-      testKit: TestKitBase = this): Seq[IndexedEvent] = {
+      testKit: TestKitBase = this): List[IndexedEvent] = {
 
       def loop(events: List[EventData], position: Position): List[IndexedEvent] = events match {
         case Nil => Nil
@@ -145,7 +145,7 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
           if (indexedEvent.event.data == head) indexedEvent :: loop(tail, indexedEvent.position)
           else loop(events, indexedEvent.position)
       }
-      loop(events.toList, position)
+      loop(events, position)
     }
 
     @tailrec final def expectNoEvents() {
@@ -170,8 +170,8 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
         fishForLiveProcessingStarted(x, testKit)
     }
 
-    def writeAsync(size: Int = 20): Seq[EventData] = {
-      val events = (1 to size).map(_ => newEventData)
+    def writeAsync(size: Int = 20): List[EventData] = {
+      val events = (1 to size).map(_ => newEventData).toList
       import system.dispatcher
       Future {
         writeEventsCompleted(events, testKit = TestProbe())

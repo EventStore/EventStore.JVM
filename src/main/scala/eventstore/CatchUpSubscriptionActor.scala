@@ -4,6 +4,7 @@ import ReadDirection.Forward
 import akka.actor.{ Props, ActorRef }
 import akka.actor.Status.Failure
 import scala.collection.immutable.Queue
+import scala.annotation.tailrec
 
 object CatchUpSubscriptionActor {
   def props(
@@ -65,7 +66,7 @@ class CatchUpSubscriptionActor(
       (events, next) =>
         if (events.isEmpty) liveProcessing(lastPosition, stash)
         else {
-          def loop(events: List[IndexedEvent], lastPosition: Option[Position.Exact]): Receive = events match {
+          @tailrec def loop(events: List[IndexedEvent], lastPosition: Option[Position.Exact]): Receive = events match {
             case Nil => catchUp(lastPosition, next, subscriptionLastCommit, stash)
             case event :: tail =>
               val position = event.position
@@ -76,7 +77,7 @@ class CatchUpSubscriptionActor(
                 loop(tail, Some(position))
               }
           }
-          loop(events.toList, lastPosition)
+          loop(events, lastPosition)
         }
     } orElse {
       case StreamEventAppeared(x) if x.position.commitPosition > subscriptionLastCommit =>
@@ -116,7 +117,7 @@ class CatchUpSubscriptionActor(
     connection ! ReadAllEvents(position, readBatchSize, Forward, resolveLinkTos = resolveLinkTos)
   }
 
-  def readAllEventsCompleted(f: (Seq[IndexedEvent], Position.Exact) => Receive): Receive = {
+  def readAllEventsCompleted(f: (List[IndexedEvent], Position.Exact) => Receive): Receive = {
     case ReadAllEventsCompleted(events, _, nextPosition, Forward) => context become f(events, nextPosition)
     case Failure(e) => throw e
   }

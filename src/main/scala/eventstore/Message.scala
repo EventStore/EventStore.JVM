@@ -41,7 +41,7 @@ case object Pong extends InOut
 
 case class WriteEvents(
   streamId: EventStream.Id,
-  events: Seq[EventData],
+  events: List[EventData],
   expectedVersion: ExpectedVersion = ExpectedVersion.Any,
   requireMaster: Boolean = true) extends Out
 
@@ -65,7 +65,7 @@ case class TransactionStartCompleted(transactionId: Long) extends In {
   require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
 }
 
-case class TransactionWrite(transactionId: Long, events: Seq[EventData], requireMaster: Boolean = true) extends Out { // TODO Seq => List
+case class TransactionWrite(transactionId: Long, events: List[EventData], requireMaster: Boolean = true) extends Out {
   require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
 }
 
@@ -104,7 +104,7 @@ case class ReadStreamEvents(
 }
 
 case class ReadStreamEventsCompleted(
-    events: Seq[Event], // TODO use concrete collection
+    events: List[Event],
     nextEventNumber: EventNumber,
     lastEventNumber: EventNumber.Exact,
     endOfStream: Boolean,
@@ -129,7 +129,7 @@ case class ReadAllEvents(
 }
 
 case class ReadAllEventsCompleted(
-    events: Seq[IndexedEvent],
+    events: List[IndexedEvent],
     position: Position.Exact,
     nextPosition: Position.Exact,
     direction: ReadDirection.Value) extends In {

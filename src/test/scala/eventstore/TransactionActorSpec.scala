@@ -165,7 +165,7 @@ class TransactionActorSpec extends ActorSpec {
 
     def startCompleted = actor ! TransactionStartCompleted(transactionId)
 
-    def expectWrite(xs: Seq[EventData]) = connection.expectMsg(TransactionWrite(transactionId, xs))
+    def expectWrite(xs: List[EventData]) = connection.expectMsg(TransactionWrite(transactionId, xs))
     def writeCompleted(transactionId: Long = this.transactionId) = actor ! TransactionWriteCompleted(transactionId)
 
     def expectCommit = connection.expectMsg(TransactionCommit(transactionId))
@@ -188,7 +188,7 @@ class TransactionActorSpec extends ActorSpec {
       expectMsg(TransactionId(transactionId))
     }
 
-    def events(label: String) = Seq(EventData(eventType = label))
+    def events(label: String) = List(EventData(eventType = label))
     def kickOff: Kickoff
   }
 

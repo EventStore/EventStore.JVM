@@ -15,10 +15,10 @@ object TransactionActor {
 
   sealed trait Command
 
-  case class Write(events: Seq[EventData]) extends Command
+  case class Write(events: List[EventData]) extends Command
 
   object Write {
-    def apply(event: EventData, events: EventData*): Write = Write(Seq(event) ++ Seq(events: _*)) // TODO
+    def apply(event: EventData, events: EventData*): Write = Write(event :: events.toList)
   }
 
   case object WriteCompleted
@@ -81,7 +81,7 @@ class TransactionActor(
       }
     }
 
-    def write(events: Seq[EventData], client: ActorRef, stash: Queue[StashEntry]): Receive = {
+    def write(events: List[EventData], client: ActorRef, stash: Queue[StashEntry]): Receive = {
       connection ! TransactionWrite(transactionId, events, requireMaster)
       writing(client, stash)
     }

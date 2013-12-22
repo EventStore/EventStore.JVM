@@ -51,11 +51,11 @@ class TransactionITest extends TestConnection {
 
       val probe = TestProbe()
 
-      writeEventsCompleted(Seq(newEventData), testKit = probe)
+      writeEventsCompleted(List(newEventData), testKit = probe)
 
       transactionWrite(newEventData)
 
-      writeEventsCompleted(Seq(newEventData), testKit = probe)
+      writeEventsCompleted(List(newEventData), testKit = probe)
 
       transactionWrite(newEventData)
       transactionCommit

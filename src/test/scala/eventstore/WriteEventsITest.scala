@@ -89,10 +89,10 @@ class WriteEventsITest extends TestConnection {
   }
 
   trait WriteEventsScope extends TestConnectionScope {
-    def writeEvent(event: EventData, expVer: ExpectedVersion = Any) = writeEventsCompleted(Seq(event), expVer)
+    def writeEvent(event: EventData, expVer: ExpectedVersion = Any) = writeEventsCompleted(List(event), expVer)
 
     def writeEventsFailed(event: EventData, expVer: ExpectedVersion = Any) = {
-      actor ! WriteEvents(streamId, Seq(event), expVer)
+      actor ! WriteEvents(streamId, List(event), expVer)
       expectException()
     }
   }

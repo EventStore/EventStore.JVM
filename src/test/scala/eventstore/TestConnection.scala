@@ -28,7 +28,7 @@ abstract class TestConnection extends util.ActorSpec {
       metadata = ByteString("""{"metadata":"metadata"}"""))
 
     def writeEventsCompleted(
-      events: Seq[EventData],
+      events: List[EventData],
       expectedVersion: ExpectedVersion = ExpectedVersion.Any,
       streamId: EventStream.Id = streamId,
       testKit: TestKitBase = this): EventNumber.Exact = {
@@ -40,11 +40,11 @@ abstract class TestConnection extends util.ActorSpec {
 
     def appendEventToCreateStream(): EventData = {
       val event = newEventData.copy(eventType = "first event")
-      writeEventsCompleted(Seq(event), ExpectedVersion.NoStream, testKit = TestProbe()) mustEqual EventNumber.First
+      writeEventsCompleted(List(event), ExpectedVersion.NoStream, testKit = TestProbe()) mustEqual EventNumber.First
       event
     }
 
-    def append(x: EventData): EventRecord = EventRecord(streamId, writeEventsCompleted(Seq(x), testKit = TestProbe()), x)
+    def append(x: EventData): EventRecord = EventRecord(streamId, writeEventsCompleted(List(x), testKit = TestProbe()), x)
 
     def linkedAndLink(): (EventRecord, EventRecord) = {
       val linked = append(newEventData.copy(eventType = "linked"))
@@ -53,8 +53,8 @@ abstract class TestConnection extends util.ActorSpec {
       (linked, link)
     }
 
-    def appendMany(size: Int = 10, testKit: TestKitBase = this): Seq[EventData] = {
-      val events = (1 to size).map(_ => newEventData)
+    def appendMany(size: Int = 10, testKit: TestKitBase = this): List[EventData] = {
+      val events = (1 to size).map(_ => newEventData).toList
 
       def loop(n: Int) {
         actor.!(WriteEvents(streamId, events, ExpectedVersion.Any))(testKit.testActor)
@@ -141,7 +141,7 @@ abstract class TestConnection extends util.ActorSpec {
       event
     }
 
-    def mustBeSorted[T](xs: Seq[T])(implicit direction: ReadDirection.Value, ordering: Ordering[T]) {
+    def mustBeSorted[T](xs: List[T])(implicit direction: ReadDirection.Value, ordering: Ordering[T]) {
       xs.map {
         case ResolvedEvent(_, link) => link.asInstanceOf[T]
         case x                      => x
@@ -176,7 +176,7 @@ abstract class TestConnection extends util.ActorSpec {
       expectException()
     }
 
-    def readAllEvents(position: Position, maxCount: Int)(implicit direction: ReadDirection.Value): Seq[Event] =
+    def readAllEvents(position: Position, maxCount: Int)(implicit direction: ReadDirection.Value): List[Event] =
       readAllEventsCompleted(position = position, maxCount = maxCount).events.map(_.event)
 
     def allStreamsEvents(maxCount: Int = 500)(implicit direction: ReadDirection.Value): Stream[IndexedEvent] = {

@@ -24,7 +24,7 @@ class WriteEventsBuilder(streamId: String) extends Builder[WriteEvents]
 
   def build: WriteEvents = WriteEvents(
     streamId = _streamId,
-    events = Seq(EventDataSnippet.value: _*),
+    events = EventDataSnippet.value.toList,
     expectedVersion = ExpectedVersionSnippet.value,
     requireMaster = RequireMasterSnippet.value)
 }

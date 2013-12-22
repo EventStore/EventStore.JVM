@@ -8,7 +8,8 @@ import scala.concurrent.{ ExecutionContext, Future }
 trait EsTransaction {
   def transactionId: Long
 
-  def write(events: Seq[EventData]): Future[Unit]
+  def write(events: List[EventData]): Future[Unit]
+  def write(event: EventData, events: EventData*): Future[Unit] = write(event :: events.toList)
 
   def commit(): Future[Unit]
 }
@@ -31,7 +32,7 @@ case class EsTransactionForActor(transactionId: Long, actor: ActorRef)(implicit 
   import TransactionActor._
   import EsTransaction.executionContext
 
-  def write(events: Seq[EventData]): Future[Unit] = {
+  def write(events: List[EventData]): Future[Unit] = {
     val future = actor ? Write(events)
     future.map(_ => ())
   }

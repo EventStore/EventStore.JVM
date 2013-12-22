@@ -86,7 +86,7 @@ class StreamCatchUpSubscriptionActor(
                 loop(tail, Some(number))
               }
           }
-          loop(events.toList, lastNumber)
+          loop(events, lastNumber)
         })
 
       case Failure(e) => throw e

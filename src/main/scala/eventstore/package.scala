@@ -1,7 +1,4 @@
 package object eventstore {
-  val Seq = scala.collection.immutable.Seq
-  type Seq[T] = scala.collection.immutable.Seq[T]
-
   type Uuid = java.util.UUID // TODO create wrapper!
   val ByteString = akka.util.ByteString
   type ByteString = akka.util.ByteString
