@@ -1,8 +1,5 @@
 package eventstore
 
-/**
- * @author Yaroslav Klymko
- */
 // TODO check all "event numbers in messages"
 sealed trait EventNumber extends Ordered[EventNumber] // TODO same rules as in Position.First = 0, Position.Last = -1
 

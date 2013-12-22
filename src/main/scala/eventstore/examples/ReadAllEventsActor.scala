@@ -5,9 +5,6 @@ import akka.actor.{ ActorLogging, Actor }
 import akka.io.Tcp
 import scala.concurrent.duration._
 
-/**
- * @author Yaroslav Klymko
- */
 class ReadAllEventsActor extends Actor with ActorLogging {
 
   val readAllEvents = ReadAllEvents(Position.First, 10000, ReadDirection.Forward)

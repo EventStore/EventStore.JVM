@@ -7,9 +7,6 @@ import scala.concurrent.Future
 import scala.annotation.tailrec
 import ReadDirection.Backward
 
-/**
- * @author Yaroslav Klymko
- */
 class SubscribeToAllCatchingUpITest extends TestConnection {
   sequential
 

@@ -8,9 +8,6 @@ import ReadDirection.{ Backward, Forward }
 import scala.util.Try
 import eventstore.proto.OperationResult
 
-/**
- * @author Yaroslav Klymko
- */
 object EventStoreProtoFormats extends EventStoreProtoFormats
 
 trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultFormats {

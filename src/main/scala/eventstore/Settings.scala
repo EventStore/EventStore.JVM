@@ -3,9 +3,6 @@ package eventstore
 import scala.concurrent.duration._
 import java.net.InetSocketAddress
 
-/**
- * @author Yaroslav Klymko
- */
 case class Settings(
     address: InetSocketAddress = new InetSocketAddress("127.0.0.1", 1113),
     // The maximum number of times to allow for reconnection

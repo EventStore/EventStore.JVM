@@ -3,9 +3,6 @@ package j
 
 import Builder._
 
-/**
- * @author Yaroslav Klymko
- */
 class TransactionCommitBuilder(transactionId: Long) extends Builder[TransactionCommit]
     with RequireMasterSnippet[TransactionCommitBuilder] {
 

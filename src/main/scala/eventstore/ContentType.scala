@@ -2,9 +2,6 @@ package eventstore
 
 import scala.collection.SortedSet
 
-/**
- * @author Yaroslav Klymko
- */
 // TODO not yet implemented in EventStore 2.0.1
 sealed trait ContentType {
   def value: Int

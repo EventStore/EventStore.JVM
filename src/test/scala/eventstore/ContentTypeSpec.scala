@@ -3,9 +3,6 @@ package eventstore
 import org.specs2.mutable.Specification
 import ContentType._
 
-/**
- * @author Yaroslav Klymko
- */
 class ContentTypeSpec extends Specification {
   "ContentType" should {
     "throw proper exception when using known values as unknown" in foreach(Known) {

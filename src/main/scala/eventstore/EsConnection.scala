@@ -5,9 +5,6 @@ import akka.pattern.ask
 import akka.util.Timeout
 import scala.concurrent.Future
 
-/**
- * @author Yaroslav Klymko
- */
 class EsConnection(connection: ActorRef, settings: Settings = Settings.Default, factory: ActorRefFactory) {
   implicit val timeout = Timeout(settings.responseTimeout)
 

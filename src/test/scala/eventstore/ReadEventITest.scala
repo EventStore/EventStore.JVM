@@ -1,8 +1,5 @@
 package eventstore
 
-/**
- * @author Yaroslav Klymko
- */
 class ReadEventITest extends TestConnection {
 
   "read event" should {

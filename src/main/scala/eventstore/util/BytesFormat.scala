@@ -3,9 +3,6 @@ package eventstore.util
 import akka.util.{ ByteString, ByteIterator, ByteStringBuilder }
 import annotation.implicitNotFound
 
-/**
- * @author Yaroslav Klymko
- */
 @implicitNotFound(msg = "Cannot find BytesReader or BytesFormat type class for ${T}")
 trait BytesReader[T] {
   def read(bi: ByteIterator): T

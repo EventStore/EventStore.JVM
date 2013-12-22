@@ -4,9 +4,6 @@ package tcp
 import util.{ BytesWriter, BytesReader, BytesFormat }
 import akka.util.{ ByteStringBuilder, ByteIterator }
 
-/**
- * @author Yaroslav Klymko
- */
 object EventStoreFormats extends EventStoreFormats
 
 trait EventStoreFormats extends EventStoreProtoFormats {

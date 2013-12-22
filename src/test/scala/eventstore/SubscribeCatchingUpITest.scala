@@ -4,9 +4,6 @@ import akka.actor.{ Props, SupervisorStrategy, Actor, ActorRef }
 import akka.testkit.{ TestKitBase, TestProbe, TestActorRef }
 import scala.concurrent.duration._
 
-/**
- * @author Yaroslav Klymko
- */
 class SubscribeCatchingUpITest extends TestConnection {
 
   "subscribe catching up" should {

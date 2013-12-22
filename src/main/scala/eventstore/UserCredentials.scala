@@ -1,8 +1,5 @@
 package eventstore
 
-/**
- * @author Yaroslav Klymko
- */
 case class UserCredentials(login: String, password: String) {
   require(login != null, "login is null")
   require(login.nonEmpty, "login is empty")

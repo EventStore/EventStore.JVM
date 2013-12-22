@@ -1,8 +1,5 @@
 package eventstore
 
-/**
- * @author Yaroslav Klymko
- */
 class ReadAllEventsForwardITest extends TestConnection {
   sequential
 

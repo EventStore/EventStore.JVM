@@ -5,9 +5,6 @@ import org.specs2.specification.{ Scope, Step, Fragments }
 import akka.actor.ActorSystem
 import akka.testkit.{ ImplicitSender, TestKit }
 
-/**
- * @author Yaroslav Klymko
- */
 abstract class ActorSpec extends Specification with NoConversions {
   implicit val system = ActorSystem()
 

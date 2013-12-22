@@ -3,9 +3,6 @@ package util
 
 import akka.util.{ ByteIterator, ByteStringBuilder }
 
-/**
- * @author Yaroslav Klymko
- */
 object DefaultFormats extends DefaultFormats
 
 trait DefaultFormats {

@@ -3,9 +3,6 @@ package j
 
 import Builder._
 
-/**
- * @author Yaroslav Klymko
- */
 class ReadAllEventsBuilder extends Builder[ReadAllEvents]
     with MaxCountSnippet[ReadAllEventsBuilder]
     with DirectionSnippet[ReadAllEventsBuilder]

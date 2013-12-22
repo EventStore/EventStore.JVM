@@ -2,9 +2,6 @@ package eventstore.tcp
 
 import eventstore.UserCredentials
 
-/**
- * @author Yaroslav Klymko
- */
 object Flags {
   def apply(credentials: Option[UserCredentials]): Flags =
     credentials.fold(Flag.None)(_ => Flag.Auth)

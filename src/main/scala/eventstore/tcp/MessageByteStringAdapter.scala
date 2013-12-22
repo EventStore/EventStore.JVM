@@ -5,9 +5,6 @@ import akka.io._
 import EventStoreFormats._
 import util.{ BytesWriter, BytesReader }
 
-/**
- * @author Yaroslav Klymko
- */
 class MessageByteStringAdapter
     extends PipelineStage[PipelineContext, TcpPackageOut, ByteString, TcpPackageIn, ByteString] {
 

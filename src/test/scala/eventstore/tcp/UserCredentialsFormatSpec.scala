@@ -5,9 +5,6 @@ import org.specs2.mutable.Specification
 import EventStoreFormats._
 import util.{ BytesReader, BytesWriter }
 
-/**
- * @author Yaroslav Klymko
- */
 class UserCredentialsFormatSpec extends Specification {
   "UserCredentialsFormat" should {
     "read/write" in {

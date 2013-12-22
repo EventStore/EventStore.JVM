@@ -1,6 +1,3 @@
-/**
- * @author Yaroslav Klymko
- */
 package object eventstore {
   val Seq = scala.collection.immutable.Seq
   type Seq[T] = scala.collection.immutable.Seq[T]

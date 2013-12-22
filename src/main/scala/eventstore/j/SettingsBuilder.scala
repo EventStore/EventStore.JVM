@@ -6,9 +6,6 @@ import java.net.InetSocketAddress
 import Builder.RequireMasterSnippet
 import scala.concurrent.duration._
 
-/**
- * @author Yaroslav Klymko
- */
 class SettingsBuilder extends Builder[Settings] with RequireMasterSnippet[SettingsBuilder] {
   var _address = Default.address
   var _maxReconnections = Default.maxReconnections

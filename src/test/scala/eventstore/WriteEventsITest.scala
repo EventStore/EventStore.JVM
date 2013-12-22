@@ -4,9 +4,6 @@ import akka.testkit.TestProbe
 import ExpectedVersion._
 import EventStoreError._
 
-/**
- * @author Yaroslav Klymko
- */
 // TODO improve expectMsgType[ReadStreamEventsSucceed]
 class WriteEventsITest extends TestConnection {
   "append to stream" should {

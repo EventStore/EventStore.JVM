@@ -4,9 +4,6 @@ package j
 import Builder._
 import java.lang.Iterable
 
-/**
- * @author Yaroslav Klymko
- */
 class WriteEventsBuilder(streamId: String) extends Builder[WriteEvents]
     with EventDataSnippet[WriteEventsBuilder]
     with ExpectVersionSnippet[WriteEventsBuilder]

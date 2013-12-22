@@ -1,8 +1,5 @@
 package eventstore
 
-/**
- * @author Yaroslav Klymko
- */
 object EventStoreError extends Enumeration {
   val EventNotFound = Value
   val StreamNotFound = Value

@@ -9,9 +9,6 @@ import scala.collection.immutable.Queue
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success }
 
-/**
- * @author Yaroslav Klymko
- */
 object ConnectionActor {
   def props(settings: Settings = Settings.Default): Props = Props(classOf[ConnectionActor], settings)
 }

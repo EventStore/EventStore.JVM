@@ -3,9 +3,6 @@ package j
 
 import Builder._
 
-/**
- * @author Yaroslav Klymko
- */
 class ReadStreamEventsBuilder(streamId: String) extends Builder[ReadStreamEvents]
     with MaxCountSnippet[ReadStreamEventsBuilder]
     with DirectionSnippet[ReadStreamEventsBuilder]

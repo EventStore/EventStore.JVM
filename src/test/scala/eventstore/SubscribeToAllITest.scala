@@ -2,9 +2,6 @@ package eventstore
 
 import akka.testkit.{ TestKitBase, TestProbe }
 
-/**
- * @author Yaroslav Klymko
- */
 class SubscribeToAllITest extends TestConnection {
   sequential
 

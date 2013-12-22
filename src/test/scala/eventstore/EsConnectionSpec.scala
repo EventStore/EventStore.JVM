@@ -4,9 +4,6 @@ import org.specs2.mock.Mockito
 import scala.util.Success
 import util.ActorSpec
 
-/**
- * @author Yaroslav Klymko
- */
 class EsConnectionSpec extends ActorSpec with Mockito {
   "EventStoreConnection.future" should {
     "write events" in new TestScope {

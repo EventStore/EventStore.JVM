@@ -7,9 +7,6 @@ import util.ActorSpec
 import TransactionActor._
 import akka.actor.Status.Failure
 
-/**
- * @author Yaroslav Klymko
- */
 class TransactionActorSpec extends ActorSpec {
   "TransactionActor" should {
 

@@ -3,9 +3,6 @@ package j
 
 import Builder._
 
-/**
- * @author Yaroslav Klymko
- */
 class TransactionStartBuilder(streamId: String) extends Builder[TransactionStart]
     with ExpectVersionSnippet[TransactionStartBuilder]
     with RequireMasterSnippet[TransactionStartBuilder] {

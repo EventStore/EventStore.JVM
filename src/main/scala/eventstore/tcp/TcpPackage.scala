@@ -3,9 +3,6 @@ package tcp
 
 import scala.util.Try
 
-/**
- * @author Yaroslav Klymko
- */
 sealed trait TcpPackage {
   def correlationId: Uuid
 }

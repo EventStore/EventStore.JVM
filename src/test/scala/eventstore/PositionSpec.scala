@@ -4,9 +4,6 @@ import org.specs2.mutable.Specification
 import org.specs2.specification.Scope
 import Position._
 
-/**
- * @author Yaroslav Klymko
- */
 class PositionSpec extends Specification {
   "Position" should {
     ">" in new PositionScope {

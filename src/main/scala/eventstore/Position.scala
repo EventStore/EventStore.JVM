@@ -1,8 +1,5 @@
 package eventstore
 
-/**
- * @author Yaroslav Klymko
- */
 sealed trait Position extends Ordered[Position]
 
 object Position {

@@ -6,9 +6,6 @@ import tcp.ConnectionActor
 import ReadDirection._
 import akka.actor.Status.Failure
 
-/**
- * @author Yaroslav Klymko
- */
 abstract class TestConnection extends util.ActorSpec {
 
   abstract class TestConnectionScope extends ActorScope {

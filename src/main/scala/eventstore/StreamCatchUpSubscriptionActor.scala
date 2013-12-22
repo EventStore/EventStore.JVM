@@ -5,9 +5,6 @@ import akka.actor.Status.Failure
 import ReadDirection.Forward
 import scala.collection.immutable.Queue
 
-/**
- * @author Yaroslav Klymko
- */
 object StreamCatchUpSubscriptionActor {
   def props(
     connection: ActorRef,

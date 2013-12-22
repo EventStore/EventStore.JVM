@@ -1,9 +1,6 @@
 package eventstore
 package util
 
-/**
- * @author Yaroslav Klymko
- */
 trait BetterToString {
   self: Product =>
   override def toString = ImproveByteString(self)

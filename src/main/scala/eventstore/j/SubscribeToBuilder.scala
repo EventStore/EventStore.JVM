@@ -3,9 +3,6 @@ package j
 
 import Builder._
 
-/**
- * @author Yaroslav Klymko
- */
 class SubscribeToBuilder extends Builder[SubscribeTo] with ResolveLinkTosSnippet[SubscribeToBuilder] {
   var _stream: EventStream = null
 

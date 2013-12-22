@@ -3,9 +3,6 @@ package eventstore
 import akka.testkit.{ TestKitBase, TestProbe }
 import scala.concurrent.duration._
 
-/**
- * @author Yaroslav Klymko
- */
 class SubscribeITest extends TestConnection {
   "subscribe" should {
 

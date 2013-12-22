@@ -2,9 +2,6 @@ package eventstore
 
 import util.BetterToString
 
-/**
- * @author Yaroslav Klymko
- */
 sealed trait Event extends Ordered[Event] {
   def streamId: EventStream.Id
   def number: EventNumber.Exact

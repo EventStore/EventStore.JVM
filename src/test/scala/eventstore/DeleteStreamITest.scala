@@ -3,9 +3,6 @@ package eventstore
 import EventStoreError._
 import ExpectedVersion._
 
-/**
- * @author Yaroslav Klymko
- */
 class DeleteStreamITest extends TestConnection {
   "delete stream" should {
     "succeed if doesn't exist when passed ANY for expected version" in new DeleteStreamScope {

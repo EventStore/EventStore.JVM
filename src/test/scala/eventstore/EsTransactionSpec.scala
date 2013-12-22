@@ -7,9 +7,6 @@ import util.ActorSpec
 import akka.util.Timeout
 import scala.concurrent.duration._
 
-/**
- * @author Yaroslav Klymko
- */
 class EsTransactionSpec extends ActorSpec {
 
   "EsTransaction.start" should {

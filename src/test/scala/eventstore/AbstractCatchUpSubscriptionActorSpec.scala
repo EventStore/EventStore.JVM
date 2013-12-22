@@ -5,9 +5,6 @@ import akka.testkit._
 import org.specs2.mock.Mockito
 import scala.concurrent.duration._
 
-/**
- * @author Yaroslav Klymko
- */
 abstract class AbstractCatchUpSubscriptionActorSpec extends util.ActorSpec with Mockito {
 
   abstract class AbstractScope extends ActorScope {

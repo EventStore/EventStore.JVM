@@ -2,9 +2,6 @@ package eventstore
 
 import scala.collection.JavaConverters._
 
-/**
- * @author Yaroslav Klymko
- */
 sealed trait OutLike
 
 case class WithCredentials(message: Out, credentials: UserCredentials) extends OutLike

@@ -4,9 +4,6 @@ import EventStoreError.{ WrongExpectedVersion, StreamDeleted }
 import ExpectedVersion._
 import akka.testkit.TestProbe
 
-/**
- * @author Yaroslav Klymko
- */
 class TransactionITest extends TestConnection {
   implicit val direction = ReadDirection.Forward
   "transaction" should {

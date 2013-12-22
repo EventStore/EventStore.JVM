@@ -5,9 +5,6 @@ import akka.actor.{ Props, ActorRef }
 import akka.actor.Status.Failure
 import scala.collection.immutable.Queue
 
-/**
- * @author Yaroslav Klymko
- */
 object CatchUpSubscriptionActor {
   def props(
     connection: ActorRef,

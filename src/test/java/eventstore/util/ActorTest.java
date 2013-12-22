@@ -8,9 +8,6 @@ import eventstore.tcp.ConnectionActor;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-/**
- * @author Yaroslav Klymko
- */
 abstract public class ActorTest {
 
     protected static ActorSystem system;

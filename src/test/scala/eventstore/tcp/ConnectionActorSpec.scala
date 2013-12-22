@@ -12,9 +12,6 @@ import java.nio.ByteOrder
 import scala.concurrent.duration._
 import scala.util.{ Try, Success }
 
-/**
- * @author Yaroslav Klymko
- */
 class ConnectionActorSpec extends util.ActorSpec with Mockito {
 
   val off = 1.minute

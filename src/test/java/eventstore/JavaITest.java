@@ -9,9 +9,6 @@ import java.util.UUID;
 
 import static org.junit.Assert.*;
 
-/**
- * @author Yaroslav Klymko
- */
 public class JavaITest extends ActorTest {
 
     UUID newUuid() {

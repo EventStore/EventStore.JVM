@@ -2,9 +2,6 @@ package eventstore
 
 import scala.reflect.ClassTag
 
-/**
- * @author Yaroslav Klymko
- */
 sealed trait OutInTag[OUT, IN] {
   def outTag: ClassTag[OUT]
   def inTag: ClassTag[IN]

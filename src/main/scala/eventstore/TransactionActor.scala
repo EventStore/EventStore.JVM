@@ -4,9 +4,6 @@ import akka.actor.{ ActorLogging, Props, ActorRef, Actor }
 import scala.collection.immutable.Queue
 import akka.actor.Status.Failure
 
-/**
- * @author Yaroslav Klymko
- */
 object TransactionActor {
 
   sealed trait Kickoff

@@ -3,9 +3,6 @@ package j
 
 import Builder._
 
-/**
- * @author Yaroslav Klymko
- */
 class ReadEventBuilder(streamId: String) extends Builder[ReadEvent]
     with ResolveLinkTosSnippet[ReadEventBuilder]
     with RequireMasterSnippet[ReadEventBuilder] {

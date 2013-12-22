@@ -7,9 +7,6 @@ import akka.util.{ ByteStringBuilder, ByteIterator }
 import scala.util.{ Success, Try }
 import util.{ BytesWriter, BytesReader }
 
-/**
- * @author Yaroslav Klymko
- */
 object MarkerByte {
   type Reader = ByteIterator => Try[In]
 

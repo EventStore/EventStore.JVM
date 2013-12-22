@@ -3,9 +3,6 @@ package examples
 
 import akka.actor.{ ActorRef, Props, ActorLogging, Actor }
 
-/**
- * @author Yaroslav Klymko
- */
 class SubscribeActor(connection: ActorRef) extends Actor with ActorLogging {
   val subscribeToStream = SubscribeTo(EventStream.All, resolveLinkTos = false)
   val stats = context.actorOf(Props[MessagesPerSecondActor])

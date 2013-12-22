@@ -4,9 +4,6 @@ package j
 import java.lang.Iterable
 import Builder._
 
-/**
- * @author Yaroslav Klymko
- */
 class TransactionWriteBuilder(transactionId: Long) extends Builder[TransactionWrite]
     with RequireMasterSnippet[TransactionWriteBuilder]
     with EventDataSnippet[TransactionWriteBuilder] {

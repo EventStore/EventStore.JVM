@@ -8,9 +8,6 @@ import scala.language.reflectiveCalls
 import scala.util.{ Failure, Try }
 import util.{ BytesWriter, BytesReader, DefaultFormats }
 
-/**
- * @author Yaroslav Klymko
- */
 object DefaultProtoFormats extends DefaultProtoFormats
 
 trait DefaultProtoFormats extends DefaultFormats {

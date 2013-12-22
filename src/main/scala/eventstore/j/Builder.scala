@@ -1,9 +1,6 @@
 package eventstore
 package j
 
-/**
- * @author Yaroslav Klymko
- */
 trait Builder[T] {
   def build: T
 }

@@ -6,9 +6,6 @@ import eventstore.util.{ BytesWriter, BytesReader }
 import org.specs2.mutable.Specification
 import scala.util.Success
 
-/**
- * @author Yaroslav Klymko
- */
 class TcpPackageFormatSpec extends Specification {
   "TcpPackageFormat" should {
     "read/write" in {

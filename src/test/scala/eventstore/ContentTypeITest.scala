@@ -2,9 +2,6 @@ package eventstore
 
 import ContentType._
 
-/**
- * @author Yaroslav Klymko
- */
 class ContentTypeITest extends TestConnection {
   "content type" should {
     "be received " in new TestConnectionScope {

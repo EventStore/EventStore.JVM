@@ -3,9 +3,6 @@ package eventstore
 import akka.actor.{ SupervisorStrategy, ActorRef, ActorLogging, Actor }
 import akka.actor.Status.Failure
 
-/**
- * @author Yaroslav Klymko
- */
 trait AbstractSubscriptionActor extends Actor with ActorLogging {
   def client: ActorRef
   def connection: ActorRef

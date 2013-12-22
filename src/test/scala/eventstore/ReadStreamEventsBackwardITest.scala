@@ -1,8 +1,5 @@
 package eventstore
 
-/**
- * @author Yaroslav Klymko
- */
 class ReadStreamEventsBackwardITest extends TestConnection {
   implicit val direction = ReadDirection.Backward
 

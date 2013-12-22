@@ -4,9 +4,6 @@ import ReadDirection.Forward
 import akka.actor.Status.Failure
 import akka.testkit.TestProbe
 
-/**
- * @author Yaroslav Klymko
- */
 class StreamCatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActorSpec {
   "catch up subscription actor" should {
 
