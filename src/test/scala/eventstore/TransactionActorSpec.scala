@@ -76,6 +76,7 @@ class TransactionActorSpec extends ActorSpec {
       expectNoMsgs()
 
       commitCompleted
+      expectMsg(CommitCompleted)
 
       expectTerminated
     }
@@ -105,6 +106,7 @@ class TransactionActorSpec extends ActorSpec {
       verifyTransactionId()
 
       commitCompleted
+      expectMsg(CommitCompleted)
 
       expectTerminated
     }
@@ -118,6 +120,7 @@ class TransactionActorSpec extends ActorSpec {
       startCompleted
       expectCommit
       commitCompleted
+      expectMsg(CommitCompleted)
       expectTerminated
       expectNoMsgs()
     }

@@ -19,9 +19,15 @@ object TransactionActor {
   sealed trait Command
 
   case class Write(events: Seq[EventData]) extends Command
+
+  object Write {
+    def apply(event: EventData, events: EventData*): Write = Write(Seq(event) ++ Seq(events: _*)) // TODO
+  }
+
   case object WriteCompleted
 
   case object Commit extends Command
+  case object CommitCompleted
 
   def props(connection: ActorRef, kickoff: Kickoff, requireMaster: Boolean = true): Props =
     Props(classOf[TransactionActor], connection, kickoff, requireMaster)
@@ -30,7 +36,7 @@ object TransactionActor {
 class TransactionActor(
     connection: ActorRef,
     kickoff: TransactionActor.Kickoff,
-    requireMaster: Boolean) extends Actor with ActorLogging {
+    requireMaster: Boolean /*, credentials: Option[UserCredentials]TODO*/ ) extends Actor with ActorLogging {
   import TransactionActor._
 
   context watch connection
@@ -72,7 +78,9 @@ class TransactionActor(
     def commit(client: ActorRef): Receive = {
       connection ! TransactionCommit(transactionId, requireMaster)
       common orElse failure(client) orElse {
-        case TransactionCommitCompleted(`transactionId`) => context stop self
+        case TransactionCommitCompleted(`transactionId`) =>
+          client ! CommitCompleted
+          context stop self
       }
     }
 

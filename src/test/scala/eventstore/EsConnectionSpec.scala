@@ -1,14 +1,14 @@
 package eventstore
 
-import util.ActorSpec
 import org.specs2.mock.Mockito
 import scala.util.Success
+import util.ActorSpec
 
 /**
  * @author Yaroslav Klymko
  */
-class EventStoreConnectionSpec extends ActorSpec with Mockito {
-  "EventStoreConnection" should {
+class EsConnectionSpec extends ActorSpec with Mockito {
+  "EventStoreConnection.future" should {
     "write events" in new TestScope {
       verifyOutIn(mock[WriteEvents], mock[WriteEventsCompleted])
     }
@@ -49,10 +49,10 @@ class EventStoreConnectionSpec extends ActorSpec with Mockito {
   trait TestScope extends ActorScope {
     val streamId = EventStream("EventStream")
     val events = Seq(EventData(eventType = "eventType"))
-    val connection: EventStoreConnection = new EventStoreConnection(testActor, Settings(defaultCredentials = None))
+    val connection = new EsConnection(testActor, Settings(defaultCredentials = None))
 
     def verifyOutIn[OUT <: Out, IN <: In](out: OUT, in: In)(implicit outIn: OutInTag[OUT, IN]) {
-      val future = connection.futureIn(out)(outIn = outIn)
+      val future = connection.future(out)(outIn = outIn)
       expectMsg(out)
       future.value must beNone
       lastSender ! in

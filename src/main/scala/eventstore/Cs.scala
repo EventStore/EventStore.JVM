@@ -5,7 +5,7 @@ package eventstore
  *
  * Cs - abbreviation for Catch-Up Subscription
  */
-object Cs {
+object Cs { // TODO
   sealed trait Event
 
   case object LiveProcessingStarted extends Event
