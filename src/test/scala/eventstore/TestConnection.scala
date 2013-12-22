@@ -67,7 +67,6 @@ abstract class TestConnection extends util.ActorSpec {
       loop(0)
       events
     }
-    // TODO rename all `succeed`
 
     def readEventCompleted(eventNumber: EventNumber, resolveLinkTos: Boolean = false) = {
       actor ! ReadEvent(streamId, eventNumber, resolveLinkTos = resolveLinkTos)
