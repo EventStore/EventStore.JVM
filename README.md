@@ -20,7 +20,7 @@ This is not a user friendliest one, but if you need as much performance as possi
 
 However we will provide more convenient API based on `scala.concurrent.Future`.
 
-## Java Examples
+## Java examples
 
 ### Read event
 
@@ -85,7 +85,7 @@ public class ReadEventExample {
 }
 ```
 
-## Scala Examples
+## Scala examples
 
 ### Read event
 
