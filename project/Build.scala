@@ -14,7 +14,7 @@ object Build extends Build {
     description          := "Event Store JVM Client",
     startYear            := Some(2013),
     scalacOptions        := Seq("-encoding", "UTF-8", "-unchecked", "-deprecation", "-feature"),
-    libraryDependencies ++= Seq(akka, akkaTestkit, scalabuff, junit, specs2, mockito),
+    libraryDependencies ++= Seq(akka, akkaTestkit, scalabuff, junit, specs2, mockito, codec),
     scalabuffVersion := "1.3.6")
 
   object V {
@@ -22,12 +22,13 @@ object Build extends Build {
     val scalabuff = "1.3.6"
   }
 
-  val akka        = "com.typesafe.akka" %% "akka-actor"        % V.akka
-  val akkaTestkit = "com.typesafe.akka" %% "akka-testkit"      % V.akka      % "test"
-  val scalabuff   = "net.sandrogrzicic" %% "scalabuff-runtime" % V.scalabuff
-  val junit       = "junit"             %  "junit"             % "4.11"      % "test"
-  val specs2      = "org.specs2"        %% "specs2"            % "2.3.4"     % "test"
-  val mockito     = "org.mockito"       %  "mockito-all"       % "1.9.5"     % "test"
+  val akka        = "com.typesafe.akka"           %% "akka-actor"               % V.akka
+  val akkaTestkit = "com.typesafe.akka"           %% "akka-testkit"             % V.akka      % "test"
+  val codec       = "org.apache.directory.studio" %  "org.apache.commons.codec" % "1.8"
+  val scalabuff   = "net.sandrogrzicic"           %% "scalabuff-runtime"        % V.scalabuff
+  val junit       = "junit"                       %  "junit"                    % "4.11"      % "test"
+  val specs2      = "org.specs2"                  %% "specs2"                   % "2.3.4"     % "test"
+  val mockito     = "org.mockito"                 %  "mockito-all"              % "1.9.5"     % "test"
 
   def itFilter(name: String): Boolean = name endsWith "ITest"
   def specFilter(name: String): Boolean = name endsWith "Spec"
