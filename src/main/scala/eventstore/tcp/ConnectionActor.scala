@@ -2,8 +2,7 @@ package eventstore
 package tcp
 
 import akka.actor.{ IO => _, _ }
-import akka.io._
-import java.nio.ByteOrder
+import akka.io.{ TcpPipelineHandler, Tcp, IO }
 import util.{ CancellableAdapter, BidirectionalMap }
 import scala.collection.immutable.Queue
 import scala.concurrent.duration._
@@ -19,17 +18,7 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
   import context.dispatcher
   import settings._
 
-  val init = TcpPipelineHandler.withLogger(log,
-    new MessageByteStringAdapter >>
-      new LengthFieldFrame(
-        maxSize = 64 * 1024 * 1024,
-        byteOrder = ByteOrder.LITTLE_ENDIAN,
-        lengthIncludesHeader = false) >>
-      new TcpReadWriteAdapter >>
-      new BackpressureBuffer(
-        lowBytes = backpressureSettings.lowWatermark,
-        highBytes = backpressureSettings.highWatermark,
-        maxBytes = backpressureSettings.maxCapacity))
+  val init = EsPipelineInit(log, backpressureSettings)
 
   override def preStart() {
     log.debug(s"connecting to $address")
@@ -39,18 +28,37 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
   var binding = new BidirectionalMap[Uuid, ActorRef]()
 
   def receiveTerminated: Receive = {
-    case Terminated(actor) => binding = binding - actor // TODO unsubscribe if subscription sender is dead
+    case Terminated(actor) => binding.y(actor).foreach {
+      uuid =>
+        binding = binding - actor
+        if (subscriptions contains actor) {
+          self ! TcpPackageOut(uuid, UnsubscribeFromStream, settings.defaultCredentials)
+          subscriptions = subscriptions - actor
+        }
+    }
   }
 
-  def receive = connecting()
+  var subscriptions = Set[ActorRef]() // TODO part of connected state
+
+  def receive = connecting(Queue(), maxReconnections) // TODO use 0 and fix tests
 
   def newPipeline(connection: ActorRef): ActorRef =
     context.actorOf(TcpPipelineHandler.props(init, connection, self))
 
-  def connecting(
-    stash: Queue[TcpPackageOut] = Queue(),
-    reconnectionsLeft: Int = maxReconnections): Receive = {
+  def receiveIn(x: TcpPackageIn, f: TcpPackageOut => Unit) {
+    log.debug(x.toString)
+    x.message match {
+      case Success(HeartbeatRequest) => f(TcpPackageOut(x.correlationId, HeartbeatResponse))
+      case Success(Ping)             => f(TcpPackageOut(x.correlationId, Pong))
+      case _                         => dispatch(x)
+    }
+  }
+
+  def connecting(stash: Queue[TcpPackageOut], reconnectionsLeft: Int): Receive = {
+    subscriptions = Set()
     val receive: Receive = {
+      case init.Event(in) => receiveIn(in, _ => Unit)
+
       case Tcp.Connected(remote, _) =>
         log.info(s"connected to $remote")
 
@@ -67,7 +75,7 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
 
         stash.foreach(send)
 
-        context become connected(connection, pipeline, send)
+        context become connected(connection, pipeline, send, 0)
 
       case Tcp.CommandFailed(_: Tcp.Connect) =>
         log.error(s"connection failed to $address")
@@ -79,17 +87,18 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
 
       case x: OutLike =>
         log.debug(s"received $x while not connected, adding to stash")
-        val pack = tcpPack(x)
-        context become connecting(stash enqueue pack)
+        context become connecting(stash enqueue tcpPack(x), reconnectionsLeft)
+
+      case pack: TcpPackageOut => context become connecting(stash enqueue pack, reconnectionsLeft)
     }
 
     receive orElse receiveTerminated
   }
 
-  def connected(connection: ActorRef, pipeline: ActorRef, send: TcpPackageOut => Unit, packNumber: Int = -1): Receive = {
+  def connected(connection: ActorRef, pipeline: ActorRef, send: TcpPackageOut => Unit, heartbeatId: Long): Receive = {
 
     val scheduled = CancellableAdapter(
-      system.scheduler.scheduleOnce(heartbeatTimeout, self, HeartbeatTimeout(packNumber)),
+      system.scheduler.scheduleOnce(heartbeatTimeout, self, HeartbeatTimeout(heartbeatId)),
       system.scheduler.scheduleOnce(heartbeatInterval, self, HeartbeatInterval))
 
     def maybeReconnect(reason: String) {
@@ -101,32 +110,26 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
       } else {
         log.warning(msg)
         reconnect()
-        context become connecting()
+        context become connecting(Queue(), maxReconnections)
       }
     }
 
     val receive: Receive = {
-      case init.Event(pack @ TcpPackageIn(correlationId, msg)) =>
-        log.debug(pack.toString)
+      case init.Event(in) =>
         scheduled.cancel()
-        msg match {
-          case Success(HeartbeatRequest) => send(TcpPackageOut(correlationId, HeartbeatResponse))
-          case Success(Ping)             => send(TcpPackageOut(correlationId, Pong))
-          case _                         => dispatch(pack)
-        }
-        context become connected(connection, pipeline, send, packNumber + 1)
+        receiveIn(in, send)
+        context become connected(connection, pipeline, send, heartbeatId + 1)
 
       case x: OutLike               => send(tcpPack(x))
-
+      case x: TcpPackageOut         => send(x)
       case HeartbeatInterval        => send(TcpPackageOut(HeartbeatRequest))
-
       case Terminated(`connection`) => maybeReconnect("connection actor died")
 
       case Terminated(`pipeline`) =>
         connection ! Tcp.Abort
         maybeReconnect("pipeline actor died")
 
-      case HeartbeatTimeout(`packNumber`) =>
+      case HeartbeatTimeout(`heartbeatId`) =>
         connection ! Tcp.Close
         maybeReconnect(s"no heartbeat within $heartbeatTimeout")
 
@@ -150,21 +153,20 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
     }
   }
 
+  def credentials(x: OutLike): Option[UserCredentials] = x match {
+    case WithCredentials(_, c) => Some(c)
+    case _: Out                => settings.defaultCredentials
+  }
+
   def tcpPack(message: OutLike): TcpPackageOut = {
-    val correlationId = binding.y(sender).getOrElse {
+    val correlationId = binding.y(sender) getOrElse {
       val x = newUuid
       log.debug(s"add sender $sender for $x")
       context watch sender
-      binding = binding.+(x, sender)
+      binding = binding + (x, sender)
       x
     }
-
-    val (out, credentials) = message match {
-      case WithCredentials(x, c) => x -> Some(c)
-      case x: Out                => x -> settings.defaultCredentials
-    }
-
-    TcpPackageOut(correlationId, out, credentials)
+    TcpPackageOut(correlationId, message.out, credentials(message))
   }
 
   def dispatch(pack: TcpPackageIn) {
@@ -174,11 +176,16 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
     }
     val correlationId = pack.correlationId
     binding.x(correlationId) match {
-      case Some(channel) => channel ! msg
+      case Some(channel) =>
+        PartialFunction.condOpt(msg) {
+          case x: SubscribeCompleted => subscriptions = subscriptions + channel
+        }
+        channel ! msg
+
       case None => msg match {
-        case Pong | HeartbeatResponse =>
+        case Pong | HeartbeatResponse | UnsubscribeCompleted =>
         case _ =>
-          log.warning(s"sender not found by correlationId: $correlationId for $msg")
+          log.warning(s"can not deliver $msg, sender not found for correlationId: $correlationId")
           system.deadLetters ! msg
       }
     }
@@ -188,6 +195,6 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
 
   def tcp = IO(Tcp)
 
-  case class HeartbeatTimeout(packNumber: Int)
+  case class HeartbeatTimeout(id: Long)
   case object HeartbeatInterval
 }

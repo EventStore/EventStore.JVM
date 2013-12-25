@@ -231,36 +231,22 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       connection.underlyingActor.binding must beEmpty
     }
 
-    "stop subscription if initiator actor died" in new TcpMockScope {
-      val settings = Settings(maxReconnections = 1)
-      val client = TestActorRef(new ConnectionActor(settings) {
-        override def tcp = testActor
-        override def newPipeline(connection: ActorRef) = testActor
-      })
-
-      val connect = expectMsgType[Connect]
-      client ! Connected(connect.remoteAddress, new InetSocketAddress(0))
-      expectMsgType[Register]
-
-      foreach(List(EventStream.All, EventStream.Id("stream"))) {
-        stream =>
-
-          val probe = TestProbe()
-
-          val subscribeTo = SubscribeTo(EventStream.All)
-          client.tell(subscribeTo, probe.ref)
-          val init = client.underlyingActor.init
-          val correlationId = expectMsgPF() {
-            case init.Command(TcpPackageOut(x, `subscribeTo`, _)) => x
-          }
-          client ! TcpPackageIn(correlationId, Try(SubscribeToStreamCompleted(0)))
-          system stop probe.ref
-
-          expectMsgPF() {
-            case init.Command(TcpPackageOut(x, UnsubscribeFromStream, _)) => x
-          } mustEqual correlationId
+    "stop subscription if initiator actor died" in new SubscriptionScope {
+      def forStream(stream: EventStream, correlationId: eventstore.Uuid, credentials: Option[UserCredentials], probe: TestProbe) {
+        client ! init.Event(TcpPackageIn(correlationId, Try(SubscribeToStreamCompleted(0))))
+        system stop probe.ref
+        expectMsg(init.Command(TcpPackageOut(correlationId, UnsubscribeFromStream, credentials)))
       }
-    }.pendingUntilFixed // TODO
+    }
+
+    "not stop subscription if not completed and initiator actor died" in new SubscriptionScope {
+      def forStream(stream: EventStream, correlationId: eventstore.Uuid, credentials: Option[UserCredentials], probe: TestProbe) {
+        system stop probe.ref
+        expectNoMsg()
+      }
+    }
+
+    // TODO restart subscription on reconnects
 
     "use default credentials if not provided with message" in new SecurityScope {
       val x = UserCredentials("login", "password")
@@ -387,5 +373,33 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       pack.message mustEqual message
       pack.credentials
     }
+  }
+
+  trait SubscriptionScope extends TcpMockScope {
+    val settings = Settings(maxReconnections = 1, heartbeatInterval = 10.seconds, heartbeatTimeout = 20.seconds)
+    val client = TestActorRef(new ConnectionActor(settings) {
+      override def tcp = testActor
+      override def newPipeline(connection: ActorRef) = testActor
+    })
+
+    val connect = expectMsgType[Connect]
+    client ! Connected(connect.remoteAddress, new InetSocketAddress(0))
+    expectMsgType[Register]
+
+    val init = client.underlyingActor.init
+
+    foreach(List(EventStream.All, EventStream.Id("stream"))) {
+      stream =>
+        val probe = TestProbe()
+        val subscribeTo = SubscribeTo(stream)
+        client.tell(subscribeTo, probe.ref)
+        val (correlationId, credentials) = expectMsgPF() {
+          case init.Command(TcpPackageOut(id, `subscribeTo`, c)) => id -> c
+        }
+        forStream(stream, correlationId, credentials, probe)
+        success
+    }
+
+    def forStream(stream: EventStream, correlationId: Uuid, credentials: Option[UserCredentials], probe: TestProbe)
   }
 }
