@@ -16,9 +16,11 @@ trait EventStoreFormats extends EventStoreProtoFormats {
   implicit object HeartbeatResponseFormat extends EmptyFormat(HeartbeatResponse)
   implicit object PingFormat extends EmptyFormat(Ping)
   implicit object PongFormat extends EmptyFormat(Pong)
-  implicit object BadRequestFormat extends EmptyFormat(BadRequest)
   implicit object UnsubscribeFromStreamFormat extends EmptyFormat(UnsubscribeFromStream)
   implicit object ScavengeDatabaseFormat extends EmptyFormat(ScavengeDatabase)
+  implicit object BadRequestFormat extends EmptyFormat(BadRequest)
+  implicit object AuthenticateFormat extends EmptyFormat(Authenticate)
+  implicit object AuthenticatedFormat extends EmptyFormat(Authenticated)
 
   implicit object UserCredentialsFormat extends BytesFormat[UserCredentials] {
     def write(x: UserCredentials, builder: ByteStringBuilder) {

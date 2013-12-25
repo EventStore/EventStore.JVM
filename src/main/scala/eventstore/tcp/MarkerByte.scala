@@ -4,7 +4,7 @@ package tcp
 import EventStoreFormats._
 import ReadDirection._
 import akka.util.{ ByteStringBuilder, ByteIterator }
-import scala.util.{ Success, Try }
+import scala.util.{ Try, Success, Failure }
 import util.{ BytesWriter, BytesReader }
 
 object MarkerByte {
@@ -12,12 +12,14 @@ object MarkerByte {
 
   def readMessage(bi: ByteIterator): Reader = {
     val markerByte = bi.getByte
-    readers.get(markerByte).getOrElse(sys.error(s"unknown marker byte: ${"0x%02X".format(markerByte)}"))
+    readers.get(markerByte).getOrElse(sys.error(s"unknown marker byte: 0x%02X".format(markerByte)))
   }
 
   def reader[T <: In](implicit reader: BytesReader[T]): Reader = (bi: ByteIterator) => Success(reader.read(bi))
 
   def readerTry[T <: In](implicit reader: BytesReader[Try[T]]): Reader = reader.read
+
+  def readerFailure(x: EventStoreError.Value): Reader = (_: ByteIterator) => Failure(EventStoreException(x))
 
   val readers: Map[Byte, Reader] = Map[Int, Reader](
     0x01 -> reader[HeartbeatRequest.type],
@@ -54,7 +56,13 @@ object MarkerByte {
     0xC4 -> readerTry[UnsubscribeCompleted.type],
 
     //    ScavengeDatabase = 0xD0,
-    0xF0 -> reader[BadRequest.type] // TODO add test
+    0xF0 -> reader[BadRequest.type],
+    //    0xF1 -> readerFailure(EventStoreError.NotHandled),   TODO
+    0xF3 -> reader[Authenticated.type],
+    0xF4 -> readerFailure(EventStoreError.NotAuthenticated) //    NotHandled = 0xF1,
+    //    Authenticate = 0xF2,
+    //    Authenticated = 0xF3,
+    //    NotAuthenticated = 0xF4
     //    DeniedToRoute = 0xF1
     ).map {
       case (key, value) => key.toByte -> value
@@ -104,5 +112,6 @@ object MarkerByte {
     case x: SubscribeTo            => writer(0xC0, x)
     case x @ UnsubscribeFromStream => writer(0xC3, x)
     case x @ ScavengeDatabase      => writer(0xD0, x) // TODO
+    case x @ Authenticate          => writer(0xF2, x)
   }
 }

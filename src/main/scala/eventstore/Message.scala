@@ -2,18 +2,24 @@ package eventstore
 
 import scala.collection.JavaConverters._
 
-sealed trait OutLike
+sealed trait OutLike {
+  def out: Out
+}
 
-case class WithCredentials(message: Out, credentials: UserCredentials) extends OutLike
+case class WithCredentials(out: Out, credentials: UserCredentials) extends OutLike
 
 sealed trait Message
 sealed trait In extends Message
 
 sealed trait Out extends Message with OutLike {
-  def withCredentials(login: String, password: String): WithCredentials = WithCredentials(
-    message = this,
-    credentials = UserCredentials(login = login, password = password))
+  def out = this
+
+  def withCredentials(x: UserCredentials): WithCredentials = WithCredentials(this, x)
+
+  def withCredentials(login: String, password: String): WithCredentials =
+    withCredentials(UserCredentials(login = login, password = password))
 }
+
 sealed trait InOut extends In with Out
 
 case object HeartbeatRequest extends InOut
@@ -83,7 +89,7 @@ case class TransactionCommitCompleted(transactionId: Long) extends In {
 
 case class ReadEvent(
   streamId: EventStream.Id,
-  eventNumber: EventNumber,
+  eventNumber: EventNumber = EventNumber.Last, // TODO do we want default here?
   resolveLinkTos: Boolean = false,
   requireMaster: Boolean = true) extends Out
 
@@ -147,6 +153,7 @@ case class SubscribeToAllCompleted(lastCommit: Long) extends SubscribeCompleted 
   require(lastCommit >= 0, s"lastCommit must be >= 0, but is $lastCommit")
 }
 
+// TODO here are 2 happy paths Completed to existing stream and Completed to Nonexisting stream
 case class SubscribeToStreamCompleted(
     lastCommit: Long,
     lastEventNumber: Option[EventNumber.Exact] = None) extends SubscribeCompleted {
@@ -155,9 +162,12 @@ case class SubscribeToStreamCompleted(
 
 case class StreamEventAppeared(event: IndexedEvent) extends In
 
-case object UnsubscribeFromStream extends Out
+case object UnsubscribeFromStream extends Out // TODO rename
 case object UnsubscribeCompleted extends In
 
 case object ScavengeDatabase extends Out
 
-case object BadRequest extends In
+case object BadRequest extends In // TODO Failures?
+
+case object Authenticate extends Out
+case object Authenticated extends In

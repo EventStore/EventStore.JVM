@@ -36,7 +36,7 @@ case class ResolvedEvent(linkedEvent: EventRecord, linkEvent: EventRecord) exten
 }
 
 case class EventData(
-    eventId: Uuid = newUuid,
+    eventId: Uuid = newUuid, // TODO reorder
     eventType: String,
     //  dataContentType: ContentType = ContentType.Binary, TODO not yet implemented in EventStore 2.0.1
     data: ByteString = ByteString.empty,
