@@ -11,16 +11,16 @@ class WriteEventsBuilder(streamId: String) extends Builder[WriteEvents]
 
   protected val _streamId: EventStream.Id = EventStream(streamId)
 
-  def addEvent(x: EventData) = EventDataSnippet.addEvent(x)
-  def addEvents(xs: Iterable[EventData]) = EventDataSnippet.addEvents(xs)
-  def event(x: EventData) = EventDataSnippet.event(x)
-  def events(xs: Iterable[EventData]) = EventDataSnippet.events(xs)
+  def addEvent(x: EventData): WriteEventsBuilder = EventDataSnippet.addEvent(x)
+  def addEvents(xs: Iterable[EventData]): WriteEventsBuilder = EventDataSnippet.addEvents(xs)
+  def event(x: EventData): WriteEventsBuilder = EventDataSnippet.event(x)
+  def events(xs: Iterable[EventData]): WriteEventsBuilder = EventDataSnippet.events(xs)
 
-  def expectNoStream = ExpectedVersionSnippet.expectNoStream
-  def expectAnyVersion = ExpectedVersionSnippet.expectAnyVersion
-  def expectVersion(x: Int) = ExpectedVersionSnippet.expectVersion(x)
+  def expectNoStream: WriteEventsBuilder = ExpectedVersionSnippet.expectNoStream
+  def expectAnyVersion: WriteEventsBuilder = ExpectedVersionSnippet.expectAnyVersion
+  def expectVersion(x: Int): WriteEventsBuilder = ExpectedVersionSnippet.expectVersion(x)
 
-  def requireMaster(x: Boolean) = RequireMasterSnippet.requireMaster(x)
+  def requireMaster(x: Boolean): WriteEventsBuilder = RequireMasterSnippet.requireMaster(x)
 
   def build: WriteEvents = WriteEvents(
     streamId = _streamId,

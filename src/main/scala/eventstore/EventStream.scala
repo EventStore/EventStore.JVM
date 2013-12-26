@@ -4,7 +4,9 @@ sealed trait EventStream
 
 object EventStream {
 
-  def apply(id: String): Id = Id(id)
+  def apply(id: String): Id = Id(id) // TODO replace all usages of EventStream.Id(..) with EventStream(..)
+
+  //  def apply(x: UserCredentials): Id = Id("$user-" + x.login)
 
   case object All extends EventStream {
     override def toString = "Stream.All"
@@ -17,6 +19,12 @@ object EventStream {
     def isSystem = value startsWith "$"
     def isMeta = value startsWith "$$"
 
+    def meta: EventStream = EventStream("$$" + value)
+
     override def toString = s"Stream($value)"
   }
+
+  //  case class Meta(value: String) // TODO
+
+  //  case class System(value: String) // TODO
 }

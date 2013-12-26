@@ -11,29 +11,29 @@ class ReadAllEventsBuilder extends Builder[ReadAllEvents]
 
   private var _fromPosition: Position = Position.First
 
-  def fromFirstPosition = set {
+  def fromFirstPosition: ReadAllEventsBuilder = set {
     _fromPosition = Position.First
   }
 
-  def fromLastPosition = set {
+  def fromLastPosition: ReadAllEventsBuilder = set {
     _fromPosition = Position.Last
     backward
   }
 
-  def fromPosition(commitPosition: Long, preparePosition: Long) = set {
+  def fromPosition(commitPosition: Long, preparePosition: Long): ReadAllEventsBuilder = set {
     _fromPosition = Position(commitPosition, preparePosition)
   }
 
-  def maxCount(x: Int) = MaxCountSnippet.maxCount(x)
+  def maxCount(x: Int): ReadAllEventsBuilder = MaxCountSnippet.maxCount(x)
 
-  def forward = DirectionSnippet.forward
-  def backward = DirectionSnippet.backward
+  def forward: ReadAllEventsBuilder = DirectionSnippet.forward
+  def backward: ReadAllEventsBuilder = DirectionSnippet.backward
 
-  def resolveLinkTos(x: Boolean) = ResolveLinkTosSnippet.resolveLinkTos(x)
+  def resolveLinkTos(x: Boolean): ReadAllEventsBuilder = ResolveLinkTosSnippet.resolveLinkTos(x)
 
-  def requireMaster(x: Boolean) = RequireMasterSnippet.requireMaster(x)
+  def requireMaster(x: Boolean): ReadAllEventsBuilder = RequireMasterSnippet.requireMaster(x)
 
-  def build = ReadAllEvents(
+  def build: ReadAllEvents = ReadAllEvents(
     fromPosition = _fromPosition,
     maxCount = MaxCountSnippet.value,
     direction = DirectionSnippet.value,

@@ -12,29 +12,30 @@ class ReadStreamEventsBuilder(streamId: String) extends Builder[ReadStreamEvents
   protected val _streamId = EventStream(streamId)
   protected var _fromNumber: EventNumber = EventNumber.First
 
-  def fromNumber(x: Int) = set {
+  def fromNumber(x: Int): ReadStreamEventsBuilder = set {
     _fromNumber = if (x < 0) EventNumber.Last else EventNumber(x) // TODO duplicate
   }
 
-  def fromFirst = set {
+  def fromFirst: ReadStreamEventsBuilder = set {
     _fromNumber = EventNumber.First
   }
 
-  def fromLast = set {
+  def fromLast: ReadStreamEventsBuilder = set {
     _fromNumber = EventNumber.Last
     backward
   }
 
-  def maxCount(x: Int) = MaxCountSnippet.maxCount(x)
+  def maxCount(x: Int): ReadStreamEventsBuilder = MaxCountSnippet.maxCount(x)
 
-  def forward = DirectionSnippet.forward
-  def backward = DirectionSnippet.backward
+  def forward: ReadStreamEventsBuilder = DirectionSnippet.forward
 
-  def resolveLinkTos(x: Boolean) = ResolveLinkTosSnippet.resolveLinkTos(x)
+  def backward: ReadStreamEventsBuilder = DirectionSnippet.backward
 
-  def requireMaster(x: Boolean) = RequireMasterSnippet.requireMaster(x)
+  def resolveLinkTos(x: Boolean): ReadStreamEventsBuilder = ResolveLinkTosSnippet.resolveLinkTos(x)
 
-  def build = ReadStreamEvents(
+  def requireMaster(x: Boolean): ReadStreamEventsBuilder = RequireMasterSnippet.requireMaster(x)
+
+  def build: ReadStreamEvents = ReadStreamEvents(
     streamId = _streamId,
     fromNumber = _fromNumber,
     maxCount = MaxCountSnippet.value,

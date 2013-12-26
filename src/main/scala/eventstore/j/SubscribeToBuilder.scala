@@ -6,17 +6,17 @@ import Builder._
 class SubscribeToBuilder extends Builder[SubscribeTo] with ResolveLinkTosSnippet[SubscribeToBuilder] {
   var _stream: EventStream = null
 
-  def toAll() = set {
+  def toAll(): SubscribeToBuilder = set {
     _stream = EventStream.All
   }
 
-  def toStream(streamId: String) = set {
+  def toStream(streamId: String): SubscribeToBuilder = set {
     _stream = EventStream(streamId)
   }
 
-  def resolveLinkTos(x: Boolean) = ResolveLinkTosSnippet.resolveLinkTos(x)
+  def resolveLinkTos(x: Boolean): SubscribeToBuilder = ResolveLinkTosSnippet.resolveLinkTos(x)
 
-  def build = SubscribeTo(
+  def build: SubscribeTo = SubscribeTo(
     stream = _stream,
     resolveLinkTos = ResolveLinkTosSnippet.value)
 }

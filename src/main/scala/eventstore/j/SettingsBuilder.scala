@@ -22,11 +22,11 @@ class SettingsBuilder extends Builder[Settings] with RequireMasterSnippet[Settin
 
   def address(host: String): SettingsBuilder = address(new InetSocketAddress(host, Default.address.getPort))
 
-  def maxReconnections(x: Int) = set {
+  def maxReconnections(x: Int): SettingsBuilder = set {
     _maxReconnections = x
   }
 
-  def requireMaster(x: Boolean) = RequireMasterSnippet.requireMaster(x)
+  def requireMaster(x: Boolean): SettingsBuilder = RequireMasterSnippet.requireMaster(x)
 
   def reconnectionDelay(x: FiniteDuration): SettingsBuilder = set {
     _reconnectionDelay = x
@@ -45,7 +45,7 @@ class SettingsBuilder extends Builder[Settings] with RequireMasterSnippet[Settin
   def defaultCredentials(login: String, password: String): SettingsBuilder =
     defaultCredentials(UserCredentials(login = login, password = password))
 
-  def noDefaultCredentials = defaultCredentials(None)
+  def noDefaultCredentials: SettingsBuilder = defaultCredentials(None)
 
   def heartbeatInterval(x: FiniteDuration): SettingsBuilder = set {
     _heartbeatInterval = x
@@ -75,7 +75,7 @@ class SettingsBuilder extends Builder[Settings] with RequireMasterSnippet[Settin
     _backpressureSettings = x
   }
 
-  def build = Settings(
+  def build: Settings = Settings(
     address = _address,
     maxReconnections = _maxReconnections,
     requireMaster = RequireMasterSnippet.value,

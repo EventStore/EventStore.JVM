@@ -8,7 +8,7 @@ trait Builder[T] {
 trait ChainSet[T] {
   self: T =>
 
-  def set(f: => Any): T = {
+  protected def set(f: => Any): T = {
     f
     this
   }

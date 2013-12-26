@@ -42,47 +42,118 @@ public class ReadEventExample {
         final Settings settings = new SettingsBuilder()
                 .address(new InetSocketAddress("127.0.0.1", 1113))
                 .defaultCredentials("admin", "changeit")
-                .requireMaster(true)
                 .build();
         final ActorRef connection = system.actorOf(ConnectionActor.props(settings));
-        final ActorRef readEventActor = system.actorOf(Props.create(ReadEventActor.class, connection));
+        final ActorRef readResult = system.actorOf(Props.create(ReadResult.class));
+
+        final ReadEvent readEvent = new ReadEventBuilder("my-stream")
+                .eventNumberFirst()
+                .resolveLinkTos(false)
+                .requireMaster(true)
+                .build();
+
+        connection.tell(readEvent, readResult);
     }
 
 
-    public static class ReadEventActor extends UntypedActor {
+    public static class ReadResult extends UntypedActor {
         final LoggingAdapter log = Logging.getLogger(getContext().system(), this);
-
-        ActorRef connection;
-
-        public ReadEventActor(ActorRef connection) {
-            this.connection = connection;
-        }
-
-        @Override
-        public void preStart() throws Exception {
-            final ReadEvent readEvent = new ReadEventBuilder("my-stream")
-                    .eventNumberFirst()
-                    .resolveLinkTos(false)
-                    .requireMaster(true)
-                    .build();
-
-            connection.tell(readEvent, getSelf());
-        }
 
         public void onReceive(Object message) throws Exception {
             if (message instanceof ReadEventCompleted) {
                 final ReadEventCompleted completed = (ReadEventCompleted) message;
                 final Event event = completed.event();
-                log.info("EVENT: " + event.toString());
+                log.info("event: {}", event);
             } else if (message instanceof Failure) {
                 final Failure failure = ((Failure) message);
                 final EventStoreException exception = (EventStoreException) failure.cause();
-                log.error("FAILED: reason: {}, message: {}", exception.reason(), exception.message());
+                log.error("reason: {}, message: {}", exception.reason(), exception.message());
             } else
                 unhandled(message);
+
+            context().system().shutdown();
         }
     }
 }
+```
+
+### Write event
+
+```java
+import akka.actor.*;
+import akka.event.Logging;
+import akka.event.LoggingAdapter;
+import eventstore.*;
+import eventstore.j.EventDataBuilder;
+import eventstore.j.WriteEventsBuilder;
+import eventstore.tcp.ConnectionActor;
+
+import java.util.UUID;
+
+public class WriteEventExample {
+    public static void main(String[] args) {
+        final ActorSystem system = ActorSystem.create();
+        final ActorRef connection = system.actorOf(ConnectionActor.props(Settings.Default()));
+        final ActorRef writeResult = system.actorOf(Props.create(WriteResult.class));
+
+        final EventData event = new EventDataBuilder("my-event")
+                .eventId(UUID.randomUUID())
+                .data("my event data")
+                .metadata("my first event")
+                .build();
+
+        final WriteEvents writeEvents = new WriteEventsBuilder("my-stream")
+                .addEvent(event)
+                .expectAnyVersion()
+                .build();
+
+        connection.tell(writeEvents, writeResult);
+    }
+
+
+    public static class WriteResult extends UntypedActor {
+        final LoggingAdapter log = Logging.getLogger(getContext().system(), this);
+
+        public void onReceive(Object message) throws Exception {
+            if (message instanceof WriteEventsCompleted) {
+                final WriteEventsCompleted completed = (WriteEventsCompleted) message;
+                final EventNumber.Exact eventNumber = completed.firstEventNumber();
+                log.info("eventNumber: {}", eventNumber);
+            } else if (message instanceof Status.Failure) {
+                final Status.Failure failure = ((Status.Failure) message);
+                final EventStoreException exception = (EventStoreException) failure.cause();
+                log.error("reason: {}, message: {}", exception.reason(), exception.message());
+            } else
+                unhandled(message);
+
+            context().system().shutdown();
+        }
+    }
+}
+```
+
+### Build event
+
+```java
+    final EventData empty = new EventDataBuilder("empty").build();
+
+    final EventData binary = new EventDataBuilder("binary")
+            .eventId(UUID.randomUUID())
+            .data(new byte[]{1, 2, 3, 4})
+            .metadata(new byte[]{5, 6, 7, 8})
+            .build();
+
+    final EventData string = new EventDataBuilder("string")
+            .eventId(UUID.randomUUID())
+            .data("data")
+            .metadata("metadata")
+            .build();
+
+    final EventData json = new EventDataBuilder("json")
+            .eventId(UUID.randomUUID())
+            .jsonData("{\"data\":\"data\"}")
+            .jsonMetadata("{\"metadata\":\"metadata\"}")
+            .build();
 ```
 
 ## Scala examples
@@ -104,18 +175,51 @@ object ReadEventExample extends App {
     defaultCredentials = Some(UserCredentials("admin", "changeit")))
 
   val connection = system.actorOf(ConnectionActor.props(settings))
-  system.actorOf(Props(classOf[ReadEventActor], connection))
+  implicit val readResult = system.actorOf(Props(classOf[ReadResult]))
+
+  connection ! ReadEvent(EventStream("my-stream"), EventNumber.First)
+
+  class ReadResult extends Actor with ActorLogging {
+    def receive = {
+      case ReadEventCompleted(event) =>
+        log.info(s"event: $event")
+        context.system.shutdown()
+
+      case Failure(EventStoreException(reason, message, _)) =>
+        log.error(s"reason: $reason, message: $message")
+        context.system.shutdown()
+    }
+  }
 }
+```
 
-class ReadEventActor(connection: ActorRef) extends Actor with ActorLogging {
+### Write event
 
-  connection ! ReadEvent(
-    streamId = EventStream.Id("my-stream"),
-    eventNumber = EventNumber.First)
+```scala
+import akka.actor.Status.Failure
+import akka.actor.{ ActorLogging, Actor, Props, ActorSystem }
+import eventstore._
+import eventstore.tcp.ConnectionActor
 
-  def receive = {
-    case ReadEventCompleted(event)                        => log.info(s"SUCCEED: $event")
-    case Failure(EventStoreException(reason, message, _)) => log.error(s"FAILED: reason $reason, message: $message")
+object WriteEventExample extends App {
+  val system = ActorSystem()
+  val connection = system.actorOf(ConnectionActor.props())
+  implicit val writeResult = system.actorOf(Props(classOf[WriteResult]))
+
+  val event = EventData("my-event", newUuid, data = Content("my event data"), metadata = Content("my first event"))
+
+  connection ! WriteEvents(EventStream("my-stream"), List(event))
+
+  class WriteResult extends Actor with ActorLogging {
+    def receive = {
+      case WriteEventsCompleted(eventNumber) =>
+        log.info(s"eventNumber: $eventNumber")
+        context.system.shutdown()
+
+      case Failure(EventStoreException(reason, message, _)) =>
+        log.error(s"reason $reason, message: $message")
+        context.system.shutdown()
+    }
   }
 }
 ```
@@ -136,9 +240,9 @@ object StartTransactionExample extends App {
   val transaction = system.actorOf(TransactionActor.props(connection, kickoff))
 
   transaction ! GetTransactionId // replies with `TransactionId(transactionId)`
-  transaction ! Write(EventData(eventType = "transaction-event")) // replies with `WriteCompleted`
-  transaction ! Write(EventData(eventType = "transaction-event")) // replies with `WriteCompleted`
-  transaction ! Write(EventData(eventType = "transaction-event")) // replies with `WriteCompleted`
+  transaction ! Write(EventData("transaction-event")) // replies with `WriteCompleted`
+  transaction ! Write(EventData("transaction-event")) // replies with `WriteCompleted`
+  transaction ! Write(EventData("transaction-event")) // replies with `WriteCompleted`
   transaction ! Commit // replies with `CommitCompleted`
 }
 ```
@@ -160,9 +264,9 @@ object ContinueTransactionExample extends App {
   val transaction = system.actorOf(TransactionActor.props(connection, kickoff))
 
   transaction ! GetTransactionId // replies with `TransactionId(transactionId)`
-  transaction ! Write(EventData(eventType = "transaction-event")) // replies with `WriteCompleted`
-  transaction ! Write(EventData(eventType = "transaction-event")) // replies with `WriteCompleted`
-  transaction ! Write(EventData(eventType = "transaction-event")) // replies with `WriteCompleted`
+  transaction ! Write(EventData("transaction-event")) // replies with `WriteCompleted`
+  transaction ! Write(EventData("transaction-event")) // replies with `WriteCompleted`
+  transaction ! Write(EventData("transaction-event")) // replies with `WriteCompleted`
   transaction ! Commit // replies with `CommitCompleted`
 }
 ```

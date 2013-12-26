@@ -15,17 +15,19 @@ object ReadEventExample extends App {
     defaultCredentials = Some(UserCredentials("admin", "changeit")))
 
   val connection = system.actorOf(ConnectionActor.props(settings))
-  system.actorOf(Props(classOf[ReadEventActor], connection))
-}
+  implicit val readResult = system.actorOf(Props(classOf[ReadResult]))
 
-class ReadEventActor(connection: ActorRef) extends Actor with ActorLogging {
+  connection ! ReadEvent(EventStream("my-stream"), EventNumber.First)
 
-  connection ! ReadEvent(
-    streamId = EventStream.Id("my-stream"),
-    eventNumber = EventNumber.First)
+  class ReadResult extends Actor with ActorLogging {
+    def receive = {
+      case ReadEventCompleted(event) =>
+        log.info(s"event: $event")
+        context.system.shutdown()
 
-  def receive = {
-    case ReadEventCompleted(event)                        => log.info(s"SUCCEED: $event")
-    case Failure(EventStoreException(reason, message, _)) => log.error(s"FAILED: reason $reason, message: $message")
+      case Failure(EventStoreException(reason, message, _)) =>
+        log.error(s"reason: $reason, message: $message")
+        context.system.shutdown()
+    }
   }
 }

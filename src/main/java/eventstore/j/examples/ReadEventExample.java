@@ -1,4 +1,4 @@
-package eventstore.javaexamples;
+package eventstore.j.examples;
 
 import akka.actor.*;
 import akka.actor.Status.Failure;
@@ -19,41 +19,34 @@ public class ReadEventExample {
                 .defaultCredentials("admin", "changeit")
                 .build();
         final ActorRef connection = system.actorOf(ConnectionActor.props(settings));
-        final ActorRef readEventActor = system.actorOf(Props.create(ReadEventActor.class, connection));
+        final ActorRef readResult = system.actorOf(Props.create(ReadResult.class));
+
+        final ReadEvent readEvent = new ReadEventBuilder("my-stream")
+                .eventNumberFirst()
+                .resolveLinkTos(false)
+                .requireMaster(true)
+                .build();
+
+        connection.tell(readEvent, readResult);
     }
 
 
-    public static class ReadEventActor extends UntypedActor {
+    public static class ReadResult extends UntypedActor {
         final LoggingAdapter log = Logging.getLogger(getContext().system(), this);
-
-        ActorRef connection;
-
-        public ReadEventActor(ActorRef connection) {
-            this.connection = connection;
-        }
-
-        @Override
-        public void preStart() throws Exception {
-            final ReadEvent readEvent = new ReadEventBuilder("my-stream")
-                    .eventNumberFirst()
-                    .resolveLinkTos(false)
-                    .requireMaster(true)
-                    .build();
-
-            connection.tell(readEvent, getSelf());
-        }
 
         public void onReceive(Object message) throws Exception {
             if (message instanceof ReadEventCompleted) {
                 final ReadEventCompleted completed = (ReadEventCompleted) message;
                 final Event event = completed.event();
-                log.info("EVENT: " + event.toString());
+                log.info("event: {}", event);
             } else if (message instanceof Failure) {
                 final Failure failure = ((Failure) message);
                 final EventStoreException exception = (EventStoreException) failure.cause();
-                log.error("FAILED: reason: {}, message: {}", exception.reason(), exception.message());
+                log.error("reason: {}, message: {}", exception.reason(), exception.message());
             } else
                 unhandled(message);
+
+            context().system().shutdown();
         }
     }
 }
