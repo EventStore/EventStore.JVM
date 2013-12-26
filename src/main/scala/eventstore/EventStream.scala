@@ -4,7 +4,7 @@ sealed trait EventStream
 
 object EventStream {
 
-  def apply(id: String): Id = Id(id) // TODO replace all usages of EventStream.Id(..) with EventStream(..)
+  def apply(id: String): Id = Id(id)
 
   //  def apply(x: UserCredentials): Id = Id("$user-" + x.login)
 

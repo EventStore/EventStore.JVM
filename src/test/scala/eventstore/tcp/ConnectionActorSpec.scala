@@ -388,7 +388,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
 
     val init = client.underlyingActor.init
 
-    foreach(List(EventStream.All, EventStream.Id("stream"))) {
+    foreach(List(EventStream.All, EventStream("stream"))) {
       stream =>
         val probe = TestProbe()
         val subscribeTo = SubscribeTo(stream)

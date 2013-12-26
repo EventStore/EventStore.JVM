@@ -189,7 +189,7 @@ abstract class TestConnection extends util.ActorSpec {
     def allStreamsEventsData(maxCount: Int = 500)(implicit direction: ReadDirection.Value) =
       allStreamsEvents(maxCount).map(_.event.data)
 
-    def newStreamId = EventStream.Id(getClass.getEnclosingClass.getSimpleName + "-" + newUuid.toString)
+    def newStreamId = EventStream(getClass.getEnclosingClass.getSimpleName + "-" + newUuid.toString)
   }
 }
 

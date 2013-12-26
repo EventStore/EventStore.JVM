@@ -338,7 +338,7 @@ class StreamCatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActo
   }
 
   abstract class StreamCatchUpScope(eventNumber: Option[Int] = None) extends AbstractScope {
-    lazy val streamId = EventStream.Id(getClass.getEnclosingClass.getSimpleName + "-" + newUuid.toString)
+    lazy val streamId = EventStream(getClass.getEnclosingClass.getSimpleName + "-" + newUuid.toString)
 
     def props = StreamCatchUpSubscriptionActor.props(
       connection = connection.ref,
