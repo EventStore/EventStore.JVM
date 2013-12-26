@@ -4,25 +4,29 @@ import ContentType._
 
 class ContentTypeITest extends TestConnection {
   "content type" should {
-    "be received " in new TestConnectionScope {
-      val contentTypes = Unknown(Known.last.value + 1) :: Known.toList
-
-      for {
+    "be correctly stored and retrieved" in new TestConnectionScope {
+      val contentTypes = /*Unknown(Known.last.value + 1) :: TODO*/ Known.toList
+      val variants = for {
         dataContentType <- contentTypes
         metadataContentType <- contentTypes
-      } yield {
-        val number = append(EventData(
-          newUuid, s"$dataContentType/$metadataContentType",
-          //          dataContentType = dataContentType,
-          data = ByteString(s"""{"data":"data", "contentType":"$dataContentType"}"""),
-          //          metadataContentType = metadataContentType,
-          metadata = ByteString(s"""{"metadata":"metadata", "contentType":"$metadataContentType"}"""))).number
+      } yield dataContentType -> metadataContentType
 
-        val actual = readEventCompleted(number).data
-        //        actual.dataContentType mustEqual dataContentType
-        //        actual.metadataContentType mustEqual metadataContentType
-        todo
+      def content(x: ContentType): Content = Content(x match {
+        case ContentType.Json   => ByteString(s"""{"data":"data", "contentType":"$x"}""")
+        case ContentType.Binary => ByteString(Array[Byte](0, 1, 2, 3, 4, 5, 6, 7))
+      }, x)
+
+      foreach(variants) {
+        case (dataContentType, metadataContentType) =>
+          val expected = EventData(
+            eventType = s"$dataContentType/$metadataContentType",
+            data = content(dataContentType),
+            metadata = content(metadataContentType))
+
+          val number = append(expected).number
+          val actual = readEventCompleted(number).data
+          actual mustEqual expected
       }
-    }
+    }.pendingUntilFixed
   }
 }

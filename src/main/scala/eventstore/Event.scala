@@ -10,10 +10,10 @@ sealed trait Event extends Ordered[Event] {
 
   def compare(that: Event) = this.number.value compare that.number.value
 
-  def link(eventId: Uuid, metadata: ByteString = ByteString()): EventData = EventData(
-    eventId = eventId,
+  def link(eventId: Uuid, metadata: Content = Content()): EventData = EventData(
     eventType = EvenType.LinkTo,
-    data = ByteString(s"${number.value}@${streamId.value}"),
+    eventId = eventId,
+    data = Content(s"${number.value}@${streamId.value}"),
     metadata = metadata)
 }
 
@@ -35,22 +35,49 @@ case class ResolvedEvent(linkedEvent: EventRecord, linkEvent: EventRecord) exten
   def record = linkEvent
 }
 
+case class Content(value: ByteString = ByteString.empty, contentType: ContentType = ContentType.Binary)
+  extends BetterToString
+
+object Content {
+  val empty = Content()
+
+  def apply(content: String): Content = Content(ByteString(content))
+
+  def apply(content: Array[Byte]): Content = Content(ByteString(content))
+
+  object Json {
+    def apply(content: String): Content = Content(ByteString(content), ContentType.Json)
+
+    def unapply(content: Content): Option[String] = PartialFunction.condOpt(content) {
+      case Content(x, ContentType.Json) => x.utf8String
+    }
+  }
+}
+
 case class EventData(
-    eventId: Uuid = newUuid, // TODO reorder
     eventType: String,
-    //  dataContentType: ContentType = ContentType.Binary, TODO not yet implemented in EventStore 2.0.1
-    data: ByteString = ByteString.empty,
-    //  metadataContentType: ContentType = ContentType.Binary, TODO not yet implemented in EventStore 2.0.1
-    metadata: ByteString = ByteString.empty) extends BetterToString {
+    eventId: Uuid = newUuid,
+    data: Content = Content(),
+    metadata: Content = Content()) {
   require(eventType != null, "eventType is null")
   require(eventType.nonEmpty, "eventType is empty")
 }
 
 object EventData {
+
+  object Json {
+    def apply(eventType: String, eventId: Uuid = newUuid, data: String = "", metadata: String = ""): EventData =
+      EventData(eventType, eventId, data = Content.Json(data), metadata = Content.Json(metadata))
+  }
+
   object StreamDeleted {
+    import Content.empty
+
     def unapply(x: EventData): Option[Uuid] = PartialFunction.condOpt(x) {
-      case EventData(eventId, EvenType.StreamDeleted, /*ContentType.Binary,*/ ByteString.empty, /*ContentType.Binary,*/ ByteString.empty) => eventId
+      case EventData(EvenType.StreamDeleted, eventId, `empty`, `empty`) => eventId
     }
+
+    def apply(eventId: Uuid): EventData = EventData(EvenType.StreamDeleted, eventId, empty, empty)
   }
 }
 

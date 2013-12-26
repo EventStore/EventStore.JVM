@@ -21,11 +21,9 @@ abstract class TestConnection extends util.ActorSpec {
     }
 
     def newEventData: EventData = EventData(
-      newUuid, "test",
-      //      dataContentType = ContentType.Json,
-      data = ByteString("""{"data":"data"}"""),
-      //      metadataContentType = ContentType.Json,
-      metadata = ByteString("""{"metadata":"metadata"}"""))
+      "test",
+      data = Content("""{"data":"data"}"""),
+      metadata = Content("""{"metadata":"metadata"}"""))
 
     def writeEventsCompleted(
       events: List[EventData],

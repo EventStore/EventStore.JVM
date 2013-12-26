@@ -14,8 +14,8 @@ object ContinueTransactionExample extends App {
   val transaction = system.actorOf(TransactionActor.props(connection, kickoff))
 
   transaction ! GetTransactionId // replies with `TransactionId(transactionId)`
-  transaction ! Write(EventData(eventType = "transaction-event")) // replies with `WriteCompleted`
-  transaction ! Write(EventData(eventType = "transaction-event")) // replies with `WriteCompleted`
-  transaction ! Write(EventData(eventType = "transaction-event")) // replies with `WriteCompleted`
+  transaction ! Write(EventData("transaction-event")) // replies with `WriteCompleted`
+  transaction ! Write(EventData("transaction-event")) // replies with `WriteCompleted`
+  transaction ! Write(EventData("transaction-event")) // replies with `WriteCompleted`
   transaction ! Commit // replies with `CommitCompleted`
 }

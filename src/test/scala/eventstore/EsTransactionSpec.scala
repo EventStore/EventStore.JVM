@@ -85,7 +85,7 @@ class EsTransactionSpec extends ActorSpec {
     }
 
     def write = {
-      val events = List(EventData(eventType = "test"))
+      val events = List(EventData("test"))
       val future = transaction.write(events)
       expectMsg(Write(events))
       future

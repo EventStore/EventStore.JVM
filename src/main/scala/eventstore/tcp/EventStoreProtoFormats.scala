@@ -1,12 +1,12 @@
 package eventstore
 package tcp
 
-import scala.language.reflectiveCalls
-import scala.PartialFunction.condOpt
-import eventstore.util.DefaultFormats
 import ReadDirection.{ Backward, Forward }
-import scala.util.Try
 import eventstore.proto.OperationResult
+import eventstore.util.DefaultFormats
+import scala.PartialFunction.condOpt
+import scala.language.reflectiveCalls
+import scala.util.Try
 
 object EventStoreProtoFormats extends EventStoreProtoFormats
 
@@ -56,12 +56,10 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
     def toProto(x: EventData) = proto.NewEvent(
       `eventId` = protoByteString(x.eventId),
       `eventType` = x.eventType,
-      //      `dataContentType` = x.dataContentType.value, TODO
-      //      `metadataContentType` = x.metadataContentType.value, TODO
-      `dataContentType` = ContentType.Binary.value,
-      `metadataContentType` = ContentType.Binary.value,
-      `data` = protoByteString(x.data),
-      `metadata` = protoByteStringOption(x.metadata))
+      `dataContentType` = x.data.contentType.value,
+      `data` = protoByteString(x.data.value),
+      `metadataContentType` = x.metadata.contentType.value,
+      `metadata` = protoByteStringOption(x.metadata.value))
   }
 
   implicit object EventRecordReader extends ProtoReader[EventRecord, proto.EventRecord] {
@@ -72,12 +70,10 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
       streamId = EventStream(x.`eventStreamId`),
       number = EventNumber(x.`eventNumber`),
       data = EventData(
-        eventId = uuid(x.`eventId`),
         eventType = x.`eventType`,
-        //        dataContentType = ContentType(x.`dataContentType`),
-        data = byteString(x.`data`),
-        //        metadataContentType = ContentType(x.`metadataContentType`),
-        metadata = byteString(x.`metadata`)))
+        eventId = uuid(x.`eventId`),
+        data = Content(byteString(x.`data`), ContentType(x.`dataContentType`)),
+        metadata = Content(byteString(x.`metadata`), ContentType(x.`metadataContentType`))))
   }
 
   implicit object IndexedEventReader extends ProtoReader[IndexedEvent, proto.ResolvedEvent] {
@@ -210,6 +206,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
 
   abstract class ReadStreamEventsCompletedReader(direction: ReadDirection.Value)
       extends ProtoTryReader[ReadStreamEventsCompleted, proto.ReadStreamEventsCompleted] {
+
     import eventstore.proto.ReadStreamEventsCompleted.ReadStreamResult._
 
     def provider = proto.ReadStreamEventsCompleted
@@ -311,6 +308,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
   }
 
   implicit object SubscriptionDroppedReader extends ProtoTryReader[UnsubscribeCompleted.type, proto.SubscriptionDropped] {
+
     import eventstore.proto.SubscriptionDropped.SubscriptionDropReason._
 
     def provider = proto.SubscriptionDropped

@@ -3,40 +3,40 @@ package j
 
 class EventDataBuilder(val eventType: String) extends Builder[EventData] with ChainSet[EventDataBuilder] {
   protected var _eventId: Uuid = newUuid
-  protected var _data: ByteString = ByteString.empty
-  protected var _metadata: ByteString = ByteString.empty
+  protected var _data: Content = Content.empty
+  protected var _metadata: Content = Content.empty
 
-  def eventId(x: Uuid) = set {
+  def eventId(x: Uuid): EventDataBuilder = set {
     _eventId = x
   }
 
-  def data(x: ByteString) = set {
+  def data(x: Content): EventDataBuilder = set {
     _data = x
   }
 
-  def data(x: String) = set {
-    _data = ByteString(x)
-  }
+  def data(x: ByteString): EventDataBuilder = data(Content(x))
 
-  def data(xs: Array[Byte]) = set {
-    _data = ByteString(xs)
-  }
+  def data(x: String): EventDataBuilder = data(Content(x))
 
-  def metadata(x: ByteString) = set {
+  def data(xs: Array[Byte]): EventDataBuilder = data(Content(xs))
+
+  def jsonData(x: String): EventDataBuilder = data(Content.Json(x))
+
+  def metadata(x: Content): EventDataBuilder = set {
     _metadata = x
   }
 
-  def metadata(x: String) = set {
-    _metadata = ByteString(x)
-  }
+  def metadata(x: ByteString): EventDataBuilder = metadata(Content(x))
 
-  def metadata(xs: Array[Byte]) = set {
-    _metadata = ByteString(xs)
-  }
+  def metadata(x: String): EventDataBuilder = metadata(Content(x))
 
-  def build = EventData(
-    eventId = _eventId,
+  def metadata(xs: Array[Byte]): EventDataBuilder = metadata(Content(xs))
+
+  def jsonMetadata(x: String): EventDataBuilder = metadata(Content.Json(x))
+
+  def build: EventData = EventData(
     eventType = eventType,
+    eventId = _eventId,
     data = _data,
     metadata = _metadata)
 }

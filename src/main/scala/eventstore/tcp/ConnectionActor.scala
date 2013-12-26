@@ -79,8 +79,10 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
 
       case Tcp.CommandFailed(_: Tcp.Connect) =>
         log.error(s"connection failed to $address")
-        if (reconnectionsLeft == 0) context stop self
-        else {
+        if (reconnectionsLeft == 0) {
+          // TODO tell all waiting sender about this
+          context stop self
+        } else {
           reconnect()
           context become connecting(stash, reconnectionsLeft - 1)
         }

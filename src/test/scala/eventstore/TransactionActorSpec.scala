@@ -188,7 +188,8 @@ class TransactionActorSpec extends ActorSpec {
       expectMsg(TransactionId(transactionId))
     }
 
-    def events(label: String) = List(EventData(eventType = label))
+    def events(label: String) = List(EventData(label))
+
     def kickOff: Kickoff
   }
 

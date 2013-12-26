@@ -2,7 +2,6 @@ package eventstore
 
 import scala.collection.SortedSet
 
-// TODO not yet implemented in EventStore 2.0.1
 sealed trait ContentType {
   def value: Int
 }
@@ -10,7 +9,7 @@ sealed trait ContentType {
 object ContentType {
   val Known: SortedSet[Known] = SortedSet[Known](Binary, Json)(Ordering.by(_.value))
 
-  def apply(value: Int) = Known.find(_.value == value) getOrElse Unknown(value)
+  def apply(value: Int) = Known.find(_.value == value) getOrElse Binary
 
   sealed trait Known extends ContentType
 
@@ -24,11 +23,12 @@ object ContentType {
     override def toString = "ContentType.Json"
   }
 
+  /*TODO not yet implemented in EventStore 2.0.1
   case class Unknown(value: Int) extends ContentType {
     require(value > Known.last.value,
       if (value < Known.head.value) s"content type must be > ${Known.last.value}, but is $value"
       else s"please use ${Known.find(_.value == value).get} instead of $toString")
 
     override def toString = s"ContentType.Unknown($value)"
-  }
+  }*/
 }

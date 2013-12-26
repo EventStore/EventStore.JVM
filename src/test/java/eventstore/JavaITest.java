@@ -18,8 +18,8 @@ public class JavaITest extends ActorTest {
     EventData newEventData() {
         return new EventDataBuilder("java-test")
                 .eventId(newUuid())
-                .data("{\"data\":\"data\"}")
-                .metadata("{\"metadata\":\"metadata\"}")
+                .jsonData("{\"data\":\"data\"}")
+                .jsonMetadata("{\"metadata\":\"metadata\"}")
                 .build();
     }
 
