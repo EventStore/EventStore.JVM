@@ -40,7 +40,7 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
 
   var subscriptions = Set[ActorRef]() // TODO part of connected state
 
-  def receive = connecting(Queue(), maxReconnections) // TODO use 0 and fix tests
+  def receive = connecting(Queue(), 0)
 
   def newPipeline(connection: ActorRef): ActorRef =
     context.actorOf(TcpPipelineHandler.props(init, connection, self))
@@ -80,7 +80,7 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
       case Tcp.CommandFailed(_: Tcp.Connect) =>
         log.error(s"connection failed to $address")
         if (reconnectionsLeft == 0) {
-          // TODO tell all waiting sender about this
+          // TODO notify senders about this
           context stop self
         } else {
           reconnect()

@@ -18,6 +18,34 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
 
   "Connection Actor" should {
 
+    "receive init.Event while connecting" in new TestScope {
+      client ! Authenticate
+      val correlationId = client.underlyingActor.binding.y(testActor).get
+      client ! init.Event(TcpPackageIn(correlationId, Success(Authenticated)))
+      expectMsg(Authenticated)
+    }
+
+    "receive init.Event while connected" in new TestScope {
+      sendConnected()
+
+      client ! Authenticate
+      val correlationId = pipeline.expectMsgPF() {
+        case init.Command(TcpPackageOut(x, Authenticate, `credentials`)) => x
+      }
+
+      client ! init.Event(TcpPackageIn(newUuid, Success(Authenticated)))
+      expectNoMsg(duration)
+
+      client ! init.Event(TcpPackageIn(correlationId, Success(Authenticated)))
+      expectMsg(Authenticated)
+    }
+
+    "not reconnect if never connected before" in new TestScope {
+      client ! CommandFailed(connect)
+      expectNoMsgs()
+      expectTerminated()
+    }
+
     "not reconnect when connection lost if maxReconnections == 0" in new TcpScope {
       val (_, tcpConnection) = connect(settings.copy(maxReconnections = 0))
       tcpConnection ! Abort
@@ -32,59 +60,40 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       expectMsgType[Connected]
     }
 
-    "reconnect when connection actor died" in new TcpMockScope {
-      val settings = Settings(maxReconnections = 1, reconnectionDelay = Duration.Zero)
-      val client = newClient(settings)
-      val connect = expectMsgType[Connect]
-      val connection = TestProbe()
-      client.tell(Connected(connect.remoteAddress, new InetSocketAddress(0)), connection.ref)
-      connection.expectMsgType[Register]
+    "reconnect when connection actor died" in new TestScope {
+      sendConnected()
       system stop connection.ref
       verifyReconnections(settings.maxReconnections)
-      expectNoMsg()
+      expectNoMsgs()
+
+      override def settings = Settings(maxReconnections = 1, reconnectionDelay = Duration.Zero)
     }
 
-    "reconnect when pipeline actor died" in new TcpMockScope {
-      val settings = Settings(maxReconnections = 1, reconnectionDelay = Duration.Zero)
-      val client = newClient(settings)
-      val connect = expectMsgType[Connect]
-      val connection = TestProbe()
-      client.tell(Connected(connect.remoteAddress, new InetSocketAddress(0)), connection.ref)
-      val pipeline = connection.expectMsgType[Register].handler
-      system stop pipeline
+    "reconnect when pipeline actor died" in new TestScope {
+      sendConnected()
+      system stop pipeline.ref
       verifyReconnections(settings.maxReconnections)
-      expectNoMsg()
+      expectNoMsgs()
+
+      override def settings = Settings(maxReconnections = 1, reconnectionDelay = Duration.Zero)
     }
 
-    "keep trying to reconnect for maxReconnections times" in new TcpMockScope {
-      val settings = Settings(maxReconnections = 3)
-      newClient(settings)
-      verifyReconnections(settings.maxReconnections)
-      expectNoMsg()
-    }
-
-    "keep trying to reconnect for maxReconnections times when connection lost" in new TcpMockScope {
-      val settings = Settings(maxReconnections = 3)
-      val client = newClient(settings)
-      val connect = expectMsgType[Connect]
-      client ! Connected(connect.remoteAddress, new InetSocketAddress(0))
-      expectMsgType[Register]
+    "keep trying to reconnect for maxReconnections times" in new TestScope {
+      sendConnected()
       client ! PeerClosed
       verifyReconnections(settings.maxReconnections)
-      expectNoMsg()
+      expectNoMsgs()
+
+      override def settings = Settings(maxReconnections = 5, reconnectionDelay = Duration.Zero)
     }
 
-    "use reconnectionDelay from settings" in new TcpMockScope {
-      val settings = Settings(maxReconnections = 3, reconnectionDelay = 2.seconds)
-      val client = newClient(settings)
+    "use reconnectionDelay from settings" in new TestScope {
+      sendConnected()
+      client ! PeerClosed
+      tcp.expectNoMsg(300.millis)
+      verifyReconnections(settings.maxReconnections)
 
-      val connect = expectMsgType[Connect]
-      client ! CommandFailed(connect)
-
-      expectNoMsg(1.second)
-
-      expectMsgType[Connect]
-      client ! CommandFailed(connect)
+      override def settings = Settings(maxReconnections = 3, reconnectionDelay = 500.millis)
     }
 
     "reconnect if heartbeat timed out" in new TcpScope {
@@ -235,7 +244,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       def forStream(stream: EventStream, correlationId: eventstore.Uuid, credentials: Option[UserCredentials], probe: TestProbe) {
         client ! init.Event(TcpPackageIn(correlationId, Try(SubscribeToStreamCompleted(0))))
         system stop probe.ref
-        expectMsg(init.Command(TcpPackageOut(correlationId, UnsubscribeFromStream, credentials)))
+        pipeline.expectMsg(init.Command(TcpPackageOut(correlationId, UnsubscribeFromStream, credentials)))
       }
     }
 
@@ -345,21 +354,6 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     }
   }
 
-  abstract class TcpMockScope extends ActorScope {
-    //    val pipeline = TestProbe()
-    def newClient(settings: Settings = Settings()) = TestActorRef(new ConnectionActor(settings) {
-      override def tcp = testActor
-    })
-
-    def verifyReconnections(n: Int) {
-      if (n >= 0) {
-        val connect = expectMsgType[Connect]
-        lastSender ! CommandFailed(connect)
-        verifyReconnections(n - 1)
-      }
-    }
-  }
-
   trait SecurityScope extends TcpScope {
     def ?(default: Option[UserCredentials] = None, withMessage: Option[UserCredentials] = None) = {
       val (connection, _) = connect(settings.copy(defaultCredentials = default))
@@ -375,25 +369,15 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     }
   }
 
-  trait SubscriptionScope extends TcpMockScope {
-    val settings = Settings(maxReconnections = 1, heartbeatInterval = 10.seconds, heartbeatTimeout = 20.seconds)
-    val client = TestActorRef(new ConnectionActor(settings) {
-      override def tcp = testActor
-      override def newPipeline(connection: ActorRef) = testActor
-    })
-
-    val connect = expectMsgType[Connect]
-    client ! Connected(connect.remoteAddress, new InetSocketAddress(0))
-    expectMsgType[Register]
-
-    val init = client.underlyingActor.init
+  trait SubscriptionScope extends TestScope {
+    sendConnected()
 
     foreach(List(EventStream.All, EventStream("stream"))) {
       stream =>
         val probe = TestProbe()
         val subscribeTo = SubscribeTo(stream)
         client.tell(subscribeTo, probe.ref)
-        val (correlationId, credentials) = expectMsgPF() {
+        val (correlationId, credentials) = pipeline.expectMsgPF() {
           case init.Command(TcpPackageOut(id, `subscribeTo`, c)) => id -> c
         }
         forStream(stream, correlationId, credentials, probe)
@@ -401,5 +385,57 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     }
 
     def forStream(stream: EventStream, correlationId: Uuid, credentials: Option[UserCredentials], probe: TestProbe)
+
+    override def settings = Settings(maxReconnections = 1, heartbeatInterval = 10.seconds, heartbeatTimeout = 20.seconds)
+  }
+
+  trait TestScope extends ActorScope {
+    val duration = 1.second
+    val credentials = settings.defaultCredentials
+    val connect = Connect(settings.address, timeout = Some(settings.connectionTimeout))
+
+    val tcp = TestProbe()
+    val pipeline = TestProbe()
+    val connection = TestProbe()
+
+    val client = TestActorRef(new ConnectionActor(settings) {
+      override def tcp = TestScope.this.tcp.ref
+      override def newPipeline(connection: ActorRef) = TestScope.this.pipeline.ref
+    })
+
+    val init = client.underlyingActor.init
+
+    expectConnect()
+
+    def settings = Settings()
+
+    def expectConnect() {
+      tcp expectMsg connect
+    }
+
+    def sendConnected() {
+      client.tell(Connected(settings.address, new InetSocketAddress(0)), connection.ref)
+      connection expectMsg Register(pipeline.ref)
+    }
+
+    def expectNoMsgs() {
+      tcp.expectNoMsg(duration)
+      pipeline.expectNoMsg(duration)
+      expectNoMsg(duration)
+    }
+
+    def expectTerminated() {
+      val deathWatch = TestProbe()
+      deathWatch watch client
+      deathWatch.expectMsgPF() {
+        case Terminated(`client`) => true
+      }
+    }
+
+    def verifyReconnections(n: Int): Unit = if (n >= 0) {
+      expectConnect()
+      client ! CommandFailed(connect)
+      verifyReconnections(n - 1)
+    }
   }
 }
