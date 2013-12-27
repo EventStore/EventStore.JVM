@@ -15,7 +15,7 @@ object ReadEventExample extends App {
     defaultCredentials = Some(UserCredentials("admin", "changeit")))
 
   val connection = system.actorOf(ConnectionActor.props(settings))
-  implicit val readResult = system.actorOf(Props(classOf[ReadResult]))
+  implicit val readResult = system.actorOf(Props[ReadResult])
 
   connection ! ReadEvent(EventStream("my-stream"), EventNumber.First)
 

@@ -8,7 +8,7 @@ import eventstore.tcp.ConnectionActor
 object WriteEventExample extends App {
   val system = ActorSystem()
   val connection = system.actorOf(ConnectionActor.props())
-  implicit val writeResult = system.actorOf(Props(classOf[WriteResult]))
+  implicit val writeResult = system.actorOf(Props[WriteResult])
 
   val event = EventData("my-event", newUuid, data = Content("my event data"), metadata = Content("my first event"))
 
