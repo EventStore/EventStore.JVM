@@ -7,7 +7,6 @@ import util.{ ActorSpec, PasswordHashAlgorithm }
 import tcp.ConnectionActor
 import scala.concurrent.duration._
 
-// TODO is it a right name?
 class UserManagementITest extends ActorSpec {
 
   "admin" should {

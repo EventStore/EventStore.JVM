@@ -32,7 +32,6 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
 
     def error(x: proto.OperationResult.EnumVal): Option[EsError] = {
       import eventstore.proto.OperationResult._
-      // TODO test it, what if new enum will be added in proto?
       condOpt(x) {
         case PrepareTimeout       => EsError.PrepareTimeout
         case CommitTimeout        => EsError.CommitTimeout
@@ -180,7 +179,6 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
 
     def provider = proto.ReadEventCompleted
 
-    // TODO test it, what if new enum will be added in proto?
     def error(x: EnumVal): Option[EsError] = condOpt(x) {
       case NotFound      => EsError.EventNotFound
       case NoStream      => EsError.StreamNotFound
@@ -211,10 +209,10 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
 
     def provider = proto.ReadStreamEventsCompleted
 
-    // TODO test it, what if new enum will be added in proto?
     def error(x: EnumVal): Option[EsError] = condOpt(x) {
       case NoStream      => EsError.StreamNotFound
       case StreamDeleted => EsError.StreamDeleted
+      case NotModified   => EsError.NotModified
       case Error         => EsError.Error
       case AccessDenied  => EsError.AccessDenied
     }
@@ -255,8 +253,8 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
 
     def provider = proto.ReadAllEventsCompleted
 
-    // TODO test it, what if new enum will be added in proto?
     def error(x: EnumVal): Option[EsError] = condOpt(x) {
+      case NotModified  => EsError.NotModified
       case Error        => EsError.Error
       case AccessDenied => EsError.AccessDenied
     }
