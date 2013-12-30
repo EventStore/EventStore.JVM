@@ -212,7 +212,6 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
     def error(x: EnumVal): Option[EsError] = condOpt(x) {
       case NoStream      => EsError.StreamNotFound
       case StreamDeleted => EsError.StreamDeleted
-      case NotModified   => EsError.NotModified
       case Error         => EsError.Error
       case AccessDenied  => EsError.AccessDenied
     }
@@ -254,7 +253,6 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
     def provider = proto.ReadAllEventsCompleted
 
     def error(x: EnumVal): Option[EsError] = condOpt(x) {
-      case NotModified  => EsError.NotModified
       case Error        => EsError.Error
       case AccessDenied => EsError.AccessDenied
     }

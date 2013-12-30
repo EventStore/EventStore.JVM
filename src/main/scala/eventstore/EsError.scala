@@ -12,7 +12,6 @@ object EsError {
   case object ForwardTimeout extends EsError
   case object WrongExpectedVersion extends EsError
   case object StreamDeleted extends EsError
-  case object NotModified extends EsError
   case object InvalidTransaction extends EsError
   case object AccessDenied extends EsError
   case object NotAuthenticated extends EsError
