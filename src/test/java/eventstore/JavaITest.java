@@ -144,7 +144,7 @@ public class JavaITest extends ActorTest {
             connection.tell(readStreamEvents, getRef());
             final ReadStreamEventsCompleted completed = expectMsgClass(ReadStreamEventsCompleted.class);
 
-            assertEquals(completed.direction(), ReadDirection$.MODULE$.Forward());
+            assertEquals(completed.direction(), ReadDirection.Forward$.MODULE$);
             assertTrue(completed.endOfStream());
             assertEquals(completed.lastEventNumber(), EventNumber$.MODULE$.apply(1));
             assertEquals(completed.events().length(), 2);
@@ -168,8 +168,8 @@ public class JavaITest extends ActorTest {
             final ReadAllEventsCompleted completed = expectMsgClass(ReadAllEventsCompleted.class);
 
             // TODO work with Position
-            assertTrue(completed.position().$greater$eq(Position$.MODULE$.First()));
-            assertEquals(completed.direction(), ReadDirection$.MODULE$.Forward());
+            assertTrue(completed.position().$greater$eq(Position$.MODULE$.First())); // TODO
+            assertEquals(completed.direction(), ReadDirection.Forward$.MODULE$); // TODO
         }};
     }
 
