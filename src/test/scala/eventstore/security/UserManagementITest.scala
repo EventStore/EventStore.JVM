@@ -90,7 +90,7 @@ class UserManagementITest extends ActorSpec {
                        |  }
                        |}""".stripMargin
 
-      actor ! WriteMetadata(streamId, Content.Json(metadata), ExpectedVersion.NoStream)
+      actor ! WriteEvents.Metadata(streamId, Content.Json(metadata), ExpectedVersion.NoStream)
       expectMsg(WriteEventsCompleted(EventNumber.First))
 
       actor ! WriteEvents(streamId, List(userCreated(user)), ExpectedVersion.NoStream)
@@ -122,24 +122,6 @@ class UserManagementITest extends ActorSpec {
 
     def passwordChanged(login: String): EventData =
       EventData(SystemEventType.passwordChanged, data = Content.Json(s"""{"loginName": "$login"}"""))
-
-    object WriteMetadata {
-      def apply(
-        streamId: EventStream.Id,
-        data: Content,
-        expectedVersion: ExpectedVersion = ExpectedVersion.Any,
-        requireMaster: Boolean = true): WriteEvents = {
-
-        // TODO refactor and make a part of EventStream.Id
-        require(!streamId.isMeta, s"setting metadata for metastream $streamId is not supported")
-
-        WriteEvents(
-          EventStream("$$" + streamId.value), // TODO .map, anyway should be a method of EventStream.scala
-          List(EventData(SystemEventType.metadata, data = data)),
-          expectedVersion = expectedVersion,
-          requireMaster = requireMaster)
-      }
-    }
   }
 }
 

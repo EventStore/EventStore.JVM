@@ -51,6 +51,27 @@ case class WriteEvents(
   expectedVersion: ExpectedVersion = ExpectedVersion.Any,
   requireMaster: Boolean = true) extends Out
 
+object WriteEvents {
+
+  object Metadata {
+    def apply(
+      streamId: EventStream.Id,
+      data: Content,
+      expectedVersion: ExpectedVersion = ExpectedVersion.Any,
+      requireMaster: Boolean = true): WriteEvents = {
+
+      // TODO refactor and make as part of EventStream.Id
+      require(!streamId.isMeta, s"setting metadata for metastream $streamId is not supported")
+
+      WriteEvents(
+        EventStream("$$" + streamId.value), // TODO .map, anyway should be a method of EventStream.scala
+        List(EventData.StreamMetadata(data)),
+        expectedVersion = expectedVersion,
+        requireMaster = requireMaster)
+    }
+  }
+}
+
 case class WriteEventsCompleted(firstEventNumber: EventNumber.Exact) extends In
 
 // TODO check softDelete

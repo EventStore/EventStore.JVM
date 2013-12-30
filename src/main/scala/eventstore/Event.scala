@@ -1,6 +1,7 @@
 package eventstore
 
 import util.BetterToString
+import scala.PartialFunction.condOpt
 
 sealed trait Event extends Ordered[Event] {
   def streamId: EventStream.Id
@@ -10,7 +11,7 @@ sealed trait Event extends Ordered[Event] {
 
   def compare(that: Event) = this.number.value compare that.number.value
 
-  def link(eventId: Uuid, metadata: Content = Content()): EventData = EventData(
+  def link(eventId: Uuid, metadata: Content = Content.empty): EventData = EventData(
     eventType = SystemEventType.linkTo,
     eventId = eventId,
     data = Content(s"${number.value}@${streamId.value}"),
@@ -57,8 +58,8 @@ object Content {
 case class EventData(
     eventType: String,
     eventId: Uuid = newUuid,
-    data: Content = Content(),
-    metadata: Content = Content()) {
+    data: Content = Content.empty,
+    metadata: Content = Content.empty) {
   require(eventType != null, "eventType is null")
   require(eventType.nonEmpty, "eventType is empty")
 }
@@ -73,11 +74,20 @@ object EventData {
   object StreamDeleted {
     import Content.empty
 
-    def unapply(x: EventData): Option[Uuid] = PartialFunction.condOpt(x) {
-      case EventData(SystemEventType.`streamDeleted`, eventId, `empty`, `empty`) => eventId
-    }
-
     def apply(eventId: Uuid): EventData = EventData(SystemEventType.streamDeleted, eventId, empty, empty)
+
+    def unapply(x: EventData): Option[Uuid] = condOpt(x) {
+      case EventData(SystemEventType.streamDeleted, eventId, `empty`, `empty`) => eventId
+    }
+  }
+
+  object StreamMetadata {
+    def apply(data: Content = Content.empty, eventId: Uuid = newUuid): EventData =
+      EventData(SystemEventType.metadata, data = data)
+
+    def unapply(x: EventData): Option[Content] = condOpt(x) {
+      case EventData(SystemEventType.metadata, _, data, _) => data
+    }
   }
 }
 
