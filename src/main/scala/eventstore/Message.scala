@@ -120,7 +120,7 @@ case class ReadStreamEvents(
     streamId: EventStream.Id,
     fromNumber: EventNumber = EventNumber.First,
     maxCount: Int = 500,
-    direction: ReadDirection.Value = ReadDirection.Forward,
+    direction: ReadDirection = ReadDirection.Forward,
     resolveLinkTos: Boolean = false,
     requireMaster: Boolean = true) extends Out {
   require(maxCount > 0, s"maxCount must be > 0, but is $maxCount")
@@ -136,7 +136,7 @@ case class ReadStreamEventsCompleted(
     lastEventNumber: EventNumber.Exact,
     endOfStream: Boolean,
     lastCommitPosition: Long,
-    direction: ReadDirection.Value) extends In {
+    direction: ReadDirection) extends In {
   require(events.size <= MaxBatchSize, s"events.size must be <= $MaxBatchSize, but is ${events.size}")
   require(
     direction != ReadDirection.Forward || nextEventNumber != EventNumber.Last,
@@ -148,7 +148,7 @@ case class ReadStreamEventsCompleted(
 case class ReadAllEvents(
     fromPosition: Position,
     maxCount: Int,
-    direction: ReadDirection.Value = ReadDirection.Forward,
+    direction: ReadDirection = ReadDirection.Forward,
     resolveLinkTos: Boolean = false,
     requireMaster: Boolean = true) extends Out {
   require(maxCount > 0, s"maxCount must be > 0, but is $maxCount")
@@ -159,7 +159,7 @@ case class ReadAllEventsCompleted(
     events: List[IndexedEvent],
     position: Position.Exact,
     nextPosition: Position.Exact,
-    direction: ReadDirection.Value) extends In {
+    direction: ReadDirection) extends In {
   require(events.size <= MaxBatchSize, s"events.size must be <= $MaxBatchSize, but is ${events.size}")
 
   def eventsJava: java.util.List[IndexedEvent] = events.asJava

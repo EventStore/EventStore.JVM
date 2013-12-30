@@ -75,7 +75,7 @@ abstract class TestConnection extends util.ActorSpec {
       event
     }
 
-    def readStreamEventsCompleted(fromEventNumber: EventNumber, maxCount: Int, resolveLinkTos: Boolean = false)(implicit direction: ReadDirection.Value) = {
+    def readStreamEventsCompleted(fromEventNumber: EventNumber, maxCount: Int, resolveLinkTos: Boolean = false)(implicit direction: ReadDirection) = {
       actor ! ReadStreamEvents(streamId, fromEventNumber, maxCount, direction, resolveLinkTos = resolveLinkTos)
       val result = expectMsgType[ReadStreamEventsCompleted]
       result.direction mustEqual direction
@@ -102,7 +102,7 @@ abstract class TestConnection extends util.ActorSpec {
       result
     }
 
-    def readStreamEvents(fromEventNumber: EventNumber, maxCount: Int)(implicit direction: ReadDirection.Value) = {
+    def readStreamEvents(fromEventNumber: EventNumber, maxCount: Int)(implicit direction: ReadDirection) = {
       val result = readStreamEventsCompleted(fromEventNumber = fromEventNumber, maxCount = maxCount)
       result.events.map(_.data)
     }
@@ -111,18 +111,18 @@ abstract class TestConnection extends util.ActorSpec {
       case Failure(e: EsException) => e.reason
     }
 
-    def readStreamEventsFailed(fromEventNumber: EventNumber, maxCount: Int)(implicit direction: ReadDirection.Value): EsError = {
+    def readStreamEventsFailed(fromEventNumber: EventNumber, maxCount: Int)(implicit direction: ReadDirection): EsError = {
       actor ! ReadStreamEvents(streamId, fromEventNumber, maxCount, direction)
       expectException()
     }
 
-    def readStreamEventsFailed(implicit direction: ReadDirection.Value): EsError =
+    def readStreamEventsFailed(implicit direction: ReadDirection): EsError =
       readStreamEventsFailed(EventNumber.start(direction), 500)
 
-    def streamEvents(implicit direction: ReadDirection.Value = Forward): Stream[EventData] =
+    def streamEvents(implicit direction: ReadDirection = Forward): Stream[EventData] =
       streamEventRecords(direction).map(_.data)
 
-    def streamEventRecords(implicit direction: ReadDirection.Value = Forward): Stream[Event] = {
+    def streamEventRecords(implicit direction: ReadDirection = Forward): Stream[Event] = {
       def loop(position: EventNumber): Stream[Event] = {
         val result = readStreamEventsCompleted(position, 500)
         val resolvedIndexedEvents = result.events
@@ -138,7 +138,7 @@ abstract class TestConnection extends util.ActorSpec {
       event
     }
 
-    def mustBeSorted[T](xs: List[T])(implicit direction: ReadDirection.Value, ordering: Ordering[T]) {
+    def mustBeSorted[T](xs: List[T])(implicit direction: ReadDirection, ordering: Ordering[T]) {
       xs.map {
         case ResolvedEvent(_, link) => link.asInstanceOf[T]
         case x                      => x
@@ -148,7 +148,7 @@ abstract class TestConnection extends util.ActorSpec {
       })
     }
 
-    def readAllEventsCompleted(position: Position, maxCount: Int, resolveLinkTos: Boolean = false)(implicit direction: ReadDirection.Value) = {
+    def readAllEventsCompleted(position: Position, maxCount: Int, resolveLinkTos: Boolean = false)(implicit direction: ReadDirection) = {
       actor ! ReadAllEvents(position, maxCount, direction, resolveLinkTos = resolveLinkTos)
       val result = expectMsgType[ReadAllEventsCompleted](10.seconds)
       result.direction mustEqual direction
@@ -168,15 +168,15 @@ abstract class TestConnection extends util.ActorSpec {
       result
     }
 
-    def readAllEventsFailed(position: Position, maxCount: Int)(implicit direction: ReadDirection.Value) = {
+    def readAllEventsFailed(position: Position, maxCount: Int)(implicit direction: ReadDirection) = {
       actor ! ReadAllEvents(position, maxCount, direction)
       expectException()
     }
 
-    def readAllEvents(position: Position, maxCount: Int)(implicit direction: ReadDirection.Value): List[Event] =
+    def readAllEvents(position: Position, maxCount: Int)(implicit direction: ReadDirection): List[Event] =
       readAllEventsCompleted(position = position, maxCount = maxCount).events.map(_.event)
 
-    def allStreamsEvents(maxCount: Int = 500)(implicit direction: ReadDirection.Value): Stream[IndexedEvent] = {
+    def allStreamsEvents(maxCount: Int = 500)(implicit direction: ReadDirection): Stream[IndexedEvent] = {
       def loop(position: Position): Stream[IndexedEvent] = {
         val result = readAllEventsCompleted(position, maxCount)
         val events = result.events
@@ -186,7 +186,7 @@ abstract class TestConnection extends util.ActorSpec {
       loop(Position.start(direction))
     }
 
-    def allStreamsEventsData(maxCount: Int = 500)(implicit direction: ReadDirection.Value) =
+    def allStreamsEventsData(maxCount: Int = 500)(implicit direction: ReadDirection) =
       allStreamsEvents(maxCount).map(_.event.data)
 
     def newStreamId = EventStream(getClass.getEnclosingClass.getSimpleName + "-" + newUuid.toString)

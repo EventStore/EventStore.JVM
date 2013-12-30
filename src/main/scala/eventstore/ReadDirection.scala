@@ -1,5 +1,8 @@
 package eventstore
 
-object ReadDirection extends Enumeration {
-  val Forward, Backward = Value
+sealed trait ReadDirection
+
+object ReadDirection {
+  case object Forward extends ReadDirection
+  case object Backward extends ReadDirection
 }

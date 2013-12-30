@@ -7,7 +7,7 @@ object Flags {
     credentials.fold(Flag.None)(_ => Flag.Auth)
 }
 
-object Flag extends Enumeration {
+object Flag {
   val None: Flag = 0x00
   val Auth: Flag = 0x01
 }

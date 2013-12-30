@@ -134,7 +134,7 @@ object Builder {
     self: T =>
 
     object DirectionSnippet extends DirectionSnippetI[T] {
-      var value: ReadDirection.Value = ReadDirection.Forward
+      var value: ReadDirection = ReadDirection.Forward
 
       def forward = set {
         value = ReadDirection.Forward

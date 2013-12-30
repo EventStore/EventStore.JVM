@@ -204,7 +204,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
       `requireMaster` = x.requireMaster)
   }
 
-  abstract class ReadStreamEventsCompletedReader(direction: ReadDirection.Value)
+  abstract class ReadStreamEventsCompletedReader(direction: ReadDirection)
       extends ProtoTryReader[ReadStreamEventsCompleted, proto.ReadStreamEventsCompleted] {
 
     import eventstore.proto.ReadStreamEventsCompleted.ReadStreamResult._
@@ -249,7 +249,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
     }
   }
 
-  abstract class ReadAllEventsCompletedReader(direction: ReadDirection.Value)
+  abstract class ReadAllEventsCompletedReader(direction: ReadDirection)
       extends ProtoTryReader[ReadAllEventsCompleted, proto.ReadAllEventsCompleted] {
     import proto.ReadAllEventsCompleted.ReadAllResult._
 

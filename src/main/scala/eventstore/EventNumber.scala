@@ -6,7 +6,7 @@ sealed trait EventNumber extends Ordered[EventNumber] // TODO same rules as in P
 object EventNumber {
   val First = Exact(0)
 
-  def start(direction: ReadDirection.Value): EventNumber = direction match {
+  def start(direction: ReadDirection): EventNumber = direction match {
     case ReadDirection.Forward  => First
     case ReadDirection.Backward => Last
   }
