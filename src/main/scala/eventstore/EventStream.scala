@@ -6,7 +6,7 @@ object EventStream {
 
   def apply(id: String): Id = Id(id)
 
-  //  def apply(x: UserCredentials): Id = Id("$user-" + x.login)
+  def apply(x: UserCredentials): Id = Id("$user-" + x.login)
 
   case object All extends EventStream {
     override def toString = "Stream.All"

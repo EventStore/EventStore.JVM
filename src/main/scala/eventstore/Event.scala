@@ -11,7 +11,7 @@ sealed trait Event extends Ordered[Event] {
   def compare(that: Event) = this.number.value compare that.number.value
 
   def link(eventId: Uuid, metadata: Content = Content()): EventData = EventData(
-    eventType = EvenType.LinkTo,
+    eventType = SystemEventType.linkTo,
     eventId = eventId,
     data = Content(s"${number.value}@${streamId.value}"),
     metadata = metadata)
@@ -74,21 +74,13 @@ object EventData {
     import Content.empty
 
     def unapply(x: EventData): Option[Uuid] = PartialFunction.condOpt(x) {
-      case EventData(EvenType.StreamDeleted, eventId, `empty`, `empty`) => eventId
+      case EventData(SystemEventType.`streamDeleted`, eventId, `empty`, `empty`) => eventId
     }
 
-    def apply(eventId: Uuid): EventData = EventData(EvenType.StreamDeleted, eventId, empty, empty)
+    def apply(eventId: Uuid): EventData = EventData(SystemEventType.streamDeleted, eventId, empty, empty)
   }
 }
 
 case class IndexedEvent(event: Event, position: Position.Exact) extends Ordered[IndexedEvent] {
   def compare(that: IndexedEvent) = this.position compare that.position
-}
-
-// TODO
-object EvenType {
-  val StreamDeleted = "$streamDeleted"
-  val StatsCollection = "$statsCollected"
-  val LinkTo = "$>"
-  val StreamMetadata = "$metadata"
 }
