@@ -5,6 +5,7 @@ import akka.testkit.TestActorRef
 import akka.actor.Status.Failure
 import util.{ ActorSpec, PasswordHashAlgorithm }
 import tcp.ConnectionActor
+import scala.concurrent.duration._
 
 // TODO is it a right name?
 class UserManagementITest extends ActorSpec {
@@ -38,9 +39,8 @@ class UserManagementITest extends ActorSpec {
       actor ! WriteEvents(streamId, List(userUpdated(data.replace(""""disabled": false""", """"disabled": true"""))))
       expectMsgType[WriteEventsCompleted]
 
-      actor ! Authenticate.withCredentials(user)
-      expectMsg(Failure(EventStoreException(EventStoreError.NotAuthenticated)))
-    }.pendingUntilFixed
+      expectNotAuthenticated()
+    }
 
     "delete user" in new UserScope {
       createUser()
@@ -51,9 +51,8 @@ class UserManagementITest extends ActorSpec {
 
       notifyPasswordChanged()
 
-      actor ! Authenticate.withCredentials(user)
-      expectMsg(Failure(EventStoreException(EventStoreError.NotAuthenticated)))
-    }.pendingUntilFixed
+      expectNotAuthenticated()
+    }
   }
 
   trait UserScope extends ActorScope {
@@ -72,8 +71,14 @@ class UserManagementITest extends ActorSpec {
     }
 
     def expectNotAuthenticated() {
-      actor ! Authenticate.withCredentials(user)
-      expectMsg(Failure(EventStoreException(EventStoreError.NotAuthenticated)))
+      def notAuthenticated = {
+        actor ! Authenticate.withCredentials(user)
+        expectMsgPF() {
+          case Authenticated => false
+          case Failure(EventStoreException(EventStoreError.NotAuthenticated, _, _)) => true
+        }
+      }
+      awaitCond(notAuthenticated, max = 1.second)
     }
 
     def createUser(user: UserCredentials = user) {
@@ -85,10 +90,10 @@ class UserManagementITest extends ActorSpec {
                        |  }
                        |}""".stripMargin
 
-      actor ! WriteEvents(streamId, List(userCreated(user)), ExpectedVersion.NoStream)
+      actor ! WriteMetadata(streamId, Content.Json(metadata), ExpectedVersion.NoStream)
       expectMsg(WriteEventsCompleted(EventNumber.First))
 
-      actor ! WriteMetadata(streamId, Content.Json(metadata), ExpectedVersion.NoStream)
+      actor ! WriteEvents(streamId, List(userCreated(user)), ExpectedVersion.NoStream)
       expectMsg(WriteEventsCompleted(EventNumber.First))
     }
 
@@ -130,7 +135,7 @@ class UserManagementITest extends ActorSpec {
 
         WriteEvents(
           EventStream("$$" + streamId.value), // TODO .map, anyway should be a method of EventStream.scala
-          List(EventData(SystemEventType.metadata)),
+          List(EventData(SystemEventType.metadata, data = data)),
           expectedVersion = expectedVersion,
           requireMaster = requireMaster)
       }
