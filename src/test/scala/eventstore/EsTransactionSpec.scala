@@ -2,10 +2,10 @@ package eventstore
 
 import TransactionActor._
 import akka.actor.Status.Failure
-import java.util.concurrent.TimeoutException
-import util.ActorSpec
 import akka.util.Timeout
+import java.util.concurrent.TimeoutException
 import scala.concurrent.duration._
+import util.ActorSpec
 
 class EsTransactionSpec extends ActorSpec {
 
@@ -66,7 +66,7 @@ class EsTransactionSpec extends ActorSpec {
   trait StartScope extends ActorScope {
     val transactionId = 0L
     implicit val timeout = Timeout(100.millis)
-    val exception = EventStoreException(EventStoreError.AccessDenied)
+    val exception = EsException(EsError.AccessDenied)
 
     def start = {
       val future = EsTransaction.start(testActor)

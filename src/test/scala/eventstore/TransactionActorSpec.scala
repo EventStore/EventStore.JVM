@@ -1,11 +1,11 @@
 package eventstore
 
+import TransactionActor._
+import akka.actor.Status.Failure
 import akka.actor.Terminated
 import akka.testkit.{ TestProbe, TestActorRef }
 import scala.concurrent.duration._
 import util.ActorSpec
-import TransactionActor._
-import akka.actor.Status.Failure
 
 class TransactionActorSpec extends ActorSpec {
   "TransactionActor" should {
@@ -175,10 +175,10 @@ class TransactionActorSpec extends ActorSpec {
       case Terminated(`actor`) =>
     }
 
-    val failure = Failure(EventStoreException(EventStoreError.AccessDenied))
+    val failure = Failure(EsException(EsError.AccessDenied))
 
     def sendFailure {
-      (actor ! failure) mustNotEqual throwAn[EventStoreException]
+      (actor ! failure) mustNotEqual throwAn[EsException]
     }
 
     def expectFailure = expectMsg(failure)

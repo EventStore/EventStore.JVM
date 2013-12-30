@@ -41,7 +41,7 @@ public class WriteEventExample {
                 log.info("eventNumber: {}", eventNumber);
             } else if (message instanceof Status.Failure) {
                 final Status.Failure failure = ((Status.Failure) message);
-                final EventStoreException exception = (EventStoreException) failure.cause();
+                final EsException exception = (EsException) failure.cause();
                 log.error("reason: {}, message: {}", exception.reason(), exception.message());
             } else
                 unhandled(message);

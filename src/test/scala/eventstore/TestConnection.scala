@@ -1,10 +1,10 @@
 package eventstore
 
+import ReadDirection._
+import akka.actor.Status.Failure
 import akka.testkit._
 import scala.concurrent.duration._
 import tcp.ConnectionActor
-import ReadDirection._
-import akka.actor.Status.Failure
 
 abstract class TestConnection extends util.ActorSpec {
 
@@ -57,8 +57,8 @@ abstract class TestConnection extends util.ActorSpec {
       def loop(n: Int) {
         actor.!(WriteEvents(streamId, events, ExpectedVersion.Any))(testKit.testActor)
         testKit.expectMsgPF(10.seconds) {
-          case WriteEventsCompleted(_) => true
-          case Failure(EventStoreException(EventStoreError.PrepareTimeout, _, _)) if n < 3 => loop(n + 1) // TODO
+          case WriteEventsCompleted(_)                                     => true
+          case Failure(EsException(EsError.PrepareTimeout, _, _)) if n < 3 => loop(n + 1) // TODO
         }
       }
 
@@ -107,16 +107,16 @@ abstract class TestConnection extends util.ActorSpec {
       result.events.map(_.data)
     }
 
-    def expectException(): EventStoreError.Value = expectMsgPF() {
-      case Failure(e: EventStoreException) => e.reason
+    def expectException(): EsError = expectMsgPF() {
+      case Failure(e: EsException) => e.reason
     }
 
-    def readStreamEventsFailed(fromEventNumber: EventNumber, maxCount: Int)(implicit direction: ReadDirection.Value): EventStoreError.Value = {
+    def readStreamEventsFailed(fromEventNumber: EventNumber, maxCount: Int)(implicit direction: ReadDirection.Value): EsError = {
       actor ! ReadStreamEvents(streamId, fromEventNumber, maxCount, direction)
       expectException()
     }
 
-    def readStreamEventsFailed(implicit direction: ReadDirection.Value): EventStoreError.Value =
+    def readStreamEventsFailed(implicit direction: ReadDirection.Value): EsError =
       readStreamEventsFailed(EventNumber.start(direction), 500)
 
     def streamEvents(implicit direction: ReadDirection.Value = Forward): Stream[EventData] =

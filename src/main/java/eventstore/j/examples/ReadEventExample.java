@@ -41,7 +41,7 @@ public class ReadEventExample {
                 log.info("event: {}", event);
             } else if (message instanceof Failure) {
                 final Failure failure = ((Failure) message);
-                final EventStoreException exception = (EventStoreException) failure.cause();
+                final EsException exception = (EsException) failure.cause();
                 log.error("reason: {}, message: {}", exception.reason(), exception.message());
             } else
                 unhandled(message);

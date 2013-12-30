@@ -93,7 +93,7 @@ public class JavaITest extends ActorTest {
             connection.tell(readEvent, getRef());
             final Failure failed = expectMsgClass(Failure.class);
 
-            assertEquals(((EventStoreException) failed.cause()).reason(), EventStoreError.StreamNotFound());
+            assertEquals(((EsException) failed.cause()).reason(), EsError.StreamNotFound$.MODULE$); // TODO
 
             final EventData eventData = newEventData();
 
@@ -132,7 +132,7 @@ public class JavaITest extends ActorTest {
             connection.tell(readStreamEvents, getRef());
             final Failure failed = expectMsgClass(Failure.class);
 
-            assertEquals(((EventStoreException) failed.cause()).reason(), EventStoreError.StreamNotFound());
+            assertEquals(((EsException) failed.cause()).reason(), EsError.StreamNotFound$.MODULE$); // TODO
 
             final WriteEventsBuilder builder = new WriteEventsBuilder(streamId);
             for (int x = 0; x < 2; x++) {

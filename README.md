@@ -66,7 +66,7 @@ public class ReadEventExample {
                 log.info("event: {}", event);
             } else if (message instanceof Failure) {
                 final Failure failure = ((Failure) message);
-                final EventStoreException exception = (EventStoreException) failure.cause();
+                final EsException exception = (EsException) failure.cause();
                 log.error("reason: {}, message: {}", exception.reason(), exception.message());
             } else
                 unhandled(message);
@@ -121,7 +121,7 @@ public class WriteEventExample {
                 log.info("eventNumber: {}", eventNumber);
             } else if (message instanceof Status.Failure) {
                 final Status.Failure failure = ((Status.Failure) message);
-                final EventStoreException exception = (EventStoreException) failure.cause();
+                final EsException exception = (EsException) failure.cause();
                 log.error("reason: {}, message: {}", exception.reason(), exception.message());
             } else
                 unhandled(message);
@@ -185,7 +185,7 @@ object ReadEventExample extends App {
         log.info(s"event: $event")
         context.system.shutdown()
 
-      case Failure(EventStoreException(reason, message, _)) =>
+      case Failure(EsException(reason, message, _)) =>
         log.error(s"reason: $reason, message: $message")
         context.system.shutdown()
     }
@@ -216,7 +216,7 @@ object WriteEventExample extends App {
         log.info(s"eventNumber: $eventNumber")
         context.system.shutdown()
 
-      case Failure(EventStoreException(reason, message, _)) =>
+      case Failure(EsException(reason, message, _)) =>
         log.error(s"reason $reason, message: $message")
         context.system.shutdown()
     }

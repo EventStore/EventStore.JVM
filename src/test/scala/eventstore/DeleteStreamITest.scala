@@ -1,6 +1,6 @@
 package eventstore
 
-import EventStoreError._
+import EsError._
 import ExpectedVersion._
 
 class DeleteStreamITest extends TestConnection {

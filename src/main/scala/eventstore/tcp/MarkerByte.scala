@@ -19,7 +19,7 @@ object MarkerByte {
 
   def readerTry[T <: In](implicit reader: BytesReader[Try[T]]): Reader = reader.read
 
-  def readerFailure(x: EventStoreError.Value): Reader = (_: ByteIterator) => Failure(EventStoreException(x))
+  def readerFailure(x: EsError): Reader = (_: ByteIterator) => Failure(EsException(x))
 
   val readers: Map[Byte, Reader] = Map[Int, Reader](
     0x01 -> reader[HeartbeatRequest.type],
@@ -59,7 +59,7 @@ object MarkerByte {
     0xF0 -> reader[BadRequest.type],
     //    0xF1 -> readerFailure(EventStoreError.NotHandled),   TODO
     0xF3 -> reader[Authenticated.type],
-    0xF4 -> readerFailure(EventStoreError.NotAuthenticated) //    NotHandled = 0xF1,
+    0xF4 -> readerFailure(EsError.NotAuthenticated) //    NotHandled = 0xF1,
     //    Authenticate = 0xF2,
     //    Authenticated = 0xF3,
     //    NotAuthenticated = 0xF4

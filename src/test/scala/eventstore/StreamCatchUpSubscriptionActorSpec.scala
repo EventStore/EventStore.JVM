@@ -139,7 +139,7 @@ class StreamCatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActo
       actor ! readStreamEventsCompleted(0, true)
 
       connection expectMsg subscribeTo
-      actor ! Failure(EventStoreException(EventStoreError.AccessDenied))
+      actor ! Failure(EsException(EsError.AccessDenied))
       expectActorTerminated()
     }
 
@@ -148,7 +148,7 @@ class StreamCatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActo
       actor ! readStreamEventsCompleted(0, true)
       connection expectMsg subscribeTo
       expectNoActivity
-      actor ! Failure(EventStoreException(EventStoreError.AccessDenied))
+      actor ! Failure(EsException(EsError.AccessDenied))
       expectActorTerminated()
     }
 
@@ -296,7 +296,7 @@ class StreamCatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActo
       actor ! readStreamEventsCompleted(0, true)
 
       connection expectMsg subscribeTo
-      actor ! Failure(EventStoreException(EventStoreError.AccessDenied))
+      actor ! Failure(EsException(EsError.AccessDenied))
 
       expectActorTerminated()
     }
@@ -309,7 +309,7 @@ class StreamCatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActo
       actor ! subscribeToStreamCompleted(1)
 
       connection expectMsg readStreamEvents(0)
-      actor ! readStreamEventsFailed(EventStoreError.StreamNotFound)
+      actor ! readStreamEventsFailed(EsError.StreamNotFound)
 
       connection expectMsg UnsubscribeFromStream
 
@@ -371,8 +371,8 @@ class StreamCatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActo
       lastCommitPosition = next /*TODO*/ ,
       direction = Forward)
 
-    def readStreamEventsFailed(reason: EventStoreError.Value = EventStoreError.StreamDeleted) =
-      Failure(EventStoreException(reason, None))
+    def readStreamEventsFailed(reason: EsError = EsError.StreamDeleted) =
+      Failure(EsException(reason, None))
 
     def subscribeToStreamCompleted(x: Int) = SubscribeToStreamCompleted(x, Some(EventNumber(x)))
   }

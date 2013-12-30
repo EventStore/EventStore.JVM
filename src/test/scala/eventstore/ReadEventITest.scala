@@ -4,18 +4,18 @@ class ReadEventITest extends TestConnection {
 
   "read event" should {
     "fail if stream not found" in new ReadEventScope {
-      readEventFailed(EventNumber(5)) mustEqual EventStoreError.StreamNotFound
+      readEventFailed(EventNumber(5)) mustEqual EsError.StreamNotFound
     }
 
     "fail if stream deleted" in new ReadEventScope {
       appendEventToCreateStream()
       deleteStream()
-      readEventFailed(EventNumber(5)) mustEqual EventStoreError.StreamDeleted
+      readEventFailed(EventNumber(5)) mustEqual EsError.StreamDeleted
     }
 
     "fail if stream does not have such event" in new ReadEventScope {
       appendEventToCreateStream()
-      readEventFailed(EventNumber(5)) mustEqual EventStoreError.EventNotFound
+      readEventFailed(EventNumber(5)) mustEqual EsError.EventNotFound
     }
 
     "return existing event" in new ReadEventScope {

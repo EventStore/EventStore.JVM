@@ -18,13 +18,13 @@ class ReadStreamEventsForwardITest extends TestConnection {
     }
 
     "fail if stream not found" in new TestConnectionScope {
-      readStreamEventsFailed(EventNumber.First, 1000) mustEqual EventStoreError.StreamNotFound
+      readStreamEventsFailed(EventNumber.First, 1000) mustEqual EsError.StreamNotFound
     }
 
     "fail if stream has been deleted" in new TestConnectionScope {
       appendEventToCreateStream()
       deleteStream()
-      readStreamEventsFailed(EventNumber.First, 1000) mustEqual EventStoreError.StreamDeleted
+      readStreamEventsFailed(EventNumber.First, 1000) mustEqual EsError.StreamDeleted
     }
 
     "get empty slice if asked to read from end" in new TestConnectionScope {

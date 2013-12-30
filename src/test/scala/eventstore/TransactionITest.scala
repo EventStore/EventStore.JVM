@@ -1,8 +1,8 @@
 package eventstore
 
-import EventStoreError.{ WrongExpectedVersion, StreamDeleted }
-import ExpectedVersion._
 import akka.testkit.TestProbe
+import EsError.{ WrongExpectedVersion, StreamDeleted }
+import ExpectedVersion._
 
 class TransactionITest extends TestConnection {
   implicit val direction = ReadDirection.Forward
@@ -28,14 +28,14 @@ class TransactionITest extends TestConnection {
     "do nothing if commits without events to empty stream" in new TransactionScope {
       implicit val transactionId = transactionStart(NoStream)
       transactionCommit
-      readStreamEventsFailed mustEqual EventStoreError.StreamNotFound
+      readStreamEventsFailed mustEqual EsError.StreamNotFound
     }
 
     "do nothing if commits no events to empty stream" in new TransactionScope {
       implicit val transactionId = transactionStart(NoStream)
       transactionWrite()
       transactionCommit
-      readStreamEventsFailed mustEqual EventStoreError.StreamNotFound
+      readStreamEventsFailed mustEqual EsError.StreamNotFound
     }
 
     "validate expectations on commit" in new TransactionScope {
@@ -115,7 +115,7 @@ class TransactionITest extends TestConnection {
       expectMsg(TransactionCommitCompleted(transactionId))
     }
 
-    def failTransactionCommit(reason: EventStoreError.Value)(implicit transactionId: Long) {
+    def failTransactionCommit(reason: EsError)(implicit transactionId: Long) {
       actor ! TransactionCommit(transactionId)
       expectException()
     }

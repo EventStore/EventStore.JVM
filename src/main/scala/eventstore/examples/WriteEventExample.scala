@@ -20,7 +20,7 @@ object WriteEventExample extends App {
         log.info(s"eventNumber: $eventNumber")
         context.system.shutdown()
 
-      case Failure(EventStoreException(reason, message, _)) =>
+      case Failure(EsException(reason, message, _)) =>
         log.error(s"reason $reason, message: $message")
         context.system.shutdown()
     }

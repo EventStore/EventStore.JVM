@@ -1,8 +1,8 @@
 package eventstore
 
-import akka.testkit.TestProbe
 import ReadDirection.Forward
 import akka.actor.Status.Failure
+import akka.testkit.TestProbe
 
 class CatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActorSpec {
   "catch up subscription actor" should {
@@ -142,7 +142,7 @@ class CatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActorSpec 
       actor ! readAllEventsCompleted(0, 0)
 
       connection.expectMsg(subscribeTo)
-      actor ! Failure(EventStoreException(EventStoreError.AccessDenied))
+      actor ! Failure(EsException(EsError.AccessDenied))
 
       expectActorTerminated()
     }
@@ -367,6 +367,6 @@ class CatchUpSubscriptionActorSpec extends AbstractCatchUpSubscriptionActorSpec 
     def readAllEventsCompleted(position: Long, next: Long, events: IndexedEvent*) =
       ReadAllEventsCompleted(events.toList, Position(position), Position(next), Forward)
 
-    def readAllEventsFailed = Failure(EventStoreException(EventStoreError.Error))
+    def readAllEventsFailed = Failure(EsException(EsError.Error))
   }
 }

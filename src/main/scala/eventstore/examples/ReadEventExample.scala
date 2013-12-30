@@ -25,7 +25,7 @@ object ReadEventExample extends App {
         log.info(s"event: $event")
         context.system.shutdown()
 
-      case Failure(EventStoreException(reason, message, _)) =>
+      case Failure(EsException(reason, message, _)) =>
         log.error(s"reason: $reason, message: $message")
         context.system.shutdown()
     }

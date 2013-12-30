@@ -2,7 +2,7 @@ package eventstore
 
 import akka.testkit.TestProbe
 import ExpectedVersion._
-import EventStoreError._
+import EsError._
 
 // TODO improve expectMsgType[ReadStreamEventsSucceed]
 class WriteEventsITest extends TestConnection {

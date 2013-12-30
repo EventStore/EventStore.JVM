@@ -38,7 +38,7 @@ class StreamCatchUpSubscriptionActor(
       }
 
       case Failure(e) => e match {
-        case e: EventStoreException if e.reason == EventStoreError.StreamNotFound =>
+        case e: EsException if e.reason == EsError.StreamNotFound =>
           context become subscribe(lastNumber, nextNumber)
 
         case _ => throw e
