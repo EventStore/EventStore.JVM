@@ -2,8 +2,8 @@ package eventstore
 package tcp
 
 import ReadDirection.{ Backward, Forward }
-import eventstore.proto.OperationResult
-import eventstore.util.DefaultFormats
+import proto.OperationResult
+import util.DefaultFormats
 import scala.PartialFunction.condOpt
 import scala.language.reflectiveCalls
 import scala.util.Try
@@ -31,7 +31,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
     import scala.util.Success
 
     def error(x: proto.OperationResult.EnumVal): Option[EsError] = {
-      import eventstore.proto.OperationResult._
+      import proto.OperationResult._
       condOpt(x) {
         case PrepareTimeout       => EsError.PrepareTimeout
         case CommitTimeout        => EsError.CommitTimeout
@@ -205,7 +205,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
   abstract class ReadStreamEventsCompletedReader(direction: ReadDirection)
       extends ProtoTryReader[ReadStreamEventsCompleted, proto.ReadStreamEventsCompleted] {
 
-    import eventstore.proto.ReadStreamEventsCompleted.ReadStreamResult._
+    import proto.ReadStreamEventsCompleted.ReadStreamResult._
 
     def provider = proto.ReadStreamEventsCompleted
 
@@ -305,7 +305,7 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
 
   implicit object SubscriptionDroppedReader extends ProtoTryReader[UnsubscribeCompleted.type, proto.SubscriptionDropped] {
 
-    import eventstore.proto.SubscriptionDropped.SubscriptionDropReason._
+    import proto.SubscriptionDropped.SubscriptionDropReason._
 
     def provider = proto.SubscriptionDropped
 

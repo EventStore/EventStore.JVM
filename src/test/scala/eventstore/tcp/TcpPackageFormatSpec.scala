@@ -2,7 +2,7 @@ package eventstore
 package tcp
 
 import EventStoreFormats._
-import eventstore.util.{ BytesWriter, BytesReader }
+import util.{ BytesWriter, BytesReader }
 import org.specs2.mutable.Specification
 import scala.util.Success
 

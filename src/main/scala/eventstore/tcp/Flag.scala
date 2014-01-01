@@ -1,6 +1,5 @@
-package eventstore.tcp
-
-import eventstore.UserCredentials
+package eventstore
+package tcp
 
 object Flags {
   def apply(credentials: Option[UserCredentials]): Flags =
