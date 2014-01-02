@@ -1,30 +1,91 @@
 package eventstore
 
-sealed trait EventStream
+sealed trait EventStream {
+  def isSystem: Boolean
+  def isMetadata: Boolean
+}
 
 object EventStream {
 
   def apply(id: String): Id = Id(id)
 
-  def apply(x: UserCredentials): Id = Id("$user-" + x.login)
+  def apply(x: UserCredentials): Id = System(x)
 
   case object All extends EventStream {
-    override def toString = "Stream.All"
+
+    def isSystem = true
+    def isMetadata = false
+
+    override lazy val toString = "Stream.All"
   }
 
-  case class Id(value: String) extends EventStream {
-    require(value != null, "stream id must be not null")
-    require(value.nonEmpty, "stream id must be not empty")
+  sealed trait Id extends EventStream {
+    lazy val streamId: String = prefix + value
 
-    def isSystem = value startsWith "$"
-    def isMeta = value startsWith "$$"
-
-    def meta: EventStream = EventStream("$$" + value)
-
-    override def toString = s"Stream($value)"
+    def value: String
+    def prefix: String
   }
 
-  //  case class Meta(value: String) // TODO
+  object Id {
+    def apply(streamId: String): Id = {
+      require(streamId != null, "stream id must be not null")
+      require(streamId.nonEmpty, "stream id must be not empty")
+      if (streamId startsWith "$$") Metadata(streamId substring 2) else HasMetadata(streamId)
+    }
+  }
 
-  //  case class System(value: String) // TODO
+  sealed trait HasMetadata extends Id {
+    lazy val metadata: Metadata = Metadata(streamId)
+  }
+
+  object HasMetadata {
+    def apply(streamId: String): HasMetadata = {
+      require(streamId != null, "stream id must be not null")
+      require(streamId.nonEmpty, "stream id must be not empty")
+      require(!(streamId startsWith "$$"), "stream must not start with $$")
+      if (streamId startsWith "$") System(streamId substring 1) else Plain(streamId)
+    }
+  }
+
+  case class Plain(value: String) extends HasMetadata {
+    require(value != null, "value must be not null")
+    require(value.nonEmpty, "value must be not empty")
+    require(!(value startsWith "$"), "value must not start with $")
+
+    def prefix = ""
+    def isSystem = false
+    def isMetadata = false
+
+    override lazy val toString = s"Stream($streamId)"
+  }
+
+  case class System(value: String) extends HasMetadata {
+    require(value != null, "value must be not null")
+    require(value.nonEmpty, "value must be not empty")
+    require(!(value startsWith "$"), "value must not start with $")
+
+    def prefix = "$"
+    def isSystem = true
+    def isMetadata = false
+
+    override lazy val toString = s"SystemStream($streamId)"
+  }
+
+  object System {
+    def apply(x: UserCredentials): System = System(s"user-${x.login}")
+  }
+
+  case class Metadata(value: String) extends Id {
+    require(value != null, "value must be not null")
+    require(value.nonEmpty, "value must be not empty")
+    require(!(value startsWith "$$"), "value must not start with $$")
+
+    def prefix = "$$"
+    def isSystem = false
+    def isMetadata = true
+
+    lazy val owner: HasMetadata = HasMetadata(value)
+
+    override lazy val toString = s"MetadataStream($streamId)"
+  }
 }

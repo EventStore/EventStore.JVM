@@ -62,7 +62,7 @@ class UserManagementITest extends ActorSpec {
 
     val actor = TestActorRef(ConnectionActor.props())
 
-    val streamId = EventStream(user)
+    val streamId = EventStream.System(user)
 
     def expectAuthenticated() {
       actor ! Authenticate.withCredentials(user)
