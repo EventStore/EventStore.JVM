@@ -21,7 +21,7 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
   val init = EsPipelineInit(log, backpressureSettings)
 
   override def preStart() {
-    log.debug(s"connecting to $address")
+    log.debug("connecting to {}", address)
     tcp ! connect
   }
 
@@ -60,7 +60,7 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
       case init.Event(in) => receiveIn(in, _ => Unit)
 
       case Tcp.Connected(remote, _) =>
-        log.info(s"connected to $remote")
+        log.info("connected to {}", remote)
 
         val connection = sender
         val pipeline = newPipeline(connection)
@@ -78,7 +78,7 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
         context become connected(connection, pipeline, send, 0)
 
       case Tcp.CommandFailed(_: Tcp.Connect) =>
-        log.error(s"connection failed to $address")
+        log.error("connection failed to {}", address)
         if (reconnectionsLeft == 0) {
           // TODO notify senders about this
           context stop self
@@ -88,7 +88,7 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
         }
 
       case x: OutLike =>
-        log.debug(s"received $x while not connected, adding to stash")
+        log.debug("received {} while not connected, adding to stash", x)
         context become connecting(stash enqueue tcpPack(x), reconnectionsLeft)
 
       case pack: TcpPackageOut => context become connecting(stash enqueue pack, reconnectionsLeft)
@@ -105,12 +105,12 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
 
     def maybeReconnect(reason: String) {
       if (!scheduled.isCancelled) scheduled.cancel()
-      val msg = s"connection lost to $address: $reason"
+      val template = "connection lost to {}: {}"
       if (settings.maxReconnections == 0) {
-        log.error(msg)
+        log.error(template, address, reason)
         context stop self
       } else {
-        log.warning(msg)
+        log.warning(template, address, reason)
         reconnect()
         context become connecting(Queue(), maxReconnections)
       }
@@ -138,7 +138,7 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
       case closed: Tcp.ConnectionClosed => closed match {
         case Tcp.PeerClosed         => maybeReconnect("peer closed")
         case Tcp.ErrorClosed(error) => maybeReconnect(error.toString)
-        case _                      => log.info(s"closing connection to $address")
+        case _                      => log.info("closing connection to {}", address)
       }
     }
 
@@ -147,10 +147,10 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
 
   def reconnect() {
     if (reconnectionDelay == Duration.Zero) {
-      log.info(s"reconnecting to $address")
+      log.info("reconnecting to {}", address)
       tcp ! connect
     } else {
-      log.info(s"reconnecting to $address in $reconnectionDelay")
+      log.info("reconnecting to {} in {}", address, reconnectionDelay)
       system.scheduler.scheduleOnce(reconnectionDelay, tcp, connect)
     }
   }
@@ -163,7 +163,7 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
   def tcpPack(message: OutLike): TcpPackageOut = {
     val correlationId = binding.y(sender) getOrElse {
       val x = newUuid
-      log.debug(s"add sender $sender for $x")
+      log.debug("add sender {} for {}", sender, x)
       context watch sender
       binding = binding + (x, sender)
       x
@@ -187,7 +187,7 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
       case None => msg match {
         case Pong | HeartbeatResponse | UnsubscribeCompleted =>
         case _ =>
-          log.warning(s"can not deliver $msg, sender not found for correlationId: $correlationId")
+          log.warning("can not deliver {}, sender not found for correlationId: {}", msg, correlationId)
           system.deadLetters ! msg
       }
     }

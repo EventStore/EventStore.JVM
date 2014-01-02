@@ -40,15 +40,15 @@ class CatchUpSubscriptionActor(
   }
 
   def subscribe(lastPosition: Option[Position.Exact], nextPosition: Position): Receive = {
-    subscribeToStream(s"lastPosition: $lastPosition")
+    subscribeToStream(lastPosition)
     subscriptionFailed orElse {
       case SubscribeToAllCompleted(lastCommit) =>
         subscribed = true
-        debug(s"subscribed at lastCommit: $lastCommit")
+        debug("subscribed at lastCommit: {}", lastCommit)
         context become (
           if (lastPosition.exists(_.commitPosition >= lastCommit)) liveProcessing(lastPosition, Queue())
           else {
-            debug(s"catch up events from lastPosition: $lastPosition to subscription lastCommit: $lastCommit")
+            debug("catch up events from lastPosition: {} to subscription lastCommit: {}", lastPosition, lastCommit)
             catchUp(lastPosition, nextPosition, lastCommit)
           })
     }
@@ -81,14 +81,14 @@ class CatchUpSubscriptionActor(
         }
     } orElse {
       case StreamEventAppeared(x) if x.position.commitPosition > subscriptionLastCommit =>
-        debug(s"catching up: adding appeared event to stash(${stash.size}): $x")
+        debug("catching up: adding appeared event to stash({}): {}", stash.size, x)
         context become catchingUp(stash enqueue x)
     }
     catchingUp(stash)
   }
 
   def liveProcessing(lastPosition: Option[Position.Exact], stash: Queue[IndexedEvent]): Receive = {
-    debug(s"live processing started, lastPosition: $lastPosition")
+    debug("live processing started, lastPosition: {}", lastPosition)
     client ! Cs.LiveProcessingStarted
 
     def liveProcessing(lastPosition: Option[Position.Exact]): Receive = {
@@ -104,7 +104,7 @@ class CatchUpSubscriptionActor(
     val position = event.position
     lastPosition match {
       case Some(last) if last >= position =>
-        log.warning(s"$streamId: event.position <= lastPosition: $position <= $last, dropping $event")
+        log.warning("{}: event.position <= lastPosition: {} <= {}, dropping {}", streamId, position, last, event)
         lastPosition
       case _ =>
         forward(event)
@@ -113,7 +113,7 @@ class CatchUpSubscriptionActor(
   }
 
   def readEventsFrom(position: Position) {
-    debug(s"reading events from $position")
+    debug("reading events from {}", position)
     connection ! ReadAllEvents(position, readBatchSize, Forward, resolveLinkTos = resolveLinkTos)
   }
 
@@ -123,7 +123,7 @@ class CatchUpSubscriptionActor(
   }
 
   def forward(event: IndexedEvent) {
-    debug(s"forwarding $event")
+    debug("forwarding {}", event)
     client ! Cs.AllStreamsEvent(event)
   }
 }

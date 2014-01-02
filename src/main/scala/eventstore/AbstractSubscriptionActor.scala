@@ -16,8 +16,8 @@ trait AbstractSubscriptionActor extends Actor with ActorLogging {
 
   override def supervisorStrategy = SupervisorStrategy.stoppingStrategy
 
-  def subscribeToStream(msg: => String) {
-    debug(s"subscribing: $msg")
+  def subscribeToStream(at: AnyRef) {
+    debug(s"subscribing at {}", at)
     connection ! SubscribeTo(streamId, resolveLinkTos = resolveLinkTos)
   }
 
@@ -32,7 +32,15 @@ trait AbstractSubscriptionActor extends Actor with ActorLogging {
   }
 
   def debug(msg: => String) {
-    log.debug(s"$streamId: $msg")
+    log.debug("{}: {}", streamId, msg)
+  }
+
+  def debug(msg: => String, arg: Any) {
+    if (log.isDebugEnabled) log.debug(s"{}: $msg", streamId, arg)
+  }
+
+  def debug(msg: => String, arg1: Any, arg2: Any) {
+    if (log.isDebugEnabled) log.debug(s"{}: $msg", streamId, arg1, arg2)
   }
 
   override def postStop() {

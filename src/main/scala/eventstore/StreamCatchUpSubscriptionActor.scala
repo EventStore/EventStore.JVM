@@ -47,14 +47,14 @@ class StreamCatchUpSubscriptionActor(
   }
 
   def subscribe(lastNumber: Option[EventNumber.Exact], nextNumber: EventNumber): Receive = {
-    subscribeToStream(s"lastEventNumber: $lastNumber")
+    subscribeToStream(lastNumber)
     subscriptionFailed orElse {
       case SubscribeToStreamCompleted(_, subscriptionNumber) => context become {
         subscribed = true
-        debug(s"subscribed at eventNumber: $subscriptionNumber")
+        debug("subscribed at eventNumber: {}", subscriptionNumber)
         subscriptionNumber match {
           case Some(x) if !lastNumber.exists(_ >= x) =>
-            debug(s"catch up events from lastNumber: $lastNumber to subscription eventNumber: $subscriptionNumber")
+            debug("catch up events from lastNumber: {} to subscription eventNumber: {}", lastNumber, subscriptionNumber)
             catchUp(lastNumber = lastNumber, nextNumber = nextNumber, subscriptionNumber = x)
 
           case _ => liveProcessing(lastNumber)
@@ -92,7 +92,7 @@ class StreamCatchUpSubscriptionActor(
       case Failure(e) => throw e
 
       case StreamEventAppeared(x) if x.event.record.number > subscriptionNumber =>
-        debug(s"catching up: adding appeared event to stash(${stash.size}): $x")
+        debug("catching up: adding appeared event to stash({}): {}", stash.size, x)
         context become catchingUp(stash enqueue x.event)
     }
 
@@ -100,7 +100,7 @@ class StreamCatchUpSubscriptionActor(
   }
 
   def liveProcessing(lastNumber: Option[EventNumber.Exact], stash: Queue[Event] = Queue()): Receive = {
-    debug(s"live processing started, lastEventNumber: $lastNumber")
+    debug("live processing started, lastEventNumber: {}", lastNumber)
     client ! Cs.LiveProcessingStarted
 
     def liveProcessing(lastNumber: Option[EventNumber.Exact]): Receive = {
@@ -116,7 +116,7 @@ class StreamCatchUpSubscriptionActor(
     val number = event.record.number
     lastNumber match {
       case Some(last) if last >= number =>
-        log.warning(s"$streamId: event.number <= lastNumber: $number <= $last, dropping $event")
+        log.warning("{}: event.number <= lastNumber: {} <= {}, dropping {}", streamId, number, last, event)
         lastNumber
       case _ =>
         forward(event)
@@ -125,12 +125,12 @@ class StreamCatchUpSubscriptionActor(
   }
 
   def readEventsFrom(number: EventNumber) {
-    debug(s"reading events from $number")
+    debug("reading events from {}", number)
     connection ! ReadStreamEvents(streamId, number, readBatchSize, Forward, resolveLinkTos = resolveLinkTos)
   }
 
   def forward(event: Event) {
-    debug(s"forwarding $event")
+    debug("forwarding {}", event)
     client ! Cs.StreamEvent(event)
   }
 }
