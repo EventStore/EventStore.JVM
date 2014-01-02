@@ -28,8 +28,8 @@ object EventStream {
 
   object Id {
     def apply(streamId: String): Id = {
-      require(streamId != null, "stream id must be not null")
-      require(streamId.nonEmpty, "stream id must be not empty")
+      require(streamId != null, "streamId must be not null")
+      require(streamId.nonEmpty, "streamId must be not empty")
       if (streamId startsWith "$$") Metadata(streamId substring 2) else HasMetadata(streamId)
     }
   }
@@ -40,9 +40,9 @@ object EventStream {
 
   object HasMetadata {
     def apply(streamId: String): HasMetadata = {
-      require(streamId != null, "stream id must be not null")
-      require(streamId.nonEmpty, "stream id must be not empty")
-      require(!(streamId startsWith "$$"), "stream must not start with $$")
+      require(streamId != null, "streamId must be not null")
+      require(streamId.nonEmpty, "streamId must be not empty")
+      require(!(streamId startsWith "$$"), "streamId must not start with $$")
       if (streamId startsWith "$") System(streamId substring 1) else Plain(streamId)
     }
   }
