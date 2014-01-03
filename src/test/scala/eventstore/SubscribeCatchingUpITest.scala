@@ -144,13 +144,13 @@ class SubscribeCatchingUpITest extends TestConnection {
         def receive = PartialFunction.empty
       }
 
-      val a = TestActorRef(Props(new StreamCatchUpSubscriptionActor(
+      val a = TestActorRef(StreamCatchUpSubscriptionActor.props(
         connection = actor,
         client = client,
         streamId = streamId,
         fromNumberExclusive = fromNumberExclusive,
         resolveLinkTos = resolveLinkTos,
-        readBatchSize = 500)), TestActorRef(new Supervisor), "")
+        readBatchSize = 500), TestActorRef(new Supervisor), "")
       watch(a)
       a
     }
