@@ -4,11 +4,17 @@ import akka.actor._
 import akka.pattern.ask
 import akka.util.Timeout
 import scala.concurrent.Future
+import scala.concurrent.duration.FiniteDuration
+import tcp.ConnectionActor
 
-class EsConnection(connection: ActorRef, settings: Settings = Settings.Default, factory: ActorRefFactory) {
-  implicit val timeout = Timeout(settings.responseTimeout)
+class EsConnection(
+    connection: ActorRef,
+    factory: ActorRefFactory,
+    defaultCredentials: Option[UserCredentials] = Settings.Default.defaultCredentials,
+    responseTimeout: FiniteDuration = Settings.Default.responseTimeout) {
+  implicit val timeout = Timeout(responseTimeout)
 
-  def future[OUT <: Out, IN <: In](out: OUT, credentials: Option[UserCredentials] = settings.defaultCredentials)(
+  def future[OUT <: Out, IN <: In](out: OUT, credentials: Option[UserCredentials] = defaultCredentials)(
     implicit outIn: OutInTag[OUT, IN]): Future[IN] = {
 
     val future = connection ? credentials.fold[OutLike](out)(WithCredentials(out, _))
@@ -25,5 +31,16 @@ class EsConnection(connection: ActorRef, settings: Settings = Settings.Default, 
     val props = TransactionActor.props(connection, TransactionActor.Continue(transactionId))
     val actor = factory.actorOf(props)
     EsTransaction.continue(transactionId, actor)
+  }
+}
+
+object EsConnection {
+  def apply(system: ActorSystem, settings: Settings = Settings.Default): EsConnection = {
+    val connection = system.actorOf(ConnectionActor.props(settings))
+    new EsConnection(
+      connection = connection,
+      factory = system,
+      defaultCredentials = settings.defaultCredentials,
+      responseTimeout = settings.responseTimeout)
   }
 }

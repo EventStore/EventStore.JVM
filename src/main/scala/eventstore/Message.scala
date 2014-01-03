@@ -107,7 +107,7 @@ case class TransactionCommitCompleted(transactionId: Long) extends In {
 
 case class ReadEvent(
   streamId: EventStream.Id,
-  eventNumber: EventNumber = EventNumber.Last, // TODO do we want default here?
+  eventNumber: EventNumber = EventNumber.First,
   resolveLinkTos: Boolean = false,
   requireMaster: Boolean = true) extends Out
 
@@ -143,7 +143,7 @@ case class ReadStreamEventsCompleted(
 }
 
 case class ReadAllEvents(
-    fromPosition: Position,
+    fromPosition: Position = Position.First,
     maxCount: Int = 100,
     direction: ReadDirection = ReadDirection.Forward,
     resolveLinkTos: Boolean = false,

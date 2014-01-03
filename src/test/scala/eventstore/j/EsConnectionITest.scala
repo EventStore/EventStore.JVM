@@ -4,7 +4,6 @@ package j
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Awaitable }
-import tcp.ConnectionActor
 import util.ActorSpec
 
 class EsConnectionITest extends ActorSpec {
@@ -91,10 +90,7 @@ class EsConnectionITest extends ActorSpec {
   }
 
   trait TestScope extends ActorScope {
-    val connection = new EsConnectionImpl(new eventstore.EsConnection(
-      system.actorOf(ConnectionActor.props()),
-      Settings.Default,
-      system))
+    val connection = new EsConnectionImpl(eventstore.EsConnection(system))
 
     val eventData = EventData(eventType = "java-test", data = Content("data"), metadata = Content("metadata"))
 
