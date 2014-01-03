@@ -8,7 +8,7 @@ import java.io.Closeable;
 import java.util.Collection;
 
 
-public interface EventStoreConnection {
+public interface EsConnection {
     Future<Unit> writeEvents(
             String stream,
             ExpectedVersion expectedVersion, // TODO should support Any or null
@@ -17,15 +17,15 @@ public interface EventStoreConnection {
 
     Future<Unit> deleteStream(
             String stream,
-            ExpectedVersion expectedVersion,
+            ExpectedVersion.Existing expectedVersion,
             UserCredentials userCredentials);
 
-    Future<EventStoreTransaction> startTransaction(
-            String stream,
-            ExpectedVersion expectedVersion,
-            UserCredentials userCredentials);
-
-    EventStoreTransaction continueTransaction(long transactionId, UserCredentials userCredentials);
+//    Future<EventStoreTransaction> startTransaction(
+//            String stream,
+//            ExpectedVersion expectedVersion,
+//            UserCredentials userCredentials);
+//
+//    EventStoreTransaction continueTransaction(long transactionId, UserCredentials userCredentials);
 
     Future<Event> readEvent(
             String stream,
@@ -48,40 +48,40 @@ public interface EventStoreConnection {
             UserCredentials userCredentials);
 
     Future<ReadAllEventsCompleted> readAllEventsForward(
-            Position position,
+            Position fromPosition,
             int maxCount,
             boolean resolveLinkTos,
             UserCredentials userCredentials);
 
     Future<ReadAllEventsCompleted> readAllEventsBackward(
-            Position position,
+            Position fromPosition,
             int maxCount,
             boolean resolveLinkTos,
             UserCredentials userCredentials);
 
-    Closeable subscribeToStream(
-            String stream,
-            boolean resolveLinkTos,
-            SubscriptionObserver<Event> observer,
-            UserCredentials userCredentials);
-
-    Closeable subscribeToStreamFrom(
-            String stream,
-            int fromEventNumberExclusive,
-            boolean resolveLinkTos,
-            CatchUpSubscriptionObserver<Event> observer,
-            UserCredentials userCredentials);
-
-    Closeable subscribeToAll(
-            boolean resolveLinkTos,
-            SubscriptionObserver<IndexedEvent> observer,
-            UserCredentials userCredentials);
-
-    Closeable subscribeToAllFrom(
-            boolean resolveLinkTos,
-            Position fromPositionExclusive,
-            CatchUpSubscriptionObserver<IndexedEvent> observer,
-            UserCredentials userCredentials);
+//    Closeable subscribeToStream(
+//            String stream,
+//            boolean resolveLinkTos,
+//            SubscriptionObserver<Event> observer,
+//            UserCredentials userCredentials);
+//
+//    Closeable subscribeToStreamFrom(
+//            String stream,
+//            int fromEventNumberExclusive,
+//            boolean resolveLinkTos,
+//            CatchUpSubscriptionObserver<Event> observer,
+//            UserCredentials userCredentials);
+//
+//    Closeable subscribeToAll(
+//            boolean resolveLinkTos,
+//            SubscriptionObserver<IndexedEvent> observer,
+//            UserCredentials userCredentials);
+//
+//    Closeable subscribeToAllFrom(
+//            boolean resolveLinkTos,
+//            Position fromPositionExclusive,
+//            CatchUpSubscriptionObserver<IndexedEvent> observer,
+//            UserCredentials userCredentials);
 
 //    Future<Unit> setStreamMetadataAsync(String stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials);
 //

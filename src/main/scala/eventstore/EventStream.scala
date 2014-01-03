@@ -28,7 +28,7 @@ object EventStream {
 
   object Id {
     def apply(streamId: String): Id = {
-      require(streamId != null, "streamId must be not null")
+      require(streamId != null, "streamId must be not null") // TODO use 'must not be'
       require(streamId.nonEmpty, "streamId must be not empty")
       if (streamId startsWith "$$") Metadata(streamId substring 2) else HasMetadata(streamId)
     }
@@ -84,7 +84,7 @@ object EventStream {
     def isSystem = false
     def isMetadata = true
 
-    lazy val owner: HasMetadata = HasMetadata(value)
+    lazy val owner: HasMetadata = HasMetadata(value) // TODO rename to original
 
     override lazy val toString = s"MetadataStream($streamId)"
   }

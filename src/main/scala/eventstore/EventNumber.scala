@@ -16,7 +16,10 @@ object EventNumber {
   def apply(expectedVersion: ExpectedVersion.Exact): Exact = Exact(expectedVersion.value)
 
   case object Last extends EventNumber {
-    def compare(that: EventNumber) = if (that.isInstanceOf[Last.type]) 0 else 1
+    def compare(that: EventNumber) = that match {
+      case Last => 0
+      case _    => 1
+    }
 
     override def toString = "EventNumber.Last"
   }

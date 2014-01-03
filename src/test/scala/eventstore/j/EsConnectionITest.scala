@@ -1,0 +1,105 @@
+package eventstore
+package j
+
+import scala.collection.JavaConverters._
+import scala.concurrent.duration._
+import scala.concurrent.{ Await, Awaitable }
+import tcp.ConnectionActor
+import util.ActorSpec
+
+class EsConnectionITest extends ActorSpec {
+  "EsConnection" should {
+
+    "write events" in new TestScope {
+      await(connection.writeEvents("java-writeEvents-" + newUuid, ExpectedVersion.Any, events, null))
+    }
+
+    "delete stream" in new TestScope {
+      val streamId = "java-deleteStream-" + newUuid
+      await(connection.writeEvents(streamId, null, events, null))
+      await(connection.deleteStream(streamId, null, null))
+    }
+
+    "read event" in new TestScope {
+      val streamId = "java-readEvent-" + newUuid
+      try await(connection.readEvent(streamId, null, resolveLinkTos = false, null)) catch {
+        case EsException(EsError.StreamNotFound, _, _) =>
+      }
+
+      await(connection.writeEvents(streamId, null, events, null))
+      val event = await(connection.readEvent(streamId, null, resolveLinkTos = false, null))
+
+      event.data mustEqual eventData
+      event.streamId mustEqual EventStream(streamId)
+      event.number mustEqual EventNumber.First
+    }
+
+    "read stream events forward" in new TestScope {
+      val streamId = "java-readStreamForward-" + newUuid
+
+      try await(connection.readStreamEventsForward(streamId, null, 10, resolveLinkTos = false, null)) catch {
+        case EsException(EsError.StreamNotFound, _, _) =>
+      }
+      await(connection.writeEvents(streamId, null, events, null))
+      val result = await(
+        connection.readStreamEventsForward(streamId, new EventNumber.Exact(0), 10, resolveLinkTos = false, null))
+
+      result.direction mustEqual ReadDirection.Forward
+      result.lastEventNumber mustEqual EventNumber.Exact(0)
+      result.nextEventNumber mustEqual EventNumber.Exact(1)
+
+      foreach(result.events)(_.data mustEqual eventData)
+    }
+
+    "read stream events backward" in new TestScope {
+      val streamId = "java-readStreamBackward-" + newUuid
+      try await(connection.readStreamEventsBackward(streamId, null, 10, resolveLinkTos = false, null)) catch {
+        case EsException(EsError.StreamNotFound, _, _) =>
+      }
+      await(connection.writeEvents(streamId, null, events, null))
+      val result = await {
+        connection.readStreamEventsBackward(streamId, EventNumber.First, 10, resolveLinkTos = false, null)
+      }
+      result.direction mustEqual ReadDirection.Backward
+      result.lastEventNumber mustEqual EventNumber.Exact(0)
+      result.nextEventNumber mustEqual EventNumber.Last
+
+      foreach(result.events)(_.data mustEqual eventData)
+    }
+
+    "read all events forward" in new TestScope {
+      val result = await(connection.readAllEventsForward(Position.First, 10, resolveLinkTos = false, null))
+      result.direction mustEqual ReadDirection.Forward
+
+      result.events.foreach {
+        event =>
+          val data = event.event.data
+          if (data.eventType == eventData.eventType) data mustEqual eventData
+      }
+    }
+
+    "read all events backward" in new TestScope {
+      val result = await(connection.readAllEventsBackward(Position.First, 10, resolveLinkTos = false, null))
+      result.direction mustEqual ReadDirection.Backward
+
+      result.events.foreach {
+        event =>
+          val data = event.event.data
+          if (data.eventType == eventData.eventType) data mustEqual eventData
+      }
+    }
+  }
+
+  trait TestScope extends ActorScope {
+    val connection = new EsConnectionImpl(new eventstore.EsConnection(
+      system.actorOf(ConnectionActor.props()),
+      Settings.Default,
+      system))
+
+    val eventData = EventData(eventType = "java-test", data = Content("data"), metadata = Content("metadata"))
+
+    val events = List(eventData).asJava
+
+    def await[T](awaitable: Awaitable[T]): T = Await.result(awaitable, 2.seconds)
+  }
+}
