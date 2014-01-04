@@ -61,7 +61,7 @@ class EventStreamSpec extends Specification {
 
     "return proper Metadata" in {
       stream.metadata mustEqual EventStream.Metadata("plain")
-      stream.metadata.owner mustEqual stream
+      stream.metadata.original mustEqual stream
     }
 
     "be not system stream" in {
@@ -90,7 +90,7 @@ class EventStreamSpec extends Specification {
 
     "return proper Metadata" in {
       stream.metadata mustEqual EventStream.Metadata("$system")
-      stream.metadata.owner mustEqual stream
+      stream.metadata.original mustEqual stream
     }
 
     "be system stream" in {
@@ -117,9 +117,9 @@ class EventStreamSpec extends Specification {
       stream.prefix mustEqual "$$"
     }
 
-    "return proper owner" in {
-      stream.owner mustEqual EventStream.Plain("metadata")
-      EventStream.Metadata("$metadata").owner mustEqual EventStream.System("metadata")
+    "return proper original" in {
+      stream.original mustEqual EventStream.Plain("metadata")
+      EventStream.Metadata("$metadata").original mustEqual EventStream.System("metadata")
     }
 
     "be not system stream" in {

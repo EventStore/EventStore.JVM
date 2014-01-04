@@ -84,7 +84,7 @@ object EventStream {
     def isSystem = false
     def isMetadata = true
 
-    lazy val owner: HasMetadata = HasMetadata(value) // TODO rename to original
+    lazy val original: HasMetadata = HasMetadata(value)
 
     override lazy val toString = s"MetadataStream($streamId)"
   }
