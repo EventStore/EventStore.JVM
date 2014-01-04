@@ -28,8 +28,8 @@ object EventStream {
 
   object Id {
     def apply(streamId: String): Id = {
-      require(streamId != null, "streamId must be not null") // TODO use 'must not be'
-      require(streamId.nonEmpty, "streamId must be not empty")
+      require(streamId != null, "streamId must not be null") // TODO use 'must not be'
+      require(streamId.nonEmpty, "streamId must not be empty")
       if (streamId startsWith "$$") Metadata(streamId substring 2) else HasMetadata(streamId)
     }
   }
@@ -40,16 +40,16 @@ object EventStream {
 
   object HasMetadata {
     def apply(streamId: String): HasMetadata = {
-      require(streamId != null, "streamId must be not null")
-      require(streamId.nonEmpty, "streamId must be not empty")
+      require(streamId != null, "streamId must not be null")
+      require(streamId.nonEmpty, "streamId must not be empty")
       require(!(streamId startsWith "$$"), "streamId must not start with $$")
       if (streamId startsWith "$") System(streamId substring 1) else Plain(streamId)
     }
   }
 
   case class Plain(value: String) extends HasMetadata {
-    require(value != null, "value must be not null")
-    require(value.nonEmpty, "value must be not empty")
+    require(value != null, "value must not be null")
+    require(value.nonEmpty, "value must not be empty")
     require(!(value startsWith "$"), "value must not start with $")
 
     def prefix = ""
@@ -60,8 +60,8 @@ object EventStream {
   }
 
   case class System(value: String) extends HasMetadata {
-    require(value != null, "value must be not null")
-    require(value.nonEmpty, "value must be not empty")
+    require(value != null, "value must not be null")
+    require(value.nonEmpty, "value must not be empty")
     require(!(value startsWith "$"), "value must not start with $")
 
     def prefix = "$"
@@ -76,8 +76,8 @@ object EventStream {
   }
 
   case class Metadata(value: String) extends Id {
-    require(value != null, "value must be not null")
-    require(value.nonEmpty, "value must be not empty")
+    require(value != null, "value must not be null")
+    require(value.nonEmpty, "value must not be empty")
     require(!(value startsWith "$$"), "value must not start with $$")
 
     def prefix = "$$"
