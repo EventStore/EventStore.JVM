@@ -28,7 +28,7 @@ object EventStream {
 
   object Id {
     def apply(streamId: String): Id = {
-      require(streamId != null, "streamId must not be null") // TODO use 'must not be'
+      require(streamId != null, "streamId must not be null")
       require(streamId.nonEmpty, "streamId must not be empty")
       if (streamId startsWith "$$") Metadata(streamId substring 2) else HasMetadata(streamId)
     }
