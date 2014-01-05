@@ -6,7 +6,6 @@ import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class EsConnectionImpl(connection: eventstore.EsConnection) extends EsConnection {
-  private def expectedVersionOrAny(x: ExpectedVersion): ExpectedVersion = Option(x) getOrElse ExpectedVersion.Any
 
   def writeEvents(
     stream: String,
@@ -17,7 +16,7 @@ class EsConnectionImpl(connection: eventstore.EsConnection) extends EsConnection
     val out = WriteEvents(
       streamId = EventStream(stream),
       events = events.asScala.toList,
-      expectedVersion = expectedVersionOrAny(expectedVersion))
+      expectedVersion = Option(expectedVersion) getOrElse ExpectedVersion.Any)
 
     connection.future(out, Option(userCredentials)).map(_ => ())
   }
@@ -28,8 +27,6 @@ class EsConnectionImpl(connection: eventstore.EsConnection) extends EsConnection
       expectedVersion = Option(expectedVersion) getOrElse ExpectedVersion.Any)
     connection.future(out, Option(userCredentials)).map(_ => ())
   }
-
-  // TODO write UnitTests
 
   def readEvent(
     stream: String,
@@ -47,14 +44,14 @@ class EsConnectionImpl(connection: eventstore.EsConnection) extends EsConnection
 
   def readStreamEventsForward(
     stream: String,
-    fromNumber: EventNumber,
+    fromNumber: EventNumber.Exact,
     count: Int,
     resolveLinkTos: Boolean,
     userCredentials: UserCredentials) = {
 
     val out = ReadStreamEvents(
       streamId = EventStream(stream),
-      fromNumber = Option(fromNumber) getOrElse EventNumber.First, // TODO write UnitTests
+      fromNumber = Option(fromNumber) getOrElse EventNumber.First,
       maxCount = count,
       direction = ReadDirection.Forward,
       resolveLinkTos = resolveLinkTos)
@@ -65,14 +62,14 @@ class EsConnectionImpl(connection: eventstore.EsConnection) extends EsConnection
   def readStreamEventsBackward(
     stream: String,
     fromNumber: EventNumber,
-    count: Int,
+    maxCount: Int,
     resolveLinkTos: Boolean,
     userCredentials: UserCredentials) = {
 
     val out = ReadStreamEvents(
       streamId = EventStream(stream),
-      fromNumber = Option(fromNumber) getOrElse EventNumber.Last, // TODO write UnitTests
-      maxCount = count,
+      fromNumber = Option(fromNumber) getOrElse EventNumber.Last,
+      maxCount = maxCount,
       direction = ReadDirection.Backward,
       resolveLinkTos = resolveLinkTos)
 

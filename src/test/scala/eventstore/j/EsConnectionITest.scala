@@ -10,7 +10,7 @@ class EsConnectionITest extends ActorSpec {
   "EsConnection" should {
 
     "write events" in new TestScope {
-      await(connection.writeEvents("java-writeEvents-" + newUuid, ExpectedVersion.Any, events, null))
+      await(connection.writeEvents("java-writeEvents-" + newUuid, null, events, null))
     }
 
     "delete stream" in new TestScope {
@@ -57,7 +57,7 @@ class EsConnectionITest extends ActorSpec {
       }
       await(connection.writeEvents(streamId, null, events, null))
       val result = await {
-        connection.readStreamEventsBackward(streamId, EventNumber.First, 10, resolveLinkTos = false, null)
+        connection.readStreamEventsBackward(streamId, null, 10, resolveLinkTos = false, null)
       }
       result.direction mustEqual ReadDirection.Backward
       result.lastEventNumber mustEqual EventNumber.Exact(0)
@@ -67,7 +67,7 @@ class EsConnectionITest extends ActorSpec {
     }
 
     "read all events forward" in new TestScope {
-      val result = await(connection.readAllEventsForward(Position.First, 10, resolveLinkTos = false, null))
+      val result = await(connection.readAllEventsForward(null, 10, resolveLinkTos = false, null))
       result.direction mustEqual ReadDirection.Forward
 
       result.events.foreach {
@@ -78,7 +78,7 @@ class EsConnectionITest extends ActorSpec {
     }
 
     "read all events backward" in new TestScope {
-      val result = await(connection.readAllEventsBackward(Position.First, 10, resolveLinkTos = false, null))
+      val result = await(connection.readAllEventsBackward(null, 10, resolveLinkTos = false, null))
       result.direction mustEqual ReadDirection.Backward
 
       result.events.foreach {
