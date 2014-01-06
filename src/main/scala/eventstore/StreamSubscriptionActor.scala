@@ -5,18 +5,18 @@ import akka.actor.Status.Failure
 import ReadDirection.Forward
 import scala.collection.immutable.Queue
 
-object StreamCatchUpSubscriptionActor {
+object StreamSubscriptionActor {
   def props(
     connection: ActorRef,
     client: ActorRef,
     streamId: EventStream.Id,
     fromNumberExclusive: Option[EventNumber.Exact] = None,
     resolveLinkTos: Boolean = false,
-    readBatchSize: Int = 500): Props = Props(classOf[StreamCatchUpSubscriptionActor], connection, client,
+    readBatchSize: Int = 500): Props = Props(classOf[StreamSubscriptionActor], connection, client,
     streamId, fromNumberExclusive, resolveLinkTos, readBatchSize)
 }
 
-class StreamCatchUpSubscriptionActor(
+class StreamSubscriptionActor(
     val connection: ActorRef,
     val client: ActorRef,
     val streamId: EventStream.Id,
@@ -101,7 +101,7 @@ class StreamCatchUpSubscriptionActor(
 
   def liveProcessing(lastNumber: Option[EventNumber.Exact], stash: Queue[Event] = Queue()): Receive = {
     debug("live processing started, lastEventNumber: {}", lastNumber)
-    client ! Cs.LiveProcessingStarted
+    client ! Subscription.LiveProcessingStarted
 
     def liveProcessing(lastNumber: Option[EventNumber.Exact]): Receive = {
       case StreamEventAppeared(x) => context become liveProcessing(process(lastNumber, x.event))
@@ -131,6 +131,6 @@ class StreamCatchUpSubscriptionActor(
 
   def forward(event: Event) {
     debug("forwarding {}", event)
-    client ! Cs.StreamEvent(event)
+    client ! event
   }
 }

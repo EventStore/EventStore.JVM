@@ -50,3 +50,7 @@ trait AbstractSubscriptionActor extends Actor with ActorLogging {
     }
   }
 }
+
+object Subscription {
+  case object LiveProcessingStarted
+}

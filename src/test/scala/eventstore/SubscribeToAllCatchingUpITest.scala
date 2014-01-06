@@ -82,9 +82,9 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
       val last = lastPosition
       val (linked, link) = linkedAndLink()
       newSubscription(Some(last), resolveLinkTos = false)
-      expectMsgType[Cs.AllStreamsEvent].event.event mustEqual linked
-      expectMsgType[Cs.AllStreamsEvent]
-      expectMsgType[Cs.AllStreamsEvent].event.event mustEqual link
+      expectMsgType[IndexedEvent].event mustEqual linked
+      expectMsgType[IndexedEvent]
+      expectMsgType[IndexedEvent].event mustEqual link
       fishForLiveProcessingStarted(last)
     }
 
@@ -92,9 +92,9 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
       val last = lastPosition
       val (linked, link) = linkedAndLink()
       newSubscription(Some(last), resolveLinkTos = true)
-      expectMsgType[Cs.AllStreamsEvent].event.event mustEqual linked
-      expectMsgType[Cs.AllStreamsEvent]
-      expectMsgType[Cs.AllStreamsEvent].event.event mustEqual ResolvedEvent(linked, link)
+      expectMsgType[IndexedEvent].event mustEqual linked
+      expectMsgType[IndexedEvent]
+      expectMsgType[IndexedEvent].event mustEqual ResolvedEvent(linked, link)
       fishForLiveProcessingStarted(last)
     }
 
@@ -102,18 +102,18 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
       newSubscription(Some(lastPosition), resolveLinkTos = false)
       fishForLiveProcessingStarted()
       val (linked, link) = linkedAndLink()
-      expectMsgType[Cs.AllStreamsEvent].event.event mustEqual linked
-      expectMsgType[Cs.AllStreamsEvent]
-      expectMsgType[Cs.AllStreamsEvent].event.event mustEqual link
+      expectMsgType[IndexedEvent].event mustEqual linked
+      expectMsgType[IndexedEvent]
+      expectMsgType[IndexedEvent].event mustEqual link
     }
 
     "catch link events if resolveLinkTos = true" in new SubscribeToAllCatchingUpScope {
       newSubscription(Some(lastPosition), resolveLinkTos = true)
       fishForLiveProcessingStarted()
       val (linked, link) = linkedAndLink()
-      expectMsgType[Cs.AllStreamsEvent].event.event mustEqual linked
-      expectMsgType[Cs.AllStreamsEvent]
-      expectMsgType[Cs.AllStreamsEvent].event.event mustEqual ResolvedEvent(linked, link)
+      expectMsgType[IndexedEvent].event mustEqual linked
+      expectMsgType[IndexedEvent]
+      expectMsgType[IndexedEvent].event mustEqual ResolvedEvent(linked, link)
     }
   }
 
@@ -124,7 +124,7 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
     def newSubscription(
       fromPositionExclusive: Option[Position.Exact] = None,
       resolveLinkTos: Boolean = false,
-      client: ActorRef = testActor) = TestActorRef(new CatchUpSubscriptionActor(
+      client: ActorRef = testActor) = TestActorRef(new SubscriptionActor(
       connection = actor,
       client = client,
       fromPositionExclusive = fromPositionExclusive,
@@ -139,7 +139,7 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
       def loop(events: List[EventData], position: Position): List[IndexedEvent] = events match {
         case Nil => Nil
         case head :: tail =>
-          val indexedEvent = testKit.expectMsgType[Cs.AllStreamsEvent].event
+          val indexedEvent = testKit.expectMsgType[IndexedEvent]
           indexedEvent.position must beGreaterThanOrEqualTo(position)
           indexedEvent.event must beAnInstanceOf[EventRecord]
           if (indexedEvent.event.data == head) indexedEvent :: loop(tail, indexedEvent.position)
@@ -152,8 +152,8 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
       receiveOne(1.second) match {
         case null =>
         case msg =>
-          msg must beAnInstanceOf[Cs.AllStreamsEvent]
-          val indexedEvent = msg.asInstanceOf[Cs.AllStreamsEvent].event
+          msg must beAnInstanceOf[IndexedEvent]
+          val indexedEvent = msg.asInstanceOf[IndexedEvent]
           val streamId = indexedEvent.event.streamId
           streamId.isSystem must beTrue
           expectNoEvents()
@@ -164,8 +164,8 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
     final def fishForLiveProcessingStarted(
       position: Position = Position.First,
       testKit: TestKitBase = this): Position = testKit.expectMsgType[AnyRef] match {
-      case Cs.LiveProcessingStarted => position
-      case Cs.AllStreamsEvent(IndexedEvent(_, x)) =>
+      case Subscription.LiveProcessingStarted => position
+      case IndexedEvent(_, x) =>
         x must beGreaterThanOrEqualTo(position)
         fishForLiveProcessingStarted(x, testKit)
     }

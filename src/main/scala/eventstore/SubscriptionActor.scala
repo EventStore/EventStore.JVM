@@ -6,16 +6,16 @@ import akka.actor.Status.Failure
 import scala.collection.immutable.Queue
 import scala.annotation.tailrec
 
-object CatchUpSubscriptionActor {
+object SubscriptionActor {
   def props(
     connection: ActorRef,
     client: ActorRef,
     fromPositionExclusive: Option[Position.Exact] = None,
     resolveLinkTos: Boolean = false,
     readBatchSize: Int = 500): Props =
-    Props(classOf[CatchUpSubscriptionActor], connection, client /*TODO client or parent*/ , fromPositionExclusive, resolveLinkTos, readBatchSize)
+    Props(classOf[SubscriptionActor], connection, client /*TODO client or parent*/ , fromPositionExclusive, resolveLinkTos, readBatchSize)
 }
-class CatchUpSubscriptionActor(
+class SubscriptionActor(
     val connection: ActorRef,
     val client: ActorRef,
     fromPositionExclusive: Option[Position.Exact],
@@ -89,7 +89,7 @@ class CatchUpSubscriptionActor(
 
   def liveProcessing(lastPosition: Option[Position.Exact], stash: Queue[IndexedEvent]): Receive = {
     debug("live processing started, lastPosition: {}", lastPosition)
-    client ! Cs.LiveProcessingStarted
+    client ! Subscription.LiveProcessingStarted
 
     def liveProcessing(lastPosition: Option[Position.Exact]): Receive = {
       case StreamEventAppeared(event) => context become liveProcessing(process(lastPosition, event))
@@ -124,6 +124,6 @@ class CatchUpSubscriptionActor(
 
   def forward(event: IndexedEvent) {
     debug("forwarding {}", event)
-    client ! Cs.AllStreamsEvent(event)
+    client ! event
   }
 }

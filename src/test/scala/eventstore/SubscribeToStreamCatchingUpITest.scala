@@ -1,10 +1,10 @@
 package eventstore
 
-import akka.actor.{ Props, SupervisorStrategy, Actor, ActorRef }
+import akka.actor.{ SupervisorStrategy, Actor, ActorRef }
 import akka.testkit.{ TestKitBase, TestProbe, TestActorRef }
 import scala.concurrent.duration._
 
-class SubscribeCatchingUpITest extends TestConnection {
+class SubscribeToStreamCatchingUpITest extends TestConnection {
 
   "subscribe catching up" should {
 
@@ -14,7 +14,7 @@ class SubscribeCatchingUpITest extends TestConnection {
 
     "be able to subscribe to non existing stream and then catch event" in new SubscribeCatchingUpScope {
       val subscriptionActor = newSubscription()
-      expectMsg(Cs.LiveProcessingStarted)
+      expectMsg(Subscription.LiveProcessingStarted)
       expectNoEvents()
       val event = append(newEventData)
       expectEvent(event)
@@ -23,7 +23,7 @@ class SubscribeCatchingUpITest extends TestConnection {
     "be able to subscribe to non existing stream from number" in new SubscribeCatchingUpScope {
       val subscriptionActor = newSubscription(Some(EventNumber(0)))
       append(newEventData)
-      expectMsg(Cs.LiveProcessingStarted)
+      expectMsg(Subscription.LiveProcessingStarted)
       expectNoEvents()
       val event = append(newEventData)
       expectEvent(event)
@@ -39,7 +39,7 @@ class SubscribeCatchingUpITest extends TestConnection {
     "allow multiple subscriptions to same stream" in new SubscribeCatchingUpScope {
       val probes = List.fill(5)(TestProbe.apply)
       probes.foreach(x => newSubscription(client = x.ref))
-      probes.foreach(_.expectMsg(Cs.LiveProcessingStarted))
+      probes.foreach(_.expectMsg(Subscription.LiveProcessingStarted))
       val event = append(newEventData)
       probes.foreach(x => expectEvent(event, x))
     }
@@ -56,7 +56,7 @@ class SubscribeCatchingUpITest extends TestConnection {
       val subscriptionActor = newSubscription()
       expectEvent(event)
 
-      expectMsg(Cs.LiveProcessingStarted)
+      expectMsg(Subscription.LiveProcessingStarted)
 
       expectNoEvents()
       val event2 = append(newEventData)
@@ -65,7 +65,7 @@ class SubscribeCatchingUpITest extends TestConnection {
 
     "filter events and keep listening to new ones" in new SubscribeCatchingUpScope {
       val subscriptionActor = newSubscription(Some(EventNumber(0)))
-      expectMsg(Cs.LiveProcessingStarted)
+      expectMsg(Subscription.LiveProcessingStarted)
       append(newEventData)
       val event = append(newEventData)
       expectEvent(event)
@@ -79,7 +79,7 @@ class SubscribeCatchingUpITest extends TestConnection {
       val event = append(newEventData)
       val subscriptionActor = newSubscription(Some(EventNumber(0)))
       expectEvent(event)
-      expectMsg(Cs.LiveProcessingStarted)
+      expectMsg(Subscription.LiveProcessingStarted)
       expectNoEvents()
       val event2 = append(newEventData)
       expectEvent(event2)
@@ -90,7 +90,7 @@ class SubscribeCatchingUpITest extends TestConnection {
       val event = append(newEventData)
       val subscriptionActor = newSubscription(Some(EventNumber(0)))
       expectEvent(event)
-      expectMsg(Cs.LiveProcessingStarted)
+      expectMsg(Subscription.LiveProcessingStarted)
       expectNoEvents()
     }
 
@@ -98,35 +98,35 @@ class SubscribeCatchingUpITest extends TestConnection {
       val (linked, link) = linkedAndLink()
       newSubscription(resolveLinkTos = false)
       expectEvent(linked)
-      expectMsgType[Cs.StreamEvent]
+      expectMsgType[Event]
       expectEvent(link)
-      expectMsg(Cs.LiveProcessingStarted)
+      expectMsg(Subscription.LiveProcessingStarted)
     }
 
     "read linked events if resolveLinkTos = true" in new SubscribeCatchingUpScope {
       val (linked, link) = linkedAndLink()
       newSubscription(resolveLinkTos = true)
       expectEvent(linked)
-      expectMsgType[Cs.StreamEvent]
+      expectMsgType[Event]
       expectEvent(ResolvedEvent(linked, link))
-      expectMsg(Cs.LiveProcessingStarted)
+      expectMsg(Subscription.LiveProcessingStarted)
     }
 
     "catch linked events if resolveLinkTos = false" in new SubscribeCatchingUpScope {
       newSubscription(resolveLinkTos = false)
-      expectMsg(Cs.LiveProcessingStarted)
+      expectMsg(Subscription.LiveProcessingStarted)
       val (linked, link) = linkedAndLink()
       expectEvent(linked)
-      expectMsgType[Cs.StreamEvent]
+      expectMsgType[Event]
       expectEvent(link)
     }
 
     "catch linked events if resolveLinkTos = true" in new SubscribeCatchingUpScope {
       newSubscription(resolveLinkTos = true)
-      expectMsg(Cs.LiveProcessingStarted)
+      expectMsg(Subscription.LiveProcessingStarted)
       val (linked, link) = linkedAndLink()
       expectEvent(linked)
-      expectMsgType[Cs.StreamEvent]
+      expectMsgType[Event]
       expectEvent(ResolvedEvent(linked, link))
     }
   }
@@ -144,7 +144,7 @@ class SubscribeCatchingUpITest extends TestConnection {
         def receive = PartialFunction.empty
       }
 
-      val a = TestActorRef(StreamCatchUpSubscriptionActor.props(
+      val a = TestActorRef(StreamSubscriptionActor.props(
         connection = actor,
         client = client,
         streamId = streamId,
@@ -161,7 +161,7 @@ class SubscribeCatchingUpITest extends TestConnection {
       expectNoEvents()
     }
 
-    def expectEvent(x: Event, probe: TestKitBase = this) = probe.expectMsg(Cs.StreamEvent(x))
+    def expectEvent(x: Event, probe: TestKitBase = this) = probe.expectMsg(x)
   }
 }
 
