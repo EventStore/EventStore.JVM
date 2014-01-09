@@ -185,7 +185,7 @@ object ReadEventExample extends App {
         log.info(s"event: $event")
         context.system.shutdown()
 
-  case Failure(e: EsException) =>
+      case Failure(e: EsException) =>
         log.error(e.toString)
         context.system.shutdown()
     }
@@ -216,7 +216,7 @@ object WriteEventExample extends App {
         log.info(s"eventNumber: $eventNumber")
         context.system.shutdown()
 
-    case Failure(e: EsException) =>
+      case Failure(e: EsException) =>
         log.error(e.toString)
         context.system.shutdown()
     }
