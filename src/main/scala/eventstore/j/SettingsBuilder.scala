@@ -9,7 +9,8 @@ import scala.concurrent.duration._
 class SettingsBuilder extends Builder[Settings] with RequireMasterSnippet[SettingsBuilder] {
   var _address = Default.address
   var _maxReconnections = Default.maxReconnections
-  var _reconnectionDelay = Default.reconnectionDelay
+  var _reconnectionDelayMin = Default.reconnectionDelayMin
+  var _reconnectionDelayMax = Default.reconnectionDelayMax
   var _defaultCredentials = Default.defaultCredentials
   var _heartbeatInterval = Default.heartbeatInterval
   var _heartbeatTimeout = Default.heartbeatTimeout
@@ -28,13 +29,21 @@ class SettingsBuilder extends Builder[Settings] with RequireMasterSnippet[Settin
 
   def requireMaster(x: Boolean): SettingsBuilder = RequireMasterSnippet.requireMaster(x)
 
-  def reconnectionDelay(x: FiniteDuration): SettingsBuilder = set {
-    _reconnectionDelay = x
+  def reconnectionDelayMin(x: FiniteDuration): SettingsBuilder = set {
+    _reconnectionDelayMin = x
   }
 
-  def reconnectionDelay(length: Long, unit: TimeUnit): SettingsBuilder = reconnectionDelay(FiniteDuration(length, unit))
+  def reconnectionDelayMin(length: Long, unit: TimeUnit): SettingsBuilder = reconnectionDelayMin(FiniteDuration(length, unit))
 
-  def reconnectionDelay(length: Long): SettingsBuilder = reconnectionDelay(length, SECONDS)
+  def reconnectionDelayMin(length: Long): SettingsBuilder = reconnectionDelayMin(length, SECONDS)
+
+  def reconnectionDelayMax(x: FiniteDuration): SettingsBuilder = set {
+    _reconnectionDelayMax = x
+  }
+
+  def reconnectionDelayMax(length: Long, unit: TimeUnit): SettingsBuilder = reconnectionDelayMax(FiniteDuration(length, unit))
+
+  def reconnectionDelayMax(length: Long): SettingsBuilder = reconnectionDelayMax(length, SECONDS)
 
   def defaultCredentials(x: Option[UserCredentials]): SettingsBuilder = set {
     _defaultCredentials = x
@@ -79,7 +88,8 @@ class SettingsBuilder extends Builder[Settings] with RequireMasterSnippet[Settin
     address = _address,
     maxReconnections = _maxReconnections,
     requireMaster = RequireMasterSnippet.value,
-    reconnectionDelay = _reconnectionDelay,
+    reconnectionDelayMin = _reconnectionDelayMin,
+    reconnectionDelayMax = _reconnectionDelayMax,
     defaultCredentials = _defaultCredentials,
     heartbeatInterval = _heartbeatInterval,
     heartbeatTimeout = _heartbeatTimeout,

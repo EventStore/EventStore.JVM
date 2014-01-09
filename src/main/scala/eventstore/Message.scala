@@ -186,6 +186,7 @@ case object UnsubscribeCompleted extends In
 case object ScavengeDatabase extends Out
 
 case object BadRequest extends In // TODO Failures?
+//case object NotHandled extends In // TODO Failures? // TODO implement
 
 case object Authenticate extends Out
 case object Authenticated extends In

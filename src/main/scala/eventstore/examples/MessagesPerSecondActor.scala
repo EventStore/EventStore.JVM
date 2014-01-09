@@ -1,9 +1,9 @@
 package eventstore.examples
 
-import akka.actor.Actor
+import akka.actor.{ ActorLogging, Actor }
 import scala.concurrent.duration._
 
-class MessagesPerSecondActor extends Actor {
+class MessagesPerSecondActor extends Actor with ActorLogging {
 
   import context.dispatcher
 
@@ -16,7 +16,7 @@ class MessagesPerSecondActor extends Actor {
     case Report if count > 0 =>
       val current = currentTimeMillis
       val value = count / ((current - time) / 1000)
-      if (value > 0) println(s"$value m/s")
+      if (value > 0) log.info("{} m/s", value)
       time = current
       count = 0
 

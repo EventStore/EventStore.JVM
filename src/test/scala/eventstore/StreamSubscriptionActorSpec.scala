@@ -1,176 +1,178 @@
 package eventstore
 
 import ReadDirection.Forward
+import Subscription.LiveProcessingStarted
 import akka.actor.Status.Failure
 import akka.testkit.TestProbe
+import tcp.ConnectionActor.Reconnected
 
 class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
   "catch up subscription actor" should {
 
-    "read events from given position" in new StreamCatchUpScope(Some(123)) {
-      connection expectMsg readStreamEvents(123)
+    "read events from given position" in new SubscriptionScope(Some(123)) {
+      connection expectMsg readEvents(123)
     }
 
-    "read events from start if no position given" in new StreamCatchUpScope {
-      connection expectMsg readStreamEvents(0)
+    "read events from start if no position given" in new SubscriptionScope {
+      connection expectMsg readEvents(0)
     }
 
-    "ignore read events with event number out of interest" in new StreamCatchUpScope {
-      connection expectMsg readStreamEvents(0)
+    "ignore read events with event number out of interest" in new SubscriptionScope {
+      connection expectMsg readEvents(0)
 
-      actor ! readStreamEventsCompleted(3, false, event0, event1, event2)
+      actor ! readCompleted(3, false, event0, event1, event2)
       expectEvent(event0)
       expectEvent(event1)
       expectEvent(event2)
 
-      connection expectMsg readStreamEvents(3)
+      connection expectMsg readEvents(3)
 
-      actor ! readStreamEventsCompleted(5, false, event0, event1, event2, event3, event4)
+      actor ! readCompleted(5, false, event0, event1, event2, event3, event4)
 
       expectEvent(event3)
       expectEvent(event4)
 
-      connection expectMsg readStreamEvents(5)
+      connection expectMsg readEvents(5)
 
-      actor ! readStreamEventsCompleted(5, false, event0, event1, event2, event3, event4)
+      actor ! readCompleted(5, false, event0, event1, event2, event3, event4)
 
       expectNoMsg(duration)
-      connection expectMsg readStreamEvents(5)
+      connection expectMsg readEvents(5)
     }
 
-    "ignore read events with event number out of interest when from number is given" in new StreamCatchUpScope(Some(1)) {
-      connection expectMsg readStreamEvents(1)
+    "ignore read events with event number out of interest when from number is given" in new SubscriptionScope(Some(1)) {
+      connection expectMsg readEvents(1)
 
-      actor ! readStreamEventsCompleted(3, false, event0, event1, event2)
+      actor ! readCompleted(3, false, event0, event1, event2)
       expectEvent(event2)
       expectNoMsg(duration)
 
-      connection expectMsg readStreamEvents(3)
+      connection expectMsg readEvents(3)
     }
 
-    "read events until none left and subscribe to new ones" in new StreamCatchUpScope {
-      connection expectMsg readStreamEvents(0)
-      actor ! readStreamEventsCompleted(2, false, event1)
+    "read events until none left and subscribe to new ones" in new SubscriptionScope {
+      connection expectMsg readEvents(0)
+      actor ! readCompleted(2, false, event1)
 
       expectEvent(event1)
 
-      connection expectMsg readStreamEvents(2)
-      actor ! readStreamEventsCompleted(2, endOfStream = true)
+      connection expectMsg readEvents(2)
+      actor ! readCompleted(2, endOfStream = true)
 
       connection expectMsg subscribeTo
     }
 
-    "subscribe to new events if nothing to read" in new StreamCatchUpScope {
-      connection expectMsg readStreamEvents(0)
-      actor ! readStreamEventsCompleted(0, endOfStream = true)
+    "subscribe to new events if nothing to read" in new SubscriptionScope {
+      connection expectMsg readEvents(0)
+      actor ! readCompleted(0, endOfStream = true)
       connection expectMsg subscribeTo
 
       actor ! subscribeToStreamCompleted(1)
 
-      connection expectMsg readStreamEvents(0)
-      actor ! readStreamEventsCompleted(0, endOfStream = true)
+      connection expectMsg readEvents(0)
+      actor ! readCompleted(0, endOfStream = true)
 
-      expectMsg(Subscription.LiveProcessingStarted)
+      expectMsg(LiveProcessingStarted)
     }
 
-    "stop reading events if actor stopped" in new StreamCatchUpScope {
-      connection expectMsg readStreamEvents(0)
+    "stop reading events if actor stopped" in new SubscriptionScope {
+      connection expectMsg readEvents(0)
       actor.stop()
       expectActorTerminated()
     }
 
-    "catch events that appear in between reading and subscribing" in new StreamCatchUpScope() {
-      connection expectMsg readStreamEvents(0)
+    "catch events that appear in between reading and subscribing" in new SubscriptionScope() {
+      connection expectMsg readEvents(0)
 
       val position = 1
-      actor ! readStreamEventsCompleted(2, false, event0, event1)
+      actor ! readCompleted(2, false, event0, event1)
 
       expectEvent(event0)
       expectEvent(event1)
 
-      connection expectMsg readStreamEvents(2)
-      actor ! readStreamEventsCompleted(2, true)
+      connection expectMsg readEvents(2)
+      actor ! readCompleted(2, endOfStream = true)
 
       expectNoMsg(duration)
       connection expectMsg subscribeTo
 
       actor ! subscribeToStreamCompleted(4)
 
-      connection expectMsg readStreamEvents(2)
+      connection expectMsg readEvents(2)
 
       actor ! streamEventAppeared(event2)
       actor ! streamEventAppeared(event3)
       actor ! streamEventAppeared(event4)
       expectNoMsg(duration)
 
-      actor ! readStreamEventsCompleted(3, false, event1, event2)
+      actor ! readCompleted(3, false, event1, event2)
       expectEvent(event2)
 
-      connection expectMsg readStreamEvents(3)
+      connection expectMsg readEvents(3)
 
       actor ! streamEventAppeared(event5)
       actor ! streamEventAppeared(event6)
       expectNoMsg(duration)
 
-      actor ! readStreamEventsCompleted(6, false, event3, event4, event5)
+      actor ! readCompleted(6, false, event3, event4, event5)
 
       expectEvent(event3)
       expectEvent(event4)
-      expectMsg(Subscription.LiveProcessingStarted)
+      expectMsg(LiveProcessingStarted)
       expectEvent(event5)
       expectEvent(event6)
 
       actor ! streamEventAppeared(event5)
       actor ! streamEventAppeared(event6)
 
-      expectNoActivity
+      expectNoActivity()
     }
 
-    "stop subscribing if stop received when subscription not yet confirmed" in new StreamCatchUpScope() {
-      connection expectMsg readStreamEvents(0)
-      actor ! readStreamEventsCompleted(0, true)
+    "stop subscribing if stop received when subscription not yet confirmed" in new SubscriptionScope() {
+      connection expectMsg readEvents(0)
+      actor ! readCompleted(0, endOfStream = true)
       connection expectMsg subscribeTo
       actor.stop()
       expectActorTerminated()
     }
 
-    "not unsubscribe if subscription failed" in new StreamCatchUpScope() {
-      connection expectMsg readStreamEvents(0)
-      actor ! readStreamEventsCompleted(0, true)
+    "not unsubscribe if subscription failed" in new SubscriptionScope() {
+      connection expectMsg readEvents(0)
+      actor ! readCompleted(0, endOfStream = true)
 
       connection expectMsg subscribeTo
       actor ! Failure(EsException(EsError.AccessDenied))
       expectActorTerminated()
     }
 
-    "not unsubscribe if subscription failed if stop received " in new StreamCatchUpScope() {
-      connection expectMsg readStreamEvents(0)
-      actor ! readStreamEventsCompleted(0, true)
+    "not unsubscribe if subscription failed if stop received " in new SubscriptionScope() {
+      connection expectMsg readEvents(0)
+      actor ! readCompleted(0, endOfStream = true)
       connection expectMsg subscribeTo
-      expectNoActivity
+      expectNoActivity()
       actor ! Failure(EsException(EsError.AccessDenied))
       expectActorTerminated()
     }
 
-    "stop catching events that appear in between reading and subscribing if stop received" in new StreamCatchUpScope() {
-      connection expectMsg readStreamEvents(0)
+    "stop catching events that appear in between reading and subscribing if stop received" in new SubscriptionScope() {
+      connection expectMsg readEvents(0)
 
       val position = 1
-      actor ! readStreamEventsCompleted(2, false, event0, event1)
+      actor ! readCompleted(2, false, event0, event1)
 
       expectEvent(event0)
       expectEvent(event1)
 
-      connection expectMsg readStreamEvents(2)
+      connection expectMsg readEvents(2)
 
-      actor ! readStreamEventsCompleted(2, true)
+      actor ! readCompleted(2, endOfStream = true)
 
       expectNoMsg(duration)
       connection expectMsg subscribeTo
 
       actor ! subscribeToStreamCompleted(5)
 
-      connection expectMsg readStreamEvents(2)
+      connection expectMsg readEvents(2)
 
       actor ! streamEventAppeared(event3)
       actor ! streamEventAppeared(event4)
@@ -180,54 +182,54 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       expectActorTerminated()
     }
 
-    "continue with subscription if no events appear in between reading and subscribing" in new StreamCatchUpScope() {
+    "continue with subscription if no events appear in between reading and subscribing" in new SubscriptionScope() {
       val position = 0
-      connection expectMsg readStreamEvents(position)
-      actor ! readStreamEventsCompleted(position, true)
+      connection expectMsg readEvents(position)
+      actor ! readCompleted(position, endOfStream = true)
 
       connection expectMsg subscribeTo
       expectNoMsg(duration)
 
       actor ! subscribeToStreamCompleted(1)
 
-      connection expectMsg readStreamEvents(position)
-      actor ! readStreamEventsCompleted(position, true)
+      connection expectMsg readEvents(position)
+      actor ! readCompleted(position, endOfStream = true)
 
-      expectMsg(Subscription.LiveProcessingStarted)
+      expectMsg(LiveProcessingStarted)
 
-      expectNoActivity
+      expectNoActivity()
     }
 
-    "continue with subscription if no events appear in between reading and subscribing and position is given" in new StreamCatchUpScope(Some(1)) {
+    "continue with subscription if no events appear in between reading and subscribing and position is given" in new SubscriptionScope(Some(1)) {
       val position = 1
-      connection expectMsg readStreamEvents(position)
+      connection expectMsg readEvents(position)
 
-      actor ! readStreamEventsCompleted(position, endOfStream = true)
+      actor ! readCompleted(position, endOfStream = true)
 
       connection expectMsg subscribeTo
       expectNoMsg(duration)
 
       actor ! subscribeToStreamCompleted(1)
 
-      expectMsg(Subscription.LiveProcessingStarted)
+      expectMsg(LiveProcessingStarted)
 
-      expectNoActivity
+      expectNoActivity()
     }
 
-    "forward events while subscribed" in new StreamCatchUpScope() {
+    "forward events while subscribed" in new SubscriptionScope() {
       val position = 0
-      connection expectMsg readStreamEvents(position)
-      actor ! readStreamEventsCompleted(position, endOfStream = true)
+      connection expectMsg readEvents(position)
+      actor ! readCompleted(position, endOfStream = true)
 
       connection expectMsg subscribeTo
       expectNoMsg(duration)
 
       actor ! subscribeToStreamCompleted(1)
 
-      connection expectMsg readStreamEvents(position)
-      actor ! readStreamEventsCompleted(position, endOfStream = true)
+      connection expectMsg readEvents(position)
+      actor ! readCompleted(position, endOfStream = true)
 
-      expectMsg(Subscription.LiveProcessingStarted)
+      expectMsg(LiveProcessingStarted)
 
       actor ! streamEventAppeared(event1)
       expectEvent(event1)
@@ -240,18 +242,18 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       expectEvent(event3)
     }
 
-    "ignore wrong events while subscribed" in new StreamCatchUpScope(Some(1)) {
+    "ignore wrong events while subscribed" in new SubscriptionScope(Some(1)) {
       val position = 1
-      connection expectMsg readStreamEvents(position)
-      actor ! readStreamEventsCompleted(position, endOfStream = true)
+      connection expectMsg readEvents(position)
+      actor ! readCompleted(position, endOfStream = true)
 
       connection expectMsg subscribeTo
       actor ! subscribeToStreamCompleted(2)
 
-      connection expectMsg readStreamEvents(position)
-      actor ! readStreamEventsCompleted(position, endOfStream = true)
+      connection expectMsg readEvents(position)
+      actor ! readCompleted(position, endOfStream = true)
 
-      expectMsg(Subscription.LiveProcessingStarted)
+      expectMsg(LiveProcessingStarted)
 
       actor ! streamEventAppeared(event0)
       actor ! streamEventAppeared(event1)
@@ -268,14 +270,14 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       expectNoMsg(duration)
     }
 
-    "stop subscription when actor stopped and subscribed" in new StreamCatchUpScope(Some(1)) {
-      connection expectMsg readStreamEvents(1)
+    "stop subscription when actor stopped and subscribed" in new SubscriptionScope(Some(1)) {
+      connection expectMsg readEvents(1)
 
-      actor ! readStreamEventsCompleted(1, endOfStream = true)
+      actor ! readCompleted(1, endOfStream = true)
 
       connection expectMsg subscribeTo
       actor ! subscribeToStreamCompleted(1)
-      expectMsg(Subscription.LiveProcessingStarted)
+      expectMsg(LiveProcessingStarted)
 
       actor ! streamEventAppeared(event2)
       expectEvent(event2)
@@ -285,59 +287,137 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       expectActorTerminated()
     }
 
-    "stop actor if read error" in new StreamCatchUpScope() {
-      connection expectMsg readStreamEvents(0)
-      actor ! readStreamEventsFailed()
-      expectActorTerminated()
+    "stop actor if connection stopped" in new SubscriptionScope() {
+      connection expectMsg readEvents(0)
+      system stop connection.ref
+      expectTerminated(actor)
     }
 
-    "stop actor if subscription error" in new StreamCatchUpScope() {
-      connection expectMsg readStreamEvents(0)
-      actor ! readStreamEventsCompleted(0, endOfStream = true)
-
-      connection expectMsg subscribeTo
-      actor ! Failure(EsException(EsError.AccessDenied))
-
-      expectActorTerminated()
-    }
-
-    "stop actor if catchup read error" in new StreamCatchUpScope() {
-      connection expectMsg readStreamEvents(0)
-      actor ! readStreamEventsCompleted(0, endOfStream = true)
-
-      connection expectMsg subscribeTo
-      actor ! subscribeToStreamCompleted(1)
-
-      connection expectMsg readStreamEvents(0)
-      actor ! readStreamEventsFailed(EsError.StreamNotFound)
-
-      connection expectMsg UnsubscribeFromStream
-
-      expectActorTerminated()
-    }
-
-    "stop actor if connection stopped" in new StreamCatchUpScope() {
-      connection expectMsg readStreamEvents(0)
+    "stop actor if connection stopped" in new SubscriptionScope() {
+      connection expectMsg readEvents(0)
       system stop connection.ref
       expectActorTerminated()
     }
 
-    "stop actor if client stopped" in new StreamCatchUpScope() {
-      connection expectMsg readStreamEvents(0)
+    "stop actor if client stopped" in new SubscriptionScope() {
+      connection expectMsg readEvents(0)
       val probe = TestProbe()
       probe watch actor
       system stop testActor
       expectActorTerminated(probe)
     }
 
-    "not stop subscription if actor stopped and not yet subscribed" in new StreamCatchUpScope {
-      connection expectMsg readStreamEvents(0)
+    "not stop subscription if actor stopped and not yet subscribed" in new SubscriptionScope {
+      connection expectMsg readEvents(0)
       actor.stop()
       expectActorTerminated()
     }
+
+    "stop actor if error while reading" in new SubscriptionScope() {
+      connection expectMsg readEvents(0)
+      expectTerminatedOnFailure()
+    }
+
+    "stop actor if error while subscribing" in new SubscriptionScope(Some(0)) {
+      connection expectMsg readEvents(0)
+      actor ! readCompleted(0, endOfStream = true)
+      connection expectMsg subscribeTo
+
+      expectTerminatedOnFailure()
+    }
+
+    "stop actor if error while catching up" in new SubscriptionScope(Some(0)) {
+      connection expectMsg readEvents(0)
+      actor ! readCompleted(0, endOfStream = true)
+      connection expectMsg subscribeTo
+      actor ! SubscribeToStreamCompleted(0)
+
+      expectMsg(LiveProcessingStarted)
+      expectTerminatedOnFailure(expectUnsubscribe = true)
+    }
+
+    "stop actor if error while live processing" in new SubscriptionScope(Some(0)) {
+      connection expectMsg readEvents(0)
+      actor ! readCompleted(0, endOfStream = true)
+      connection expectMsg subscribeTo
+      actor ! SubscribeToStreamCompleted(0)
+
+      expectMsg(LiveProcessingStarted)
+      expectTerminatedOnFailure(expectUnsubscribe = true)
+    }
+
+    "re-read reconnected while reading" in new SubscriptionScope(Some(0)) {
+      connection expectMsg readEvents(0)
+      actor ! Reconnected
+      connection expectMsg readEvents(0)
+      expectNoActivity()
+    }
+
+    "re-subscribe reconnected while subscribing" in new SubscriptionScope(Some(0)) {
+      connection expectMsg readEvents(0)
+      actor ! readCompleted(0, endOfStream = true)
+      connection expectMsg subscribeTo
+      actor ! Reconnected
+      connection expectMsg subscribeTo
+      expectNoActivity()
+    }
+
+    "re-subscribe if reconnected while catching up" in new SubscriptionScope() {
+      connection expectMsg readEvents(0)
+      actor ! readCompleted(0, endOfStream = true)
+      connection expectMsg subscribeTo
+      actor ! SubscribeToStreamCompleted(0)
+
+      actor ! Reconnected
+
+      connection expectMsg subscribeTo
+    }
+
+    "re-subscribe if reconnected while live processing" in new SubscriptionScope(Some(0)) {
+      connection expectMsg readEvents(0)
+      actor ! readCompleted(0, endOfStream = true)
+      connection expectMsg subscribeTo
+      actor ! SubscribeToStreamCompleted(0)
+
+      expectMsg(LiveProcessingStarted)
+      actor ! Reconnected
+
+      connection expectMsg subscribeTo
+    }
+
+    "receive EsError.ConnectionLost while reading" in new SubscriptionScope(Some(0)) {
+      connection expectMsg readEvents(0)
+      expectWaitReconnected()
+    }
+
+    "receive EsError.ConnectionLost while subscribing" in new SubscriptionScope(Some(0)) {
+      connection expectMsg readEvents(0)
+      actor ! readCompleted(0, endOfStream = true)
+      connection expectMsg subscribeTo
+      expectWaitReconnected()
+    }
+
+    "receive EsError.ConnectionLost while catching up" in new SubscriptionScope() {
+      connection expectMsg readEvents(0)
+      actor ! readCompleted(0, endOfStream = true)
+      connection expectMsg subscribeTo
+      actor ! SubscribeToStreamCompleted(0)
+
+      expectWaitReconnected()
+    }
+
+    "receive EsError.ConnectionLost while live processing" in new SubscriptionScope(Some(0)) {
+      connection expectMsg readEvents(0)
+      actor ! readCompleted(0, endOfStream = true)
+      connection expectMsg subscribeTo
+      actor ! SubscribeToStreamCompleted(0)
+
+      expectMsg(LiveProcessingStarted)
+      expectWaitReconnected()
+    }
   }
 
-  abstract class StreamCatchUpScope(eventNumber: Option[Int] = None) extends AbstractScope {
+  abstract class SubscriptionScope(eventNumber: Option[Int] = None) extends AbstractScope {
     lazy val streamId = EventStream(getClass.getEnclosingClass.getSimpleName + "-" + newUuid.toString)
 
     def props = StreamSubscriptionActor.props(
@@ -360,19 +440,16 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
 
     def newEvent(number: Int): Event = EventRecord(streamId, EventNumber(number), mock[EventData])
 
-    def readStreamEvents(x: Int) =
+    def readEvents(x: Int) =
       ReadStreamEvents(streamId, EventNumber(x), readBatchSize, Forward, resolveLinkTos = resolveLinkTos)
 
-    def readStreamEventsCompleted(next: Int, endOfStream: Boolean, events: Event*) = ReadStreamEventsCompleted(
+    def readCompleted(next: Int, endOfStream: Boolean, events: Event*) = ReadStreamEventsCompleted(
       events = events.toList,
       nextEventNumber = EventNumber(next),
       lastEventNumber = mock[EventNumber.Exact],
       endOfStream = endOfStream,
       lastCommitPosition = next /*TODO*/ ,
       direction = Forward)
-
-    def readStreamEventsFailed(reason: EsError = EsError.StreamDeleted) =
-      Failure(EsException(reason, None))
 
     def subscribeToStreamCompleted(x: Int) = SubscribeToStreamCompleted(x, Some(EventNumber(x)))
   }

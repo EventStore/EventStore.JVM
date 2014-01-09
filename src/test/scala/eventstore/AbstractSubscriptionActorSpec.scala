@@ -1,9 +1,11 @@
 package eventstore
 
-import akka.actor.{ Props, SupervisorStrategy, Actor }
+import akka.actor.Props
+import akka.actor.Status.Failure
 import akka.testkit._
 import org.specs2.mock.Mockito
 import scala.concurrent.duration._
+import eventstore.tcp.ConnectionActor.WaitReconnected
 
 abstract class AbstractSubscriptionActorSpec extends util.ActorSpec with Mockito {
 
@@ -13,23 +15,14 @@ abstract class AbstractSubscriptionActorSpec extends util.ActorSpec with Mockito
     val resolveLinkTos = false
     val connection = TestProbe()
 
-    class Supervisor extends Actor {
-      override def supervisorStrategy = SupervisorStrategy.stoppingStrategy
-      def receive = PartialFunction.empty
-    }
-
-    val actor = {
-      val supervisor = TestActorRef(new Supervisor)
-      val actor = TestActorRef(props, supervisor, "test")
-      watch(actor)
-      actor
-    }
+    val actor = TestActorRef(props)
+    watch(actor)
 
     def props: Props
 
     def streamId: EventStream
 
-    def expectNoActivity {
+    def expectNoActivity() {
       expectNoMsg(duration)
       connection.expectNoMsg(duration)
     }
@@ -40,9 +33,20 @@ abstract class AbstractSubscriptionActorSpec extends util.ActorSpec with Mockito
 
     def expectActorTerminated(testKit: TestKitBase = this) {
       testKit.expectTerminated(actor)
-      actor.underlying.isTerminated must beTrue
-      expectNoActivity
+    }
+
+    def expectTerminatedOnFailure(expectUnsubscribe: Boolean = false) {
+      actor ! Failure(EsException(EsError.Error))
+      if (expectUnsubscribe) connection expectMsg UnsubscribeFromStream
+      expectTerminated(actor)
+      val duration = 1.seconds
+      expectNoMsg(duration)
+      connection.expectNoMsg(duration)
+    }
+
+    def expectWaitReconnected() {
+      actor ! Failure(EsException(EsError.ConnectionLost))
+      connection.expectMsg(WaitReconnected)
     }
   }
-
 }

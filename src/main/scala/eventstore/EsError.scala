@@ -16,10 +16,11 @@ object EsError {
   case object AccessDenied extends EsError
   case object NotAuthenticated extends EsError
   case object Error extends EsError
+  case object ConnectionLost extends EsError
 }
 
-case class EsException(reason: EsError, message: Option[String] = None, cause: Option[Throwable] = None)
-    extends Exception(message getOrElse null, cause getOrElse null) {
+case class EsException(reason: EsError, message: Option[String] = None)
+    extends Exception(message getOrElse null, null, false, false) {
 
   override def toString = {
     val body = message.fold(reason.toString)(x => s"$reason, $x")

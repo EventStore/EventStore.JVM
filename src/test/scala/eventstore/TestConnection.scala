@@ -57,8 +57,8 @@ abstract class TestConnection extends util.ActorSpec {
       def loop(n: Int) {
         actor.!(WriteEvents(streamId, events, ExpectedVersion.Any))(testKit.testActor)
         testKit.expectMsgPF(10.seconds) {
-          case WriteEventsCompleted(_)                                     => true
-          case Failure(EsException(EsError.PrepareTimeout, _, _)) if n < 3 => loop(n + 1) // TODO
+          case WriteEventsCompleted(_)                                  => true
+          case Failure(EsException(EsError.PrepareTimeout, _)) if n < 3 => loop(n + 1) // TODO
         }
       }
 

@@ -1,8 +1,9 @@
 package eventstore
 
-import akka.actor.{ Props, ActorRef }
-import akka.actor.Status.Failure
 import ReadDirection.Forward
+import akka.actor.Status.Failure
+import akka.actor.{ Props, ActorRef }
+import scala.annotation.tailrec
 import scala.collection.immutable.Queue
 
 object StreamSubscriptionActor {
@@ -22,115 +23,95 @@ class StreamSubscriptionActor(
     val streamId: EventStream.Id,
     fromNumberExclusive: Option[EventNumber.Exact],
     val resolveLinkTos: Boolean,
-    readBatchSize: Int) extends AbstractSubscriptionActor {
+    readBatchSize: Int) extends AbstractSubscriptionActor[Event] {
 
-  def receive = read(
-    lastNumber = fromNumberExclusive,
-    nextNumber = fromNumberExclusive getOrElse EventNumber.First)
+  def receive = reading(fromNumberExclusive, fromNumberExclusive getOrElse EventNumber.First)
 
-  def read(lastNumber: Option[EventNumber.Exact], nextNumber: EventNumber): Receive = {
-    readEventsFrom(nextNumber)
+  def reading(last: Option[EventNumber.Exact], next: EventNumber): Receive = {
+    readEventsFrom(next)
 
-    {
-      case ReadStreamEventsCompleted(events, next, _, endOfStream, _, Forward) => context become {
-        val last = process(lastNumber, events)
-        if (endOfStream) subscribe(last, next) else read(last, next)
+    val receive: Receive = {
+      case ReadStreamEventsCompleted(events, n, _, endOfStream, _, Forward) => context become {
+        val l = process(last, events)
+        if (endOfStream) subscribing(l, n) else reading(l, n)
       }
 
-      case Failure(e) => e match {
-        case e: EsException if e.reason == EsError.StreamNotFound =>
-          context become subscribe(lastNumber, nextNumber)
-
-        case _ => throw e
-      }
+      case Failure(EsException(EsError.StreamNotFound, _)) => context become subscribing(last, next)
     }
+    receive orElse rcvFailure orElse rcvReconnected(reading(last, next))
   }
 
-  def subscribe(lastNumber: Option[EventNumber.Exact], nextNumber: EventNumber): Receive = {
-    subscribeToStream(lastNumber)
-    subscriptionFailed orElse {
+  def subscribing(last: Option[EventNumber.Exact], next: EventNumber): Receive = {
+    subscribeToStream()
+    rcvFailure orElse rcvReconnected(last, next) orElse rcvUnsubscribe orElse {
       case SubscribeToStreamCompleted(_, subscriptionNumber) => context become {
         subscribed = true
-        debug("subscribed at eventNumber: {}", subscriptionNumber)
         subscriptionNumber match {
-          case Some(x) if !lastNumber.exists(_ >= x) =>
-            debug("catch up events from lastNumber: {} to subscription eventNumber: {}", lastNumber, subscriptionNumber)
-            catchUp(lastNumber = lastNumber, nextNumber = nextNumber, subscriptionNumber = x)
-
-          case _ => liveProcessing(lastNumber)
+          case Some(x) if !last.exists(_ >= x) => catchingUp(last, next, x)
+          case _                               => liveProcessing(last)
         }
       }
     }
   }
 
-  def catchUp(
-    lastNumber: Option[EventNumber.Exact],
-    nextNumber: EventNumber,
+  def catchingUp(
+    last: Option[EventNumber.Exact],
+    next: EventNumber,
     subscriptionNumber: EventNumber.Exact,
     stash: Queue[Event] = Queue()): Receive = {
 
-    readEventsFrom(nextNumber)
+    readEventsFrom(next)
 
-    def catchingUp(stash: Queue[Event]): Receive = {
-      case ReadStreamEventsCompleted(events, next, _, endOfStream, _, Forward) => context become (
-        if (endOfStream) liveProcessing(process(lastNumber, events), stash)
+    def catchUp(stash: Queue[Event]): Receive = rcvFailure orElse rcvReconnected(last, next) orElse {
+      case ReadStreamEventsCompleted(events, n, _, endOfStream, _, Forward) => context become (
+        if (endOfStream) liveProcessing(process(last, events), stash)
         else {
-          def loop(events: List[Event], lastNumber: Option[EventNumber.Exact]): Receive = events match {
-            case Nil => catchUp(lastNumber = lastNumber, nextNumber = next, subscriptionNumber = subscriptionNumber, stash)
+          @tailrec def loop(events: List[Event], last: Option[EventNumber.Exact]): Receive = events match {
+            case Nil => catchingUp(last, n, subscriptionNumber, stash)
             case event :: tail =>
               val number = event.record.number
-              if (lastNumber.exists(_ >= number)) loop(tail, lastNumber)
-              else if (number > subscriptionNumber) liveProcessing(lastNumber, stash)
+              if (last.exists(_ >= number)) loop(tail, last)
+              else if (number > subscriptionNumber) liveProcessing(last, stash)
               else {
                 forward(event)
                 loop(tail, Some(number))
               }
           }
-          loop(events, lastNumber)
+          loop(events, last)
         })
 
-      case Failure(e) => throw e
-
-      case StreamEventAppeared(x) if x.event.record.number > subscriptionNumber =>
-        debug("catching up: adding appeared event to stash({}): {}", stash.size, x)
-        context become catchingUp(stash enqueue x.event)
+      case StreamEventAppeared(x) => context become catchUp(stash enqueue x.event)
     }
 
-    catchingUp(stash)
+    catchUp(stash)
   }
 
-  def liveProcessing(lastNumber: Option[EventNumber.Exact], stash: Queue[Event] = Queue()): Receive = {
-    debug("live processing started, lastEventNumber: {}", lastNumber)
-    client ! Subscription.LiveProcessingStarted
+  def liveProcessing(last: Option[EventNumber.Exact], stash: Queue[Event] = Queue()): Receive = {
+    def liveProcessing(last: Option[EventNumber.Exact]): Receive =
+      rcvFailure orElse rcvReconnected(last, last getOrElse EventNumber.First) orElse {
+        case StreamEventAppeared(x) => context become liveProcessing(process(last, x.event))
+      }
 
-    def liveProcessing(lastNumber: Option[EventNumber.Exact]): Receive = {
-      case StreamEventAppeared(x) => context become liveProcessing(process(lastNumber, x.event))
-    }
-    liveProcessing(process(lastNumber, stash))
+    client ! Subscription.LiveProcessingStarted
+    liveProcessing(process(last, stash))
   }
 
   def process(lastNumber: Option[EventNumber.Exact], events: Seq[Event]): Option[EventNumber.Exact] =
-    events.foldLeft(lastNumber)((lastNumber, event) => process(lastNumber, event))
+    events.foldLeft(lastNumber)(process)
 
-  def process(lastNumber: Option[EventNumber.Exact], event: Event): Option[EventNumber.Exact] = {
+  def process(last: Option[EventNumber.Exact], event: Event): Option[EventNumber.Exact] = {
     val number = event.record.number
-    lastNumber match {
-      case Some(last) if last >= number =>
-        log.warning("{}: event.number <= lastNumber: {} <= {}, dropping {}", streamId, number, last, event)
-        lastNumber
-      case _ =>
-        forward(event)
-        Some(number)
+    if (last.exists(_ >= number)) last
+    else {
+      forward(event)
+      Some(number)
     }
   }
 
   def readEventsFrom(number: EventNumber) {
-    debug("reading events from {}", number)
     connection ! ReadStreamEvents(streamId, number, readBatchSize, Forward, resolveLinkTos = resolveLinkTos)
   }
 
-  def forward(event: Event) {
-    debug("forwarding {}", event)
-    client ! event
-  }
+  def rcvReconnected(last: Option[EventNumber.Exact], next: EventNumber): Receive =
+    rcvReconnected(subscribing(last, next))
 }

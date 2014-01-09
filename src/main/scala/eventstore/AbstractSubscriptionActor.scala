@@ -1,9 +1,10 @@
 package eventstore
 
-import akka.actor.{ SupervisorStrategy, ActorRef, ActorLogging, Actor }
 import akka.actor.Status.Failure
+import akka.actor.{ ActorRef, ActorLogging, Actor }
+import tcp.ConnectionActor.{ Reconnected, WaitReconnected }
 
-trait AbstractSubscriptionActor extends Actor with ActorLogging {
+trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
   def client: ActorRef
   def connection: ActorRef
   def streamId: EventStream
@@ -14,40 +15,36 @@ trait AbstractSubscriptionActor extends Actor with ActorLogging {
 
   var subscribed = false
 
-  override def supervisorStrategy = SupervisorStrategy.stoppingStrategy
-
-  def subscribeToStream(at: AnyRef) {
-    debug(s"subscribing at {}", at)
+  def subscribeToStream() {
     connection ! SubscribeTo(streamId, resolveLinkTos = resolveLinkTos)
   }
 
-  def subscriptionFailed: Receive = {
+  val rcvFailure: Receive = {
+    case Failure(EsException(EsError.ConnectionLost, _)) =>
+      connection ! WaitReconnected
+    case Failure(e) =>
+      log.error(e.toString)
+      context stop self
+  }
+
+  val rcvUnsubscribe: Receive = {
     case UnsubscribeCompleted =>
       subscribed = false
       context stop self
+  }
 
-    case Failure(e) =>
+  def rcvReconnected(receive: => Receive): Receive = {
+    case Reconnected =>
       subscribed = false
-      throw e
+      context become receive
   }
 
-  def debug(msg: => String) {
-    log.debug("{}: {}", streamId, msg)
-  }
-
-  def debug(msg: => String, arg: Any) {
-    if (log.isDebugEnabled) log.debug(s"{}: $msg", streamId, arg)
-  }
-
-  def debug(msg: => String, arg1: Any, arg2: Any) {
-    if (log.isDebugEnabled) log.debug(s"{}: $msg", streamId, arg1, arg2)
+  def forward(event: T) {
+    client ! event
   }
 
   override def postStop() {
-    if (subscribed) {
-      debug("unsubscribing")
-      connection ! UnsubscribeFromStream
-    }
+    if (subscribed) connection ! UnsubscribeFromStream
   }
 }
 

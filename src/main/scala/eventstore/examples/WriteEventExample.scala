@@ -20,8 +20,8 @@ object WriteEventExample extends App {
         log.info(s"eventNumber: $eventNumber")
         context.system.shutdown()
 
-      case Failure(EsException(reason, message, _)) =>
-        log.error(s"reason $reason, message: $message")
+      case Failure(e: EsException) =>
+        log.error(e.toString)
         context.system.shutdown()
     }
   }

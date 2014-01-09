@@ -5,12 +5,12 @@ import java.net.InetSocketAddress
 
 case class Settings(
     address: InetSocketAddress = new InetSocketAddress("127.0.0.1", 1113),
-    // The maximum number of times to allow for reconnection
-    maxReconnections: Int = 10,
-    // Whether or not to refuse serving read or write request if it is not master
+    // Whether or not to refuse serving read or write request if it is not master node
     requireMaster: Boolean = true,
-    // The amount of time to delay before attempting to reconnect
-    reconnectionDelay: FiniteDuration = 100.millis,
+    // The maximum number of times to allow for reconnection
+    maxReconnections: Int = 100,
+    reconnectionDelayMin: FiniteDuration = 250.millis,
+    reconnectionDelayMax: FiniteDuration = 10.seconds,
     defaultCredentials: Option[UserCredentials] = Some(UserCredentials.defaultAdmin),
     heartbeatInterval: FiniteDuration = 750.millis,
     heartbeatTimeout: FiniteDuration = 2.seconds,
