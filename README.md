@@ -47,7 +47,7 @@ public class ReadEventExample {
         final ActorRef readResult = system.actorOf(Props.create(ReadResult.class));
 
         final ReadEvent readEvent = new ReadEventBuilder("my-stream")
-                .eventNumberFirst()
+                .first()
                 .resolveLinkTos(false)
                 .requireMaster(true)
                 .build();

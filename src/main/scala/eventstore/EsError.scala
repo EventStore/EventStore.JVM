@@ -1,6 +1,5 @@
 package eventstore
 
-// TODO use Object
 sealed trait EsError
 
 object EsError {

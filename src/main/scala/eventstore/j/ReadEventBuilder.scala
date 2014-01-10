@@ -10,17 +10,15 @@ class ReadEventBuilder(streamId: String) extends Builder[ReadEvent]
   protected val _streamId = EventStream(streamId)
   protected var _eventNumber: EventNumber = EventNumber.First
 
-  def eventNumber(x: Int): ReadEventBuilder = set {
-    _eventNumber = if (x < 0) EventNumber.Last else EventNumber(x) // TODO duplicate
+  def number(x: EventNumber): ReadEventBuilder = set {
+    _eventNumber = x
   }
 
-  def eventNumberFirst: ReadEventBuilder = set {
-    _eventNumber = EventNumber.First
-  }
+  def number(x: Int): ReadEventBuilder = number(if (x < 0) EventNumber.Last else EventNumber(x))
 
-  def eventNumberLast: ReadEventBuilder = set {
-    _eventNumber = EventNumber.Last
-  }
+  def first: ReadEventBuilder = number(EventNumber.First)
+
+  def last: ReadEventBuilder = number(EventNumber.Last)
 
   def resolveLinkTos(x: Boolean): ReadEventBuilder = ResolveLinkTosSnippet.resolveLinkTos(x)
 
