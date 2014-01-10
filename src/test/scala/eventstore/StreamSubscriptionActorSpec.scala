@@ -178,7 +178,7 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       actor ! streamEventAppeared(event4)
 
       actor.stop()
-      connection.expectMsg(UnsubscribeFromStream)
+      connection.expectMsg(Unsubscribe)
       expectActorTerminated()
     }
 
@@ -283,7 +283,7 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       expectEvent(event2)
 
       actor.stop()
-      connection.expectMsg(UnsubscribeFromStream)
+      connection.expectMsg(Unsubscribe)
       expectActorTerminated()
     }
 

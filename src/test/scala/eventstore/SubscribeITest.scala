@@ -88,7 +88,7 @@ class SubscribeITest extends TestConnection {
     }
 
     def unsubscribeFromStream() {
-      actor ! UnsubscribeFromStream
+      actor ! Unsubscribe
       expectMsg(UnsubscribeCompleted)
     }
   }

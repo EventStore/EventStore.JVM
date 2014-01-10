@@ -51,6 +51,7 @@ class TransactionActor(
     case TransactionStartCompleted(transactionId) =>
       awaitingId.foreach(_ ! TransactionId(transactionId))
       context become new ContinueReceive(transactionId).apply(stash)
+
     case failure @ Failure(error) =>
       awaitingId.foreach(_ ! failure)
       throw error

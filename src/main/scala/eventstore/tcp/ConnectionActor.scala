@@ -32,7 +32,7 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
       uuid =>
         binding = binding - actor
         if (subscriptions contains actor) {
-          self ! TcpPackageOut(uuid, UnsubscribeFromStream, settings.defaultCredentials)
+          self ! TcpPackageOut(uuid, Unsubscribe, settings.defaultCredentials)
           subscriptions = subscriptions - actor
         }
     }

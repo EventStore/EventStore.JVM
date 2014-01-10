@@ -44,7 +44,7 @@ trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
   }
 
   override def postStop() {
-    if (subscribed) connection ! UnsubscribeFromStream
+    if (subscribed) connection ! Unsubscribe
   }
 }
 

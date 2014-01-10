@@ -37,7 +37,7 @@ abstract class AbstractSubscriptionActorSpec extends util.ActorSpec with Mockito
 
     def expectTerminatedOnFailure(expectUnsubscribe: Boolean = false) {
       actor ! Failure(EsException(EsError.Error))
-      if (expectUnsubscribe) connection expectMsg UnsubscribeFromStream
+      if (expectUnsubscribe) connection expectMsg Unsubscribe
       expectTerminated(actor)
       val duration = 1.seconds
       expectNoMsg(duration)

@@ -109,9 +109,9 @@ object MarkerByte {
       case Forward  => writer(0xB6, x)
       case Backward => writer(0xB8, x)
     }
-    case x: SubscribeTo            => writer(0xC0, x)
-    case x @ UnsubscribeFromStream => writer(0xC3, x)
-    case x @ ScavengeDatabase      => writer(0xD0, x) // TODO
-    case x @ Authenticate          => writer(0xF2, x)
+    case x: SubscribeTo       => writer(0xC0, x)
+    case x @ Unsubscribe      => writer(0xC3, x)
+    case x @ ScavengeDatabase => writer(0xD0, x) // TODO
+    case x @ Authenticate     => writer(0xF2, x)
   }
 }

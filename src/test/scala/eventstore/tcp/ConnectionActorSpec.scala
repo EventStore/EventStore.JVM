@@ -259,7 +259,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       def forStream(stream: EventStream, correlationId: Uuid, credentials: Option[UserCredentials], probe: TestProbe) {
         client ! init.Event(TcpPackageIn(correlationId, Try(SubscribeToStreamCompleted(0))))
         system stop probe.ref
-        pipeline.expectMsg(init.Command(TcpPackageOut(correlationId, UnsubscribeFromStream, credentials)))
+        pipeline.expectMsg(init.Command(TcpPackageOut(correlationId, Unsubscribe, credentials)))
       }
     }
 

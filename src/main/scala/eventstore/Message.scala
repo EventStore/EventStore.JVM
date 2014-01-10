@@ -180,7 +180,7 @@ case class SubscribeToStreamCompleted(
 
 case class StreamEventAppeared(event: IndexedEvent) extends In
 
-case object UnsubscribeFromStream extends Out // TODO rename
+case object Unsubscribe extends Out
 case object UnsubscribeCompleted extends In
 
 case object ScavengeDatabase extends Out
