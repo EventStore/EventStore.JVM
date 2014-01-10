@@ -1,8 +1,9 @@
-package eventstore
-package examples
+package eventstore.examples
 
 import akka.actor._
-import tcp.ConnectionActor
+import eventstore.Subscription.LiveProcessingStarted
+import eventstore.tcp.ConnectionActor
+import eventstore.{ IndexedEvent, SubscriptionActor }
 import scala.concurrent.duration._
 
 object CountAll extends App {
@@ -18,8 +19,8 @@ class CountAll extends Actor with ActorLogging {
   def receive = count(0)
 
   def count(n: Long): Receive = {
-    case x: IndexedEvent                    => context become count(n + 1)
-    case Subscription.LiveProcessingStarted => log.info("live processing started")
-    case ReceiveTimeout                     => log.info("count {}", n)
+    case x: IndexedEvent       => context become count(n + 1)
+    case LiveProcessingStarted => log.info("live processing started")
+    case ReceiveTimeout        => log.info("count {}", n)
   }
 }

@@ -40,15 +40,16 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
 
   lazy val noConnectionFailure = Status.Failure(EsException(EsError.ConnectionLost))
 
-  def receive = connecting(Queue.empty)
-
-  def connecting(stash: Queue[TcpPackageOut]): Receive = {
+  def receive = {
     connect("connecting", Duration.Zero)
+    connecting(Queue.empty)
+  }
+
+  def connecting(stash: Queue[TcpPackageOut]): Receive =
     rcvConnected(stash, Set.empty, 0, reconnectionDelayMin) orElse rcvTerminated orElse {
       case x: OutLike       => context become connecting(stash enqueue tcpPack(x))
       case x: TcpPackageOut => context become connecting(stash enqueue x)
     }
-  }
 
   def reconnecting(clients: Set[ActorRef], reconLeft: Int, reconDelay: FiniteDuration): Receive =
     rcvConnected(Queue.empty, clients, reconLeft, reconDelay) orElse rcvTerminated orElse {
