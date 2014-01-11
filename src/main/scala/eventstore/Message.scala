@@ -164,14 +164,12 @@ case class ReadAllEventsCompleted(
 
 case class SubscribeTo(stream: EventStream, resolveLinkTos: Boolean = false) extends Out
 
-// TODO what if sender is dead, need to close subscription.
 sealed trait SubscribeCompleted extends In
 
 case class SubscribeToAllCompleted(lastCommit: Long) extends SubscribeCompleted {
   require(lastCommit >= 0, s"lastCommit must be >= 0, but is $lastCommit")
 }
 
-// TODO here are 2 happy paths Completed to existing stream and Completed to Nonexisting stream
 case class SubscribeToStreamCompleted(
     lastCommit: Long,
     lastEventNumber: Option[EventNumber.Exact] = None) extends SubscribeCompleted {

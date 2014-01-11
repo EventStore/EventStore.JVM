@@ -4,7 +4,6 @@ import akka.testkit.TestProbe
 import ExpectedVersion._
 import EsError._
 
-// TODO improve expectMsgType[ReadStreamEventsSucceed]
 class WriteEventsITest extends TestConnection {
   "append to stream" should {
     "not fail for zero events" in new WriteEventsScope {

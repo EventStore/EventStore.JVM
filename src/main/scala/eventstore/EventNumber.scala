@@ -1,7 +1,6 @@
 package eventstore
 
-// TODO check all "event numbers in messages"
-sealed trait EventNumber extends Ordered[EventNumber] // TODO same rules as in Position.First = 0, Position.Last = -1
+sealed trait EventNumber extends Ordered[EventNumber]
 
 object EventNumber {
   val First = Exact(0)

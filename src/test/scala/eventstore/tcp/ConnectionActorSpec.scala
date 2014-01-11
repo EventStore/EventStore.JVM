@@ -270,8 +270,6 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       }
     }
 
-    // TODO restart subscription on reconnects
-
     "use default credentials if not provided with message" in new SecurityScope {
       val x = UserCredentials("login", "password")
       ?(default = Some(x)) must beSome(x)
