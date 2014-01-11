@@ -182,7 +182,7 @@ object ReadEventExample extends App {
   class ReadResult extends Actor with ActorLogging {
     def receive = {
       case ReadEventCompleted(event) =>
-        log.info(s"event: $event")
+        log.info("event: {}", event)
         context.system.shutdown()
 
       case Failure(e: EsException) =>
@@ -213,7 +213,7 @@ object WriteEventExample extends App {
   class WriteResult extends Actor with ActorLogging {
     def receive = {
       case WriteEventsCompleted(eventNumber) =>
-        log.info(s"eventNumber: $eventNumber")
+        log.info("eventNumber: {}", eventNumber)
         context.system.shutdown()
 
       case Failure(e: EsException) =>
