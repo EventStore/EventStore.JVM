@@ -247,30 +247,6 @@ object StartTransactionExample extends App {
 }
 ```
 
-### Continue transaction
-
-```scala
-import akka.actor.ActorSystem
-import eventstore.TransactionActor._
-import eventstore.tcp.ConnectionActor
-import eventstore.{ EventData, TransactionActor }
-
-object ContinueTransactionExample extends App {
-  val system = ActorSystem()
-  val connection = system.actorOf(ConnectionActor.props())
-
-  val transactionId = 0L
-  val kickoff = Continue(transactionId)
-  val transaction = system.actorOf(TransactionActor.props(connection, kickoff))
-
-  transaction ! GetTransactionId // replies with `TransactionId(transactionId)`
-  transaction ! Write(EventData("transaction-event")) // replies with `WriteCompleted`
-  transaction ! Write(EventData("transaction-event")) // replies with `WriteCompleted`
-  transaction ! Write(EventData("transaction-event")) // replies with `WriteCompleted`
-  transaction ! Commit // replies with `CommitCompleted`
-}
-```
-
 ### Count all events
 
 ```scala
@@ -288,17 +264,18 @@ object CountAll extends App {
 }
 
 class CountAll extends Actor with ActorLogging {
-  context.setReceiveTimeout(5.seconds)
+  context.setReceiveTimeout(1.second)
 
   def receive = count(0)
 
-  def count(n: Long): Receive = {
+  def count(n: Long, printed: Boolean = false): Receive = {
     case x: IndexedEvent       => context become count(n + 1)
     case LiveProcessingStarted => log.info("live processing started")
-    case ReceiveTimeout        => log.info("count {}", n)
+    case ReceiveTimeout if !printed =>
+      log.info("count {}", n)
+      context become count(n, printed = true)
   }
 }
-
 ```
 
 ### Future-like api

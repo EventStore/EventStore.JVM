@@ -1,8 +1,8 @@
 package eventstore
 
+import akka.actor.Status.Failure
 import akka.actor.{ ActorLogging, Props, ActorRef, Actor }
 import scala.collection.immutable.Queue
-import akka.actor.Status.Failure
 
 object TransactionActor {
 
@@ -70,7 +70,7 @@ class TransactionActor(
     def failure(client: ActorRef): Receive = {
       case failure @ Failure(error) =>
         client ! failure
-        throw error
+        throw error // TODO
     }
 
     def commit(client: ActorRef): Receive = {

@@ -14,13 +14,15 @@ object CountAll extends App {
 }
 
 class CountAll extends Actor with ActorLogging {
-  context.setReceiveTimeout(5.seconds)
+  context.setReceiveTimeout(1.second)
 
   def receive = count(0)
 
-  def count(n: Long): Receive = {
+  def count(n: Long, printed: Boolean = false): Receive = {
     case x: IndexedEvent       => context become count(n + 1)
     case LiveProcessingStarted => log.info("live processing started")
-    case ReceiveTimeout        => log.info("count {}", n)
+    case ReceiveTimeout if !printed =>
+      log.info("count {}", n)
+      context become count(n, printed = true)
   }
 }

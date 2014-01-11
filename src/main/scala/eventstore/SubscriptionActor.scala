@@ -11,7 +11,7 @@ object SubscriptionActor {
     client: ActorRef,
     fromPositionExclusive: Option[Position.Exact] = None,
     resolveLinkTos: Boolean = false,
-    readBatchSize: Int = 500): Props =
+    readBatchSize: Int = 100): Props =
     Props(classOf[SubscriptionActor], connection, client, fromPositionExclusive, resolveLinkTos, readBatchSize)
 }
 

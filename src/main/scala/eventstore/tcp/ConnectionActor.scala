@@ -61,8 +61,8 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
 
   def connected(connection: ActorRef, pipeline: ActorRef, send: TcpPackageOut => Unit, heartbeatId: Long): Receive = {
     val scheduled = CancellableAdapter(
-      system.scheduler.scheduleOnce(heartbeatTimeout, self, HeartbeatTimeout(heartbeatId)),
-      system.scheduler.scheduleOnce(heartbeatInterval, self, HeartbeatInterval))
+      system.scheduler.scheduleOnce(heartbeatInterval, self, HeartbeatInterval),
+      system.scheduler.scheduleOnce(heartbeatInterval + heartbeatTimeout, self, HeartbeatTimeout(heartbeatId)))
 
     def maybeReconnect(reason: String) {
       if (!scheduled.isCancelled) scheduled.cancel()

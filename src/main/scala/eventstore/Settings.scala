@@ -4,23 +4,19 @@ import scala.concurrent.duration._
 import java.net.InetSocketAddress
 
 case class Settings(
-    address: InetSocketAddress = new InetSocketAddress("127.0.0.1", 1113),
-    // Whether or not to refuse serving read or write request if it is not master node
-    requireMaster: Boolean = true,
-    // The maximum number of times to allow for reconnection
-    maxReconnections: Int = 100,
-    reconnectionDelayMin: FiniteDuration = 250.millis,
-    reconnectionDelayMax: FiniteDuration = 10.seconds,
-    defaultCredentials: Option[UserCredentials] = Some(UserCredentials.defaultAdmin),
-    heartbeatInterval: FiniteDuration = 750.millis,
-    heartbeatTimeout: FiniteDuration = 2.seconds,
-    connectionTimeout: FiniteDuration = 1.second,
-    responseTimeout: FiniteDuration = 5.seconds, // TODO 4J & rename to OperationTimeout
-    backpressureSettings: BackpressureSettings = BackpressureSettings()) {
-  require(
-    heartbeatInterval < heartbeatTimeout,
-    s"heartbeatInterval must be < heartbeatTimeout, but $heartbeatInterval >= $heartbeatTimeout")
-}
+  address: InetSocketAddress = new InetSocketAddress("127.0.0.1", 1113),
+  // Whether or not to refuse serving read or write request if it is not master node
+  requireMaster: Boolean = true,
+  // The maximum number of times to allow for reconnection
+  maxReconnections: Int = 100,
+  reconnectionDelayMin: FiniteDuration = 250.millis,
+  reconnectionDelayMax: FiniteDuration = 10.seconds,
+  defaultCredentials: Option[UserCredentials] = Some(UserCredentials.defaultAdmin),
+  heartbeatInterval: FiniteDuration = 500.millis,
+  heartbeatTimeout: FiniteDuration = 2.seconds,
+  connectionTimeout: FiniteDuration = 1.second,
+  responseTimeout: FiniteDuration = 5.seconds, // TODO 4J & rename to OperationTimeout
+  backpressureSettings: BackpressureSettings = BackpressureSettings())
 
 object Settings {
   val Default = Settings()

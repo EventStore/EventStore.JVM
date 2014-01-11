@@ -20,8 +20,7 @@ trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
   }
 
   val rcvFailure: Receive = {
-    case Failure(EsException(EsError.ConnectionLost, _)) =>
-      connection ! WaitReconnected
+    case Failure(EsException(EsError.ConnectionLost, _)) => connection ! WaitReconnected
     case Failure(e) =>
       log.error(e.toString)
       context stop self
