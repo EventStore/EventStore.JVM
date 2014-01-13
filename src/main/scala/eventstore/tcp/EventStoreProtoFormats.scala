@@ -2,11 +2,12 @@ package eventstore
 package tcp
 
 import ReadDirection.{ Backward, Forward }
-import proto.OperationResult
+import eventstore.proto.OperationResult
 import util.DefaultFormats
 import scala.PartialFunction.condOpt
 import scala.language.reflectiveCalls
 import scala.util.Try
+import java.net.InetSocketAddress
 
 object EventStoreProtoFormats extends EventStoreProtoFormats
 
@@ -314,6 +315,33 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
       case Some(AccessDenied)        => failure(Some(EsError.AccessDenied), None)
       case _                         => failure(None, None)
     }
+  }
+
+  implicit object NotHandledReader extends ProtoReader[EsError.NotHandled, proto.NotHandled] {
+    import proto.NotHandled.NotHandledReason._
+    import EsError.NotHandled
+
+    def provider = proto.NotHandled
+
+    def masterInfo(x: proto.NotHandled.MasterInfo): NotHandled.MasterInfo = NotHandled.MasterInfo(
+      tcpAddress = new InetSocketAddress(x.`externalTcpAddress`, x.`externalTcpPort`),
+      httpAddress = new InetSocketAddress(x.`externalHttpAddress`, x.`externalHttpPort`),
+      tcpSecureAddress = for {
+        t <- x.`externalSecureTcpAddress`
+        p <- x.`externalSecureTcpPort`
+      } yield new InetSocketAddress(t, p))
+
+    def masterInfo(x: Option[proto.NotHandled.MasterInfo]): NotHandled.MasterInfo = {
+      require(x.isDefined, "additionalInfo is not provided for NotHandled.NotMaster")
+      masterInfo(x.get)
+    }
+
+    def fromProto(x: proto.NotHandled) = NotHandled(x.`reason` match {
+      case NotReady  => NotHandled.NotReady
+      case TooBusy   => NotHandled.TooBusy
+      case NotMaster => NotHandled.NotMaster(masterInfo(x.`additionalInfo`))
+      case reason    => throw new IllegalArgumentException(s"NotHandled.$reason is not supported")
+    })
   }
 
   private def expectedVersion(x: ExpectedVersion): Int = {

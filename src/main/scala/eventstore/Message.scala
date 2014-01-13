@@ -39,12 +39,6 @@ case object Pong extends InOut
 //case object PhysicalChunkBulk extends Message
 //case object LogicalChunkBulk extends Message
 
-//case class DeniedToRoute(
-//  externalTcpAddress: String,
-//  externalTcpPort: Int,
-//  externalHttpAddress: String,
-//  externalHttpPort: Int) extends Message
-
 case class WriteEvents(
   streamId: EventStream.Id,
   events: List[EventData],
@@ -182,9 +176,6 @@ case object Unsubscribe extends Out
 case object UnsubscribeCompleted extends In
 
 case object ScavengeDatabase extends Out
-
-case object BadRequest extends In // TODO Failures?
-//case object NotHandled extends In // TODO Failures? // TODO implement
 
 case object Authenticate extends Out
 case object Authenticated extends In

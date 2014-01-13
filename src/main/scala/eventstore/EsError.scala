@@ -1,5 +1,7 @@
 package eventstore
 
+import java.net.InetSocketAddress
+
 sealed trait EsError
 
 object EsError {
@@ -16,6 +18,22 @@ object EsError {
   case object NotAuthenticated extends EsError
   case object Error extends EsError
   case object ConnectionLost extends EsError
+  case object BadRequest extends EsError
+
+  case class NotHandled(reason: NotHandled.Reason) extends EsError
+
+  object NotHandled {
+    sealed trait Reason
+
+    case object NotReady extends Reason
+    case object TooBusy extends Reason
+    case class NotMaster(masterInfo: MasterInfo) extends Reason
+
+    case class MasterInfo(
+      tcpAddress: InetSocketAddress,
+      httpAddress: InetSocketAddress,
+      tcpSecureAddress: Option[InetSocketAddress] = None)
+  }
 }
 
 case class EsException(reason: EsError, message: Option[String] = None)

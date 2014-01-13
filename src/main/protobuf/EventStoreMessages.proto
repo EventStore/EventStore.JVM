@@ -219,7 +219,7 @@ message NotHandled {
 	}
 	
 	required NotHandledReason reason = 1;
-	optional bytes additional_info = 2;
+	optional MasterInfo additional_info = 2;
 
 	message MasterInfo {
 		required string external_tcp_address = 1;
