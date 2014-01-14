@@ -10,6 +10,9 @@ trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
   def streamId: EventStream
   def resolveLinkTos: Boolean
 
+  type Next
+  type Last
+
   context watch client
   context watch connection
 
@@ -26,7 +29,7 @@ trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
       context stop self
   }
 
-  val rcvUnsubscribe: Receive = {
+  val rcvFailureOrUnsubscribe: Receive = rcvFailure orElse {
     case UnsubscribeCompleted =>
       subscribed = false
       context stop self
@@ -37,6 +40,14 @@ trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
       subscribed = false
       context become receive
   }
+
+  def subscribing(last: Last, next: Next): Receive
+
+  def rcvReconnected(last: Last, next: Next): Receive = rcvReconnected(subscribing(last, next))
+
+  def process(last: Last, events: Seq[T]): Last = events.foldLeft(last)(process)
+
+  def process(last: Last, event: T): Last
 
   def forward(event: T) {
     client ! event

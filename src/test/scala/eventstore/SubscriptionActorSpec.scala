@@ -3,18 +3,29 @@ package eventstore
 import ReadDirection.Forward
 import akka.actor.Status.Failure
 import akka.testkit.TestProbe
-import tcp.ConnectionActor.Reconnected
 import Subscription.LiveProcessingStarted
 
 class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
   "catch up subscription actor" should {
 
-    "read events from given position" in new SubscriptionScope(Some(123)) {
+    "read events from given position" in new SubscriptionScope(Some(Position(123))) {
       connection expectMsg readEvents(123)
     }
 
     "read events from start if no position given" in new SubscriptionScope {
       connection expectMsg readEvents(0)
+    }
+
+    "subscribe if last position given" in new SubscriptionScope(Some(Position.Last)) {
+      connection expectMsg subscribeTo
+      actor ! SubscribeToAllCompleted(0)
+      connection.expectNoMsg()
+      actor ! StreamEventAppeared(event1)
+      actor ! StreamEventAppeared(event0)
+      actor ! StreamEventAppeared(event2)
+      expectMsg(LiveProcessingStarted)
+      expectEvent(event1)
+      expectEvent(event2)
     }
 
     "ignore read events with position out of interest" in new SubscriptionScope {
@@ -40,15 +51,16 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       connection expectMsg readEvents(5)
     }
 
-    "ignore read events with position out of interest when start position is given" in new SubscriptionScope(Some(1)) {
-      connection expectMsg readEvents(1)
+    "ignore read events with position out of interest when start position is given" in
+      new SubscriptionScope(Some(Position(1))) {
+        connection expectMsg readEvents(1)
 
-      actor ! readCompleted(0, 3, event0, event1, event2)
-      expectEvent(event2)
-      expectNoMsg(duration)
+        actor ! readCompleted(0, 3, event0, event1, event2)
+        expectEvent(event2)
+        expectNoMsg(duration)
 
-      connection expectMsg readEvents(3)
-    }
+        connection expectMsg readEvents(3)
+      }
 
     "read events until none left and subscribe to new ones" in new SubscriptionScope {
       connection expectMsg readEvents(0)
@@ -203,21 +215,22 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       expectNoActivity()
     }
 
-    "continue with subscription if no events appear in between reading and subscribing and position is given" in new SubscriptionScope(Some(1)) {
-      val position = 1
-      connection expectMsg readEvents(position)
+    "continue with subscription if no events appear in between reading and subscribing and position is given" in
+      new SubscriptionScope(Some(Position(1))) {
+        val position = 1
+        connection expectMsg readEvents(position)
 
-      actor ! readCompleted(position, position)
+        actor ! readCompleted(position, position)
 
-      connection.expectMsg(subscribeTo)
-      expectNoMsg(duration)
+        connection.expectMsg(subscribeTo)
+        expectNoMsg(duration)
 
-      actor ! SubscribeToAllCompleted(1)
+        actor ! SubscribeToAllCompleted(1)
 
-      expectMsg(LiveProcessingStarted)
+        expectMsg(LiveProcessingStarted)
 
-      expectNoActivity()
-    }
+        expectNoActivity()
+      }
 
     "forward events while subscribed" in new SubscriptionScope() {
       val position = 0
@@ -245,7 +258,7 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       expectEvent(event3)
     }
 
-    "ignore wrong events while subscribed" in new SubscriptionScope(Some(1)) {
+    "ignore wrong events while subscribed" in new SubscriptionScope(Some(Position(1))) {
       val position = 1
       connection expectMsg readEvents(position)
       actor ! readCompleted(position, position)
@@ -273,7 +286,7 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       expectNoMsg(duration)
     }
 
-    "stop subscription when stop received" in new SubscriptionScope(Some(1)) {
+    "stop subscription when stop received" in new SubscriptionScope(Some(Position(1))) {
       connection expectMsg readEvents(1)
 
       val position = 1
@@ -316,7 +329,7 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       expectTerminatedOnFailure()
     }
 
-    "stop actor if error while subscribing" in new SubscriptionScope(Some(0)) {
+    "stop actor if error while subscribing" in new SubscriptionScope(Some(Position(0))) {
       connection expectMsg readEvents(0)
       actor ! readCompleted(0, 0)
       connection expectMsg subscribeTo
@@ -334,7 +347,7 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       expectTerminatedOnFailure(expectUnsubscribe = true)
     }
 
-    "stop actor if error while live processing" in new SubscriptionScope(Some(0)) {
+    "stop actor if error while live processing" in new SubscriptionScope(Some(Position(0))) {
       connection expectMsg readEvents(0)
       actor ! readCompleted(0, 0)
       connection expectMsg subscribeTo
@@ -346,18 +359,25 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
 
     "re-read if reconnected while reading" in new SubscriptionScope() {
       connection expectMsg readEvents(0)
-      actor ! Reconnected
+      reconnect()
       connection expectMsg readEvents(0)
       expectNoActivity()
     }
 
-    "re-subscribe reconnected while subscribing" in new SubscriptionScope(Some(0)) {
+    "re-subscribe reconnected while subscribing" in new SubscriptionScope(Some(Position(0))) {
       connection expectMsg readEvents(0)
       actor ! readCompleted(0, 0)
       connection expectMsg subscribeTo
-      actor ! Reconnected
+      reconnect()
       connection expectMsg subscribeTo
       expectNoActivity()
+    }
+
+    "re-subscribe reconnected while subscribing from last" in new SubscriptionScope(Some(Position.Last)) {
+      connection expectMsg subscribeTo
+      actor ! SubscribeToAllCompleted(0)
+      reconnect()
+      connection expectMsg subscribeTo
     }
 
     "re-subscribe if reconnected while catching up" in new SubscriptionScope() {
@@ -367,60 +387,29 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       actor ! SubscribeToAllCompleted(0)
 
       connection expectMsg readEvents(0)
-      actor ! Reconnected
+      reconnect()
 
       connection expectMsg subscribeTo
     }
 
-    "re-subscribe if reconnected while live processing" in new SubscriptionScope(Some(0)) {
+    "re-subscribe if reconnected while live processing" in new SubscriptionScope(Some(Position(0))) {
       connection expectMsg readEvents(0)
       actor ! readCompleted(0, 0)
       connection expectMsg subscribeTo
       actor ! SubscribeToAllCompleted(0)
 
       expectMsg(LiveProcessingStarted)
-      actor ! Reconnected
 
+      reconnect()
       connection expectMsg subscribeTo
-    }
-
-    "receive EsError.ConnectionLost while reading" in new SubscriptionScope(Some(0)) {
-      connection expectMsg readEvents(0)
-      expectWaitReconnected()
-    }
-
-    "receive EsError.ConnectionLost while subscribing" in new SubscriptionScope(Some(0)) {
-      connection expectMsg readEvents(0)
-      actor ! readCompleted(0, 0)
-      connection expectMsg subscribeTo
-      expectWaitReconnected()
-    }
-
-    "receive EsError.ConnectionLost while catching up" in new SubscriptionScope() {
-      connection expectMsg readEvents(0)
-      actor ! readCompleted(0, 0)
-      connection expectMsg subscribeTo
-      actor ! SubscribeToAllCompleted(0)
-      connection expectMsg readEvents(0)
-      expectWaitReconnected()
-    }
-
-    "receive EsError.ConnectionLost while live processing" in new SubscriptionScope(Some(0)) {
-      connection expectMsg readEvents(0)
-      actor ! readCompleted(0, 0)
-      connection expectMsg subscribeTo
-      actor ! SubscribeToAllCompleted(0)
-
-      expectMsg(LiveProcessingStarted)
-      expectWaitReconnected()
     }
   }
 
-  abstract class SubscriptionScope(position: Option[Long] = None) extends AbstractScope {
+  abstract class SubscriptionScope(position: Option[Position] = None) extends AbstractScope {
     def props = SubscriptionActor.props(
       connection = connection.ref,
       client = testActor,
-      fromPositionExclusive = position.map(Position.apply),
+      fromPositionExclusive = position,
       resolveLinkTos = resolveLinkTos,
       readBatchSize = readBatchSize)
 

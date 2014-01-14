@@ -5,7 +5,7 @@ import akka.actor.Status.Failure
 import akka.testkit._
 import org.specs2.mock.Mockito
 import scala.concurrent.duration._
-import eventstore.tcp.ConnectionActor.WaitReconnected
+import tcp.ConnectionActor.{ WaitReconnected, Reconnected }
 
 abstract class AbstractSubscriptionActorSpec extends util.ActorSpec with Mockito {
 
@@ -44,9 +44,10 @@ abstract class AbstractSubscriptionActorSpec extends util.ActorSpec with Mockito
       connection.expectNoMsg(duration)
     }
 
-    def expectWaitReconnected() {
+    def reconnect() {
       actor ! Failure(EsException(EsError.ConnectionLost))
-      connection.expectMsg(WaitReconnected)
+      connection expectMsg WaitReconnected
+      actor ! Reconnected
     }
   }
 }
