@@ -2,6 +2,7 @@ package eventstore
 
 import akka.actor.{ SupervisorStrategy, Actor, ActorRef }
 import akka.testkit.{ TestKitBase, TestProbe, TestActorRef }
+import akka.actor.Status.Failure
 import scala.concurrent.duration._
 
 class SubscribeToStreamCatchingUpITest extends TestConnection {
@@ -33,6 +34,7 @@ class SubscribeToStreamCatchingUpITest extends TestConnection {
       appendEventToCreateStream()
       deleteStream()
       val subscriptionActor = newSubscription()
+      expectMsg(Failure(EsException(EsError.StreamDeleted)))
       expectTerminated(subscriptionActor)
     }
 

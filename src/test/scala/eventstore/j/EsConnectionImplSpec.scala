@@ -2,6 +2,9 @@ package eventstore
 package j
 
 import scala.collection.JavaConverters._
+import java.io.Closeable
+import akka.actor.Status.Failure
+import akka.testkit.TestProbe
 
 class EsConnectionImplSpec extends util.ActorSpec {
 
@@ -133,6 +136,38 @@ class EsConnectionImplSpec extends util.ActorSpec {
           resolveLinkTos = resolveLinkTos), uc)
       }
     }
+
+    "subscribe to stream" in new SubscriptionScope {
+      val closeable = connection.subscribeToStream(streamId.streamId, observer, false)
+      expectMsg(SubscribeTo(streamId))
+      val actor = lastSender
+      actor ! SubscribeToStreamCompleted(0, None)
+      actor ! StreamEventAppeared(event0)
+      actor ! StreamEventAppeared(event1)
+      client expectMsg LiveProcessingStart
+      client expectMsg event0.event
+      client expectMsg event1.event
+      closeable.close()
+      client expectMsg Close
+      expectMsg(Unsubscribe)
+    }
+
+    "subscribe to stream from" in new SubscriptionScope {
+      val closeable = connection.subscribeToStreamFrom(streamId.streamId, 0, observer, false)
+      expectMsg(ReadStreamEvents(streamId, EventNumber(0)))
+      val actor = lastSender
+      actor ! readStreamEventsCompleted(event0, event1)
+      expectMsg(SubscribeTo(streamId))
+      actor ! SubscribeToStreamCompleted(0, None)
+      actor ! StreamEventAppeared(event2)
+      client expectMsg event1.event
+      client expectMsg LiveProcessingStart
+      client expectMsg event2.event
+      actor ! Failure(error)
+      client expectMsg error
+      expectMsg(Unsubscribe)
+      client expectMsg Close
+    }
   }
 
   trait TestScope extends ActorScope {
@@ -145,4 +180,39 @@ class EsConnectionImplSpec extends util.ActorSpec {
     }
   }
 
+  trait SubscriptionScope extends TestScope {
+    val streamId = EventStream("streamId")
+
+    val client = TestProbe()
+
+    val observer = new SubscriptionObserver[Event] {
+      def onEvent(event: Event, subscription: Closeable) = client.ref ! event
+
+      def onError(e: Throwable) = client.ref ! e
+
+      def onClose() = client.ref ! Close
+
+      def onLiveProcessingStart(subscription: Closeable) = client.ref ! LiveProcessingStart
+    }
+
+    def newEvent(x: Int) = IndexedEvent(EventRecord(streamId, EventNumber(x), EventData("event-type")), Position(x))
+
+    def readStreamEventsCompleted(xs: IndexedEvent*) = ReadStreamEventsCompleted(
+      xs.map(_.event).toList,
+      EventNumber(0),
+      EventNumber(2),
+      endOfStream = true,
+      0,
+      ReadDirection.Forward)
+
+    val error = EsException(EsError.AccessDenied)
+
+    val event0 = newEvent(0)
+    val event1 = newEvent(1)
+    val event2 = newEvent(2)
+
+    case object Close
+
+    case object LiveProcessingStart
+  }
 }

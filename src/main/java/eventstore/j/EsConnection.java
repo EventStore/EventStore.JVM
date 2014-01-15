@@ -139,18 +139,20 @@ public interface EsConnection {
             boolean resolveLinkTos,
             UserCredentials userCredentials);
 
-//    Closeable subscribeToStream(
-//            String stream,
-//            boolean resolveLinkTos,
-//            SubscriptionObserver<Event> observer,
-//            UserCredentials userCredentials);
+
+    Closeable subscribeToStream(
+            String stream,
+            SubscriptionObserver<Event> observer,
+            boolean resolveLinkTos/*,
+            UserCredentials userCredentials TODO*/);
 //
-//    Closeable subscribeToStreamFrom(
-//            String stream,
-//            int fromEventNumberExclusive,
-//            boolean resolveLinkTos,
-//            CatchUpSubscriptionObserver<Event> observer,
-//            UserCredentials userCredentials);
+
+    Closeable subscribeToStreamFrom(
+            String stream,
+            int fromEventNumberExclusive,
+            SubscriptionObserver<Event> observer,
+            boolean resolveLinkTos/*,
+            UserCredentials userCredentials TODO*/);
 //
 //    Closeable subscribeToAll(
 //            boolean resolveLinkTos,
@@ -160,7 +162,7 @@ public interface EsConnection {
 //    Closeable subscribeToAllFrom(
 //            boolean resolveLinkTos,
 //            Position fromPositionExclusive,
-//            CatchUpSubscriptionObserver<IndexedEvent> observer,
+//            SubscriptionObserver<IndexedEvent> observer,
 //            UserCredentials userCredentials);
 
 //    Future<Unit> setStreamMetadataAsync(String stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials);

@@ -148,24 +148,6 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       expectActorTerminated()
     }
 
-    "not unsubscribe if subscription failed" in new SubscriptionScope() {
-      connection expectMsg readEvents(0)
-      actor ! readCompleted(0, endOfStream = true)
-
-      connection expectMsg subscribeTo
-      actor ! Failure(EsException(EsError.AccessDenied))
-      expectActorTerminated()
-    }
-
-    "not unsubscribe if subscription failed if stop received " in new SubscriptionScope() {
-      connection expectMsg readEvents(0)
-      actor ! readCompleted(0, endOfStream = true)
-      connection expectMsg subscribeTo
-      expectNoActivity()
-      actor ! Failure(EsException(EsError.AccessDenied))
-      expectActorTerminated()
-    }
-
     "stop catching events that appear in between reading and subscribing if stop received" in new SubscriptionScope() {
       connection expectMsg readEvents(0)
 

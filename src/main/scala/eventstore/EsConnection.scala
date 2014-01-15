@@ -6,6 +6,8 @@ import akka.util.Timeout
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import tcp.ConnectionActor
+import java.io.Closeable
+import util.ActorCloseable
 
 class EsConnection(
     connection: ActorRef,
@@ -32,6 +34,27 @@ class EsConnection(
     val actor = factory.actorOf(props)
     EsTransaction.continue(transactionId, actor)
   }
+
+  def subscribeToStream(
+    streamId: EventStream.Id,
+    observer: SubscriptionObserver[Event],
+    resolveLinkTos: Boolean = false): Closeable = {
+    val client = factory.actorOf(SubscriptionObserverActor.props(observer))
+    val props = StreamSubscriptionActor.props(connection, client, streamId, Some(EventNumber.Last), resolveLinkTos)
+    factory.actorOf(props)
+    ActorCloseable(client)
+  }
+
+  def subscribeToStreamFrom(
+    streamId: EventStream.Id,
+    observer: SubscriptionObserver[Event],
+    fromNumberExclusive: Option[EventNumber.Exact] = None,
+    resolveLinkTos: Boolean = false): Closeable = {
+    val client = factory.actorOf(SubscriptionObserverActor.props(observer))
+    val props = StreamSubscriptionActor.props(connection, client, streamId, fromNumberExclusive, resolveLinkTos)
+    factory.actorOf(props)
+    ActorCloseable(client)
+  }
 }
 
 object EsConnection {
@@ -43,4 +66,11 @@ object EsConnection {
       defaultCredentials = settings.defaultCredentials,
       responseTimeout = settings.responseTimeout)
   }
+}
+
+trait SubscriptionObserver[T] {
+  def onLiveProcessingStart(subscription: Closeable)
+  def onEvent(event: T, subscription: Closeable)
+  def onError(e: Throwable)
+  def onClose()
 }

@@ -1,9 +1,8 @@
 package eventstore
 
 import ReadDirection.Forward
-import akka.actor.Status.Failure
-import akka.testkit.TestProbe
 import Subscription.LiveProcessingStarted
+import akka.testkit.TestProbe
 
 class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
   "catch up subscription actor" should {
@@ -148,16 +147,6 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
 
       connection.expectMsg(subscribeTo)
       actor.stop()
-      expectTerminated(actor)
-    }
-
-    "not unsubscribe if subscription failed" in new SubscriptionScope() {
-      connection expectMsg readEvents(0)
-      actor ! readCompleted(0, 0)
-
-      connection.expectMsg(subscribeTo)
-      actor ! Failure(EsException(EsError.AccessDenied))
-
       expectTerminated(actor)
     }
 

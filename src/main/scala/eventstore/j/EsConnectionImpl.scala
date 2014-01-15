@@ -105,4 +105,20 @@ class EsConnectionImpl(connection: eventstore.EsConnection) extends EsConnection
 
     connection.future(out, Option(userCredentials))
   }
+
+  def subscribeToStream(
+    stream: String,
+    observer: SubscriptionObserver[Event],
+    resolveLinkTos: Boolean) =
+    connection.subscribeToStream(EventStream(stream), observer, resolveLinkTos)
+
+  def subscribeToStreamFrom(
+    stream: String,
+    fromEventNumberExclusive: Int, // TODO how to incluse first event
+    observer: SubscriptionObserver[Event],
+    resolveLinkTos: Boolean) = connection.subscribeToStreamFrom(
+    EventStream(stream),
+    observer,
+    Some(EventNumber(fromEventNumberExclusive)),
+    resolveLinkTos)
 }

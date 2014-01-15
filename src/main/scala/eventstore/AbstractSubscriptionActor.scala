@@ -24,8 +24,9 @@ trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
 
   val rcvFailure: Receive = {
     case Failure(EsException(EsError.ConnectionLost, _)) => connection ! WaitReconnected
-    case Failure(e) =>
+    case failure @ Failure(e) =>
       log.error(e.toString)
+      client ! failure
       context stop self
   }
 
@@ -41,9 +42,9 @@ trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
       context become receive
   }
 
-  def subscribing(last: Last, next: Next): Receive
-
   def rcvReconnected(last: Last, next: Next): Receive = rcvReconnected(subscribing(last, next))
+
+  def subscribing(last: Last, next: Next): Receive
 
   def process(last: Last, events: Seq[T]): Last = events.foldLeft(last)(process)
 
