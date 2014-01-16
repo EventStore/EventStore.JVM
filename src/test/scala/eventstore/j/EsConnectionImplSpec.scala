@@ -137,7 +137,7 @@ class EsConnectionImplSpec extends util.ActorSpec {
       }
     }
 
-    "subscribe to stream" in new SubscriptionScope {
+    "subscribe to stream" in new StreamSubscriptionScope {
       val closeable = connection.subscribeToStream(streamId.streamId, observer, false)
       expectMsg(SubscribeTo(streamId))
       val actor = lastSender
@@ -152,11 +152,11 @@ class EsConnectionImplSpec extends util.ActorSpec {
       expectMsg(Unsubscribe)
     }
 
-    "subscribe to stream from" in new SubscriptionScope {
-      val closeable = connection.subscribeToStreamFrom(streamId.streamId, 0, observer, false)
+    "subscribe to stream from" in new StreamSubscriptionScope {
+      val closeable = connection.subscribeToStreamFrom(streamId.streamId, observer, 0, false)
       expectMsg(ReadStreamEvents(streamId, EventNumber(0)))
       val actor = lastSender
-      actor ! readStreamEventsCompleted(event0, event1)
+      actor ! readEventsCompleted(event0, event1)
       expectMsg(SubscribeTo(streamId))
       actor ! SubscribeToStreamCompleted(0, None)
       actor ! StreamEventAppeared(event2)
@@ -168,10 +168,44 @@ class EsConnectionImplSpec extends util.ActorSpec {
       expectMsg(Unsubscribe)
       client expectMsg Close
     }
+
+    "subscribe to all" in new SubscriptionScope[IndexedEvent] {
+      val closeable = connection.subscribeToAll(observer, false)
+      expectMsg(SubscribeTo(EventStream.All))
+      val actor = lastSender
+      actor ! SubscribeToAllCompleted(0)
+      actor ! StreamEventAppeared(event0)
+      actor ! StreamEventAppeared(event1)
+      client expectMsg LiveProcessingStart
+      client expectMsg event0
+      client expectMsg event1
+      closeable.close()
+      client expectMsg Close
+      expectMsg(Unsubscribe)
+    }
+
+    "subscribe to all from" in new SubscriptionScope[IndexedEvent] {
+      val closeable = connection.subscribeToAllFrom(observer, Position(0), false)
+      expectMsg(ReadAllEvents(Position(0)))
+      val actor = lastSender
+      actor ! ReadAllEventsCompleted(List(event0, event1), Position(0), Position(2), ReadDirection.Forward)
+      expectMsg(ReadAllEvents(Position(2)))
+      actor ! ReadAllEventsCompleted(Nil, Position(2), Position(2), ReadDirection.Forward)
+      expectMsg(SubscribeTo(EventStream.All))
+      actor ! SubscribeToAllCompleted(0)
+      actor ! StreamEventAppeared(event2)
+      client expectMsg event1
+      client expectMsg LiveProcessingStart
+      client expectMsg event2
+      actor ! Failure(error)
+      client expectMsg error
+      expectMsg(Unsubscribe)
+      client expectMsg Close
+    }
   }
 
   trait TestScope extends ActorScope {
-    val underlying = new eventstore.EsConnection(testActor, system, None)
+    val underlying = new eventstore.EsConnection(testActor, system)
     val connection: EsConnection = new EsConnectionImpl(underlying)
 
     def expect(x: Out, userCredentials: UserCredentials) = Option(userCredentials) match {
@@ -180,13 +214,12 @@ class EsConnectionImplSpec extends util.ActorSpec {
     }
   }
 
-  trait SubscriptionScope extends TestScope {
+  trait SubscriptionScope[T] extends TestScope {
     val streamId = EventStream("streamId")
-
     val client = TestProbe()
 
-    val observer = new SubscriptionObserver[Event] {
-      def onEvent(event: Event, subscription: Closeable) = client.ref ! event
+    val observer = new SubscriptionObserver[T] {
+      def onEvent(event: T, subscription: Closeable) = client.ref ! event
 
       def onError(e: Throwable) = client.ref ! e
 
@@ -197,14 +230,6 @@ class EsConnectionImplSpec extends util.ActorSpec {
 
     def newEvent(x: Int) = IndexedEvent(EventRecord(streamId, EventNumber(x), EventData("event-type")), Position(x))
 
-    def readStreamEventsCompleted(xs: IndexedEvent*) = ReadStreamEventsCompleted(
-      xs.map(_.event).toList,
-      EventNumber(0),
-      EventNumber(2),
-      endOfStream = true,
-      0,
-      ReadDirection.Forward)
-
     val error = EsException(EsError.AccessDenied)
 
     val event0 = newEvent(0)
@@ -212,7 +237,16 @@ class EsConnectionImplSpec extends util.ActorSpec {
     val event2 = newEvent(2)
 
     case object Close
-
     case object LiveProcessingStart
+  }
+
+  trait StreamSubscriptionScope extends SubscriptionScope[Event] {
+    def readEventsCompleted(xs: IndexedEvent*) = ReadStreamEventsCompleted(
+      xs.map(_.event).toList,
+      EventNumber(0),
+      EventNumber(2),
+      endOfStream = true,
+      0,
+      ReadDirection.Forward)
   }
 }

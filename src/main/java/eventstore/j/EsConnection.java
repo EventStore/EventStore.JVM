@@ -25,14 +25,14 @@ public interface EsConnection {
      * @param stream          name of the stream to write events to
      * @param expectedVersion expected version of the stream to write to, or <code>ExpectedVersion.Any</code> if <code>null</code>
      * @param events          events to append to the stream
-     * @param userCredentials optional user credentials to perform operation with.
+     * @param credentials optional user credentials to perform operation with.
      * @return {@link scala.concurrent.Future} that the caller can await on
      */
     Future<Unit> writeEvents(
             String stream,
             ExpectedVersion expectedVersion,
             Collection<EventData> events,
-            UserCredentials userCredentials);
+            UserCredentials credentials);
 
 
     /**
@@ -40,20 +40,17 @@ public interface EsConnection {
      *
      * @param stream          name of the stream to delete
      * @param expectedVersion optional expected version that the stream should have when being deleted, or <code>ExpectedVersion.Any</code> if <code>null</code>
-     * @param userCredentials optional user credentials to perform operation with.
+     * @param credentials optional user credentials to perform operation with.
      * @return {@link scala.concurrent.Future} that the caller can await on
      */
-    Future<Unit> deleteStream(
-            String stream,
-            ExpectedVersion.Existing expectedVersion,
-            UserCredentials userCredentials);
+    Future<Unit> deleteStream(String stream, ExpectedVersion.Existing expectedVersion, UserCredentials credentials);
 
 //    Future<EventStoreTransaction> startTransaction(
 //            String stream,
 //            ExpectedVersion expectedVersion,
-//            UserCredentials userCredentials);
+//            UserCredentials credentials);
 //
-//    EventStoreTransaction continueTransaction(long transactionId, UserCredentials userCredentials);
+//    EventStoreTransaction continueTransaction(long transactionId, UserCredentials credentials);
 
 
     /**
@@ -62,14 +59,14 @@ public interface EsConnection {
      * @param stream          name of the stream to read from
      * @param eventNumber     optional event number to read, or EventNumber.Last for reading latest event, EventNumber.Last if null
      * @param resolveLinkTos  whether to resolve LinkTo events automatically
-     * @param userCredentials The optional user credentials to perform operation with
+     * @param credentials The optional user credentials to perform operation with
      * @return {@link scala.concurrent.Future} containing an event
      */
     Future<Event> readEvent(
             String stream,
             EventNumber eventNumber,
             boolean resolveLinkTos,
-            UserCredentials userCredentials);
+            UserCredentials credentials);
 
 
     /**
@@ -79,7 +76,7 @@ public interface EsConnection {
      * @param fromNumber      optional event number to read, EventNumber.First if null
      * @param maxCount        maximum count of items to read
      * @param resolveLinkTos  whether to resolve LinkTo events automatically
-     * @param userCredentials The optional user credentials to perform operation with
+     * @param credentials The optional user credentials to perform operation with
      * @return {@link scala.concurrent.Future} containing the results of the read operation
      */
     Future<ReadStreamEventsCompleted> readStreamEventsForward(
@@ -87,7 +84,7 @@ public interface EsConnection {
             EventNumber.Exact fromNumber,
             int maxCount,
             boolean resolveLinkTos,
-            UserCredentials userCredentials);
+            UserCredentials credentials);
 
 
     /**
@@ -97,7 +94,7 @@ public interface EsConnection {
      * @param fromNumber      optional event number to read, EventNumber.Last if null
      * @param maxCount        maximum count of items to read
      * @param resolveLinkTos  whether to resolve LinkTo events automatically
-     * @param userCredentials The optional user credentials to perform operation with
+     * @param credentials The optional user credentials to perform operation with
      * @return {@link scala.concurrent.Future} containing the results of the read operation
      */
     Future<ReadStreamEventsCompleted> readStreamEventsBackward(
@@ -105,7 +102,7 @@ public interface EsConnection {
             EventNumber fromNumber,
             int maxCount,
             boolean resolveLinkTos,
-            UserCredentials userCredentials);
+            UserCredentials credentials);
 
 
     /**
@@ -114,14 +111,14 @@ public interface EsConnection {
      * @param fromPosition    optional position to start reading from, Position.First of null
      * @param maxCount        maximum count of items to read
      * @param resolveLinkTos  whether to resolve LinkTo events automatically
-     * @param userCredentials The optional user credentials to perform operation with
+     * @param credentials The optional user credentials to perform operation with
      * @return {@link scala.concurrent.Future} containing the results of the read operation
      */
     Future<ReadAllEventsCompleted> readAllEventsForward(
             Position fromPosition,
             int maxCount,
             boolean resolveLinkTos,
-            UserCredentials userCredentials);
+            UserCredentials credentials);
 
 
     /**
@@ -130,46 +127,48 @@ public interface EsConnection {
      * @param fromPosition    optional position to start reading from, Position.Last of null
      * @param maxCount        maximum count of items to read
      * @param resolveLinkTos  whether to resolve LinkTo events automatically
-     * @param userCredentials The optional user credentials to perform operation with
+     * @param credentials The optional user credentials to perform operation with
      * @return {@link scala.concurrent.Future} containing the results of the read operation
      */
     Future<ReadAllEventsCompleted> readAllEventsBackward(
             Position fromPosition,
             int maxCount,
             boolean resolveLinkTos,
-            UserCredentials userCredentials);
+            UserCredentials credentials);
 
 
     Closeable subscribeToStream(
             String stream,
             SubscriptionObserver<Event> observer,
             boolean resolveLinkTos/*,
-            UserCredentials userCredentials TODO*/);
-//
+            UserCredentials credentials TODO*/);
+
 
     Closeable subscribeToStreamFrom(
             String stream,
-            int fromEventNumberExclusive,
             SubscriptionObserver<Event> observer,
+            int fromEventNumberExclusive,
             boolean resolveLinkTos/*,
-            UserCredentials userCredentials TODO*/);
-//
-//    Closeable subscribeToAll(
-//            boolean resolveLinkTos,
-//            SubscriptionObserver<IndexedEvent> observer,
-//            UserCredentials userCredentials);
-//
-//    Closeable subscribeToAllFrom(
-//            boolean resolveLinkTos,
-//            Position fromPositionExclusive,
-//            SubscriptionObserver<IndexedEvent> observer,
-//            UserCredentials userCredentials);
+            UserCredentials credentials TODO*/);
 
-//    Future<Unit> setStreamMetadataAsync(String stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials userCredentials);
+
+    Closeable subscribeToAll(
+            SubscriptionObserver<IndexedEvent> observer,
+            boolean resolveLinkTos/*,
+            UserCredentials credentials TODO*/);
+
+
+    Closeable subscribeToAllFrom(
+            SubscriptionObserver<IndexedEvent> observer,
+            Position.Exact fromPositionExclusive,
+            boolean resolveLinkTos/*,
+            UserCredentials credentials TODO*/);
+
+//    Future<Unit> setStreamMetadataAsync(String stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials credentials);
 //
-//    Future<Unit> setStreamMetadataAsync(String stream, int expectedMetastreamVersion, byte[] metadata, UserCredentials userCredentials);
+//    Future<Unit> setStreamMetadataAsync(String stream, int expectedMetastreamVersion, byte[] metadata, UserCredentials credentials);
 //
-//    Future<StreamMetadataResult> getStreamMetadataAsync(String stream, UserCredentials userCredentials);
+//    Future<StreamMetadataResult> getStreamMetadataAsync(String stream, UserCredentials credentials);
 //
-//    Future<RawStreamMetadataResult> getStreamMetadataAsRawBytesAsync(String stream, UserCredentials userCredentials);
+//    Future<RawStreamMetadataResult> getStreamMetadataAsRawBytesAsync(String stream, UserCredentials credentials);
 }

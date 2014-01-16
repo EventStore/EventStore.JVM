@@ -46,7 +46,7 @@ class EsConnectionSpec extends ActorSpec with Mockito {
   trait TestScope extends ActorScope {
     val streamId = EventStream("EventStream")
     val events = Seq(EventData("test"))
-    val connection = new EsConnection(testActor, system, None)
+    val connection = new EsConnection(testActor, system)
 
     def verifyOutIn[OUT <: Out, IN <: In](out: OUT, in: In)(implicit outIn: OutInTag[OUT, IN]) {
       val future = connection.future(out)(outIn = outIn)
