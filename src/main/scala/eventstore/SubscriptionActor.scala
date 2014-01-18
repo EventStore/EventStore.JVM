@@ -11,8 +11,9 @@ object SubscriptionActor {
     client: ActorRef,
     fromPositionExclusive: Option[Position] = None,
     resolveLinkTos: Boolean = false,
-    readBatchSize: Int = 100): Props =
-    Props(classOf[SubscriptionActor], connection, client, fromPositionExclusive, resolveLinkTos, readBatchSize)
+    credentials: Option[UserCredentials] = None,
+    readBatchSize: Int = 100): Props = Props(classOf[SubscriptionActor], connection, client, fromPositionExclusive,
+    resolveLinkTos, credentials, readBatchSize)
 }
 
 class SubscriptionActor(
@@ -20,6 +21,7 @@ class SubscriptionActor(
     val client: ActorRef,
     fromPositionExclusive: Option[Position],
     val resolveLinkTos: Boolean,
+    val credentials: Option[UserCredentials],
     readBatchSize: Int) extends AbstractSubscriptionActor[IndexedEvent] {
 
   type Next = Position.Exact
@@ -68,7 +70,7 @@ class SubscriptionActor(
               if (last.exists(_ >= position)) loop(tail, last)
               else if (position.commitPosition > subscriptionCommit) liveProcessing(last, stash)
               else {
-                forward(event)
+                toClient(event)
                 loop(tail, Some(position))
               }
           }
@@ -96,13 +98,13 @@ class SubscriptionActor(
     val position = event.position
     if (lastPosition.exists(_ >= position)) lastPosition
     else {
-      forward(event)
+      toClient(event)
       Some(position)
     }
   }
 
   def readEventsFrom(position: Next) {
-    connection ! ReadAllEvents(position, readBatchSize, Forward, resolveLinkTos = resolveLinkTos)
+    toConnection(ReadAllEvents(position, readBatchSize, Forward, resolveLinkTos = resolveLinkTos))
   }
 
   def rcvReadCompleted(f: (List[IndexedEvent], Position.Exact) => Receive): Receive = {

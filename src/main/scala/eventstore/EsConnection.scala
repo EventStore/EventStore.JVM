@@ -36,44 +36,48 @@ class EsConnection(
   def subscribeToStream(
     streamId: EventStream.Id,
     observer: SubscriptionObserver[Event],
-    resolveLinkTos: Boolean = false): Closeable =
-    subscribeToStream(streamId, observer, Some(EventNumber.Last), resolveLinkTos)
+    resolveLinkTos: Boolean = false,
+    credentials: Option[UserCredentials] = None): Closeable =
+    subscribeToStream(streamId, observer, Some(EventNumber.Last), resolveLinkTos, credentials)
 
   def subscribeToStreamFrom(
     streamId: EventStream.Id,
     observer: SubscriptionObserver[Event],
     fromNumberExclusive: Option[EventNumber.Exact] = None,
-    resolveLinkTos: Boolean = false): Closeable = {
-    val client = factory.actorOf(SubscriptionObserverActor.props(observer))
-    val props = StreamSubscriptionActor.props(connection, client, streamId, fromNumberExclusive, resolveLinkTos)
-    factory.actorOf(props)
-    ActorCloseable(client)
-  }
+    resolveLinkTos: Boolean = false,
+    credentials: Option[UserCredentials] = None): Closeable =
+    subscribeToStream(streamId, observer, fromNumberExclusive, resolveLinkTos, credentials)
 
   private def subscribeToStream(
     streamId: EventStream.Id,
     observer: SubscriptionObserver[Event],
     fromNumberExclusive: Option[EventNumber],
-    resolveLinkTos: Boolean): Closeable = {
+    resolveLinkTos: Boolean,
+    credentials: Option[UserCredentials]): Closeable = {
     val client = factory.actorOf(SubscriptionObserverActor.props(observer))
-    val props = StreamSubscriptionActor.props(connection, client, streamId, fromNumberExclusive, resolveLinkTos)
+    val props = StreamSubscriptionActor.props(connection, client, streamId, fromNumberExclusive, resolveLinkTos, credentials)
     factory.actorOf(props)
     ActorCloseable(client)
   }
 
-  def subscribeToAll(observer: SubscriptionObserver[IndexedEvent], resolveLinkTos: Boolean = false): Closeable =
-    subscribeToAll(observer, Some(Position.Last), resolveLinkTos)
+  def subscribeToAll(
+    observer: SubscriptionObserver[IndexedEvent],
+    resolveLinkTos: Boolean = false,
+    credentials: Option[UserCredentials] = None): Closeable =
+    subscribeToAll(observer, Some(Position.Last), resolveLinkTos, credentials)
 
   def subscribeToAllFrom(
     observer: SubscriptionObserver[IndexedEvent],
     fromPositionExclusive: Option[Position.Exact] = None,
-    resolveLinkTos: Boolean = false): Closeable =
-    subscribeToAll(observer, fromPositionExclusive, resolveLinkTos)
+    resolveLinkTos: Boolean = false,
+    credentials: Option[UserCredentials] = None): Closeable =
+    subscribeToAll(observer, fromPositionExclusive, resolveLinkTos, credentials)
 
   private def subscribeToAll(
     observer: SubscriptionObserver[IndexedEvent],
     fromPositionExclusive: Option[Position],
-    resolveLinkTos: Boolean) = {
+    resolveLinkTos: Boolean,
+    credentials: Option[UserCredentials]) = {
     val client = factory.actorOf(SubscriptionObserverActor.props(observer))
     val props = SubscriptionActor.props(connection, client, fromPositionExclusive, resolveLinkTos)
     factory.actorOf(props)

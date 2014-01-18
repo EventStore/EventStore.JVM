@@ -2,21 +2,22 @@ package eventstore
 
 import ReadDirection.Forward
 import Subscription.LiveProcessingStarted
-import akka.actor.Status.Failure
 import akka.testkit.TestProbe
 
 class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
   "catch up subscription actor" should {
 
-    "read events from given position" in new SubscriptionScope(Some(EventNumber(123))) {
+    "read events from given position" in new SubscriptionScope {
       connection expectMsg readEvents(123)
+
+      override def eventNumber = Some(EventNumber(123))
     }
 
     "read events from start if no position given" in new SubscriptionScope {
       connection expectMsg readEvents(0)
     }
 
-    "subscribe if last position given" in new SubscriptionScope(Some(EventNumber.Last)) {
+    "subscribe if last position given" in new SubscriptionScope {
       connection expectMsg subscribeTo
       actor ! SubscribeToStreamCompleted(0)
       connection.expectNoMsg()
@@ -26,6 +27,8 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       expectMsg(LiveProcessingStarted)
       expectEvent(event1)
       expectEvent(event2)
+
+      override def eventNumber = Some(EventNumber.Last)
     }
 
     "ignore read events with event number out of interest" in new SubscriptionScope {
@@ -51,16 +54,17 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       connection expectMsg readEvents(5)
     }
 
-    "ignore read events with event number out of interest when from number is given" in
-      new SubscriptionScope(Some(EventNumber(1))) {
-        connection expectMsg readEvents(1)
+    "ignore read events with event number out of interest when from number is given" in new SubscriptionScope {
+      connection expectMsg readEvents(1)
 
-        actor ! readCompleted(3, false, event0, event1, event2)
-        expectEvent(event2)
-        expectNoMsg(duration)
+      actor ! readCompleted(3, false, event0, event1, event2)
+      expectEvent(event2)
+      expectNoMsg(duration)
 
-        connection expectMsg readEvents(3)
-      }
+      connection expectMsg readEvents(3)
+
+      override def eventNumber = Some(EventNumber(1))
+    }
 
     "read events until none left and subscribe to new ones" in new SubscriptionScope {
       connection expectMsg readEvents(0)
@@ -93,7 +97,7 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       expectActorTerminated()
     }
 
-    "catch events that appear in between reading and subscribing" in new SubscriptionScope() {
+    "catch events that appear in between reading and subscribing" in new SubscriptionScope {
       connection expectMsg readEvents(0)
 
       val position = 1
@@ -140,7 +144,7 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       expectNoActivity()
     }
 
-    "stop subscribing if stop received when subscription not yet confirmed" in new SubscriptionScope() {
+    "stop subscribing if stop received when subscription not yet confirmed" in new SubscriptionScope {
       connection expectMsg readEvents(0)
       actor ! readCompleted(0, endOfStream = true)
       connection expectMsg subscribeTo
@@ -148,7 +152,7 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       expectActorTerminated()
     }
 
-    "stop catching events that appear in between reading and subscribing if stop received" in new SubscriptionScope() {
+    "stop catching events that appear in between reading and subscribing if stop received" in new SubscriptionScope {
       connection expectMsg readEvents(0)
 
       val position = 1
@@ -176,7 +180,7 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       expectActorTerminated()
     }
 
-    "continue with subscription if no events appear in between reading and subscribing" in new SubscriptionScope() {
+    "continue with subscription if no events appear in between reading and subscribing" in new SubscriptionScope {
       val position = 0
       connection expectMsg readEvents(position)
       actor ! readCompleted(position, endOfStream = true)
@@ -195,7 +199,7 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
     }
 
     "continue with subscription if no events appear in between reading and subscribing and position is given" in
-      new SubscriptionScope(Some(EventNumber(1))) {
+      new SubscriptionScope {
         val position = 1
         connection expectMsg readEvents(position)
 
@@ -209,9 +213,11 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
         expectMsg(LiveProcessingStarted)
 
         expectNoActivity()
+
+        override def eventNumber = Some(EventNumber(1))
       }
 
-    "forward events while subscribed" in new SubscriptionScope() {
+    "forward events while subscribed" in new SubscriptionScope {
       val position = 0
       connection expectMsg readEvents(position)
       actor ! readCompleted(position, endOfStream = true)
@@ -237,16 +243,15 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       expectEvent(event3)
     }
 
-    "ignore wrong events while subscribed" in new SubscriptionScope(Some(EventNumber(1))) {
-      val position = 1
-      connection expectMsg readEvents(position)
-      actor ! readCompleted(position, endOfStream = true)
+    "ignore wrong events while subscribed" in new SubscriptionScope {
+      connection expectMsg readEvents(1)
+      actor ! readCompleted(1, endOfStream = true)
 
       connection expectMsg subscribeTo
       actor ! subscribeToStreamCompleted(2)
 
-      connection expectMsg readEvents(position)
-      actor ! readCompleted(position, endOfStream = true)
+      connection expectMsg readEvents(1)
+      actor ! readCompleted(1, endOfStream = true)
 
       expectMsg(LiveProcessingStarted)
 
@@ -263,9 +268,11 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       expectEvent(event5)
       actor ! streamEventAppeared(event4)
       expectNoMsg(duration)
+
+      override def eventNumber = Some(EventNumber(1))
     }
 
-    "stop subscription when actor stopped and subscribed" in new SubscriptionScope(Some(EventNumber(1))) {
+    "stop subscription when actor stopped and subscribed" in new SubscriptionScope {
       connection expectMsg readEvents(1)
 
       actor ! readCompleted(1, endOfStream = true)
@@ -280,21 +287,23 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       actor.stop()
       connection.expectMsg(Unsubscribe)
       expectActorTerminated()
+
+      override def eventNumber = Some(EventNumber(1))
     }
 
-    "stop actor if connection stopped" in new SubscriptionScope() {
+    "stop actor if connection stopped" in new SubscriptionScope {
       connection expectMsg readEvents(0)
       system stop connection.ref
       expectTerminated(actor)
     }
 
-    "stop actor if connection stopped" in new SubscriptionScope() {
+    "stop actor if connection stopped" in new SubscriptionScope {
       connection expectMsg readEvents(0)
       system stop connection.ref
       expectActorTerminated()
     }
 
-    "stop actor if client stopped" in new SubscriptionScope() {
+    "stop actor if client stopped" in new SubscriptionScope {
       connection expectMsg readEvents(0)
       val probe = TestProbe()
       probe watch actor
@@ -308,20 +317,22 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       expectActorTerminated()
     }
 
-    "stop actor if error while reading" in new SubscriptionScope() {
+    "stop actor if error while reading" in new SubscriptionScope {
       connection expectMsg readEvents(0)
       expectTerminatedOnFailure()
     }
 
-    "stop actor if error while subscribing" in new SubscriptionScope(Some(EventNumber(0))) {
+    "stop actor if error while subscribing" in new SubscriptionScope {
       connection expectMsg readEvents(0)
       actor ! readCompleted(0, endOfStream = true)
       connection expectMsg subscribeTo
 
       expectTerminatedOnFailure()
+
+      override def eventNumber = Some(EventNumber(0))
     }
 
-    "stop actor if error while catching up" in new SubscriptionScope(Some(EventNumber(0))) {
+    "stop actor if error while catching up" in new SubscriptionScope {
       connection expectMsg readEvents(0)
       actor ! readCompleted(0, endOfStream = true)
       connection expectMsg subscribeTo
@@ -329,9 +340,11 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
 
       expectMsg(LiveProcessingStarted)
       expectTerminatedOnFailure(expectUnsubscribe = true)
+
+      override def eventNumber = Some(EventNumber(0))
     }
 
-    "stop actor if error while live processing" in new SubscriptionScope(Some(EventNumber(0))) {
+    "stop actor if error while live processing" in new SubscriptionScope {
       connection expectMsg readEvents(0)
       actor ! readCompleted(0, endOfStream = true)
       connection expectMsg subscribeTo
@@ -339,32 +352,40 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
 
       expectMsg(LiveProcessingStarted)
       expectTerminatedOnFailure(expectUnsubscribe = true)
+
+      override def eventNumber = Some(EventNumber(0))
     }
 
-    "re-read reconnected while reading" in new SubscriptionScope(Some(EventNumber(0))) {
+    "re-read reconnected while reading" in new SubscriptionScope {
       connection expectMsg readEvents(0)
       reconnect()
       connection expectMsg readEvents(0)
       expectNoActivity()
+
+      override def eventNumber = Some(EventNumber(0))
     }
 
-    "re-subscribe reconnected while subscribing" in new SubscriptionScope(Some(EventNumber(0))) {
+    "re-subscribe reconnected while subscribing" in new SubscriptionScope {
       connection expectMsg readEvents(0)
       actor ! readCompleted(0, endOfStream = true)
       connection expectMsg subscribeTo
       reconnect()
       connection expectMsg subscribeTo
       expectNoActivity()
+
+      override def eventNumber = Some(EventNumber(0))
     }
 
-    "re-subscribe reconnected while subscribing from last" in new SubscriptionScope(Some(EventNumber.Last)) {
+    "re-subscribe reconnected while subscribing from last" in new SubscriptionScope {
       connection expectMsg subscribeTo
       actor ! subscribeToStreamCompleted(0)
       reconnect()
       connection expectMsg subscribeTo
+
+      override def eventNumber = Some(EventNumber.Last)
     }
 
-    "re-subscribe if reconnected while catching up" in new SubscriptionScope() {
+    "re-subscribe if reconnected while catching up" in new SubscriptionScope {
       connection expectMsg readEvents(0)
       actor ! readCompleted(0, endOfStream = true)
       connection expectMsg subscribeTo
@@ -373,7 +394,7 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       connection expectMsg subscribeTo
     }
 
-    "re-subscribe if reconnected while live processing" in new SubscriptionScope(Some(EventNumber(0))) {
+    "re-subscribe if reconnected while live processing" in new SubscriptionScope {
       connection expectMsg readEvents(0)
       actor ! readCompleted(0, endOfStream = true)
       connection expectMsg subscribeTo
@@ -381,11 +402,23 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       expectMsg(LiveProcessingStarted)
       reconnect()
       connection expectMsg subscribeTo
+
+      override def eventNumber = Some(EventNumber(0))
+    }
+
+    "use credentials if given" in new SubscriptionScope {
+      connection expectMsg readEvents(0).withCredentials(credentials.get)
+      actor ! readCompleted(0, endOfStream = true)
+      connection expectMsg subscribeTo.withCredentials(credentials.get)
+
+      override def credentials = Some(UserCredentials("login", "password"))
     }
   }
 
-  abstract class SubscriptionScope(eventNumber: Option[EventNumber] = None) extends AbstractScope {
+  trait SubscriptionScope extends AbstractScope {
     lazy val streamId = EventStream(getClass.getEnclosingClass.getSimpleName + "-" + newUuid.toString)
+
+    def eventNumber: Option[EventNumber] = None
 
     def props = StreamSubscriptionActor.props(
       connection = connection.ref,
@@ -393,6 +426,7 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       streamId = streamId,
       fromNumberExclusive = eventNumber,
       resolveLinkTos = resolveLinkTos,
+      credentials = credentials,
       readBatchSize = readBatchSize)
 
     val event0 = newEvent(0)

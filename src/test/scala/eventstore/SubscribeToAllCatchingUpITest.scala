@@ -124,7 +124,7 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
     def newSubscription(
       fromPositionExclusive: Option[Position.Exact] = None,
       resolveLinkTos: Boolean = false,
-      client: ActorRef = testActor) = TestActorRef(new SubscriptionActor(
+      client: ActorRef = testActor) = TestActorRef(SubscriptionActor.props(
       connection = actor,
       client = client,
       fromPositionExclusive = fromPositionExclusive,

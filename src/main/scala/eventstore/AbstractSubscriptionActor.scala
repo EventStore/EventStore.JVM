@@ -9,6 +9,7 @@ trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
   def connection: ActorRef
   def streamId: EventStream
   def resolveLinkTos: Boolean
+  def credentials: Option[UserCredentials]
 
   type Next
   type Last
@@ -17,10 +18,6 @@ trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
   context watch connection
 
   var subscribed = false
-
-  def subscribeToStream() {
-    connection ! SubscribeTo(streamId, resolveLinkTos = resolveLinkTos)
-  }
 
   val rcvFailure: Receive = {
     case Failure(EsException(EsError.ConnectionLost, _)) => connection ! WaitReconnected
@@ -50,12 +47,20 @@ trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
 
   def process(last: Last, event: T): Last
 
-  def forward(event: T) {
+  def toClient(event: T) {
     client ! event
   }
 
+  def toConnection(x: Out) {
+    connection ! credentials.fold[OutLike](x)(x.withCredentials)
+  }
+
+  def subscribeToStream() {
+    toConnection(SubscribeTo(streamId, resolveLinkTos = resolveLinkTos))
+  }
+
   override def postStop() {
-    if (subscribed) connection ! Unsubscribe
+    if (subscribed) toConnection(Unsubscribe)
   }
 }
 

@@ -6,7 +6,7 @@ import java.io.Closeable
 import akka.actor.Status.Failure
 import akka.testkit.TestProbe
 
-class EsConnectionImplSpec extends util.ActorSpec {
+class EsConnectionSpec extends util.ActorSpec {
 
   val streams = List("plain", "$system", "$$metadata")
   val existingVersions = List(ExpectedVersion.Any, ExpectedVersion.First, null)
@@ -138,7 +138,7 @@ class EsConnectionImplSpec extends util.ActorSpec {
     }
 
     "subscribe to stream" in new StreamSubscriptionScope {
-      val closeable = connection.subscribeToStream(streamId.streamId, observer, false)
+      val closeable = connection.subscribeToStream(streamId.streamId, observer, false, null)
       expectMsg(SubscribeTo(streamId))
       val actor = lastSender
       actor ! SubscribeToStreamCompleted(0, None)
@@ -153,7 +153,7 @@ class EsConnectionImplSpec extends util.ActorSpec {
     }
 
     "subscribe to stream from" in new StreamSubscriptionScope {
-      val closeable = connection.subscribeToStreamFrom(streamId.streamId, observer, 0, false)
+      val closeable = connection.subscribeToStreamFrom(streamId.streamId, observer, 0, false, null)
       expectMsg(ReadStreamEvents(streamId, EventNumber(0)))
       val actor = lastSender
       actor ! readEventsCompleted(event0, event1)
@@ -170,7 +170,7 @@ class EsConnectionImplSpec extends util.ActorSpec {
     }
 
     "subscribe to all" in new SubscriptionScope[IndexedEvent] {
-      val closeable = connection.subscribeToAll(observer, false)
+      val closeable = connection.subscribeToAll(observer, false, null)
       expectMsg(SubscribeTo(EventStream.All))
       val actor = lastSender
       actor ! SubscribeToAllCompleted(0)
@@ -185,7 +185,7 @@ class EsConnectionImplSpec extends util.ActorSpec {
     }
 
     "subscribe to all from" in new SubscriptionScope[IndexedEvent] {
-      val closeable = connection.subscribeToAllFrom(observer, Position(0), false)
+      val closeable = connection.subscribeToAllFrom(observer, Position(0), false, null)
       expectMsg(ReadAllEvents(Position(0)))
       val actor = lastSender
       actor ! ReadAllEventsCompleted(List(event0, event1), Position(0), Position(2), ReadDirection.Forward)

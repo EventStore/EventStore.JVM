@@ -109,25 +109,32 @@ class EsConnectionImpl(connection: eventstore.EsConnection) extends EsConnection
   def subscribeToStream(
     stream: String,
     observer: SubscriptionObserver[Event],
-    resolveLinkTos: Boolean) =
-    connection.subscribeToStream(EventStream(stream), observer, resolveLinkTos)
+    resolveLinkTos: Boolean,
+    credentials: UserCredentials) =
+    connection.subscribeToStream(EventStream(stream), observer, resolveLinkTos, Option(credentials))
 
   def subscribeToStreamFrom(
     stream: String,
     observer: SubscriptionObserver[Event],
     fromEventNumberExclusive: Int, // TODO how to include first event
-    resolveLinkTos: Boolean) = connection.subscribeToStreamFrom(
+    resolveLinkTos: Boolean,
+    credentials: UserCredentials) = connection.subscribeToStreamFrom(
     EventStream(stream),
     observer,
     Some(EventNumber(fromEventNumberExclusive)),
-    resolveLinkTos)
+    resolveLinkTos,
+    Option(credentials))
 
-  def subscribeToAll(observer: SubscriptionObserver[IndexedEvent], resolveLinkTos: Boolean) =
-    connection.subscribeToAll(observer, resolveLinkTos)
+  def subscribeToAll(
+    observer: SubscriptionObserver[IndexedEvent],
+    resolveLinkTos: Boolean,
+    credentials: UserCredentials) =
+    connection.subscribeToAll(observer, resolveLinkTos, Option(credentials))
 
   def subscribeToAllFrom(
     observer: SubscriptionObserver[IndexedEvent],
     fromPositionExclusive: Position.Exact,
-    resolveLinkTos: Boolean) =
-    connection.subscribeToAllFrom(observer, Option(fromPositionExclusive), resolveLinkTos)
+    resolveLinkTos: Boolean,
+    credentials: UserCredentials) =
+    connection.subscribeToAllFrom(observer, Option(fromPositionExclusive), resolveLinkTos, Option(credentials))
 }

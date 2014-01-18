@@ -191,9 +191,7 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
 
       case None => msg match {
         case Pong | HeartbeatResponse | UnsubscribeCompleted =>
-        case _ =>
-          log.warning("can not deliver {}, sender not found for correlationId: {}", msg, correlationId)
-          system.deadLetters ! msg
+        case _ => log.warning("can not deliver {}, sender not found for correlationId: {}", msg, correlationId)
       }
     }
   }

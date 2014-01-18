@@ -51,5 +51,7 @@ abstract class AbstractSubscriptionActorSpec extends util.ActorSpec with Mockito
       connection expectMsg WaitReconnected
       actor ! Reconnected
     }
+
+    def credentials: Option[UserCredentials] = None
   }
 }

@@ -13,16 +13,18 @@ object StreamSubscriptionActor {
     streamId: EventStream.Id,
     fromNumberExclusive: Option[EventNumber] = None,
     resolveLinkTos: Boolean = false,
-    readBatchSize: Int = 100): Props = Props(classOf[StreamSubscriptionActor], connection, client,
-    streamId, fromNumberExclusive, resolveLinkTos, readBatchSize)
+    credentials: Option[UserCredentials] = None,
+    readBatchSize: Int = 100): Props = Props(classOf[StreamSubscriptionActor], connection, client, streamId,
+    fromNumberExclusive, resolveLinkTos, credentials, readBatchSize)
 }
 
-class StreamSubscriptionActor(
+class StreamSubscriptionActor private (
     val connection: ActorRef,
     val client: ActorRef,
     val streamId: EventStream.Id,
     fromNumberExclusive: Option[EventNumber],
     val resolveLinkTos: Boolean,
+    val credentials: Option[UserCredentials],
     readBatchSize: Int) extends AbstractSubscriptionActor[Event] {
 
   type Next = EventNumber.Exact
@@ -75,7 +77,7 @@ class StreamSubscriptionActor(
               if (last.exists(_ >= number)) loop(tail, last)
               else if (number > subscriptionNumber) liveProcessing(last, stash)
               else {
-                forward(event)
+                toClient(event)
                 loop(tail, Some(number))
               }
           }
@@ -102,13 +104,13 @@ class StreamSubscriptionActor(
     val number = event.record.number
     if (last.exists(_ >= number)) last
     else {
-      forward(event)
+      toClient(event)
       Some(number)
     }
   }
 
   def readEventsFrom(number: Next) {
-    connection ! ReadStreamEvents(streamId, number, readBatchSize, Forward, resolveLinkTos = resolveLinkTos)
+    toConnection(ReadStreamEvents(streamId, number, readBatchSize, Forward, resolveLinkTos = resolveLinkTos))
   }
 
   def rcvSubscribeCompleted(receive: Last => Receive): Receive = {

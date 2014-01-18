@@ -140,29 +140,29 @@ public interface EsConnection {
     Closeable subscribeToStream(
             String stream,
             SubscriptionObserver<Event> observer,
-            boolean resolveLinkTos/*,
-            UserCredentials credentials TODO*/);
+            boolean resolveLinkTos,
+            UserCredentials credentials);
 
 
     Closeable subscribeToStreamFrom(
             String stream,
             SubscriptionObserver<Event> observer,
             int fromEventNumberExclusive,
-            boolean resolveLinkTos/*,
-            UserCredentials credentials TODO*/);
+            boolean resolveLinkTos,
+            UserCredentials credentials);
 
 
     Closeable subscribeToAll(
             SubscriptionObserver<IndexedEvent> observer,
-            boolean resolveLinkTos/*,
-            UserCredentials credentials TODO*/);
+            boolean resolveLinkTos,
+            UserCredentials credentials);
 
 
     Closeable subscribeToAllFrom(
             SubscriptionObserver<IndexedEvent> observer,
             Position.Exact fromPositionExclusive,
-            boolean resolveLinkTos/*,
-            UserCredentials credentials TODO*/);
+            boolean resolveLinkTos,
+            UserCredentials credentials);
 
 //    Future<Unit> setStreamMetadataAsync(String stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials credentials);
 //
