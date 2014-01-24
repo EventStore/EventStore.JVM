@@ -19,28 +19,28 @@ We have 2 APIs available:
 * Calling methods on `eventstore.j.EsConnection`
 
 ```java
-    final EsConnection connection = EsConnectionFactory.create(system);
-    final Future<Event> future = connection.readEvent("my-stream", new EventNumber.Exact(0), false, null);
+final EsConnection connection = EsConnectionFactory.create(system);
+final Future<Event> future = connection.readEvent("my-stream", new EventNumber.Exact(0), false, null);
 ```
 
 ```scala
-    val connection = EsConnection(system)
-    val future = connection future ReadEvent(EventStream("my-stream"), EventNumber.First)
+val connection = EsConnection(system)
+val future = connection future ReadEvent(EventStream("my-stream"), EventNumber.First)
 ```
 
 * Sending messages to reference of `eventstore.ConnectionActor`
 
 ```java
-    final ActorRef connection = system.actorOf(ConnectionActor.getProps());
-    final ReadEvent readEvent = new ReadEventBuilder("my-stream")
-            .first()
-            .build();
-    connection.tell(readEvent, null);
+final ActorRef connection = system.actorOf(ConnectionActor.getProps());
+final ReadEvent readEvent = new ReadEventBuilder("my-stream")
+        .first()
+        .build();
+connection.tell(readEvent, null);
 ```
 
 ```scala
-    val connection = system.actorOf(ConnectionActor.props())
-    connection ! ReadEvent(EventStream("my-stream"), EventNumber.First)
+val connection = system.actorOf(ConnectionActor.props())
+connection ! ReadEvent(EventStream("my-stream"), EventNumber.First)
 ```
 
 
