@@ -13,7 +13,7 @@ import java.util.UUID;
 public class WriteEventExample {
     public static void main(String[] args) {
         final ActorSystem system = ActorSystem.create();
-        final ActorRef connection = system.actorOf(ConnectionActor.props(Settings.Default()));
+        final ActorRef connection = system.actorOf(ConnectionActor.getProps());
         final ActorRef writeResult = system.actorOf(Props.create(WriteResult.class));
 
         final EventData event = new EventDataBuilder("my-event")

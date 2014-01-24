@@ -3,7 +3,7 @@ package eventstore
 sealed trait EventNumber extends Ordered[EventNumber]
 
 object EventNumber {
-  val First = Exact(0)
+  val First: Exact = Exact(0)
 
   def start(direction: ReadDirection): EventNumber = direction match {
     case ReadDirection.Forward  => First

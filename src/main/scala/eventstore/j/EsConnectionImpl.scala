@@ -4,6 +4,12 @@ package j
 import java.util
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
+import akka.actor.ActorSystem
+
+object EsConnectionImpl {
+  def apply(system: ActorSystem, settings: Settings = Settings.Default): EsConnectionImpl =
+    new EsConnectionImpl(eventstore.EsConnection(system, settings))
+}
 
 class EsConnectionImpl(connection: eventstore.EsConnection) extends EsConnection {
 

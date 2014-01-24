@@ -13,12 +13,36 @@
   </tr>
 </table>
 
-## Status
 
-Currently the only API available is Actor-like via sending/receiving messages to actors.
-This is not a user friendliest one, but if you need as much performance as possible, then use Actor-like api.
+We have 2 APIs available:
 
-However we will provide more convenient API based on `scala.concurrent.Future`.
+* Calling methods on `eventstore.j.EsConnection`
+
+```java
+        final EsConnection connection = EsConnectionFactory.create(system);
+        final Future<Event> future = connection.readEvent("my-stream", new EventNumber.Exact(0), false, null);
+```
+
+```scala
+    val connection = EsConnection(system)
+    val future = connection future ReadEvent(EventStream("my-stream"), EventNumber.First)
+```
+
+* Sending messages to reference of `eventstore.ConnectionActor`
+
+```java
+        final ActorRef connection = system.actorOf(ConnectionActor.getProps());
+        final ReadEvent readEvent = new ReadEventBuilder("my-stream")
+                .first()
+                .build();
+        connection.tell(readEvent, null);
+```
+
+```scala
+    val connection = system.actorOf(ConnectionActor.props())
+    connection ! ReadEvent(EventStream("my-stream"), EventNumber.First)
+```
+
 
 ## Java examples
 
@@ -43,7 +67,7 @@ public class ReadEventExample {
                 .address(new InetSocketAddress("127.0.0.1", 1113))
                 .defaultCredentials("admin", "changeit")
                 .build();
-        final ActorRef connection = system.actorOf(ConnectionActor.props(settings));
+        final ActorRef connection = system.actorOf(ConnectionActor.getProps(settings));
         final ActorRef readResult = system.actorOf(Props.create(ReadResult.class));
 
         final ReadEvent readEvent = new ReadEventBuilder("my-stream")
@@ -93,7 +117,7 @@ import java.util.UUID;
 public class WriteEventExample {
     public static void main(String[] args) {
         final ActorSystem system = ActorSystem.create();
-        final ActorRef connection = system.actorOf(ConnectionActor.props(Settings.Default()));
+        final ActorRef connection = system.actorOf(ConnectionActor.getProps());
         final ActorRef writeResult = system.actorOf(Props.create(WriteResult.class));
 
         final EventData event = new EventDataBuilder("my-event")
@@ -128,6 +152,46 @@ public class WriteEventExample {
 
             context().system().shutdown();
         }
+    }
+}
+```
+
+### Subscribe to All
+
+```java
+import akka.actor.ActorSystem;
+import eventstore.IndexedEvent;
+import eventstore.SubscriptionObserver;
+import eventstore.j.EsConnection;
+import eventstore.j.EsConnectionFactory;
+
+import java.io.Closeable;
+
+public class SubscribeToAllExample {
+    public static void main(String[] args) {
+        final ActorSystem system = ActorSystem.create();
+        final EsConnection connection = EsConnectionFactory.create(system);
+        final Closeable closeable = connection.subscribeToAll(new SubscriptionObserver<IndexedEvent>() {
+            @Override
+            public void onLiveProcessingStart(Closeable subscription) {
+                system.log().info("live processing started");
+            }
+
+            @Override
+            public void onEvent(IndexedEvent event, Closeable subscription) {
+                system.log().info(event.toString());
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                system.log().error(e.toString());
+            }
+
+            @Override
+            public void onClose() {
+                system.log().error("subscription closed");
+            }
+        }, false, null);
     }
 }
 ```

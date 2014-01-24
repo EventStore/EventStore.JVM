@@ -19,7 +19,7 @@ case class Settings(
   backpressureSettings: BackpressureSettings = BackpressureSettings())
 
 object Settings {
-  val Default = Settings()
+  val Default: Settings = Settings()
 }
 
 /**

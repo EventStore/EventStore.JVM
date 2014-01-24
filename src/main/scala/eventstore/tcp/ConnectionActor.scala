@@ -11,6 +11,10 @@ import util.{ CancellableAdapter, BidirectionalMap }
 object ConnectionActor {
   def props(settings: Settings = Settings.Default): Props = Props(classOf[ConnectionActor], settings)
 
+  def getProps(): Props = props()
+
+  def getProps(settings: Settings): Props = props(settings)
+
   case object Reconnected
   case object WaitReconnected
 }
