@@ -14,9 +14,9 @@
 </table>
 
 
-We have 2 APIs available:
+We have two APIs available:
 
-* Calling methods on `eventstore.j.EsConnection`
+* Calling methods on `EsConnection`
 
 ```java
 final EsConnection connection = EsConnectionFactory.create(system);
@@ -28,7 +28,7 @@ val connection = EsConnection(system)
 val future = connection future ReadEvent(EventStream("my-stream"), EventNumber.First)
 ```
 
-* Sending messages to reference of `eventstore.ConnectionActor`
+* Sending messages to `eventstore.ConnectionActor`
 
 ```java
 final ActorRef connection = system.actorOf(ConnectionActor.getProps());

@@ -26,7 +26,7 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
   import context.system
   import settings._
 
-  val init = EsPipelineInit(log, backpressureSettings)
+  val init = EsPipelineInit(log, backpressure)
 
   var binding = new BidirectionalMap[Uuid, ActorRef]()
   var subscriptions = Set.empty[ActorRef] // TODO part of connected state

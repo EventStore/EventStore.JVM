@@ -6,7 +6,7 @@ import java.net.InetSocketAddress
 import Builder.RequireMasterSnippet
 import scala.concurrent.duration._
 
-class SettingsBuilder extends Builder[Settings] with RequireMasterSnippet[SettingsBuilder] {
+class SettingsBuilder extends Builder[Settings] with ChainSet[SettingsBuilder] {
   var _address = Default.address
   var _maxReconnections = Default.maxReconnections
   var _reconnectionDelayMin = Default.reconnectionDelayMin
@@ -15,7 +15,7 @@ class SettingsBuilder extends Builder[Settings] with RequireMasterSnippet[Settin
   var _heartbeatInterval = Default.heartbeatInterval
   var _heartbeatTimeout = Default.heartbeatTimeout
   var _connectionTimeout = Default.connectionTimeout
-  var _backpressureSettings = Default.backpressureSettings
+  var _backpressure = Default.backpressure
 
   def address(x: InetSocketAddress): SettingsBuilder = set {
     _address = x
@@ -26,8 +26,6 @@ class SettingsBuilder extends Builder[Settings] with RequireMasterSnippet[Settin
   def maxReconnections(x: Int): SettingsBuilder = set {
     _maxReconnections = x
   }
-
-  def requireMaster(x: Boolean): SettingsBuilder = RequireMasterSnippet.requireMaster(x)
 
   def reconnectionDelayMin(x: FiniteDuration): SettingsBuilder = set {
     _reconnectionDelayMin = x
@@ -80,19 +78,18 @@ class SettingsBuilder extends Builder[Settings] with RequireMasterSnippet[Settin
 
   def connectionTimeout(length: Long): SettingsBuilder = connectionTimeout(length, SECONDS)
 
-  def backpressureSettings(x: BackpressureSettings): SettingsBuilder = set {
-    _backpressureSettings = x
+  def backpressure(x: BackpressureSettings): SettingsBuilder = set {
+    _backpressure = x
   }
 
   def build: Settings = Settings(
     address = _address,
     maxReconnections = _maxReconnections,
-    requireMaster = RequireMasterSnippet.value,
     reconnectionDelayMin = _reconnectionDelayMin,
     reconnectionDelayMax = _reconnectionDelayMax,
     defaultCredentials = _defaultCredentials,
     heartbeatInterval = _heartbeatInterval,
     heartbeatTimeout = _heartbeatTimeout,
     connectionTimeout = _connectionTimeout,
-    backpressureSettings = _backpressureSettings)
+    backpressure = _backpressure)
 }

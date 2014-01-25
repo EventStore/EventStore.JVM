@@ -9,7 +9,7 @@ import java.nio.ByteOrder
 object EsPipelineInit {
   def apply(
     log: LoggingAdapter,
-    backpressureSettings: BackpressureSettings): Init[WithinActorContext, TcpPackageOut, TcpPackageIn] =
+    settings: BackpressureSettings): Init[WithinActorContext, TcpPackageOut, TcpPackageIn] =
     TcpPipelineHandler.withLogger(log,
       new MessageByteStringAdapter >>
         new LengthFieldFrame(
@@ -18,7 +18,7 @@ object EsPipelineInit {
           lengthIncludesHeader = false) >>
         new TcpReadWriteAdapter >>
         new BackpressureBuffer(
-          lowBytes = backpressureSettings.lowWatermark,
-          highBytes = backpressureSettings.highWatermark,
-          maxBytes = backpressureSettings.maxCapacity))
+          lowBytes = settings.lowWatermark,
+          highBytes = settings.highWatermark,
+          maxBytes = settings.maxCapacity))
 }
