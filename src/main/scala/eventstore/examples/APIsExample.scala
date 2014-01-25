@@ -1,7 +1,7 @@
 package eventstore.examples
 
 import akka.actor.ActorSystem
-import eventstore.{EventStream, EventNumber, ReadEvent, EsConnection}
+import eventstore.{ EventStream, EventNumber, ReadEvent, EsConnection }
 import eventstore.tcp.ConnectionActor
 
 class APIsExample {

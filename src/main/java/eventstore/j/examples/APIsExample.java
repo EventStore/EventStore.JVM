@@ -5,12 +5,10 @@ import akka.actor.ActorSystem;
 import eventstore.Event;
 import eventstore.EventNumber;
 import eventstore.ReadEvent;
-import eventstore.ReadEventCompleted;
 import eventstore.j.EsConnection;
 import eventstore.j.EsConnectionFactory;
 import eventstore.j.ReadEventBuilder;
 import eventstore.tcp.ConnectionActor;
-import scala.PartialFunction;
 import scala.concurrent.Future;
 
 public class APIsExample {
