@@ -13,7 +13,7 @@ case class Settings(
   heartbeatInterval: FiniteDuration = 500.millis,
   heartbeatTimeout: FiniteDuration = 2.seconds,
   connectionTimeout: FiniteDuration = 1.second,
-  responseTimeout: FiniteDuration = 5.seconds, // TODO 4J & rename to OperationTimeout
+  operationTimeout: FiniteDuration = 5.seconds,
   backpressure: BackpressureSettings = BackpressureSettings())
 
 object Settings {
@@ -32,7 +32,7 @@ object Settings {
       heartbeatInterval = FiniteDuration(conf getMilliseconds "heartbeat.interval", MILLISECONDS),
       heartbeatTimeout = FiniteDuration(conf getMilliseconds "heartbeat.timeout", MILLISECONDS),
       connectionTimeout = FiniteDuration(conf getMilliseconds "connectionTimeout", MILLISECONDS),
-      responseTimeout = FiniteDuration(conf getMilliseconds "responseTimeout", MILLISECONDS),
+      operationTimeout = FiniteDuration(conf getMilliseconds "operationTimeout", MILLISECONDS),
       backpressure = BackpressureSettings(conf))
     apply(conf.getConfig("eventstore"))
   }

@@ -12,8 +12,8 @@ import util.ActorCloseable
 class EsConnection(
     connection: ActorRef,
     factory: ActorRefFactory,
-    responseTimeout: FiniteDuration = Settings.Default.responseTimeout) {
-  implicit val timeout = Timeout(responseTimeout)
+    operationTimeout: FiniteDuration = Settings.Default.operationTimeout) {
+  implicit val timeout = Timeout(operationTimeout)
 
   def future[OUT <: Out, IN <: In](out: OUT, credentials: Option[UserCredentials] = None)(
     implicit outIn: OutInTag[OUT, IN]): Future[IN] = {
@@ -89,7 +89,7 @@ object EsConnection {
   def apply(system: ActorSystem, settings: Settings = Settings.Default): EsConnection = new EsConnection(
     connection = system.actorOf(ConnectionActor.props(settings)),
     factory = system,
-    responseTimeout = settings.responseTimeout)
+    operationTimeout = settings.operationTimeout)
 }
 
 trait SubscriptionObserver[T] {

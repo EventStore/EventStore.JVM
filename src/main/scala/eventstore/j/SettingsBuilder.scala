@@ -3,7 +3,6 @@ package j
 
 import Settings.Default
 import java.net.InetSocketAddress
-import Builder.RequireMasterSnippet
 import scala.concurrent.duration._
 
 class SettingsBuilder extends Builder[Settings] with ChainSet[SettingsBuilder] {
@@ -15,6 +14,7 @@ class SettingsBuilder extends Builder[Settings] with ChainSet[SettingsBuilder] {
   var _heartbeatInterval = Default.heartbeatInterval
   var _heartbeatTimeout = Default.heartbeatTimeout
   var _connectionTimeout = Default.connectionTimeout
+  var _operationTimeout = Default.operationTimeout
   var _backpressure = Default.backpressure
 
   def address(x: InetSocketAddress): SettingsBuilder = set {
@@ -77,6 +77,14 @@ class SettingsBuilder extends Builder[Settings] with ChainSet[SettingsBuilder] {
   def connectionTimeout(length: Long, unit: TimeUnit): SettingsBuilder = connectionTimeout(FiniteDuration(length, unit))
 
   def connectionTimeout(length: Long): SettingsBuilder = connectionTimeout(length, SECONDS)
+
+  def operationTimeout(x: FiniteDuration): SettingsBuilder = set {
+    _operationTimeout = x
+  }
+
+  def operationTimeout(length: Long, unit: TimeUnit): SettingsBuilder = operationTimeout(FiniteDuration(length, unit))
+
+  def operationTimeout(length: Long): SettingsBuilder = operationTimeout(length, SECONDS)
 
   def backpressure(x: BackpressureSettings): SettingsBuilder = set {
     _backpressure = x
