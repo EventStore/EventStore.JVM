@@ -315,7 +315,7 @@ object StartTransactionExample extends App {
 
 ```scala
 import akka.actor._
-import eventstore.Subscription.LiveProcessingStarted
+import eventstore.LiveProcessingStarted
 import eventstore.tcp.ConnectionActor
 import eventstore.{ IndexedEvent, SubscriptionActor }
 import scala.concurrent.duration._

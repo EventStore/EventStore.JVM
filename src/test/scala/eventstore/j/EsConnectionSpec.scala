@@ -82,7 +82,7 @@ class EsConnectionSpec extends util.ActorSpec {
           streamId = EventStream(stream),
           fromNumber = Option(number) getOrElse EventNumber.First,
           maxCount = count,
-          direction = ReadDirection.Forward,
+          direction = ReadDirection.forward,
           resolveLinkTos = resolveLinkTos), uc)
       }
     }
@@ -100,7 +100,7 @@ class EsConnectionSpec extends util.ActorSpec {
           streamId = EventStream(stream),
           fromNumber = Option(number) getOrElse EventNumber.Last,
           maxCount = count,
-          direction = ReadDirection.Backward,
+          direction = ReadDirection.backward,
           resolveLinkTos = resolveLinkTos), uc)
       }
     }
@@ -116,7 +116,7 @@ class EsConnectionSpec extends util.ActorSpec {
         expect(ReadAllEvents(
           fromPosition = Option(position) getOrElse Position.First,
           maxCount = count,
-          direction = ReadDirection.Forward,
+          direction = ReadDirection.forward,
           resolveLinkTos = resolveLinkTos), uc)
       }
     }
@@ -132,7 +132,7 @@ class EsConnectionSpec extends util.ActorSpec {
         expect(ReadAllEvents(
           fromPosition = Option(position) getOrElse Position.Last,
           maxCount = count,
-          direction = ReadDirection.Backward,
+          direction = ReadDirection.backward,
           resolveLinkTos = resolveLinkTos), uc)
       }
     }
@@ -188,9 +188,9 @@ class EsConnectionSpec extends util.ActorSpec {
       val closeable = connection.subscribeToAllFrom(observer, Position(0), false, null)
       expectMsg(ReadAllEvents(Position(0)))
       val actor = lastSender
-      actor ! ReadAllEventsCompleted(List(event0, event1), Position(0), Position(2), ReadDirection.Forward)
+      actor ! ReadAllEventsCompleted(List(event0, event1), Position(0), Position(2), ReadDirection.forward)
       expectMsg(ReadAllEvents(Position(2)))
-      actor ! ReadAllEventsCompleted(Nil, Position(2), Position(2), ReadDirection.Forward)
+      actor ! ReadAllEventsCompleted(Nil, Position(2), Position(2), ReadDirection.forward)
       expectMsg(SubscribeTo(EventStream.All))
       actor ! SubscribeToAllCompleted(0)
       actor ! StreamEventAppeared(event2)
@@ -230,7 +230,7 @@ class EsConnectionSpec extends util.ActorSpec {
 
     def newEvent(x: Int) = IndexedEvent(EventRecord(streamId, EventNumber(x), EventData("event-type")), Position(x))
 
-    val error = EsException(EsError.AccessDenied)
+    val error = EsException(EsError.accessDenied)
 
     val event0 = newEvent(0)
     val event1 = newEvent(1)
@@ -247,6 +247,6 @@ class EsConnectionSpec extends util.ActorSpec {
       EventNumber(2),
       endOfStream = true,
       0,
-      ReadDirection.Forward)
+      ReadDirection.forward)
   }
 }

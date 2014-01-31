@@ -71,7 +71,12 @@ case class DeleteStream(
   expectedVersion: ExpectedVersion.Existing = ExpectedVersion.Any,
   requireMaster: Boolean = true) extends Out
 
-case object DeleteStreamCompleted extends In
+case object DeleteStreamCompleted extends In {
+  /**
+   * Java API
+   */
+  def getInstance = this
+}
 
 case class TransactionStart(
   streamId: EventStream.Id,
@@ -172,10 +177,35 @@ case class SubscribeToStreamCompleted(
 
 case class StreamEventAppeared(event: IndexedEvent) extends In
 
-case object Unsubscribe extends Out
-case object UnsubscribeCompleted extends In
+case object Unsubscribe extends Out {
+  /**
+   * Java API
+   */
+  def getInstance = this
+}
+case object UnsubscribeCompleted extends In {
+  /**
+   * Java API
+   */
+  def getInstance = this
+}
 
-case object ScavengeDatabase extends Out
+case object ScavengeDatabase extends Out {
+  /**
+   * Java API
+   */
+  def getInstance = this
+}
 
-case object Authenticate extends Out
-case object Authenticated extends In
+case object Authenticate extends Out {
+  /**
+   * Java API
+   */
+  def getInstance = this
+}
+case object Authenticated extends In {
+  /**
+   * Java API
+   */
+  def getInstance = this
+}

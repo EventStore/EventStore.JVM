@@ -15,7 +15,7 @@ object EsTransaction {
   implicit val executionContext: ExecutionContext = ExecutionContext.Implicits.global
 
   def start(actor: ActorRef)(implicit timeout: Timeout): Future[EsTransaction] = {
-    import TransactionActor._
+    import TransactionActor.{ TransactionId, GetTransactionId }
     val future = actor ? GetTransactionId
     future.mapTo[TransactionId].map(x => continue(x.value, actor))
   }

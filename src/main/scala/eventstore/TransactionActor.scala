@@ -6,6 +6,9 @@ import scala.collection.immutable.Queue
 
 object TransactionActor {
 
+  def props(connection: ActorRef, kickoff: Kickoff, requireMaster: Boolean = true): Props =
+    Props(classOf[TransactionActor], connection, kickoff, requireMaster)
+
   sealed trait Kickoff
   case class Start(data: TransactionStart) extends Kickoff
   case class Continue(transactionId: Long) extends Kickoff
@@ -26,8 +29,56 @@ object TransactionActor {
   case object Commit extends Command
   case object CommitCompleted
 
-  def props(connection: ActorRef, kickoff: Kickoff, requireMaster: Boolean = true): Props =
-    Props(classOf[TransactionActor], connection, kickoff, requireMaster)
+  /**
+   * Java API
+   */
+  def getProps(connection: ActorRef, kickoff: Kickoff, requireMaster: Boolean): Props =
+    props(connection, kickoff, requireMaster)
+
+  /**
+   * Java API
+   */
+  def getProps(connection: ActorRef, kickoff: Kickoff): Props = props(connection, kickoff)
+
+  /**
+   * Java API
+   */
+  def start(data: TransactionStart): Start = Start(data)
+
+  /**
+   * Java API
+   */
+  def continue(transactionId: Long): Continue = Continue(transactionId)
+
+  /**
+   * Java API
+   */
+  def getTransactionId: GetTransactionId.type = GetTransactionId
+
+  /**
+   * Java API
+   */
+  def transactionId(value: Long): TransactionId = TransactionId(value)
+
+  /**
+   * Java API
+   */
+  def write(events: List[EventData]): Write = Write(events)
+
+  /**
+   * Java API
+   */
+  def writeCompleted: WriteCompleted.type = WriteCompleted
+
+  /**
+   * Java API
+   */
+  def commit: Commit.type = Commit
+
+  /**
+   * Java API
+   */
+  def commitCompleted: CommitCompleted.type = CommitCompleted
 }
 
 class TransactionActor(

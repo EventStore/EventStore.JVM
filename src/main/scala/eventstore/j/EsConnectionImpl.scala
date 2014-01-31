@@ -59,7 +59,7 @@ class EsConnectionImpl(connection: eventstore.EsConnection) extends EsConnection
       streamId = EventStream(stream),
       fromNumber = Option(fromNumber) getOrElse EventNumber.First,
       maxCount = count,
-      direction = ReadDirection.Forward,
+      direction = eventstore.ReadDirection.Forward,
       resolveLinkTos = resolveLinkTos)
 
     connection.future(out, Option(credentials))
@@ -76,7 +76,7 @@ class EsConnectionImpl(connection: eventstore.EsConnection) extends EsConnection
       streamId = EventStream(stream),
       fromNumber = Option(fromNumber) getOrElse EventNumber.Last,
       maxCount = maxCount,
-      direction = ReadDirection.Backward,
+      direction = eventstore.ReadDirection.Backward,
       resolveLinkTos = resolveLinkTos)
 
     connection.future(out, Option(credentials))
@@ -91,7 +91,7 @@ class EsConnectionImpl(connection: eventstore.EsConnection) extends EsConnection
     val out = ReadAllEvents(
       fromPosition = Option(fromPosition) getOrElse Position.First,
       maxCount = maxCount,
-      direction = ReadDirection.Forward,
+      direction = eventstore.ReadDirection.Forward,
       resolveLinkTos = resolveLinkTos)
 
     connection.future(out, Option(credentials))
@@ -106,7 +106,7 @@ class EsConnectionImpl(connection: eventstore.EsConnection) extends EsConnection
     val out = ReadAllEvents(
       fromPosition = Option(fromPosition) getOrElse Position.Last,
       maxCount = maxCount,
-      direction = ReadDirection.Backward,
+      direction = eventstore.ReadDirection.Backward,
       resolveLinkTos = resolveLinkTos)
 
     connection.future(out, Option(credentials))

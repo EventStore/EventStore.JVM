@@ -11,12 +11,28 @@ import util.{ CancellableAdapter, BidirectionalMap }
 object ConnectionActor {
   def props(settings: Settings = Settings.Default): Props = Props(classOf[ConnectionActor], settings)
 
-  def getProps(): Props = props()
-
-  def getProps(settings: Settings): Props = props(settings)
-
   case object Reconnected
   case object WaitReconnected
+
+  /**
+   * Java API
+   */
+  def getProps(): Props = props()
+
+  /**
+   * Java API
+   */
+  def getProps(settings: Settings): Props = props(settings)
+
+  /**
+   * Java API
+   */
+  def reconnected: Reconnected.type = Reconnected
+
+  /**
+   * Java API
+   */
+  def waitReconnected: WaitReconnected.type = WaitReconnected
 }
 
 class ConnectionActor(settings: Settings) extends Actor with ActorLogging {

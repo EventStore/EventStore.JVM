@@ -1,6 +1,5 @@
 package eventstore
 
-import Subscription.LiveProcessingStarted
 import akka.actor.Status.Failure
 import akka.actor.{ Props, Actor }
 import scala.reflect.ClassTag
@@ -9,6 +8,11 @@ import util.ActorCloseable
 object SubscriptionObserverActor {
   def props[T](observer: SubscriptionObserver[T])(implicit tag: ClassTag[T]): Props =
     Props(classOf[SubscriptionObserverActor[T]], observer, tag)
+
+  /**
+   * Java API
+   */
+  def getProps[T](observer: SubscriptionObserver[T], clazz: Class[T]): Props = props(observer)(ClassTag(clazz))
 }
 
 class SubscriptionObserverActor[T](observer: SubscriptionObserver[T], tag: ClassTag[T]) extends Actor {

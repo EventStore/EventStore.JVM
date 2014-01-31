@@ -1,7 +1,6 @@
 package eventstore
 
 import ReadDirection.Forward
-import Subscription.LiveProcessingStarted
 import akka.testkit.TestProbe
 
 class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {

@@ -64,6 +64,9 @@ trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
   }
 }
 
-object Subscription {
-  case object LiveProcessingStarted
+case object LiveProcessingStarted {
+  /**
+   * Java API
+   */
+  def getInstance = this
 }

@@ -42,5 +42,4 @@ object Position {
     implicit val ordering = Ordering.by[Exact, Position](identity)
     def apply(position: Long): Exact = Exact(commitPosition = position, preparePosition = position)
   }
-
 }

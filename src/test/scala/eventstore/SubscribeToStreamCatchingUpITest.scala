@@ -15,7 +15,7 @@ class SubscribeToStreamCatchingUpITest extends TestConnection {
 
     "be able to subscribe to non existing stream and then catch event" in new SubscribeCatchingUpScope {
       val subscriptionActor = newSubscription()
-      expectMsg(Subscription.LiveProcessingStarted)
+      expectMsg(LiveProcessingStarted)
       expectNoEvents()
       val event = append(newEventData)
       expectEvent(event)
@@ -24,7 +24,7 @@ class SubscribeToStreamCatchingUpITest extends TestConnection {
     "be able to subscribe to non existing stream from number" in new SubscribeCatchingUpScope {
       val subscriptionActor = newSubscription(Some(EventNumber(0)))
       append(newEventData)
-      expectMsg(Subscription.LiveProcessingStarted)
+      expectMsg(LiveProcessingStarted)
       expectNoEvents()
       val event = append(newEventData)
       expectEvent(event)
@@ -41,7 +41,7 @@ class SubscribeToStreamCatchingUpITest extends TestConnection {
     "allow multiple subscriptions to same stream" in new SubscribeCatchingUpScope {
       val probes = List.fill(5)(TestProbe.apply)
       probes.foreach(x => newSubscription(client = x.ref))
-      probes.foreach(_.expectMsg(Subscription.LiveProcessingStarted))
+      probes.foreach(_.expectMsg(LiveProcessingStarted))
       val event = append(newEventData)
       probes.foreach(x => expectEvent(event, x))
     }
@@ -58,7 +58,7 @@ class SubscribeToStreamCatchingUpITest extends TestConnection {
       val subscriptionActor = newSubscription()
       expectEvent(event)
 
-      expectMsg(Subscription.LiveProcessingStarted)
+      expectMsg(LiveProcessingStarted)
 
       expectNoEvents()
       val event2 = append(newEventData)
@@ -67,7 +67,7 @@ class SubscribeToStreamCatchingUpITest extends TestConnection {
 
     "filter events and keep listening to new ones" in new SubscribeCatchingUpScope {
       val subscriptionActor = newSubscription(Some(EventNumber(0)))
-      expectMsg(Subscription.LiveProcessingStarted)
+      expectMsg(LiveProcessingStarted)
       append(newEventData)
       val event = append(newEventData)
       expectEvent(event)
@@ -81,7 +81,7 @@ class SubscribeToStreamCatchingUpITest extends TestConnection {
       val event = append(newEventData)
       val subscriptionActor = newSubscription(Some(EventNumber(0)))
       expectEvent(event)
-      expectMsg(Subscription.LiveProcessingStarted)
+      expectMsg(LiveProcessingStarted)
       expectNoEvents()
       val event2 = append(newEventData)
       expectEvent(event2)
@@ -92,7 +92,7 @@ class SubscribeToStreamCatchingUpITest extends TestConnection {
       val event = append(newEventData)
       val subscriptionActor = newSubscription(Some(EventNumber(0)))
       expectEvent(event)
-      expectMsg(Subscription.LiveProcessingStarted)
+      expectMsg(LiveProcessingStarted)
       expectNoEvents()
     }
 
@@ -102,7 +102,7 @@ class SubscribeToStreamCatchingUpITest extends TestConnection {
       expectEvent(linked)
       expectMsgType[Event]
       expectEvent(link)
-      expectMsg(Subscription.LiveProcessingStarted)
+      expectMsg(LiveProcessingStarted)
     }
 
     "read linked events if resolveLinkTos = true" in new SubscribeCatchingUpScope {
@@ -111,12 +111,12 @@ class SubscribeToStreamCatchingUpITest extends TestConnection {
       expectEvent(linked)
       expectMsgType[Event]
       expectEvent(ResolvedEvent(linked, link))
-      expectMsg(Subscription.LiveProcessingStarted)
+      expectMsg(LiveProcessingStarted)
     }
 
     "catch linked events if resolveLinkTos = false" in new SubscribeCatchingUpScope {
       newSubscription(resolveLinkTos = false)
-      expectMsg(Subscription.LiveProcessingStarted)
+      expectMsg(LiveProcessingStarted)
       val (linked, link) = linkedAndLink()
       expectEvent(linked)
       expectMsgType[Event]
@@ -125,7 +125,7 @@ class SubscribeToStreamCatchingUpITest extends TestConnection {
 
     "catch linked events if resolveLinkTos = true" in new SubscribeCatchingUpScope {
       newSubscription(resolveLinkTos = true)
-      expectMsg(Subscription.LiveProcessingStarted)
+      expectMsg(LiveProcessingStarted)
       val (linked, link) = linkedAndLink()
       expectEvent(linked)
       expectMsgType[Event]

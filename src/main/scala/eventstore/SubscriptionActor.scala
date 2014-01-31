@@ -14,6 +14,24 @@ object SubscriptionActor {
     credentials: Option[UserCredentials] = None,
     readBatchSize: Int = 100): Props = Props(classOf[SubscriptionActor], connection, client, fromPositionExclusive,
     resolveLinkTos, credentials, readBatchSize)
+
+  /**
+   * Java API
+   */
+  def getProps(
+    connection: ActorRef,
+    client: ActorRef,
+    fromPositionExclusive: Option[Position],
+    resolveLinkTos: Boolean,
+    credentials: Option[UserCredentials],
+    readBatchSize: Int): Props = props(connection, client, fromPositionExclusive, resolveLinkTos,
+    credentials, readBatchSize)
+
+  /**
+   * Java API
+   */
+  def getProps(connection: ActorRef, client: ActorRef, fromPositionExclusive: Option[Position]) =
+    props(connection, client, fromPositionExclusive)
 }
 
 class SubscriptionActor(
@@ -90,7 +108,7 @@ class SubscriptionActor(
         case StreamEventAppeared(x) => context become liveProcessing(process(last, x))
       }
 
-    client ! Subscription.LiveProcessingStarted
+    client ! LiveProcessingStarted
     liveProcessing(process(last, stash))
   }
 

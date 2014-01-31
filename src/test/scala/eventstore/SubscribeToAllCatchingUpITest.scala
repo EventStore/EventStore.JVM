@@ -164,7 +164,7 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
     final def fishForLiveProcessingStarted(
       position: Position = Position.First,
       testKit: TestKitBase = this): Position = testKit.expectMsgType[AnyRef] match {
-      case Subscription.LiveProcessingStarted => position
+      case LiveProcessingStarted => position
       case IndexedEvent(_, x) =>
         x must beGreaterThanOrEqualTo(position)
         fishForLiveProcessingStarted(x, testKit)
