@@ -11,27 +11,10 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
   sequential
 
   "subscribe to all catching up" should {
-    /*"be able to subscribe to empty db" in {
-    todo how to setup empty db ???
-                var subscription = store.SubscribeToAllFrom(null,
-                                                            false,
-                                                            ( , x) =>
-                                                            {
-                                                                if (!SystemStreams.IsSystemStream(x.OriginalEvent.EventStreamId))
-                                                                    appeared.Set();
-                                                            },
-                                                              => Log.Info("Live processing started."),
-                                                            ( ,   ,    ) => dropped.Signal());
-
-                Thread.Sleep(100); // give time for first pull phase
-                store.SubscribeToAll(false, (s, x) => { }, (s, r, e) => { });
-                Thread.Sleep(100);
-
-                Assert.IsFalse(appeared.Wait(0), "Some event appeared!");
-                Assert.IsFalse(dropped.Wait(0), "Subscription was dropped prematurely.");
-                subscription.Stop(Timeout);
-                Assert.IsTrue(dropped.Wait(Timeout));
-    } */
+    "be able to subscribe to empty db" in {
+      // todo how to setup empty db ?
+      todo
+    }
 
     "read all existing events and keep listening to new ones" in new SubscribeToAllCatchingUpScope {
       appendMany()
