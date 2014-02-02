@@ -1,7 +1,7 @@
 package eventstore
 
 import akka.actor.Status.Failure
-import akka.actor.{ ActorRef, ActorLogging, Actor }
+import akka.actor.{ ActorRef, ActorLogging, Actor, Identify, ActorIdentity }
 import tcp.ConnectionActor.{ Reconnected, WaitReconnected }
 
 trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
@@ -10,6 +10,7 @@ trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
   def streamId: EventStream
   def resolveLinkTos: Boolean
   def credentials: Option[UserCredentials]
+  def readBatchSize: Int
 
   type Next
   type Last
@@ -31,6 +32,10 @@ trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
     case UnsubscribeCompleted =>
       subscribed = false
       context stop self
+  }
+
+  def rcvEventAppeared(rcv: IndexedEvent => Receive): Receive = {
+    case StreamEventAppeared(x) => context become rcv(x)
   }
 
   def rcvReconnected(receive: => Receive): Receive = {
@@ -60,7 +65,30 @@ trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
   }
 
   override def postStop() {
-    if (subscribed) toConnection(Unsubscribe)
+    if (subscribed) unsubscribe()
+  }
+
+  def unsubscribe() {
+    toConnection(Unsubscribe)
+  }
+
+  // using Identify & ActorIdentity as throttle
+  // receiving ActorIdentity means client finished with all previous events
+  val IsReady = Identify("throttle")
+  val Ready = ActorIdentity("throttle", Some(client))
+
+  def rcvReady(x: => Receive): Receive = {
+    case Ready => context become x
+  }
+
+  def checkReadiness() {
+    client ! IsReady
+  }
+
+  def whenReady(x: => Receive, ready: Boolean) = {
+    checkReadiness()
+    if (ready) x
+    else rcvFailure orElse rcvReady(x)
   }
 }
 
