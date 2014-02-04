@@ -4,11 +4,11 @@
 
 <table border="0">
   <tr>
-    <td>[Scala](http://www.scala-lang.org/) </td>
+    <td><a href="http://www.scala-lang.org">Scala</a> </td>
     <td>2.10.3</td>
   </tr>
   <tr>
-    <td>[Akka](http://akka.io/) </td>
+    <td><a hre="http://akka.io">Akka</a> </td>
     <td>2.2.3</td>
   </tr>
 </table>
