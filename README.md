@@ -344,6 +344,10 @@ class CountAll extends Actor with ActorLogging {
 
 ### Future-like api
 
+We are using [`scala.concurrent.Future`](http://docs.scala-lang.org/overviews/core/futures.html) for asynchronous calls, however it is not friendly enough for Java users.
+In order to make Java devs happy and not reinvent a wheel, we propose to use tools invented by Akka team.
+[Check it out](http://doc.akka.io/docs/akka/2.2.3/java/futures.html)
+
 ```scala
 import akka.actor.ActorSystem
 import eventstore._
