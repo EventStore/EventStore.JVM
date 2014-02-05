@@ -8,7 +8,7 @@
     <td>2.10.3</td>
   </tr>
   <tr>
-    <td><a hre="http://akka.io">Akka</a> </td>
+    <td><a href="http://akka.io">Akka</a> </td>
     <td>2.2.3</td>
   </tr>
 </table>
