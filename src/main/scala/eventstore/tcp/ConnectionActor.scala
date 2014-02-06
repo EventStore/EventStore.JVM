@@ -52,7 +52,7 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
       uuid =>
         binding = binding - actor
         if (subscriptions contains actor) {
-          self ! TcpPackageOut(uuid, Unsubscribe, settings.defaultCredentials)
+          self ! TcpPackageOut(Unsubscribe, uuid, settings.defaultCredentials)
           subscriptions = subscriptions - actor
         }
     }
@@ -162,8 +162,8 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
   def receiveIn(x: TcpPackageIn, f: TcpPackageOut => Unit) {
     log.debug(x.toString)
     x.message match {
-      case Success(HeartbeatRequest) => f(TcpPackageOut(x.correlationId, HeartbeatResponse))
-      case Success(Ping)             => f(TcpPackageOut(x.correlationId, Pong))
+      case Success(HeartbeatRequest) => f(TcpPackageOut(HeartbeatResponse, x.correlationId))
+      case Success(Ping)             => f(TcpPackageOut(Pong, x.correlationId))
       case _                         => dispatch(x)
     }
   }
@@ -187,13 +187,13 @@ class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
 
   def tcpPack(message: OutLike): TcpPackageOut = {
     val correlationId = binding.y(sender) getOrElse {
-      val x = newUuid
+      val x = randomUuid
       log.debug("add sender {} for {}", sender, x)
       context watch sender
       binding = binding + (x, sender)
       x
     }
-    TcpPackageOut(correlationId, message.out, credentials(message))
+    TcpPackageOut(message.out, correlationId, credentials(message))
   }
 
   def dispatch(pack: TcpPackageIn) {

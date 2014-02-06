@@ -415,7 +415,7 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
   }
 
   trait SubscriptionScope extends AbstractScope {
-    lazy val streamId = EventStream(getClass.getEnclosingClass.getSimpleName + "-" + newUuid.toString)
+    lazy val streamId = EventStream(getClass.getEnclosingClass.getSimpleName + "-" + randomUuid.toString)
 
     def eventNumber: Option[EventNumber] = None
 

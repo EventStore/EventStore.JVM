@@ -23,9 +23,9 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       sendConnected()
       client ! PeerClosed
       expectConnect()
-      val correlationId = newUuid
+      val correlationId = randomUuid
       client.underlyingActor.binding = client.underlyingActor.binding.+(correlationId, testActor)
-      client ! init.Event(TcpPackageIn(correlationId, Success(Authenticated)))
+      client ! init.Event(TcpPackageIn(Success(Authenticated), correlationId))
       expectMsg(Authenticated)
     }
 
@@ -34,13 +34,13 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
 
       client ! Authenticate
       val correlationId = pipeline.expectMsgPF() {
-        case init.Command(TcpPackageOut(x, Authenticate, `credentials`)) => x
+        case init.Command(TcpPackageOut(Authenticate, x, `credentials`)) => x
       }
 
-      client ! init.Event(TcpPackageIn(newUuid, Success(Authenticated)))
+      client ! init.Event(TcpPackageIn(Success(Authenticated)))
       expectNoMsg(duration)
 
-      client ! init.Event(TcpPackageIn(correlationId, Success(Authenticated)))
+      client ! init.Event(TcpPackageIn(Success(Authenticated), correlationId))
       expectMsg(Authenticated)
     }
 
@@ -114,7 +114,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       val req = expectPack
       req.message mustEqual Success(HeartbeatRequest)
 
-      tcpConnection ! write(TcpPackageOut(req.correlationId, HeartbeatResponse))
+      tcpConnection ! write(TcpPackageOut(HeartbeatResponse, req.correlationId))
       expectPack.message mustEqual Success(HeartbeatRequest)
     }
 
@@ -131,7 +131,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       val req = expectPack
       req.message mustEqual Success(HeartbeatRequest)
 
-      tcpConnection ! write(TcpPackageOut(req.correlationId, HeartbeatResponse))
+      tcpConnection ! write(TcpPackageOut(HeartbeatResponse, req.correlationId))
 
       expectPack.message mustEqual Success(HeartbeatRequest)
     }
@@ -153,7 +153,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       val req = expectPack
       req.message mustEqual Success(Ping)
 
-      tcpConnection ! write(TcpPackageOut(req.correlationId, Pong))
+      tcpConnection ! write(TcpPackageOut(Pong, req.correlationId))
     }
 
     "pong" in new TcpScope {
@@ -167,7 +167,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       client ! Ping
       sendConnected()
       pipeline.expectMsgPF() {
-        case init.Command(TcpPackageOut(_, Ping, _)) =>
+        case init.Command(TcpPackageOut(Ping, _, _)) =>
       }
     }
 
@@ -216,8 +216,8 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
 
           Seq(HeartbeatResponse, Pong).foreach {
             msg =>
-              tcpConnection ! write(TcpPackageOut(newUuid, msg))
-              tcpConnection ! write(TcpPackageOut(correlationId, msg))
+              tcpConnection ! write(TcpPackageOut(msg))
+              tcpConnection ! write(TcpPackageOut(msg, correlationId))
               probe expectMsg msg
           }
       }
@@ -239,7 +239,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       val req = expectPack
       req.message mustEqual Success(Ping)
 
-      val res = TcpPackageOut(req.correlationId, Pong)
+      val res = TcpPackageOut(Pong, req.correlationId)
       tcpConnection ! write(res)
       probe expectMsg Pong
 
@@ -257,9 +257,9 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
 
     "stop subscription if initiator actor died" in new SubscriptionScope {
       def forStream(stream: EventStream, correlationId: Uuid, credentials: Option[UserCredentials], probe: TestProbe) {
-        client ! init.Event(TcpPackageIn(correlationId, Try(SubscribeToStreamCompleted(0))))
+        client ! init.Event(TcpPackageIn(Try(SubscribeToStreamCompleted(0)), correlationId))
         system stop probe.ref
-        pipeline.expectMsg(init.Command(TcpPackageOut(correlationId, Unsubscribe, credentials)))
+        pipeline.expectMsg(init.Command(TcpPackageOut(Unsubscribe, correlationId, credentials)))
       }
     }
 
@@ -351,7 +351,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
           else Some(BytesReader[UserCredentials].read(bi))
 
         val message = readMessage(bi)
-        TcpPackageOut(correlationId, message.get.asInstanceOf[Out], credentials)
+        TcpPackageOut(message.get.asInstanceOf[Out], correlationId, credentials)
       }
 
       val iterator = bs.iterator
@@ -392,7 +392,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
         val subscribeTo = SubscribeTo(stream)
         client.tell(subscribeTo, probe.ref)
         val (correlationId, credentials) = pipeline.expectMsgPF() {
-          case init.Command(TcpPackageOut(id, `subscribeTo`, c)) => id -> c
+          case init.Command(TcpPackageOut(`subscribeTo`, id, c)) => id -> c
         }
         forStream(stream, correlationId, credentials, probe)
         success

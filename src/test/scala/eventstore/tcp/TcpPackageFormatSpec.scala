@@ -10,10 +10,10 @@ class TcpPackageFormatSpec extends Specification {
   "TcpPackageFormat" should {
     "read/write" in {
       for {
-        correlationId <- List(newUuid, newUuid)
+        correlationId <- List(randomUuid, randomUuid)
         msg <- List[InOut](HeartbeatRequest, HeartbeatResponse, Ping, Pong)
       } yield {
-        val expected = TcpPackageOut(correlationId, msg)
+        val expected = TcpPackageOut(msg, correlationId)
         val bs = BytesWriter[TcpPackageOut].toByteString(expected)
         val actual = BytesReader[TcpPackageIn].read(bs)
         actual.correlationId mustEqual expected.correlationId

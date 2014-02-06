@@ -6,7 +6,7 @@ import org.specs2.mutable.Specification
 class EventDataBuilderSpec extends Specification {
   "EventDataBuilder" should {
     "build binary data" in {
-      val eventId = newUuid
+      val eventId = randomUuid
       val eventType = "binary"
       val data = Array[Byte](1, 2, 3, 4)
       val metadata = Array[Byte](5, 6, 7, 8)
@@ -23,7 +23,7 @@ class EventDataBuilderSpec extends Specification {
     }
 
     "build string data" in {
-      val eventId = newUuid
+      val eventId = randomUuid
       val eventType = "string"
       val data = "data"
       val metadata = "metadata"
@@ -40,7 +40,7 @@ class EventDataBuilderSpec extends Specification {
     }
 
     "build json data" in {
-      val eventId = newUuid
+      val eventId = randomUuid
       val eventType = "json"
       val data = "{\"data\":\"data\"}"
       val metadata = "{\"metadata\":\"metadata\"}"

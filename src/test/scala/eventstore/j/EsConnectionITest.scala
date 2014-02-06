@@ -10,17 +10,17 @@ class EsConnectionITest extends ActorSpec {
   "EsConnection" should {
 
     "write events" in new TestScope {
-      await(connection.writeEvents("java-writeEvents-" + newUuid, null, events, null))
+      await(connection.writeEvents("java-writeEvents-" + randomUuid, null, events, null))
     }
 
     "delete stream" in new TestScope {
-      val streamId = "java-deleteStream-" + newUuid
+      val streamId = "java-deleteStream-" + randomUuid
       await(connection.writeEvents(streamId, null, events, null))
       await(connection.deleteStream(streamId, null, null))
     }
 
     "read event" in new TestScope {
-      val streamId = "java-readEvent-" + newUuid
+      val streamId = "java-readEvent-" + randomUuid
       try await(connection.readEvent(streamId, null, resolveLinkTos = false, null)) catch {
         case EsException(eventstore.EsError.StreamNotFound, _) =>
       }
@@ -34,7 +34,7 @@ class EsConnectionITest extends ActorSpec {
     }
 
     "read stream events forward" in new TestScope {
-      val streamId = "java-readStreamForward-" + newUuid
+      val streamId = "java-readStreamForward-" + randomUuid
 
       try await(connection.readStreamEventsForward(streamId, null, 10, resolveLinkTos = false, null)) catch {
         case EsException(eventstore.EsError.StreamNotFound, _) =>
@@ -51,7 +51,7 @@ class EsConnectionITest extends ActorSpec {
     }
 
     "read stream events backward" in new TestScope {
-      val streamId = "java-readStreamBackward-" + newUuid
+      val streamId = "java-readStreamBackward-" + randomUuid
       try await(connection.readStreamEventsBackward(streamId, null, 10, resolveLinkTos = false, null)) catch {
         case EsException(eventstore.EsError.StreamNotFound, _) =>
       }

@@ -56,7 +56,7 @@ class UserManagementITest extends ActorSpec {
 
   trait UserScope extends ActorScope {
     val user = {
-      val uuid = newUuid.toString
+      val uuid = randomUuid.toString
       UserCredentials(uuid, uuid)
     }
 

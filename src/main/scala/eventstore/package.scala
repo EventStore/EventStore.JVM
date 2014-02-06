@@ -1,10 +1,9 @@
 package object eventstore {
-  type Uuid = java.util.UUID // TODO create wrapper!
+  type Uuid = java.util.UUID
   val ByteString = akka.util.ByteString
   type ByteString = akka.util.ByteString
-  //  val Uuid = java.util.UUID
 
-  def newUuid: Uuid = java.util.UUID.randomUUID() // TODO create wrapper!
+  def randomUuid: Uuid = java.util.UUID.randomUUID()
 
   val MaxBatchSize = 10000
 }

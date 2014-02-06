@@ -7,12 +7,9 @@ sealed trait TcpPackage {
   def correlationId: Uuid
 }
 
-case class TcpPackageIn(correlationId: Uuid, message: Try[In]) extends TcpPackage
+case class TcpPackageIn(message: Try[In], correlationId: Uuid = randomUuid) extends TcpPackage
 
-case class TcpPackageOut(correlationId: Uuid, message: Out, credentials: Option[UserCredentials]) extends TcpPackage
-
-object TcpPackageOut {
-  def apply(message: Out): TcpPackageOut = TcpPackageOut(newUuid, message, None)
-
-  def apply(correlationId: Uuid, message: Out): TcpPackageOut = TcpPackageOut(correlationId, message, None)
-}
+case class TcpPackageOut(
+  message: Out,
+  correlationId: Uuid = randomUuid,
+  credentials: Option[UserCredentials] = None) extends TcpPackage

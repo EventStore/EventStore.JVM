@@ -274,7 +274,7 @@ object WriteEventExample extends App {
   val connection = system.actorOf(ConnectionActor.props())
   implicit val writeResult = system.actorOf(Props[WriteResult])
 
-  val event = EventData("my-event", newUuid, data = Content("my event data"), metadata = Content("my first event"))
+  val event = EventData("my-event", data = Content("my event data"), metadata = Content("my first event"))
 
   connection ! WriteEvents(EventStream("my-stream"), List(event))
 

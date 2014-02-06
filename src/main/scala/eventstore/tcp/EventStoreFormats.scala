@@ -75,7 +75,7 @@ trait EventStoreFormats extends EventStoreProtoFormats {
       val correlationId = BytesReader[Uuid].read(bi)
       val message = readMessage(bi)
 
-      TcpPackageIn(correlationId, message)
+      TcpPackageIn(message, correlationId)
     }
   }
 }

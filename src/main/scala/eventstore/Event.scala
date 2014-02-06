@@ -11,7 +11,7 @@ sealed trait Event extends Ordered[Event] {
 
   def compare(that: Event) = this.number.value compare that.number.value
 
-  def link(eventId: Uuid, metadata: Content = Content.empty): EventData = EventData(
+  def link(eventId: Uuid = randomUuid, metadata: Content = Content.empty): EventData = EventData(
     eventType = SystemEventType.linkTo,
     eventId = eventId,
     data = Content(s"${number.value}@${streamId.value}"),
@@ -57,7 +57,7 @@ object Content {
 
 case class EventData(
     eventType: String,
-    eventId: Uuid = newUuid,
+    eventId: Uuid = randomUuid,
     data: Content = Content.empty,
     metadata: Content = Content.empty) {
   require(eventType != null, "eventType is null")
@@ -67,7 +67,7 @@ case class EventData(
 object EventData {
 
   object Json {
-    def apply(eventType: String, eventId: Uuid = newUuid, data: String = "", metadata: String = ""): EventData =
+    def apply(eventType: String, eventId: Uuid = randomUuid, data: String = "", metadata: String = ""): EventData =
       EventData(eventType, eventId, data = Content.Json(data), metadata = Content.Json(metadata))
   }
 
@@ -82,7 +82,7 @@ object EventData {
   }
 
   object StreamMetadata {
-    def apply(data: Content = Content.empty, eventId: Uuid = newUuid): EventData =
+    def apply(data: Content = Content.empty, eventId: Uuid = randomUuid): EventData =
       EventData(SystemEventType.metadata, data = data)
 
     def unapply(x: EventData): Option[Content] = condOpt(x) {
