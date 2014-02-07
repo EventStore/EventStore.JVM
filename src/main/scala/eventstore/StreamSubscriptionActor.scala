@@ -14,7 +14,7 @@ object StreamSubscriptionActor {
     fromNumberExclusive: Option[EventNumber] = None,
     resolveLinkTos: Boolean = false,
     credentials: Option[UserCredentials] = None,
-    readBatchSize: Int = 100): Props = Props(classOf[StreamSubscriptionActor], connection, client, streamId,
+    readBatchSize: Int = Settings.readBatchSize): Props = Props(classOf[StreamSubscriptionActor], connection, client, streamId,
     fromNumberExclusive, resolveLinkTos, credentials, readBatchSize)
 
   /**

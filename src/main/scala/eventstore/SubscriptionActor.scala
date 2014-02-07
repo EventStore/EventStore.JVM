@@ -12,8 +12,8 @@ object SubscriptionActor {
     fromPositionExclusive: Option[Position] = None,
     resolveLinkTos: Boolean = false,
     credentials: Option[UserCredentials] = None,
-    readBatchSize: Int = 100): Props = Props(classOf[SubscriptionActor], connection, client, fromPositionExclusive,
-    resolveLinkTos, credentials, readBatchSize)
+    readBatchSize: Int = Settings.readBatchSize): Props = Props(classOf[SubscriptionActor], connection, client,
+    fromPositionExclusive, resolveLinkTos, credentials, readBatchSize)
 
   /**
    * Java API

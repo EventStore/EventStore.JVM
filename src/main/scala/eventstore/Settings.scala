@@ -17,25 +17,32 @@ case class Settings(
   backpressure: BackpressureSettings = BackpressureSettings())
 
 object Settings {
-  val Default: Settings = Settings(ConfigFactory.load())
+  val config = ConfigFactory.load()
+  val default: Settings = Settings(config)
+  val readBatchSize = config.getInt("eventstore.read-batch-size")
 
   def apply(conf: Config): Settings = {
     def apply(conf: Config): Settings = Settings(
       address = new InetSocketAddress(conf getString "address.host", conf getInt "address.port"),
-      maxReconnections = conf getInt "maxReconnections",
-      reconnectionDelayMin = FiniteDuration(conf getMilliseconds "reconnectionDelay.min", MILLISECONDS),
-      reconnectionDelayMax = FiniteDuration(conf getMilliseconds "reconnectionDelay.max", MILLISECONDS),
+      maxReconnections = conf getInt "max-reconnections",
+      reconnectionDelayMin = FiniteDuration(conf getMilliseconds "reconnection-delay.min", MILLISECONDS),
+      reconnectionDelayMax = FiniteDuration(conf getMilliseconds "reconnection-delay.max", MILLISECONDS),
       defaultCredentials = for {
-        l <- Option(conf getString "defaultCredentials.login")
-        p <- Option(conf getString "defaultCredentials.password")
+        l <- Option(conf getString "credentials.login")
+        p <- Option(conf getString "credentials.password")
       } yield UserCredentials(login = l, password = p),
       heartbeatInterval = FiniteDuration(conf getMilliseconds "heartbeat.interval", MILLISECONDS),
       heartbeatTimeout = FiniteDuration(conf getMilliseconds "heartbeat.timeout", MILLISECONDS),
-      connectionTimeout = FiniteDuration(conf getMilliseconds "connectionTimeout", MILLISECONDS),
-      operationTimeout = FiniteDuration(conf getMilliseconds "operationTimeout", MILLISECONDS),
+      connectionTimeout = FiniteDuration(conf getMilliseconds "connection-timeout", MILLISECONDS),
+      operationTimeout = FiniteDuration(conf getMilliseconds "operation-timeout", MILLISECONDS),
       backpressure = BackpressureSettings(conf))
     apply(conf.getConfig("eventstore"))
   }
+
+  /**
+   * Java API
+   */
+  def getInstance(): Settings = default
 }
 
 /**
@@ -49,7 +56,7 @@ case class BackpressureSettings(lowWatermark: Int = 100, highWatermark: Int = 10
 
 object BackpressureSettings {
   def apply(conf: Config): BackpressureSettings = BackpressureSettings(
-    lowWatermark = conf getInt "backpressure.lowWatermark",
-    highWatermark = conf getInt "backpressure.highWatermark",
-    maxCapacity = conf getInt "backpressure.maxCapacity")
+    lowWatermark = conf getInt "backpressure.low-watermark",
+    highWatermark = conf getInt "backpressure.high-watermark",
+    maxCapacity = conf getInt "backpressure.max-capacity")
 }

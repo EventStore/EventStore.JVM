@@ -9,6 +9,6 @@ public class EsConnectionFactory {
     }
 
     public static EsConnection create(ActorSystem system) {
-        return create(system, Settings.Default());
+        return create(system, Settings.getInstance());
     }
 }

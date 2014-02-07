@@ -7,7 +7,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import akka.actor.ActorSystem
 
 object EsConnectionImpl {
-  def apply(system: ActorSystem, settings: Settings = Settings.Default): EsConnectionImpl =
+  def apply(system: ActorSystem, settings: Settings = Settings.default): EsConnectionImpl =
     new EsConnectionImpl(eventstore.EsConnection(system, settings))
 }
 

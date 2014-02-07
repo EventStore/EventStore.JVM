@@ -1,27 +1,27 @@
 package eventstore
 package j
 
-import Settings.Default
+import Settings.default
 import java.net.InetSocketAddress
 import scala.concurrent.duration._
 
 class SettingsBuilder extends Builder[Settings] with ChainSet[SettingsBuilder] {
-  var _address = Default.address
-  var _maxReconnections = Default.maxReconnections
-  var _reconnectionDelayMin = Default.reconnectionDelayMin
-  var _reconnectionDelayMax = Default.reconnectionDelayMax
-  var _defaultCredentials = Default.defaultCredentials
-  var _heartbeatInterval = Default.heartbeatInterval
-  var _heartbeatTimeout = Default.heartbeatTimeout
-  var _connectionTimeout = Default.connectionTimeout
-  var _operationTimeout = Default.operationTimeout
-  var _backpressure = Default.backpressure
+  var _address = default.address
+  var _maxReconnections = default.maxReconnections
+  var _reconnectionDelayMin = default.reconnectionDelayMin
+  var _reconnectionDelayMax = default.reconnectionDelayMax
+  var _defaultCredentials = default.defaultCredentials
+  var _heartbeatInterval = default.heartbeatInterval
+  var _heartbeatTimeout = default.heartbeatTimeout
+  var _connectionTimeout = default.connectionTimeout
+  var _operationTimeout = default.operationTimeout
+  var _backpressure = default.backpressure
 
   def address(x: InetSocketAddress): SettingsBuilder = set {
     _address = x
   }
 
-  def address(host: String): SettingsBuilder = address(new InetSocketAddress(host, Default.address.getPort))
+  def address(host: String): SettingsBuilder = address(new InetSocketAddress(host, default.address.getPort))
 
   def maxReconnections(x: Int): SettingsBuilder = set {
     _maxReconnections = x
