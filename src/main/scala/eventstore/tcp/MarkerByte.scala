@@ -107,7 +107,7 @@ object MarkerByte {
     }
     case x: SubscribeTo       => writer(0xC0, x)
     case x @ Unsubscribe      => writer(0xC3, x)
-    case x @ ScavengeDatabase => writer(0xD0, x) // TODO
+    case x @ ScavengeDatabase => writer(0xD0, x)
     case x @ Authenticate     => writer(0xF2, x)
   }
 }

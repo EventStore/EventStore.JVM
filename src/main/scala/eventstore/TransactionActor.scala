@@ -119,9 +119,9 @@ class TransactionActor(
     }
 
     def failure(client: ActorRef): Receive = {
-      case failure @ Failure(error) =>
+      case failure: Failure =>
         client ! failure
-        throw error // TODO
+        context stop self
     }
 
     def commit(client: ActorRef): Receive = {

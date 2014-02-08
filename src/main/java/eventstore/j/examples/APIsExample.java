@@ -16,7 +16,7 @@ public class APIsExample {
 
     public void methodCall() {
         final EsConnection connection = EsConnectionFactory.create(system);
-        final Future<Event> future = connection.readEvent("my-stream", new EventNumber.Exact(0), false, null); // TODO
+        final Future<Event> future = connection.readEvent("my-stream", new EventNumber.Exact(0), false, null);
     }
 
     public void messageSending() {

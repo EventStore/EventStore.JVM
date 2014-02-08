@@ -448,7 +448,7 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       nextEventNumber = EventNumber(next),
       lastEventNumber = mock[EventNumber.Exact],
       endOfStream = endOfStream,
-      lastCommitPosition = next /*TODO*/ ,
+      lastCommitPosition = next,
       direction = Forward)
 
     def subscribeToStreamCompleted(x: Int) = SubscribeToStreamCompleted(x, Some(EventNumber(x)))
