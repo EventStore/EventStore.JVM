@@ -6,8 +6,12 @@ import scala.collection.immutable.Queue
 
 object TransactionActor {
 
-  def props(connection: ActorRef, kickoff: Kickoff, requireMaster: Boolean = true): Props =
-    Props(classOf[TransactionActor], connection, kickoff, requireMaster)
+  def props(
+    connection: ActorRef,
+    kickoff: Kickoff,
+    requireMaster: Boolean = true,
+    credentials: Option[UserCredentials] = None): Props =
+    Props(classOf[TransactionActor], connection, kickoff, requireMaster, credentials)
 
   sealed trait Kickoff
   case class Start(data: TransactionStart) extends Kickoff
@@ -32,8 +36,11 @@ object TransactionActor {
   /**
    * Java API
    */
-  def getProps(connection: ActorRef, kickoff: Kickoff, requireMaster: Boolean): Props =
-    props(connection, kickoff, requireMaster)
+  def getProps(
+    connection: ActorRef,
+    kickoff: Kickoff,
+    requireMaster: Boolean,
+    credentials: Option[UserCredentials]): Props = props(connection, kickoff, requireMaster, credentials)
 
   /**
    * Java API
@@ -84,7 +91,8 @@ object TransactionActor {
 class TransactionActor(
     connection: ActorRef,
     kickoff: TransactionActor.Kickoff,
-    requireMaster: Boolean /*, credentials: Option[UserCredentials]TODO*/ ) extends Actor with ActorLogging {
+    requireMaster: Boolean,
+    credentials: Option[UserCredentials]) extends Actor with ActorLogging {
   import TransactionActor._
 
   context watch connection
@@ -92,7 +100,7 @@ class TransactionActor(
   def receive: Receive = kickoff match {
     case Continue(transactionId) => new ContinueReceive(transactionId).apply(Queue())
     case Start(transactionStart) =>
-      connection ! transactionStart
+      toConnection(transactionStart)
       starting(Queue(), Queue())
   }
 
@@ -125,7 +133,7 @@ class TransactionActor(
     }
 
     def commit(client: ActorRef): Receive = {
-      connection ! TransactionCommit(transactionId, requireMaster)
+      toConnection(TransactionCommit(transactionId, requireMaster))
       common orElse failure(client) orElse {
         case TransactionCommitCompleted(`transactionId`) =>
           client ! CommitCompleted
@@ -134,7 +142,7 @@ class TransactionActor(
     }
 
     def write(events: List[EventData], client: ActorRef, stash: Queue[StashEntry]): Receive = {
-      connection ! TransactionWrite(transactionId, events, requireMaster)
+      toConnection(TransactionWrite(transactionId, events, requireMaster))
       writing(client, stash)
     }
 
@@ -154,6 +162,10 @@ class TransactionActor(
           case Write(events) => write(events, client, tail)
         }
       }
+  }
+
+  def toConnection(x: Out) {
+    connection ! credentials.fold[OutLike](x)(x.withCredentials)
   }
 
   case class StashEntry(command: Command, client: ActorRef = sender)
