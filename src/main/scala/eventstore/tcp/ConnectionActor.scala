@@ -184,14 +184,17 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
     }
 
     def reconnect(reconnectionsLeft: Int, reconnectionDelay: FiniteDuration, clients: Set[ActorRef]): Reconnecting = {
-      connect("reconnecting", reconnectionDelay)
-      val delay =
-        if (reconnectionDelay == Duration.Zero) Settings.default.reconnectionDelayMin
-        else {
-          val x = reconnectionDelay * 2
-          if (x > reconnectionDelayMax) reconnectionDelayMax else Duration.fromNanos(x.toNanos)
-        }
-      Reconnecting(reconnectionsLeft - 1, delay, clients)
+      def reconnect(reconnectionDelay: FiniteDuration): Reconnecting = {
+        connect("reconnecting", reconnectionDelay)
+        val delay =
+          if (reconnectionDelay == Duration.Zero) Settings.default.reconnectionDelayMin
+          else {
+            val x = reconnectionDelay * 2
+            if (x > reconnectionDelayMax) reconnectionDelayMax else x
+          }
+        Reconnecting(reconnectionsLeft - 1, delay, clients)
+      }
+      reconnect(Duration.fromNanos(reconnectionDelay.toNanos))
     }
   }
 
