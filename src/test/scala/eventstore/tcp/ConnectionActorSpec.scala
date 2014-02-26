@@ -178,12 +178,6 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       pipeline.expectMsg(init.Command(pack))
     }
 
-    "reply with NoConnection error to stashed messages" in new TestScope {
-      client ! Ping
-      client ! CommandFailed(connect)
-      expectNoConnectionFailure()
-    }
-
     "reply with NoConnection error on Out message while reconnecting" in new TestScope {
       sendConnected()
       client ! PeerClosed

@@ -14,7 +14,7 @@ object ConnectionActor {
   case object Reconnected
   case object WaitReconnected
 
-  private[eventstore] lazy val noConnectionFailure = Status.Failure(EsException(EsError.ConnectionLost))
+  private[eventstore] lazy val connectionLostFailure = Status.Failure(EsException(EsError.ConnectionLost))
 
   /**
    * Java API
@@ -39,7 +39,7 @@ object ConnectionActor {
 
 private[eventstore] class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
 
-  import ConnectionActor.{ Reconnected, WaitReconnected, noConnectionFailure }
+  import ConnectionActor.{ Reconnected, WaitReconnected, connectionLostFailure }
   import context.dispatcher
   import context.system
   import settings._
@@ -142,7 +142,6 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
 
     override def rcvNotConnected: State = {
       log.error("connection failed to {}", address)
-      binding.yx.keySet.foreach(_ ! noConnectionFailure)
       maybeReconnect getOrElse {
         context stop self
         this
@@ -218,6 +217,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       system.scheduler.scheduleOnce(heartbeatInterval + heartbeatTimeout, self, HeartbeatTimeout(heartbeatId)))
 
     def maybeReconnect(reason: String): State = {
+      binding.yx.keySet.foreach(_ ! connectionLostFailure)
       if (!scheduled.isCancelled) scheduled.cancel()
       val template = "connection lost to {}: {}"
       if (maxReconnections == 0) {
@@ -294,12 +294,12 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       else Some(reconnect(reconnectionsLeft, reconnectionDelay, clients))
 
     override def rcvOutLike(x: OutLike) = {
-      sender ! noConnectionFailure
+      sender ! connectionLostFailure
       this
     }
 
     override def rcvPackageOut(x: TcpPackageOut) = {
-      sender ! noConnectionFailure
+      sender ! connectionLostFailure
       this
     }
   }
