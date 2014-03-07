@@ -3,16 +3,16 @@ package proto
 
 import akka.util.{ ByteStringBuilder, ByteIterator }
 import com.google.protobuf.{ MessageLite, ByteString => ProtoByteString }
-import net.sandrogrzicic.scalabuff.MessageBuilder
 import scala.language.reflectiveCalls
-import scala.util.{ Failure, Try }
 import util.{ BytesWriter, BytesReader, DefaultFormats }
 
 object DefaultProtoFormats extends DefaultProtoFormats
 
 trait DefaultProtoFormats extends DefaultFormats {
 
-  type Message[T] = MessageBuilder[T]
+  type MessageType = MessageLite with MessageLite.Builder
+
+  type Message[T <: MessageType] = MessageType with net.sandrogrzicic.scalabuff.Message[T]
 
   type MessageProvider[T] = {
     def defaultInstance: T

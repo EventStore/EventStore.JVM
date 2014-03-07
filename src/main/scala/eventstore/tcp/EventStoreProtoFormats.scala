@@ -13,7 +13,7 @@ object EventStoreProtoFormats extends EventStoreProtoFormats
 
 trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultFormats {
 
-  type OperationMessage[T] = Message[T] {
+  type OperationMessage[T <: MessageType] = Message[T] {
     def `result`: OperationResult.EnumVal
     def `message`: Option[String]
   }

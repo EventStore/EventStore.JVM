@@ -15,11 +15,11 @@ object Build extends Build {
     startYear            := Some(2013),
     scalacOptions        := Seq("-encoding", "UTF-8", "-unchecked", "-deprecation", "-feature"),
     libraryDependencies ++= Seq(akka, akkaTestkit, scalabuff, junit, specs2, mockito, codec),
-    scalabuffVersion := "1.3.6")
+    scalabuffVersion := "1.2.2")
 
   object V {
     val akka = "2.2.3"
-    val scalabuff = "1.3.6"
+    val scalabuff = "1.2.2"
   }
 
   val akka        = "com.typesafe.akka"           %% "akka-actor"               % V.akka
