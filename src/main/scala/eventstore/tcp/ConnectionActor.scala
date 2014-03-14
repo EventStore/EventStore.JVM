@@ -77,7 +77,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
 
   def credentials(x: OutLike): Option[UserCredentials] = x match {
     case WithCredentials(_, c) => Some(c)
-    case _: Out                => settings.defaultCredentials
+    case _: Out                => defaultCredentials
   }
 
   def tcpPack(message: OutLike): TcpPackageOut = {
@@ -157,12 +157,12 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       x.message match {
         case Success(HeartbeatRequest) => f(TcpPackageOut(HeartbeatResponse, x.correlationId))
         case Success(Ping)             => f(TcpPackageOut(Pong, x.correlationId))
-        case _                         => dispatch(x)
+        case _                         => dispatch(x, f)
         // TODO reconnect on EsException(NotHandled(NotReady))
       }
     }
 
-    def dispatch(pack: TcpPackageIn) {
+    def dispatch(pack: TcpPackageIn, f: TcpPackageOut => Unit) {
       val msg = pack.message match {
         case Success(x) => x
         case Failure(x) => Status.Failure(x)
@@ -177,6 +177,10 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
 
         case None => msg match {
           case Pong | HeartbeatResponse | UnsubscribeCompleted =>
+          case _: SubscribeCompleted =>
+            log.warning("can not deliver {}, sender not found for correlationId: {}, unsubscribing", msg, correlationId)
+            f(TcpPackageOut(Unsubscribe, correlationId, defaultCredentials))
+
           case _ => log.warning("can not deliver {}, sender not found for correlationId: {}", msg, correlationId)
         }
       }

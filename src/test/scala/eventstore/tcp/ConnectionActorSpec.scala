@@ -283,6 +283,18 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     "use no credentials if either not provided with message and default" in new SecurityScope {
       ?(withMessage = None, default = None) must beNone
     }
+
+    "unsubscribe when received SubscribeCompleted but client not found" in new TestScope {
+      sendConnected()
+      forall(List(SubscribeToAllCompleted(0), SubscribeToStreamCompleted(0))) {
+        in =>
+          val pack = TcpPackageIn(Try(in))
+          client ! init.Event(pack)
+          pipeline.expectMsgPF() {
+            case init.Command(TcpPackageOut(Unsubscribe, pack.correlationId, _)) => true
+          } must beTrue
+      }
+    }
   }
 
   abstract class TcpScope extends ActorScope {
