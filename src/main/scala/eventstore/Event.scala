@@ -8,6 +8,7 @@ sealed trait Event extends Ordered[Event] {
   def number: EventNumber.Exact
   def data: EventData
   def record: EventRecord
+  //  def created: Option[Long] // TODO verify when it is optional
 
   def compare(that: Event) = this.number.value compare that.number.value
 
@@ -20,12 +21,15 @@ sealed trait Event extends Ordered[Event] {
 
 object Event {
   object StreamDeleted {
-    def unapply(x: Event): Option[(EventStream.Id, EventNumber.Exact, Uuid)] =
-      EventData.StreamDeleted.unapply(x.data).map(uuid => (x.streamId, x.number, uuid))
+    def unapply(x: Event): Option[(EventStream.Id, Uuid)] = condOpt(x.record) {
+      case EventRecord(streamId, EventNumber.Exact(Int.MaxValue), EventData.StreamDeleted(uuid)) => (streamId, uuid)
+    }
   }
 }
 
-case class EventRecord(streamId: EventStream.Id, number: EventNumber.Exact, data: EventData) extends Event {
+// TODO find out how to convert .Net DateTime to java.util.Date
+// TODO is it a property of EventRecord or Event ?
+case class EventRecord(streamId: EventStream.Id, number: EventNumber.Exact, data: EventData /*, created: Option[Long] = None TODO*/ ) extends Event {
   def record = this
 }
 
@@ -34,6 +38,7 @@ case class ResolvedEvent(linkedEvent: EventRecord, linkEvent: EventRecord) exten
   def number = linkedEvent.number
   def data = linkedEvent.data
   def record = linkEvent
+  //  def created = linkEvent.created
 }
 
 case class Content(value: ByteString = ByteString.empty, contentType: ContentType = ContentType.Binary)

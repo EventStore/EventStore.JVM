@@ -13,7 +13,7 @@ object MarkerByte {
 
   def readMessage(bi: ByteIterator): Reader = {
     val markerByte = bi.getByte
-    readers.get(markerByte).getOrElse(sys.error(s"unknown marker byte: 0x%02X".format(markerByte)))
+    readers.getOrElse(markerByte, sys.error(s"unknown marker byte: 0x%02X".format(markerByte)))
   }
 
   def reader[T <: In](implicit reader: BytesReader[T]): Reader = (bi: ByteIterator) => Try(reader.read(bi))
@@ -60,6 +60,8 @@ object MarkerByte {
     0xC1 -> reader[SubscribeCompleted],
     0xC2 -> reader[StreamEventAppeared],
     0xC4 -> readerTry[UnsubscribeCompleted.type],
+
+    0xD1 -> readerTry[ScavengeDatabaseCompleted],
 
     0xF0 -> readerFailure(EsError.BadRequest),
     0xF1 -> readerFailure[EsError.NotHandled],

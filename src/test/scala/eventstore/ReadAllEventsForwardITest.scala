@@ -49,7 +49,7 @@ class ReadAllEventsForwardITest extends TestConnection {
       val position = allStreamsEvents()(ReadDirection.Backward).take(5).last.position
 
       readAllEvents(position, 10).last must beLike {
-        case Event.StreamDeleted(`streamId`, EventNumber.Exact(1), _) => ok
+        case Event.StreamDeleted(`streamId`, _) => ok
       }
     }
 
@@ -61,7 +61,7 @@ class ReadAllEventsForwardITest extends TestConnection {
       events must haveSize(2)
       events.head.data mustEqual event
       events.last must beLike {
-        case Event.StreamDeleted(`streamId`, EventNumber.Exact(1), _) => ok
+        case Event.StreamDeleted(`streamId`, _) => ok
       }
     }
 

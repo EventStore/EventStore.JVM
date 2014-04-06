@@ -36,6 +36,6 @@ object EsConnectionExample extends App {
   val writeEvents: Future[WriteEventsCompleted] = connection.future(WriteEvents(stream, List(EventData("my-event"))))
   writeEvents.onComplete {
     case Failure(e)                       => log.error(e.toString)
-    case Success(x: WriteEventsCompleted) => log.info(x.firstEventNumber.toString())
+    case Success(x: WriteEventsCompleted) => log.info(x.numbersRange.toString)
   }
 }

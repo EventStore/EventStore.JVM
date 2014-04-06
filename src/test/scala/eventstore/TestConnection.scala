@@ -16,7 +16,7 @@ abstract class TestConnection extends util.ActorSpec {
 
     def deleteStream(expVer: ExpectedVersion.Existing = ExpectedVersion.Any) {
       val probe = TestProbe()
-      actor.!(DeleteStream(streamId, expVer))(probe.ref)
+      actor.!(DeleteStream(streamId, expVer, hardDelete = true))(probe.ref)
       probe.expectMsg(DeleteStreamCompleted)
     }
 
@@ -29,20 +29,26 @@ abstract class TestConnection extends util.ActorSpec {
       events: List[EventData],
       expectedVersion: ExpectedVersion = ExpectedVersion.Any,
       streamId: EventStream.Id = streamId,
-      testKit: TestKitBase = this): EventNumber.Exact = {
+      testKit: TestKitBase = this): Option[EventNumber.Range] = {
       actor.!(WriteEvents(streamId, events, expectedVersion))(testKit.testActor)
-      val firstEventNumber = testKit.expectMsgType[WriteEventsCompleted].firstEventNumber
-      if (expectedVersion == ExpectedVersion.NoStream) firstEventNumber mustEqual EventNumber.First
-      firstEventNumber
+      val range = testKit.expectMsgType[WriteEventsCompleted].numbersRange
+      if (expectedVersion == ExpectedVersion.NoStream) events match {
+        case Nil => range must beNone
+        case xs  => range must beSome(EventNumber.First to EventNumber(xs.size - 1))
+      }
+      range
     }
 
     def appendEventToCreateStream(): EventData = {
       val event = newEventData.copy(eventType = "first event")
-      writeEventsCompleted(List(event), ExpectedVersion.NoStream, testKit = TestProbe()) mustEqual EventNumber.First
+      val range = writeEventsCompleted(List(event), ExpectedVersion.NoStream, testKit = TestProbe())
+      range must beSome(EventNumber.Range(EventNumber.First))
       event
     }
 
-    def append(x: EventData): EventRecord = EventRecord(streamId, writeEventsCompleted(List(x), testKit = TestProbe()), x)
+    def append(x: EventData): EventRecord = EventRecord(
+      streamId,
+      writeEventsCompleted(List(x), testKit = TestProbe()).get.start, x)
 
     def linkedAndLink(): (EventRecord, EventRecord) = {
       val linked = append(newEventData.copy(eventType = "linked"))

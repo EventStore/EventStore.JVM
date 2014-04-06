@@ -34,6 +34,10 @@ object EsError {
       httpAddress: InetSocketAddress,
       tcpSecureAddress: Option[InetSocketAddress] = None)
   }
+
+  // TODO should we contain required data ?
+  case class ScavengeInProgress(totalTimeMs: Int, totalSpaceSaved: Long) extends EsError
+  case class ScavengeFailed(totalTimeMs: Int, totalSpaceSaved: Long) extends EsError
 }
 
 case class EsException(reason: EsError, message: Option[String] = None)

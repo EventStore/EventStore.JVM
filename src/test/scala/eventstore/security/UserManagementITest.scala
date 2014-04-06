@@ -90,10 +90,10 @@ class UserManagementITest extends ActorSpec {
                        |}""".stripMargin
 
       actor ! WriteEvents.Metadata(streamId, Content.Json(metadata), ExpectedVersion.NoStream)
-      expectMsg(WriteEventsCompleted(EventNumber.First))
+      expectMsg(WriteEventsCompleted(Some(EventNumber.First to EventNumber.First)))
 
       actor ! WriteEvents(streamId, List(userCreated(user)), ExpectedVersion.NoStream)
-      expectMsg(WriteEventsCompleted(EventNumber.First))
+      expectMsg(WriteEventsCompleted(Some(EventNumber.First to EventNumber.First)))
     }
 
     def notifyPasswordChanged() {

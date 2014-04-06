@@ -1,6 +1,7 @@
 package eventstore
 
 import scala.collection.JavaConverters._
+import scala.concurrent.duration.FiniteDuration
 
 sealed trait OutLike {
   def out: Out
@@ -63,13 +64,14 @@ object WriteEvents {
   }
 }
 
-case class WriteEventsCompleted(firstEventNumber: EventNumber.Exact) extends In
+case class WriteEventsCompleted(numbersRange: Option[EventNumber.Range] = None) extends In
 
 // TODO check softDelete
 case class DeleteStream(
   streamId: EventStream.Id,
   expectedVersion: ExpectedVersion.Existing = ExpectedVersion.Any,
-  requireMaster: Boolean = true) extends Out
+  requireMaster: Boolean = true,
+  hardDelete: Boolean = false /*TODO*/ ) extends Out
 
 case object DeleteStreamCompleted extends In {
   /**
@@ -100,7 +102,7 @@ case class TransactionCommit(transactionId: Long, requireMaster: Boolean = true)
   require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
 }
 
-case class TransactionCommitCompleted(transactionId: Long) extends In {
+case class TransactionCommitCompleted(transactionId: Long, numbersRange: Option[EventNumber.Range] = None) extends In {
   require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
 }
 
@@ -196,6 +198,8 @@ case object ScavengeDatabase extends Out {
    */
   def getInstance = this
 }
+
+case class ScavengeDatabaseCompleted(totalTime: FiniteDuration, totalSpaceSaved: Long) extends In
 
 case object Authenticate extends Out {
   /**

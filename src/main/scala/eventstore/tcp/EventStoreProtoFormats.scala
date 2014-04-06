@@ -6,9 +6,11 @@ import proto.{ EventStoreMessages => j, _ }
 import util.DefaultFormats
 import scala.language.reflectiveCalls
 import scala.PartialFunction.condOpt
+import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
 import scala.collection.JavaConverters._
 import java.net.InetSocketAddress
+import java.util.concurrent.TimeUnit
 
 object EventStoreProtoFormats extends EventStoreProtoFormats
 
@@ -19,6 +21,9 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
     def hasMessage(): Boolean
     def getMessage(): String
   }
+
+  def range(x: { def getFirstEventNumber(): Int; def getLastEventNumber(): Int }): Option[EventNumber.Range] =
+    EventNumber.Range.opt(x.getFirstEventNumber(), x.getLastEventNumber())
 
   trait ProtoTryReader[T, P <: Message] extends ProtoReader[Try[T], P] {
     import scala.util.Failure
@@ -75,7 +80,8 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
         eventType = x.getEventType,
         eventId = uuid(x.getEventId),
         data = Content(byteString(x.getData), ContentType(x.getDataContentType)),
-        metadata = Content(byteString(x.getMetadata), ContentType(x.getMetadataContentType))))
+        metadata = Content(byteString(x.getMetadata), ContentType(x.getMetadataContentType))) /*,
+        created = x.`created` TODO*/ )
   }
 
   implicit object IndexedEventReader extends ProtoReader[IndexedEvent, j.ResolvedEvent] {
@@ -121,7 +127,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
 
   implicit object WriteEventsCompletedReader extends ProtoOperationReader[WriteEventsCompleted, j.WriteEventsCompleted] {
     def parse = j.WriteEventsCompleted.parseFrom
-    def success(x: j.WriteEventsCompleted) = WriteEventsCompleted(EventNumber(x.getFirstEventNumber))
+    def success(x: j.WriteEventsCompleted) = WriteEventsCompleted(range(x))
   }
 
   implicit object DeleteStreamWriter extends ProtoWriter[DeleteStream] {
@@ -130,6 +136,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
       builder.setEventStreamId(x.streamId.streamId)
       builder.setExpectedVersion(expectedVersion(x.expectedVersion))
       builder.setRequireMaster(x.requireMaster)
+      builder.setHardDelete(x.hardDelete)
       builder
     }
   }
@@ -184,7 +191,9 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
   implicit object TransactionCommitCompletedReader
       extends ProtoOperationReader[TransactionCommitCompleted, j.TransactionCommitCompleted] {
     def parse = j.TransactionCommitCompleted.parseFrom
-    def success(x: j.TransactionCommitCompleted) = TransactionCommitCompleted(x.getTransactionId)
+    def success(x: j.TransactionCommitCompleted) = TransactionCommitCompleted(
+      x.getTransactionId,
+      numbersRange = range(x))
   }
 
   implicit object ReadEventWriter extends ProtoWriter[ReadEvent] {
@@ -343,6 +352,31 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
     }
   }
 
+  implicit object ScavengeDatabaseCompletedReader extends ProtoTryReader[ScavengeDatabaseCompleted, j.ScavengeDatabaseCompleted] {
+
+    import j.ScavengeDatabaseCompleted.ScavengeResult._
+
+    def parse = j.ScavengeDatabaseCompleted.parseFrom
+
+    def fromProto(x: j.ScavengeDatabaseCompleted) = x.getResult match {
+      case Success => Try(success(x))
+      case _       => failure(error(x), option(x.hasError, x.getError))
+    }
+
+    def error(x: j.ScavengeDatabaseCompleted): Option[EsError] = condOpt(x.getResult) {
+      case InProgress => EsError.ScavengeInProgress(
+        totalTimeMs = x.getTotalTimeMs,
+        totalSpaceSaved = x.getTotalSpaceSaved)
+      case Failed => EsError.ScavengeInProgress(
+        totalTimeMs = x.getTotalTimeMs,
+        totalSpaceSaved = x.getTotalSpaceSaved)
+    }
+
+    def success(x: j.ScavengeDatabaseCompleted) = ScavengeDatabaseCompleted(
+      totalTime = FiniteDuration(x.getTotalTimeMs, TimeUnit.MILLISECONDS),
+      totalSpaceSaved = x.getTotalSpaceSaved)
+  }
+
   implicit object NotHandledReader extends ProtoReader[EsError.NotHandled, j.NotHandled] {
     import j.NotHandled.NotHandledReason._
     import EsError.NotHandled
@@ -392,7 +426,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
       case Last         => -1
     }
 
-    def to(x: Int) = if (x == -1) Last else EventNumber(x)
+    def to(x: Int) = Exact.opt(x) getOrElse Last
   }
 
   private object PositionConverter extends Converter[Position, (Long, Long)] {

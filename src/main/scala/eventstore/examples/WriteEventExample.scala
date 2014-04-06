@@ -16,8 +16,8 @@ object WriteEventExample extends App {
 
   class WriteResult extends Actor with ActorLogging {
     def receive = {
-      case WriteEventsCompleted(eventNumber) =>
-        log.info("eventNumber: {}", eventNumber)
+      case WriteEventsCompleted(numbersRange) =>
+        log.info("numbersRange: {}", numbersRange)
         context.system.shutdown()
 
       case Failure(e: EsException) =>

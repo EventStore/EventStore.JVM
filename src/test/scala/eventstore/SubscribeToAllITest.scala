@@ -33,7 +33,7 @@ class SubscribeToAllITest extends TestConnection {
       val indexedEvent = expectStreamEventAppeared()
       indexedEvent.position.commitPosition must >(lastCommitPosition)
       indexedEvent.event must beLike {
-        case Event.StreamDeleted(`streamId`, EventNumber.Exact(Int.MaxValue /*TODO WHY?*/ ), _) => ok
+        case Event.StreamDeleted(`streamId`, _) => ok
       }
     }
 

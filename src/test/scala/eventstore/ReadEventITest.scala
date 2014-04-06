@@ -19,8 +19,8 @@ class ReadEventITest extends TestConnection {
     }
 
     "return existing event" in new ReadEventScope {
-      appendEventToCreateStream()
-      readEventData(EventNumber.First)
+      val data = appendEventToCreateStream()
+      readEventData(EventNumber.First) mustEqual data
     }
 
     "return last event in stream if event number is minus one" in new ReadEventScope {

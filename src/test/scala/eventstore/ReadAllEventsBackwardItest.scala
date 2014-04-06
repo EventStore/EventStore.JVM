@@ -44,7 +44,7 @@ class ReadAllEventsBackwardITest extends TestConnection {
       appendEventToCreateStream()
       deleteStream()
       readAllEvents(Position.Last, 1).head must beLike {
-        case Event.StreamDeleted(`streamId`, EventNumber.Exact(1), _) => ok
+        case Event.StreamDeleted(`streamId`, _) => ok
       }
     }
 
@@ -55,7 +55,7 @@ class ReadAllEventsBackwardITest extends TestConnection {
       events must haveSize(2)
       events.last.data mustEqual event
       events.head must beLike {
-        case Event.StreamDeleted(`streamId`, EventNumber.Exact(1), _) => ok
+        case Event.StreamDeleted(`streamId`, _) => ok
       }
     }
 

@@ -72,8 +72,8 @@ class TransactionActorSpec extends ActorSpec {
 
       expectNoMsgs()
 
-      commitCompleted
-      expectMsg(CommitCompleted)
+      commitCompleted(None)
+      expectMsg(CommitCompleted(None))
 
       expectTerminated
     }
@@ -102,8 +102,8 @@ class TransactionActorSpec extends ActorSpec {
       expectNoMsgs()
       verifyTransactionId()
 
-      commitCompleted
-      expectMsg(CommitCompleted)
+      commitCompleted(Some(EventNumber.First to EventNumber(2)))
+      expectMsg(CommitCompleted(Some(EventNumber.First to EventNumber(2))))
 
       expectTerminated
     }
@@ -116,8 +116,8 @@ class TransactionActorSpec extends ActorSpec {
       connection.expectMsg(kickOff.data)
       startCompleted
       expectCommit
-      commitCompleted
-      expectMsg(CommitCompleted)
+      commitCompleted(Some(EventNumber(0) to EventNumber(2)))
+      expectMsg(CommitCompleted(Some(EventNumber(0) to EventNumber(2))))
       expectTerminated
       expectNoMsgs()
     }
@@ -169,7 +169,10 @@ class TransactionActorSpec extends ActorSpec {
     def writeCompleted(transactionId: Long = this.transactionId) = actor ! TransactionWriteCompleted(transactionId)
 
     def expectCommit = connection.expectMsg(TransactionCommit(transactionId))
-    def commitCompleted = actor ! TransactionCommitCompleted(transactionId)
+
+    def commitCompleted(range: Option[EventNumber.Range]) {
+      actor ! TransactionCommitCompleted(transactionId, range)
+    }
 
     def expectTerminated = expectMsgPF() {
       case Terminated(`actor`) =>

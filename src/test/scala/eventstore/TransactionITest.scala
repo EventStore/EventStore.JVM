@@ -10,13 +10,13 @@ class TransactionITest extends TestConnection {
     "start on non existing stream with correct exp ver and create stream on commit" in new TransactionScope {
       implicit val transactionId = transactionStart(NoStream)
       transactionWrite(newEventData)
-      transactionCommit
+      transactionCommit(Some(EventNumber.First to EventNumber.First))
     }
 
     "start on non existing stream with any exp ver and create stream on commit" in new TransactionScope {
       implicit val transactionId = transactionStart(Any)
       transactionWrite(newEventData)
-      transactionCommit
+      transactionCommit(Some(EventNumber.First to EventNumber.First))
     }
 
     "fail to commit on non existing stream with wrong exp ver" in new TransactionScope {
@@ -27,14 +27,14 @@ class TransactionITest extends TestConnection {
 
     "do nothing if commits without events to empty stream" in new TransactionScope {
       implicit val transactionId = transactionStart(NoStream)
-      transactionCommit
+      transactionCommit()
       readStreamEventsFailed mustEqual EsError.StreamNotFound
     }
 
     "do nothing if commits no events to empty stream" in new TransactionScope {
       implicit val transactionId = transactionStart(NoStream)
       transactionWrite()
-      transactionCommit
+      transactionCommit()
       readStreamEventsFailed mustEqual EsError.StreamNotFound
     }
 
@@ -58,7 +58,7 @@ class TransactionITest extends TestConnection {
       writeEventsCompleted(List(newEventData), testKit = probe)
 
       transactionWrite(newEventData)
-      transactionCommit
+      transactionCommit(Some(EventNumber(3) to EventNumber(4)))
       streamEvents must haveSize(5)
     }
 
@@ -75,7 +75,7 @@ class TransactionITest extends TestConnection {
       implicit val transactionId = transactionStart(ExpectedVersion(1))
       append(newEventData).number mustEqual EventNumber(1)
       transactionWrite()
-      transactionCommit
+      transactionCommit(None)
     }
 
     "fail to commit if stream has been deleted during transaction" in new TransactionScope {
@@ -89,11 +89,11 @@ class TransactionITest extends TestConnection {
       val event = newEventData
       val transactionId1 = transactionStart(Any)
       transactionWrite(event)(transactionId1)
-      transactionCommit(transactionId1)
+      transactionCommit(Some(EventNumber.First to EventNumber.First))(transactionId1)
 
       val transactionId2 = transactionStart(Any)
       transactionWrite(event)(transactionId2)
-      transactionCommit(transactionId2)
+      transactionCommit(Some(EventNumber.First to EventNumber.First))(transactionId2)
       streamEvents mustEqual List(event)
     }
   }
@@ -110,9 +110,9 @@ class TransactionITest extends TestConnection {
       expectMsg(TransactionWriteCompleted(transactionId))
     }
 
-    def transactionCommit(implicit transactionId: Long) {
+    def transactionCommit(range: Option[EventNumber.Range] = None)(implicit transactionId: Long) {
       actor ! TransactionCommit(transactionId)
-      expectMsg(TransactionCommitCompleted(transactionId))
+      expectMsg(TransactionCommitCompleted(transactionId, range))
     }
 
     def failTransactionCommit(reason: EsError)(implicit transactionId: Long) {

@@ -115,6 +115,7 @@ import eventstore.*;
 import eventstore.j.EventDataBuilder;
 import eventstore.j.WriteEventsBuilder;
 import eventstore.tcp.ConnectionActor;
+import scala.Option;
 
 import java.util.UUID;
 
@@ -145,8 +146,8 @@ public class WriteEventExample {
         public void onReceive(Object message) throws Exception {
             if (message instanceof WriteEventsCompleted) {
                 final WriteEventsCompleted completed = (WriteEventsCompleted) message;
-                final EventNumber.Exact eventNumber = completed.firstEventNumber();
-                log.info("eventNumber: {}", eventNumber);
+                final Option<EventNumber.Range> range = completed.numbersRange();
+                log.info("numbersRange: {}", numbersRange);
             } else if (message instanceof Status.Failure) {
                 final Status.Failure failure = ((Status.Failure) message);
                 final EsException exception = (EsException) failure.cause();
@@ -280,8 +281,8 @@ object WriteEventExample extends App {
 
   class WriteResult extends Actor with ActorLogging {
     def receive = {
-      case WriteEventsCompleted(eventNumber) =>
-        log.info("eventNumber: {}", eventNumber)
+      case WriteEventsCompleted(numbersRange) =>
+        log.info("numbersRange: {}", numbersRange)
         context.system.shutdown()
 
       case Failure(e: EsException) =>
@@ -385,7 +386,7 @@ object EsConnectionExample extends App {
   val writeEvents: Future[WriteEventsCompleted] = connection.future(WriteEvents(stream, List(EventData("my-event"))))
   writeEvents.onComplete {
     case Failure(e)                       => log.error(e.toString)
-    case Success(x: WriteEventsCompleted) => log.info(x.firstEventNumber.toString())
+    case Success(x: WriteEventsCompleted) => log.info(x.numbersRange.toString)
   }
 }
 ```
