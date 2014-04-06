@@ -1,4 +1,4 @@
-# Event Store JVM Client [![Build Status](https://travis-ci.org/EventStore/eventstorejvmclient.png?branch=master)](https://travis-ci.org/EventStore/eventstorejvmclient)
+# Event Store JVM Client [![Build Status](https://travis-ci.org/EventStore/EventStore.JVM.png?branch=master)](https://travis-ci.org/EventStore/EventStore.JVM)
 
 **JVM Client works nicely with EventStore 2.0.1**
 
