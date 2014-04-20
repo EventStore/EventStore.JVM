@@ -1,6 +1,7 @@
 # Event Store JVM Client [![Build Status](https://travis-ci.org/EventStore/EventStore.JVM.png?branch=master)](https://travis-ci.org/EventStore/EventStore.JVM)
 
 **JVM Client works nicely with EventStore 2.0.1**
+**JVM Client is not compatible with Akka 2.3.x series**
 
 <table border="0">
   <tr>
