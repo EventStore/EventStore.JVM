@@ -8,17 +8,16 @@ import scala.util.Success
 
 class TcpPackageFormatSpec extends Specification {
   "TcpPackageFormat" should {
-    "read/write" in {
-      for {
-        correlationId <- List(randomUuid, randomUuid)
-        msg <- List[InOut](HeartbeatRequest, HeartbeatResponse, Ping, Pong)
-      } yield {
-        val expected = TcpPackageOut(msg, correlationId)
-        val bs = BytesWriter[TcpPackageOut].toByteString(expected)
-        val actual = BytesReader[TcpPackageIn].read(bs)
-        actual.correlationId mustEqual expected.correlationId
-        actual.message mustEqual Success(expected.message)
-      }
+    "read/write" in foreach(List(randomUuid, randomUuid)) {
+      correlationId =>
+        foreach(List[InOut](HeartbeatRequest, HeartbeatResponse, Ping, Pong)) {
+          msg =>
+            val expected = TcpPackageOut(msg, correlationId)
+            val bs = BytesWriter[TcpPackageOut].toByteString(expected)
+            val actual = BytesReader[TcpPackageIn].read(bs)
+            actual.correlationId mustEqual expected.correlationId
+            actual.message mustEqual Success(expected.message)
+        }
     }
   }
 }

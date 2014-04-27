@@ -14,21 +14,23 @@ object Build extends Build {
     description          := "Event Store JVM Client",
     startYear            := Some(2013),
     scalacOptions        := Seq("-encoding", "UTF-8", "-unchecked", "-deprecation", "-feature"),
-    libraryDependencies ++= Seq(akka, akkaTestkit, scalabuff, junit, specs2, mockito, codec),
-    scalabuffVersion := "1.3.6")
+    libraryDependencies ++= Seq(Akka.actor, Akka.testkit, scalabuff, junit, specs2, mockito, codec, typesafeConfig))
 
-  object V {
-    val akka = "2.2.4"
-    val scalabuff = "1.3.6"
+  val scalabuffVer = "1.3.6"
+
+  object Akka {
+    lazy val actor   = apply("actor")
+    lazy val testkit = apply("testkit") % "test"
+
+    private def apply(x: String) = "com.typesafe.akka" %% "akka-%s".format(x) % "2.3.2"
   }
 
-  val akka        = "com.typesafe.akka"           %% "akka-actor"               % V.akka
-  val akkaTestkit = "com.typesafe.akka"           %% "akka-testkit"             % V.akka      % "test"
-  val codec       = "org.apache.directory.studio" %  "org.apache.commons.codec" % "1.8"
-  val scalabuff   = "net.sandrogrzicic"           %% "scalabuff-runtime"        % V.scalabuff
-  val junit       = "junit"                       %  "junit"                    % "4.11"      % "test"
-  val specs2      = "org.specs2"                  %% "specs2"                   % "2.3.4"     % "test"
-  val mockito     = "org.mockito"                 %  "mockito-all"              % "1.9.5"     % "test"
+  val typesafeConfig = "com.typesafe" % "config" % "1.2.0"
+  val codec          = "org.apache.directory.studio" % "org.apache.commons.codec" % "1.8"
+  val scalabuff      = "net.sandrogrzicic" %% "scalabuff-runtime" % scalabuffVer
+  val junit          = "junit" % "junit" % "4.11" % "test"
+  val specs2         = "org.specs2" %% "specs2" % "2.3.4" % "test"
+  val mockito        = "org.mockito" % "mockito-all" % "1.9.5" % "test"
 
   def itFilter(name: String): Boolean = name endsWith "ITest"
   def specFilter(name: String): Boolean = name endsWith "Spec"
@@ -45,5 +47,5 @@ object Build extends Build {
     testOptions       in Test            := Seq(Tests.Filter(specFilter)),
     testOptions       in IntegrationTest := Seq(Tests.Filter(itFilter)),
     parallelExecution in IntegrationTest := false,
-    scalabuffVersion := V.scalabuff)
+    scalabuffVersion := scalabuffVer)
 }

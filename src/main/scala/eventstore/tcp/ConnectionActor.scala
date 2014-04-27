@@ -1,8 +1,9 @@
 package eventstore
 package tcp
 
-import akka.actor.{ IO => _, _ }
-import akka.io.{ TcpPipelineHandler, Tcp, IO }
+import akka.actor._
+import pipeline._
+import akka.io.{ Tcp, IO }
 import scala.collection.immutable.Queue
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success }

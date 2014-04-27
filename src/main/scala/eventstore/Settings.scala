@@ -17,25 +17,28 @@ case class Settings(
   backpressure: BackpressureSettings = BackpressureSettings())
 
 object Settings {
-  val config = ConfigFactory.load()
-  val default: Settings = Settings(config)
-  val readBatchSize = config.getInt("eventstore.read-batch-size")
+  lazy val config: Config = ConfigFactory.load()
+  lazy val default: Settings = Settings(config)
+  lazy val readBatchSize = config.getInt("eventstore.read-batch-size")
 
   def apply(conf: Config): Settings = {
-    def apply(conf: Config): Settings = Settings(
-      address = new InetSocketAddress(conf getString "address.host", conf getInt "address.port"),
-      maxReconnections = conf getInt "max-reconnections",
-      reconnectionDelayMin = FiniteDuration(conf getMilliseconds "reconnection-delay.min", MILLISECONDS),
-      reconnectionDelayMax = FiniteDuration(conf getMilliseconds "reconnection-delay.max", MILLISECONDS),
-      defaultCredentials = for {
-        l <- Option(conf getString "credentials.login")
-        p <- Option(conf getString "credentials.password")
-      } yield UserCredentials(login = l, password = p),
-      heartbeatInterval = FiniteDuration(conf getMilliseconds "heartbeat.interval", MILLISECONDS),
-      heartbeatTimeout = FiniteDuration(conf getMilliseconds "heartbeat.timeout", MILLISECONDS),
-      connectionTimeout = FiniteDuration(conf getMilliseconds "connection-timeout", MILLISECONDS),
-      operationTimeout = FiniteDuration(conf getMilliseconds "operation-timeout", MILLISECONDS),
-      backpressure = BackpressureSettings(conf))
+    def apply(conf: Config): Settings = {
+      def duration(path: String) = FiniteDuration(conf.getDuration(path, MILLISECONDS), MILLISECONDS)
+      Settings(
+        address = new InetSocketAddress(conf getString "address.host", conf getInt "address.port"),
+        maxReconnections = conf getInt "max-reconnections",
+        reconnectionDelayMin = duration("reconnection-delay.min"),
+        reconnectionDelayMax = duration("reconnection-delay.max"),
+        defaultCredentials = for {
+          l <- Option(conf getString "credentials.login")
+          p <- Option(conf getString "credentials.password")
+        } yield UserCredentials(login = l, password = p),
+        heartbeatInterval = duration("heartbeat.interval"),
+        heartbeatTimeout = duration("heartbeat.timeout"),
+        connectionTimeout = duration("connection-timeout"),
+        operationTimeout = duration("operation-timeout"),
+        backpressure = BackpressureSettings(conf))
+    }
     apply(conf.getConfig("eventstore"))
   }
 
@@ -46,7 +49,7 @@ object Settings {
 }
 
 /**
- * see [[akka.io.BackpressureBuffer]]
+ * see [[eventstore.pipeline.BackpressureBuffer]]
  */
 case class BackpressureSettings(lowWatermark: Int = 100, highWatermark: Int = 10000, maxCapacity: Int = 1000000) {
   require(lowWatermark >= 0, s"lowWatermark must be >= 0, but is $lowWatermark")

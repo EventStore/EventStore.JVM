@@ -7,16 +7,15 @@ import util.{ BytesReader, BytesWriter }
 
 class UserCredentialsFormatSpec extends Specification {
   "UserCredentialsFormat" should {
-    "read/write" in {
-      for {
-        login <- List("login1", "login2")
-        password <- List("password1", "password2")
-      } yield {
-        val expected = UserCredentials(login, password)
-        val bs = BytesWriter[UserCredentials].toByteString(expected)
-        val actual = BytesReader[UserCredentials].read(bs)
-        actual mustEqual expected
-      }
+    "read/write" in foreach(List("login1", "login2")) {
+      login =>
+        foreach(List("password1", "password2")) {
+          password =>
+            val expected = UserCredentials(login, password)
+            val bs = BytesWriter[UserCredentials].toByteString(expected)
+            val actual = BytesReader[UserCredentials].read(bs)
+            actual mustEqual expected
+        }
     }
 
     "throw exception if login is too long" in {

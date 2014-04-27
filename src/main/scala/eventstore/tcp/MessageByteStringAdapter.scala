@@ -1,7 +1,7 @@
 package eventstore
 package tcp
 
-import akka.io._
+import pipeline._
 import EventStoreFormats._
 import util.{ BytesWriter, BytesReader }
 

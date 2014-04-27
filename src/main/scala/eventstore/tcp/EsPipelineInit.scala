@@ -2,8 +2,8 @@ package eventstore
 package tcp
 
 import akka.event.LoggingAdapter
-import akka.io.TcpPipelineHandler.{ Init, WithinActorContext }
-import akka.io.{ TcpPipelineHandler, LengthFieldFrame, TcpReadWriteAdapter, BackpressureBuffer }
+import pipeline.TcpPipelineHandler.{ Init, WithinActorContext }
+import pipeline.{ TcpPipelineHandler, LengthFieldFrame, TcpReadWriteAdapter, BackpressureBuffer }
 import java.nio.ByteOrder
 
 object EsPipelineInit {
