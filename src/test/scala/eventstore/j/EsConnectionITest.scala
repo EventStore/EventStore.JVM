@@ -86,13 +86,15 @@ class EsConnectionITest extends ActorSpec {
           val data = event.event.data
           if (data.eventType == eventData.eventType) data mustEqual eventData
       }
+
+      override def eventType = "java-test-read-all-backward"
     }
   }
 
   trait TestScope extends ActorScope {
     val connection = new EsConnectionImpl(eventstore.EsConnection(system))
-
-    val eventData = EventData(eventType = "java-test", data = Content("data"), metadata = Content("metadata"))
+    def eventType = "java-test"
+    val eventData = EventData(eventType = eventType, data = Content("data"), metadata = Content("metadata"))
 
     val events = List(eventData).asJava
 

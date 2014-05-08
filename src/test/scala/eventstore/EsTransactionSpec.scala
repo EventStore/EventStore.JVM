@@ -5,19 +5,20 @@ import akka.actor.Status.Failure
 import akka.util.Timeout
 import java.util.concurrent.TimeoutException
 import scala.concurrent.duration._
+import scala.concurrent.{ Future, Await }
 import util.ActorSpec
 
 class EsTransactionSpec extends ActorSpec {
 
   "EsTransaction.start" should {
     "return timeout exception" in new StartScope {
-      start must throwAn[TimeoutException].await
+      start.mustTimeout
     }
 
     "return error" in new StartScope {
       val future = start
       lastSender ! Failure(exception)
-      future must throwAn(exception).await
+      future mustThrow exception
     }
 
     "succeed" in new StartScope {
@@ -29,13 +30,13 @@ class EsTransactionSpec extends ActorSpec {
 
   "EsTransaction.continue.write" should {
     "return timeout exception" in new ContinueScope {
-      write must throwAn[TimeoutException].await
+      write.mustTimeout
     }
 
     "return error" in new ContinueScope {
       val future = write
       lastSender ! Failure(exception)
-      future must throwAn(exception).await
+      future mustThrow exception
     }
 
     "succeed" in new ContinueScope {
@@ -47,13 +48,13 @@ class EsTransactionSpec extends ActorSpec {
 
   "EsTransaction.continue.commit" should {
     "return timeout exception" in new ContinueScope {
-      commit must throwAn[TimeoutException].await
+      commit.mustTimeout
     }
 
     "return error" in new ContinueScope {
       val future = commit
       lastSender ! Failure(exception)
-      future must throwAn(exception).await
+      future mustThrow exception
     }
 
     "succeed" in new ContinueScope {
@@ -89,6 +90,16 @@ class EsTransactionSpec extends ActorSpec {
       val future = transaction.write(events)
       expectMsg(Write(events))
       future
+    }
+  }
+
+  implicit class RichFuture(self: Future[_]) {
+    def mustTimeout = {
+      Await.result(self, 500.millis) must throwA[TimeoutException]
+    }
+
+    def mustThrow(e: Throwable) = {
+      Await.result(self, 3.seconds) must throwAn(e)
     }
   }
 }
