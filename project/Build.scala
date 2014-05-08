@@ -18,13 +18,13 @@ object Build extends Build {
     libraryDependencies ++= Seq(Akka.actor, Akka.testkit, protobuf, specs2, mockito, codec, typesafeConfig))
 
   object Akka {
-    lazy val actor   = apply("actor")
-    lazy val testkit = apply("testkit") % "test"
+    val actor   = apply("actor")
+    val testkit = apply("testkit") % "test"
 
     private def apply(x: String) = "com.typesafe.akka" %% "akka-%s".format(x) % "2.3.2"
   }
 
-  val typesafeConfig = "com.typesafe" % "config" % "1.2.0"
+  val typesafeConfig = "com.typesafe" % "config" % "1.2.1"
   val codec          = "org.apache.directory.studio" % "org.apache.commons.codec" % "1.8"
   val protobuf       = "com.google.protobuf" % "protobuf-java" % "2.5.0"
   val specs2         = "org.specs2" %% "specs2" % "2.3.11" % "test"
