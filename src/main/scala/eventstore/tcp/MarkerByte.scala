@@ -3,9 +3,10 @@ package tcp
 
 import EventStoreFormats._
 import ReadDirection._
-import akka.util.{ ByteStringBuilder, ByteIterator }
-import scala.util.{ Try, Success, Failure }
 import util.{ BytesWriter, BytesReader }
+import akka.util.{ ByteStringBuilder, ByteIterator }
+import scala.util.{ Try, Failure }
+import scala.util.control.NonFatal
 
 object MarkerByte {
   type Reader = ByteIterator => Try[In]
@@ -15,9 +16,12 @@ object MarkerByte {
     readers.get(markerByte).getOrElse(sys.error(s"unknown marker byte: 0x%02X".format(markerByte)))
   }
 
-  def reader[T <: In](implicit reader: BytesReader[T]): Reader = (bi: ByteIterator) => Success(reader.read(bi))
+  def reader[T <: In](implicit reader: BytesReader[T]): Reader = (bi: ByteIterator) => Try(reader.read(bi))
 
-  def readerTry[T <: In](implicit reader: BytesReader[Try[T]]): Reader = reader.read
+  def readerTry[T <: In](implicit reader: BytesReader[Try[T]]): Reader =
+    (bi: ByteIterator) => try reader.read(bi) catch {
+      case NonFatal(e) => Failure(e)
+    }
 
   def readerFailure(x: EsError): Reader = (_: ByteIterator) => Failure(EsException(x))
 

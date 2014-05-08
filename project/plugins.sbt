@@ -1,4 +1,4 @@
-addSbtPlugin("com.github.sbt" %% "sbt-scalabuff" % "0.2")
+addSbtPlugin("com.github.gseitz" % "sbt-protobuf" % "0.3.2")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-scalariform" % "1.0.1")
 

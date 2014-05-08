@@ -2,28 +2,24 @@ package eventstore
 package proto
 
 import akka.util.{ ByteStringBuilder, ByteIterator }
-import com.google.protobuf.{ MessageLite, ByteString => ProtoByteString }
-import net.sandrogrzicic.scalabuff.MessageBuilder
+import com.google.protobuf.{ ByteString => ProtoByteString }
+import com.google.protobuf.Message.Builder
 import scala.language.reflectiveCalls
-import scala.util.{ Failure, Try }
 import util.{ BytesWriter, BytesReader, DefaultFormats }
 
 object DefaultProtoFormats extends DefaultProtoFormats
 
 trait DefaultProtoFormats extends DefaultFormats {
 
-  type Message[T] = MessageBuilder[T]
+  type Message = com.google.protobuf.Message
 
-  type MessageProvider[T] = {
-    def defaultInstance: T
-  }
+  trait ProtoReader[T, P <: Message] extends BytesReader[T] {
 
-  trait ProtoReader[T, P <: Message[P]] extends BytesReader[T] {
-    def provider: MessageProvider[P]
+    def parse: (java.io.InputStream => P)
 
     def fromProto(x: P): T
 
-    def read(bi: ByteIterator): T = fromProto(provider.defaultInstance.mergeFrom(bi.toArray[Byte]))
+    def read(bi: ByteIterator): T = fromProto(parse(bi.asInputStream))
 
     def byteString(bs: ProtoByteString): ByteString = ByteString(bs.asReadOnlyByteBuffer())
 
@@ -39,10 +35,11 @@ trait DefaultProtoFormats extends DefaultFormats {
   }
 
   trait ProtoWriter[T] extends BytesWriter[T] {
-    def toProto(x: T): MessageLite
+
+    def toProto(x: T): Builder
 
     def write(x: T, builder: ByteStringBuilder) {
-      builder.putBytes(toProto(x).toByteArray)
+      builder.putBytes(toProto(x).build().toByteArray)
     }
 
     def protoByteString(bs: ByteString) = ProtoByteString.copyFrom(bs.toByteBuffer)
@@ -52,4 +49,5 @@ trait DefaultProtoFormats extends DefaultFormats {
     def protoByteStringOption(bs: ByteString) = if (bs.isEmpty) None else Some(protoByteString(bs))
   }
 
+  def option[T](b: Boolean, f: => T): Option[T] = if (b) Some(f) else None
 }

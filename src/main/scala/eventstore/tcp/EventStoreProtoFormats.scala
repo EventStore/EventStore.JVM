@@ -2,23 +2,25 @@ package eventstore
 package tcp
 
 import ReadDirection.{ Backward, Forward }
-import eventstore.proto.OperationResult
+import proto.{ EventStoreMessages => j, _ }
 import util.DefaultFormats
-import scala.PartialFunction.condOpt
 import scala.language.reflectiveCalls
+import scala.PartialFunction.condOpt
 import scala.util.Try
+import scala.collection.JavaConverters._
 import java.net.InetSocketAddress
 
 object EventStoreProtoFormats extends EventStoreProtoFormats
 
-trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultFormats {
+trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
 
-  type OperationMessage[T] = Message[T] {
-    def `result`: OperationResult.EnumVal
-    def `message`: Option[String]
+  type OperationMessage = Message {
+    def getResult(): j.OperationResult
+    def hasMessage(): Boolean
+    def getMessage(): String
   }
 
-  trait ProtoTryReader[T, P <: Message[P]] extends ProtoReader[Try[T], P] {
+  trait ProtoTryReader[T, P <: Message] extends ProtoReader[Try[T], P] {
     import scala.util.Failure
 
     def failure(reason: Option[EsError], errMsg: Option[String]): Failure[T] =
@@ -27,12 +29,9 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
     def failure(e: Throwable): Failure[T] = Failure(e)
   }
 
-  trait ProtoOperationReader[T, P <: OperationMessage[P]] extends ProtoTryReader[T, P] {
-
-    import scala.util.Success
-
-    def error(x: proto.OperationResult.EnumVal): Option[EsError] = {
-      import proto.OperationResult._
+  trait ProtoOperationReader[T, P <: OperationMessage] extends ProtoTryReader[T, P] {
+    def error(x: j.OperationResult): Option[EsError] = {
+      import j.OperationResult._
       condOpt(x) {
         case PrepareTimeout       => EsError.PrepareTimeout
         case CommitTimeout        => EsError.CommitTimeout
@@ -44,143 +43,167 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
       }
     }
 
-    def fromProto(x: P): Try[T] = x.`result` match {
-      case OperationResult.Success => Success(success(x))
-      case _                       => failure(error(x.`result`), x.`message`)
+    def fromProto(x: P): Try[T] = x.getResult() match {
+      case j.OperationResult.Success => Try(success(x))
+      case e                         => failure(error(e), option(x.hasMessage(), x.getMessage()))
     }
 
     def success(x: P): T
   }
 
   implicit object EventDataWriter extends ProtoWriter[EventData] {
-    def toProto(x: EventData) = proto.NewEvent(
-      `eventId` = protoByteString(x.eventId),
-      `eventType` = x.eventType,
-      `dataContentType` = x.data.contentType.value,
-      `data` = protoByteString(x.data.value),
-      `metadataContentType` = x.metadata.contentType.value,
-      `metadata` = protoByteStringOption(x.metadata.value))
+    def toProto(x: EventData) = {
+      val builder = j.NewEvent.newBuilder()
+      builder.setEventId(protoByteString(x.eventId))
+      builder.setEventType(x.eventType)
+      builder.setDataContentType(x.data.contentType.value)
+      builder.setData(protoByteString(x.data.value))
+      builder.setMetadataContentType(x.metadata.contentType.value)
+      protoByteStringOption(x.metadata.value).foreach(builder.setMetadata)
+      builder
+    }
   }
 
-  implicit object EventRecordReader extends ProtoReader[EventRecord, proto.EventRecord] {
+  implicit object EventRecordReader extends ProtoReader[EventRecord, j.EventRecord] {
 
-    def provider = proto.EventRecord
+    def parse = j.EventRecord.parseFrom
 
-    def fromProto(x: proto.EventRecord) = EventRecord(
-      streamId = EventStream(x.`eventStreamId`),
-      number = EventNumber(x.`eventNumber`),
+    def fromProto(x: j.EventRecord) = EventRecord(
+      streamId = EventStream(x.getEventStreamId),
+      number = EventNumber(x.getEventNumber),
       data = EventData(
-        eventType = x.`eventType`,
-        eventId = uuid(x.`eventId`),
-        data = Content(byteString(x.`data`), ContentType(x.`dataContentType`)),
-        metadata = Content(byteString(x.`metadata`), ContentType(x.`metadataContentType`))))
+        eventType = x.getEventType,
+        eventId = uuid(x.getEventId),
+        data = Content(byteString(x.getData), ContentType(x.getDataContentType)),
+        metadata = Content(byteString(x.getMetadata), ContentType(x.getMetadataContentType))))
   }
 
-  implicit object IndexedEventReader extends ProtoReader[IndexedEvent, proto.ResolvedEvent] {
+  implicit object IndexedEventReader extends ProtoReader[IndexedEvent, j.ResolvedEvent] {
 
-    def provider = proto.ResolvedEvent
+    def parse = j.ResolvedEvent.parseFrom
 
-    def fromProto(x: proto.ResolvedEvent) = IndexedEvent(
+    def fromProto(x: j.ResolvedEvent) = IndexedEvent(
       event = EventReader.event(x),
-      position = Position(commitPosition = x.`commitPosition`, preparePosition = x.`preparePosition`))
+      position = Position(commitPosition = x.getCommitPosition, preparePosition = x.getPreparePosition))
   }
 
-  implicit object EventReader extends ProtoReader[Event, proto.ResolvedIndexedEvent] {
+  implicit object EventReader extends ProtoReader[Event, j.ResolvedIndexedEvent] {
+    type JEvent = {
+      def getEvent(): j.EventRecord
+      def hasLink(): Boolean
+      def getLink(): j.EventRecord
+    }
 
-    def provider = proto.ResolvedIndexedEvent
+    def parse = j.ResolvedIndexedEvent.parseFrom
 
-    def fromProto(x: proto.ResolvedIndexedEvent) = event(
-      EventRecordReader.fromProto(x.`event`),
-      x.`link`.map(EventRecordReader.fromProto))
+    def fromProto(x: j.ResolvedIndexedEvent) = event(x)
 
     def event(event: EventRecord, linkEvent: Option[EventRecord]): Event = linkEvent match {
       case Some(x) => ResolvedEvent(linkedEvent = event, linkEvent = x)
       case None    => event
     }
 
-    def event(x: { def `event`: proto.EventRecord; def `link`: Option[proto.EventRecord] }): Event = event(
-      EventRecordReader.fromProto(x.`event`),
-      x.`link`.map(EventRecordReader.fromProto))
+    def event(x: JEvent): Event = event(
+      EventRecordReader.fromProto(x.getEvent()),
+      option(x.hasLink(), EventRecordReader.fromProto(x.getLink())))
   }
 
   implicit object WriteEventsWriter extends ProtoWriter[WriteEvents] {
-    def toProto(x: WriteEvents) = proto.WriteEvents(
-      `eventStreamId` = x.streamId.streamId,
-      `expectedVersion` = expectedVersion(x.expectedVersion),
-      `events` = x.events.map(EventDataWriter.toProto).toVector,
-      `requireMaster` = x.requireMaster)
+    def toProto(x: WriteEvents) = {
+      val builder = j.WriteEvents.newBuilder()
+      builder.setEventStreamId(x.streamId.streamId)
+      builder.setExpectedVersion(expectedVersion(x.expectedVersion))
+      builder.addAllEvents(x.events.map(EventDataWriter.toProto(_).build()).toIterable.asJava)
+      builder.setRequireMaster(x.requireMaster)
+      builder
+    }
   }
 
-  implicit object WriteEventsCompletedReader extends ProtoOperationReader[WriteEventsCompleted, proto.WriteEventsCompleted] {
-    def provider = proto.WriteEventsCompleted
-    def success(x: proto.WriteEventsCompleted) = WriteEventsCompleted(EventNumber(x.`firstEventNumber`))
+  implicit object WriteEventsCompletedReader extends ProtoOperationReader[WriteEventsCompleted, j.WriteEventsCompleted] {
+    def parse = j.WriteEventsCompleted.parseFrom
+    def success(x: j.WriteEventsCompleted) = WriteEventsCompleted(EventNumber(x.getFirstEventNumber))
   }
 
   implicit object DeleteStreamWriter extends ProtoWriter[DeleteStream] {
-    def toProto(x: DeleteStream) = proto.DeleteStream(
-      `eventStreamId` = x.streamId.streamId,
-      `expectedVersion` = expectedVersion(x.expectedVersion),
-      `requireMaster` = x.requireMaster)
+    def toProto(x: DeleteStream) = {
+      val builder = j.DeleteStream.newBuilder()
+      builder.setEventStreamId(x.streamId.streamId)
+      builder.setExpectedVersion(expectedVersion(x.expectedVersion))
+      builder.setRequireMaster(x.requireMaster)
+      builder
+    }
   }
 
   implicit object DeleteStreamCompletedReader
-      extends ProtoOperationReader[DeleteStreamCompleted.type, proto.DeleteStreamCompleted] {
-    def provider = proto.DeleteStreamCompleted
-    def success(x: proto.DeleteStreamCompleted) = DeleteStreamCompleted
+      extends ProtoOperationReader[DeleteStreamCompleted.type, j.DeleteStreamCompleted] {
+    def parse = j.DeleteStreamCompleted.parseFrom
+    def success(x: j.DeleteStreamCompleted) = DeleteStreamCompleted
   }
 
   implicit object TransactionStartWriter extends ProtoWriter[TransactionStart] {
-    def toProto(x: TransactionStart) = proto.TransactionStart(
-      `eventStreamId` = x.streamId.streamId,
-      `expectedVersion` = expectedVersion(x.expectedVersion),
-      `requireMaster` = x.requireMaster)
+    def toProto(x: TransactionStart) = {
+      val builder = j.TransactionStart.newBuilder()
+      builder.setEventStreamId(x.streamId.streamId)
+      builder.setExpectedVersion(expectedVersion(x.expectedVersion))
+      builder.setRequireMaster(x.requireMaster)
+      builder
+    }
   }
 
   implicit object TransactionStartCompletedReader
-      extends ProtoOperationReader[TransactionStartCompleted, proto.TransactionStartCompleted] {
-    def provider = proto.TransactionStartCompleted
-    def success(x: proto.TransactionStartCompleted) = TransactionStartCompleted(x.`transactionId`)
+      extends ProtoOperationReader[TransactionStartCompleted, j.TransactionStartCompleted] {
+    def parse = j.TransactionStartCompleted.parseFrom
+    def success(x: j.TransactionStartCompleted) = TransactionStartCompleted(x.getTransactionId)
   }
 
   implicit object TransactionWriteWriter extends ProtoWriter[TransactionWrite] {
-    def toProto(x: TransactionWrite) = proto.TransactionWrite(
-      `transactionId` = x.transactionId,
-      `events` = x.events.map(EventDataWriter.toProto).toVector,
-      `requireMaster` = x.requireMaster)
+    def toProto(x: TransactionWrite) = {
+      val builder = j.TransactionWrite.newBuilder()
+      builder.setTransactionId(x.transactionId)
+      builder.addAllEvents(x.events.map(EventDataWriter.toProto(_).build()).toIterable.asJava)
+      builder.setRequireMaster(x.requireMaster)
+      builder
+    }
   }
 
   implicit object TransactionWriteCompletedReader
-      extends ProtoOperationReader[TransactionWriteCompleted, proto.TransactionWriteCompleted] {
-    def provider = proto.TransactionWriteCompleted
-    def success(x: proto.TransactionWriteCompleted) = TransactionWriteCompleted(x.`transactionId`)
+      extends ProtoOperationReader[TransactionWriteCompleted, j.TransactionWriteCompleted] {
+    def parse = j.TransactionWriteCompleted.parseFrom
+    def success(x: j.TransactionWriteCompleted) = TransactionWriteCompleted(x.getTransactionId)
   }
 
   implicit object TransactionCommitWriter extends ProtoWriter[TransactionCommit] {
-    def toProto(x: TransactionCommit) = proto.TransactionCommit(
-      `transactionId` = x.transactionId,
-      `requireMaster` = x.requireMaster)
+    def toProto(x: TransactionCommit) = {
+      val builder = j.TransactionCommit.newBuilder()
+      builder.setTransactionId(x.transactionId)
+      builder.setRequireMaster(x.requireMaster)
+      builder
+    }
   }
 
   implicit object TransactionCommitCompletedReader
-      extends ProtoOperationReader[TransactionCommitCompleted, proto.TransactionCommitCompleted] {
-    def provider = proto.TransactionCommitCompleted
-    def success(x: proto.TransactionCommitCompleted) = TransactionCommitCompleted(x.`transactionId`)
+      extends ProtoOperationReader[TransactionCommitCompleted, j.TransactionCommitCompleted] {
+    def parse = j.TransactionCommitCompleted.parseFrom
+    def success(x: j.TransactionCommitCompleted) = TransactionCommitCompleted(x.getTransactionId)
   }
 
   implicit object ReadEventWriter extends ProtoWriter[ReadEvent] {
-    def toProto(x: ReadEvent) = proto.ReadEvent(
-      `eventStreamId` = x.streamId.streamId,
-      `eventNumber` = EventNumberConverter.from(x.eventNumber),
-      `resolveLinkTos` = x.resolveLinkTos,
-      `requireMaster` = x.requireMaster)
+    def toProto(x: ReadEvent) = {
+      val builder = j.ReadEvent.newBuilder()
+      builder.setEventStreamId(x.streamId.streamId)
+      builder.setEventNumber(EventNumberConverter.from(x.eventNumber))
+      builder.setResolveLinkTos(x.resolveLinkTos)
+      builder.setRequireMaster(x.requireMaster)
+      builder
+    }
   }
 
-  implicit object ReadEventCompletedReader extends ProtoTryReader[ReadEventCompleted, proto.ReadEventCompleted] {
-    import proto.ReadEventCompleted.ReadEventResult._
+  implicit object ReadEventCompletedReader extends ProtoTryReader[ReadEventCompleted, j.ReadEventCompleted] {
+    import j.ReadEventCompleted.ReadEventResult._
 
-    def provider = proto.ReadEventCompleted
+    def parse = j.ReadEventCompleted.parseFrom
 
-    def error(x: EnumVal): Option[EsError] = condOpt(x) {
+    def error(x: j.ReadEventCompleted.ReadEventResult): Option[EsError] = condOpt(x) {
       case NotFound      => EsError.EventNotFound
       case NoStream      => EsError.StreamNotFound
       case StreamDeleted => EsError.StreamDeleted
@@ -188,47 +211,50 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
       case AccessDenied  => EsError.AccessDenied
     }
 
-    def fromProto(x: proto.ReadEventCompleted) = x.`result` match {
-      case Success => Try(ReadEventCompleted(EventReader.fromProto(x.`event`)))
-      case _       => failure(error(x.`result`), x.`error`)
+    def fromProto(x: j.ReadEventCompleted) = x.getResult match {
+      case Success => Try(ReadEventCompleted(EventReader.fromProto(x.getEvent)))
+      case e       => failure(error(e), option(x.hasError, x.getError))
     }
   }
 
   implicit object ReadStreamEventsWriter extends ProtoWriter[ReadStreamEvents] {
-    def toProto(x: ReadStreamEvents) = proto.ReadStreamEvents(
-      `eventStreamId` = x.streamId.streamId,
-      `fromEventNumber` = EventNumberConverter.from(x.fromNumber),
-      `maxCount` = x.maxCount,
-      `resolveLinkTos` = x.resolveLinkTos,
-      `requireMaster` = x.requireMaster)
+    def toProto(x: ReadStreamEvents) = {
+      val builder = j.ReadStreamEvents.newBuilder()
+      builder.setEventStreamId(x.streamId.streamId)
+      builder.setFromEventNumber(EventNumberConverter.from(x.fromNumber))
+      builder.setMaxCount(x.maxCount)
+      builder.setResolveLinkTos(x.resolveLinkTos)
+      builder.setRequireMaster(x.requireMaster)
+      builder
+    }
   }
 
   abstract class ReadStreamEventsCompletedReader(direction: ReadDirection)
-      extends ProtoTryReader[ReadStreamEventsCompleted, proto.ReadStreamEventsCompleted] {
+      extends ProtoTryReader[ReadStreamEventsCompleted, j.ReadStreamEventsCompleted] {
+    import j.ReadStreamEventsCompleted.ReadStreamResult._
+    import j.ReadStreamEventsCompleted.ReadStreamResult
 
-    import proto.ReadStreamEventsCompleted.ReadStreamResult._
+    def parse = j.ReadStreamEventsCompleted.parseFrom
 
-    def provider = proto.ReadStreamEventsCompleted
-
-    def error(x: EnumVal): Option[EsError] = condOpt(x) {
+    def error(x: ReadStreamResult): Option[EsError] = condOpt(x) {
       case NoStream      => EsError.StreamNotFound
       case StreamDeleted => EsError.StreamDeleted
       case Error         => EsError.Error
       case AccessDenied  => EsError.AccessDenied
     }
 
-    def fromProto(x: proto.ReadStreamEventsCompleted) = x.`result` match {
+    def fromProto(x: j.ReadStreamEventsCompleted) = x.getResult match {
       case Success => Try(ReadStreamEventsCompleted(
-        events = x.`events`.map(EventReader.fromProto).toList,
-        nextEventNumber = EventNumberConverter.to(x.`nextEventNumber`),
-        lastEventNumber = EventNumber(x.`lastEventNumber`),
-        endOfStream = x.`isEndOfStream`,
-        lastCommitPosition = x.`lastCommitPosition`,
+        events = x.getEventsList.asScala.map(EventReader.fromProto).toList,
+        nextEventNumber = EventNumberConverter.to(x.getNextEventNumber),
+        lastEventNumber = EventNumber(x.getLastEventNumber),
+        endOfStream = x.getIsEndOfStream,
+        lastCommitPosition = x.getLastCommitPosition,
         direction = direction))
 
       case NotModified => failure(new IllegalArgumentException("ReadStreamEventsCompleted.NotModified is not supported"))
 
-      case _           => failure(error(x.`result`), x.`error`)
+      case e           => failure(error(e), option(x.hasError, x.getError))
     }
   }
 
@@ -238,34 +264,36 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
   implicit object ReadAllEventsWriter extends ProtoWriter[ReadAllEvents] {
     def toProto(x: ReadAllEvents) = {
       val (commitPosition, preparePosition) = PositionConverter.from(x.fromPosition)
-      proto.ReadAllEvents(
-        `commitPosition` = commitPosition,
-        `preparePosition` = preparePosition,
-        `maxCount` = x.maxCount,
-        `resolveLinkTos` = x.resolveLinkTos,
-        `requireMaster` = x.requireMaster)
+      val builder = j.ReadAllEvents.newBuilder()
+      builder.setCommitPosition(commitPosition)
+      builder.setPreparePosition(preparePosition)
+      builder.setMaxCount(x.maxCount)
+      builder.setResolveLinkTos(x.resolveLinkTos)
+      builder.setRequireMaster(x.requireMaster)
+      builder
     }
   }
 
   abstract class ReadAllEventsCompletedReader(direction: ReadDirection)
-      extends ProtoTryReader[ReadAllEventsCompleted, proto.ReadAllEventsCompleted] {
-    import proto.ReadAllEventsCompleted.ReadAllResult._
+      extends ProtoTryReader[ReadAllEventsCompleted, j.ReadAllEventsCompleted] {
+    import j.ReadAllEventsCompleted.ReadAllResult._
+    import j.ReadAllEventsCompleted.ReadAllResult
 
-    def provider = proto.ReadAllEventsCompleted
+    def parse = j.ReadAllEventsCompleted.parseFrom
 
-    def error(x: EnumVal): Option[EsError] = condOpt(x) {
+    def error(x: ReadAllResult): Option[EsError] = condOpt(x) {
       case Error        => EsError.Error
       case AccessDenied => EsError.AccessDenied
     }
 
-    def fromProto(x: proto.ReadAllEventsCompleted) = x.`result` getOrElse Success match {
+    def fromProto(x: j.ReadAllEventsCompleted) = (if (x.hasResult) x.getResult else Success) match {
       case Success => Try(ReadAllEventsCompleted(
-        position = Position(commitPosition = x.`commitPosition`, preparePosition = x.`preparePosition`),
-        events = x.`events`.toList.map(IndexedEventReader.fromProto),
-        nextPosition = Position(commitPosition = x.`nextCommitPosition`, preparePosition = x.`nextPreparePosition`),
+        position = Position(commitPosition = x.getCommitPosition, preparePosition = x.getPreparePosition),
+        events = x.getEventsList.asScala.map(IndexedEventReader.fromProto).toList,
+        nextPosition = Position(commitPosition = x.getNextCommitPosition, preparePosition = x.getNextPreparePosition),
         direction = direction))
       case NotModified => failure(new IllegalArgumentException("ReadAllEventsCompleted.NotModified is not supported"))
-      case result      => failure(error(result), x.`error`)
+      case result      => failure(error(result), option(x.hasError, x.getError))
     }
   }
 
@@ -278,68 +306,66 @@ trait EventStoreProtoFormats extends proto.DefaultProtoFormats with DefaultForma
         case EventStream.All    => ""
         case id: EventStream.Id => id.streamId
       }
-      proto.SubscribeToStream(
-        `eventStreamId` = streamId,
-        `resolveLinkTos` = x.resolveLinkTos)
+      val builder = j.SubscribeToStream.newBuilder()
+      builder.setEventStreamId(streamId)
+      builder.setResolveLinkTos(x.resolveLinkTos)
+      builder
     }
   }
 
-  implicit object SubscribeCompletedReader extends ProtoReader[SubscribeCompleted, proto.SubscriptionConfirmation] {
+  implicit object SubscribeCompletedReader extends ProtoReader[SubscribeCompleted, j.SubscriptionConfirmation] {
 
-    def provider = proto.SubscriptionConfirmation
+    def parse = j.SubscriptionConfirmation.parseFrom
 
-    def fromProto(x: proto.SubscriptionConfirmation) = x.`lastEventNumber` match {
-      case None => SubscribeToAllCompleted(x.`lastCommitPosition`)
+    def fromProto(x: j.SubscriptionConfirmation) = option(x.hasLastEventNumber, x.getLastEventNumber) match {
+      case None => SubscribeToAllCompleted(x.getLastCommitPosition)
       case Some(eventNumber) => SubscribeToStreamCompleted(
-        lastCommit = x.`lastCommitPosition`,
+        lastCommit = x.getLastCommitPosition,
         lastEventNumber = if (eventNumber == -1) None else Some(EventNumber(eventNumber)))
     }
   }
 
-  implicit object StreamEventAppearedReader extends ProtoReader[StreamEventAppeared, proto.StreamEventAppeared] {
-
-    def provider = proto.StreamEventAppeared
-
-    def fromProto(x: proto.StreamEventAppeared) =
-      StreamEventAppeared(event = IndexedEventReader.fromProto(x.`event`))
+  implicit object StreamEventAppearedReader extends ProtoReader[StreamEventAppeared, j.StreamEventAppeared] {
+    def parse = j.StreamEventAppeared.parseFrom
+    def fromProto(x: j.StreamEventAppeared) = StreamEventAppeared(event = IndexedEventReader.fromProto(x.getEvent))
   }
 
-  implicit object SubscriptionDroppedReader extends ProtoTryReader[UnsubscribeCompleted.type, proto.SubscriptionDropped] {
+  implicit object SubscriptionDroppedReader extends ProtoTryReader[UnsubscribeCompleted.type, j.SubscriptionDropped] {
+    import j.SubscriptionDropped.SubscriptionDropReason._
 
-    import proto.SubscriptionDropped.SubscriptionDropReason._
+    def parse = j.SubscriptionDropped.parseFrom
 
-    def provider = proto.SubscriptionDropped
-
-    def fromProto(x: proto.SubscriptionDropped) = x.`reason` match {
-      case None | Some(Unsubscribed) => Try(UnsubscribeCompleted)
-      case Some(AccessDenied)        => failure(Some(EsError.AccessDenied), None)
-      case _                         => failure(None, None)
+    def fromProto(x: j.SubscriptionDropped) = {
+      (if (x.hasReason) x.getReason else Unsubscribed) match {
+        case Unsubscribed => Try(UnsubscribeCompleted)
+        case AccessDenied => failure(Some(EsError.AccessDenied), None)
+      }
     }
   }
 
-  implicit object NotHandledReader extends ProtoReader[EsError.NotHandled, proto.NotHandled] {
-    import proto.NotHandled.NotHandledReason._
+  implicit object NotHandledReader extends ProtoReader[EsError.NotHandled, j.NotHandled] {
+    import j.NotHandled.NotHandledReason._
     import EsError.NotHandled
 
-    def provider = proto.NotHandled
+    def parse = j.NotHandled.parseFrom
 
-    def masterInfo(x: proto.NotHandled.MasterInfo): NotHandled.MasterInfo = NotHandled.MasterInfo(
-      tcpAddress = new InetSocketAddress(x.`externalTcpAddress`, x.`externalTcpPort`),
-      httpAddress = new InetSocketAddress(x.`externalHttpAddress`, x.`externalHttpPort`),
+    def masterInfo(x: j.NotHandled.MasterInfo): NotHandled.MasterInfo = NotHandled.MasterInfo(
+      tcpAddress = new InetSocketAddress(x.getExternalTcpAddress, x.getExternalTcpPort),
+      httpAddress = new InetSocketAddress(x.getExternalHttpAddress, x.getExternalHttpPort),
       tcpSecureAddress = for {
-        t <- x.`externalSecureTcpAddress`
-        p <- x.`externalSecureTcpPort`
+        t <- option(x.hasExternalSecureTcpAddress, x.getExternalSecureTcpAddress)
+        p <- option(x.hasExternalSecureTcpPort, x.getExternalSecureTcpPort)
       } yield new InetSocketAddress(t, p))
 
-    def masterInfo(x: Option[proto.NotHandled.MasterInfo]): NotHandled.MasterInfo = {
+    def masterInfo(x: Option[j.NotHandled.MasterInfo]): NotHandled.MasterInfo = {
       require(x.isDefined, "additionalInfo is not provided for NotHandled.NotMaster")
       masterInfo(x.get)
     }
 
-    def fromProto(x: proto.NotHandled) = NotHandled(x.`reason` match {
+    def fromProto(x: j.NotHandled) = NotHandled(x.getReason match {
       case NotReady  => NotHandled.NotReady
       case TooBusy   => NotHandled.TooBusy
-      case NotMaster => NotHandled.NotMaster(masterInfo(x.`additionalInfo`))
+      case NotMaster => NotHandled.NotMaster(masterInfo(x.getAdditionalInfo))
       case reason    => throw new IllegalArgumentException(s"NotHandled.$reason is not supported")
     })
   }

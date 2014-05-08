@@ -33,7 +33,7 @@ message EventRecord {
 }
 
 message ResolvedIndexedEvent {
-	required EventRecord event = 1;
+  optional EventRecord event = 1; // marked as optional to make compatible with protoc 2.5.0
 	optional EventRecord link = 2;
 }
 

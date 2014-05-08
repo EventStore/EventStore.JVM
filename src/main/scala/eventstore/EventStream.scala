@@ -16,7 +16,7 @@ object EventStream {
     def isSystem = true
     def isMetadata = false
 
-    override lazy val toString = "Stream.All"
+    override def toString = "Stream.All"
   }
 
   sealed trait Id extends EventStream {

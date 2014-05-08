@@ -1,7 +1,7 @@
 import sbt._
 import Keys._
-import scalabuff.ScalaBuffPlugin._
 import sbtrelease.ReleasePlugin._
+import sbtprotobuf.ProtobufPlugin.protobufSettings
 
 object Build extends Build {
   lazy val basicSettings = Seq(
@@ -14,9 +14,7 @@ object Build extends Build {
     description          := "Event Store JVM Client",
     startYear            := Some(2013),
     scalacOptions        := Seq("-encoding", "UTF-8", "-unchecked", "-deprecation", "-feature"),
-    libraryDependencies ++= Seq(Akka.actor, Akka.testkit, scalabuff, junit, specs2, mockito, codec, typesafeConfig))
-
-  val scalabuffVer = "1.3.6"
+    libraryDependencies ++= Seq(Akka.actor, Akka.testkit, protobuf, specs2, mockito, codec, typesafeConfig))
 
   object Akka {
     lazy val actor   = apply("actor")
@@ -27,8 +25,7 @@ object Build extends Build {
 
   val typesafeConfig = "com.typesafe" % "config" % "1.2.0"
   val codec          = "org.apache.directory.studio" % "org.apache.commons.codec" % "1.8"
-  val scalabuff      = "net.sandrogrzicic" %% "scalabuff-runtime" % scalabuffVer
-  val junit          = "junit" % "junit" % "4.11" % "test"
+  val protobuf       = "com.google.protobuf" % "protobuf-java" % "2.5.0"
   val specs2         = "org.specs2" %% "specs2" % "2.3.4" % "test"
   val mockito        = "org.mockito" % "mockito-all" % "1.9.5" % "test"
 
@@ -40,12 +37,11 @@ object Build extends Build {
   lazy val root = Project(
     "eventstore-client",
     file("."),
-    settings = basicSettings ++ Defaults.defaultSettings ++ releaseSettings ++ scalabuffSettings ++ Format.settings ++ Publish.settings)
-    .configs(ScalaBuff, IntegrationTest)
+    settings = basicSettings ++ Defaults.defaultSettings ++ releaseSettings ++ protobufSettings ++ Format.settings ++ Publish.settings)
+    .configs(IntegrationTest)
     .settings(inConfig(IntegrationTest)(Defaults.testTasks): _*)
     .settings(
     testOptions       in Test            := Seq(Tests.Filter(specFilter)),
     testOptions       in IntegrationTest := Seq(Tests.Filter(itFilter)),
-    parallelExecution in IntegrationTest := false,
-    scalabuffVersion := scalabuffVer)
+    parallelExecution in IntegrationTest := false)
 }
