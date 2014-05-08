@@ -38,7 +38,7 @@ object Build extends Build {
   lazy val root = Project(
     "eventstore-client",
     file("."),
-    settings = basicSettings ++ Defaults.defaultSettings ++ releaseSettings ++ protobufSettings ++ Format.settings ++ Publish.settings)
+    settings = basicSettings ++ Defaults.defaultSettings ++ releaseSettings ++ protobufSettings ++ Scalariform.settings ++ Publish.settings)
     .configs(IntegrationTest)
     .settings(inConfig(IntegrationTest)(Defaults.testTasks): _*)
     .settings(
