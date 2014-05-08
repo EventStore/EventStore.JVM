@@ -40,7 +40,7 @@ case class Content(value: ByteString = ByteString.empty, contentType: ContentTyp
   extends BetterToString
 
 object Content {
-  val empty = Content()
+  val empty: Content = Content()
 
   def apply(content: String): Content = Content(ByteString(content))
 
