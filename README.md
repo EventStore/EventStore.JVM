@@ -7,11 +7,11 @@
 <table border="0">
   <tr>
     <td><a href="http://www.scala-lang.org">Scala</a> </td>
-    <td>2.10.4</td>
+    <td>2.10.4/2.11.0</td>
   </tr>
   <tr>
     <td><a href="http://akka.io">Akka</a> </td>
-    <td>2.2.4</td>
+    <td>2.3.2</td>
   </tr>
 </table>
 
@@ -398,12 +398,12 @@ object EsConnectionExample extends App {
 ```xml
     <dependency>
         <groupId>com.geteventstore</groupId>
-        <artifactId>eventstore-client_2.10</artifactId>
-        <version>0.3.1</version>
+        <artifactId>eventstore-client_2.11</artifactId>
+        <version>0.4</version>
     </dependency>
 ```
 
 * Sbt
 ```scala
-    libraryDependencies += "com.geteventstore" % "eventstore-client_2.10" % "0.3.1"
+    libraryDependencies += "com.geteventstore" %% "eventstore-client" % "0.4"
 ```
