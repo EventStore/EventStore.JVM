@@ -1,12 +1,9 @@
 import sbt._
 import Keys._
-import xerial.sbt.Sonatype.SonatypeKeys._
 import xerial.sbt.Sonatype.sonatypeSettings
 
 object Publish {
-  lazy val settings = sonatypeSettings ++ Seq(
-    profileName := "t3hnar",
-    pomExtra :=
+  lazy val settings = sonatypeSettings :+ (pomExtra :=
      <scm>
       <url>git@github.com:EventStore/EventStore.JVM.git</url>
       <connection>scm:git:git@github.com:EventStore/EventStore.JVM.git</connection>
