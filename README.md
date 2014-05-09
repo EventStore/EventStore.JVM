@@ -2,8 +2,6 @@
 
 **JVM Client works nicely with EventStore 2.0.1**
 
-**JVM Client is not compatible with Akka 2.3.x series**
-
 <table border="0">
   <tr>
     <td><a href="http://www.scala-lang.org">Scala</a> </td>
