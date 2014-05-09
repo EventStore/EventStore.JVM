@@ -397,11 +397,11 @@ object EsConnectionExample extends App {
     <dependency>
         <groupId>com.geteventstore</groupId>
         <artifactId>eventstore-client_2.11</artifactId>
-        <version>0.4</version>
+        <version>0.4.0</version>
     </dependency>
 ```
 
 * Sbt
 ```scala
-    libraryDependencies += "com.geteventstore" %% "eventstore-client" % "0.4"
+    libraryDependencies += "com.geteventstore" %% "eventstore-client" % "0.4.0"
 ```
