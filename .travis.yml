@@ -2,3 +2,17 @@ language: scala
 scala:
   - "2.10.4"
   - "2.11.0"
+install:
+  - sudo apt-get install build-essential
+  - mkdir tmp
+  - cd tmp
+  - wget http://protobuf.googlecode.com/files/protobuf-2.5.0.tar.gz 
+  - tar xzvf protobuf-2.5.0.tar.gz
+  - cd protobuf-2.5.0
+  - ./configure
+  - make
+  - make check
+  - sudo make install
+  - sudo ldconfig
+  - protoc --version
+  - cd ./../../
