@@ -115,7 +115,7 @@ case class ReadEventCompleted(event: Event) extends In
 case class ReadStreamEvents(
     streamId: EventStream.Id,
     fromNumber: EventNumber = EventNumber.First,
-    maxCount: Int = 500,
+    maxCount: Int = Settings.readBatchSize,
     direction: ReadDirection = ReadDirection.Forward,
     resolveLinkTos: Boolean = false,
     requireMaster: Boolean = true) extends Out {
@@ -143,7 +143,7 @@ case class ReadStreamEventsCompleted(
 
 case class ReadAllEvents(
     fromPosition: Position = Position.First,
-    maxCount: Int = 500,
+    maxCount: Int = Settings.readBatchSize,
     direction: ReadDirection = ReadDirection.Forward,
     resolveLinkTos: Boolean = false,
     requireMaster: Boolean = true) extends Out {
