@@ -7,7 +7,7 @@ object Build extends Build {
   lazy val basicSettings = Seq(
     name                 := "eventstore-client",
     organization         := "com.geteventstore",
-    scalaVersion         := "2.10.4",
+    scalaVersion         := "2.11.0",
     crossScalaVersions   := Seq("2.10.4", "2.11.0"),
     licenses             := Seq("BSD 3-Clause" -> url("http://raw.github.com/EventStore/EventStore.JVM/master/LICENSE")),
     homepage             := Some(new URL("http://github.com/EventStore/EventStore.JVM")),
