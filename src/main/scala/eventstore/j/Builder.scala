@@ -117,7 +117,7 @@ object Builder {
     self: T =>
 
     object MaxCountSnippet extends MaxCountSnippetI[T] {
-      var value = Settings.readBatchSize
+      var value = Settings.ReadBatchSize
 
       def maxCount(x: Int) = set {
         value = x

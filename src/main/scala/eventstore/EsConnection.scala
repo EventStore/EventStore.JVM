@@ -12,7 +12,7 @@ import util.ActorCloseable
 class EsConnection(
     connection: ActorRef,
     factory: ActorRefFactory,
-    operationTimeout: FiniteDuration = Settings.default.operationTimeout) {
+    operationTimeout: FiniteDuration = Settings.Default.operationTimeout) {
   implicit val timeout = Timeout(operationTimeout)
 
   def future[OUT <: Out, IN <: In](out: OUT, credentials: Option[UserCredentials] = None)(
@@ -86,7 +86,7 @@ class EsConnection(
 }
 
 object EsConnection {
-  def apply(system: ActorSystem, settings: Settings = Settings.default): EsConnection = new EsConnection(
+  def apply(system: ActorSystem, settings: Settings = Settings.Default): EsConnection = new EsConnection(
     connection = system.actorOf(ConnectionActor.props(settings)),
     factory = system,
     operationTimeout = settings.operationTimeout)

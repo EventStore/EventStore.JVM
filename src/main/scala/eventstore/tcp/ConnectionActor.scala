@@ -10,7 +10,7 @@ import scala.util.{ Failure, Success }
 import util.{ CancellableAdapter, BidirectionalMap }
 
 object ConnectionActor {
-  def props(settings: Settings = Settings.default): Props = Props(classOf[ConnectionActor], settings)
+  def props(settings: Settings = Settings.Default): Props = Props(classOf[ConnectionActor], settings)
 
   case object Reconnected
   case object WaitReconnected
@@ -191,7 +191,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       def reconnect(reconnectionDelay: FiniteDuration): Reconnecting = {
         connect("reconnecting", reconnectionDelay)
         val delay =
-          if (reconnectionDelay == Duration.Zero) Settings.default.reconnectionDelayMin
+          if (reconnectionDelay == Duration.Zero) Settings.Default.reconnectionDelayMin
           else {
             val x = reconnectionDelay * 2
             if (x > reconnectionDelayMax) reconnectionDelayMax else x

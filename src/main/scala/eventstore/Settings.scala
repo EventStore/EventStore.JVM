@@ -17,9 +17,9 @@ case class Settings(
   backpressure: BackpressureSettings = BackpressureSettings())
 
 object Settings {
-  lazy val config: Config = ConfigFactory.load()
-  lazy val default: Settings = Settings(config)
-  lazy val readBatchSize = config.getInt("eventstore.read-batch-size")
+  private lazy val config: Config = ConfigFactory.load()
+  lazy val Default: Settings = Settings(config)
+  lazy val ReadBatchSize: Int = config.getInt("eventstore.read-batch-size")
 
   def apply(conf: Config): Settings = {
     def apply(conf: Config): Settings = {
@@ -45,7 +45,7 @@ object Settings {
   /**
    * Java API
    */
-  def getInstance(): Settings = default
+  def getInstance(): Settings = Default
 }
 
 /**
