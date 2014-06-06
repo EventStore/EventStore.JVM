@@ -21,13 +21,13 @@ object Build extends Build {
     val actor   = apply("actor")
     val testkit = apply("testkit") % "test"
 
-    private def apply(x: String) = "com.typesafe.akka" %% "akka-%s".format(x) % "2.3.2"
+    private def apply(x: String) = "com.typesafe.akka" %% "akka-%s".format(x) % "2.3.3"
   }
 
   val typesafeConfig = "com.typesafe" % "config" % "1.2.1"
   val codec          = "org.apache.directory.studio" % "org.apache.commons.codec" % "1.8"
   val protobuf       = "com.google.protobuf" % "protobuf-java" % "2.5.0"
-  val specs2         = "org.specs2" %% "specs2" % "2.3.11" % "test"
+  val specs2         = "org.specs2" %% "specs2" % "2.3.12" % "test"
   val mockito        = "org.mockito" % "mockito-all" % "1.9.5" % "test"
 
   def itFilter(name: String): Boolean = name endsWith "ITest"
