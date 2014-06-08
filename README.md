@@ -390,6 +390,16 @@ object EsConnectionExample extends App {
 }
 ```
 
+### EventStoreExtension
+
+Most common use case is to have a single Event Store connection per application.
+Thus you can use our akka extension, it will make sure you have a single instance of connection actor.
+  
+```scala  
+EventStoreExtension(system).actor ! ReadEvent(EventStream("stream"))
+EventStoreExtension(system).connection.future(ReadEvent(EventStream("stream")))
+```
+
 ## Setup
 
 * Maven:
