@@ -9,7 +9,7 @@
   </tr>
   <tr>
     <td><a href="http://akka.io">Akka</a> </td>
-    <td>2.3.2</td>
+    <td>2.3.3</td>
   </tr>
 </table>
 
@@ -407,11 +407,11 @@ EventStoreExtension(system).connection.future(ReadEvent(EventStream("stream")))
     <dependency>
         <groupId>com.geteventstore</groupId>
         <artifactId>eventstore-client_2.11</artifactId>
-        <version>0.4.0</version>
+        <version>0.5.0</version>
     </dependency>
 ```
 
 * Sbt
 ```scala
-    libraryDependencies += "com.geteventstore" %% "eventstore-client" % "0.4.0"
+    libraryDependencies += "com.geteventstore" %% "eventstore-client" % "0.5.0"
 ```
