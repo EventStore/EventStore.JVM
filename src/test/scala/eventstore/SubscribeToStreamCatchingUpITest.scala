@@ -1,11 +1,12 @@
 package eventstore
 
-import akka.actor.{ SupervisorStrategy, Actor, ActorRef }
+import akka.actor.ActorRef
 import akka.testkit.{ TestKitBase, TestProbe, TestActorRef }
 import akka.actor.Status.Failure
 import scala.concurrent.duration._
 
 class SubscribeToStreamCatchingUpITest extends TestConnection {
+  sequential
 
   "subscribe catching up" should {
 
@@ -141,18 +142,13 @@ class SubscribeToStreamCatchingUpITest extends TestConnection {
       resolveLinkTos: Boolean = false,
       client: ActorRef = testActor) = {
 
-      class Supervisor extends Actor {
-        override def supervisorStrategy = SupervisorStrategy.stoppingStrategy
-        def receive = PartialFunction.empty
-      }
-
       val a = TestActorRef(StreamSubscriptionActor.props(
         connection = actor,
         client = client,
         streamId = streamId,
         fromNumberExclusive = fromNumberExclusive,
         resolveLinkTos = resolveLinkTos,
-        readBatchSize = 500), TestActorRef(new Supervisor), "")
+        readBatchSize = 500))
       watch(a)
       a
     }
