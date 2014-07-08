@@ -41,7 +41,7 @@ object EsError {
 }
 
 case class EsException(reason: EsError, message: Option[String] = None)
-    extends Exception(message getOrElse null, null, false, false) {
+    extends Exception(message.orNull, null, false, false) {
 
   override def toString = {
     val body = message.fold(reason.toString)(x => s"$reason, $x")
