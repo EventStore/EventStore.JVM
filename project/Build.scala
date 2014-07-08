@@ -33,12 +33,12 @@ object Build extends Build {
   def itFilter(name: String): Boolean = name endsWith "ITest"
   def specFilter(name: String): Boolean = name endsWith "Spec"
 
-  lazy val IntegrationTest = config("integration") extend Test
+  lazy val IntegrationTest = config("it") extend Test
 
   lazy val root = Project(
     "eventstore-client",
     file("."),
-    settings = basicSettings ++ Defaults.defaultSettings ++ releaseSettings ++ protobufSettings ++ Scalariform.settings ++ Publish.settings)
+    settings = basicSettings ++ Defaults.coreDefaultSettings ++ releaseSettings ++ protobufSettings ++ Scalariform.settings ++ Publish.settings)
     .configs(IntegrationTest)
     .settings(inConfig(IntegrationTest)(Defaults.testTasks): _*)
     .settings(
