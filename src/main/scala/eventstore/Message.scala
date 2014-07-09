@@ -48,10 +48,10 @@ case class WriteEvents(
 
 object WriteEvents {
 
-  object Metadata {
+  object StreamMetadata {
     def apply(
       streamId: EventStream.Id,
-      data: Content,
+      data: String,
       expectedVersion: ExpectedVersion = ExpectedVersion.Any,
       requireMaster: Boolean = true): WriteEvents = WriteEvents(
       streamId match {

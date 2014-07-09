@@ -54,7 +54,7 @@ object Content {
   object Json {
     def apply(content: String): Content = Content(ByteString(content), ContentType.Json)
 
-    def unapply(content: Content): Option[String] = PartialFunction.condOpt(content) {
+    def unapply(content: Content): Option[String] = condOpt(content) {
       case Content(x, ContentType.Json) => x.utf8String
     }
   }
@@ -87,11 +87,11 @@ object EventData {
   }
 
   object StreamMetadata {
-    def apply(data: Content = Content.empty, eventId: Uuid = randomUuid): EventData =
-      EventData(SystemEventType.metadata, data = data)
+    def apply(data: String, eventId: Uuid = randomUuid): EventData =
+      EventData(SystemEventType.metadata, data = Content.Json(data))
 
-    def unapply(x: EventData): Option[Content] = condOpt(x) {
-      case EventData(SystemEventType.metadata, _, data, _) => data
+    def unapply(x: EventData): Option[String] = condOpt(x) {
+      case EventData(SystemEventType.metadata, _, Content.Json(data), _) => data
     }
   }
 }
