@@ -7,7 +7,7 @@ class EventStoreExtension(system: ActorSystem) extends Extension {
 
   def settings: Settings = Settings.Default
 
-  val actor: ActorRef = system.actorOf(ConnectionActor.props(settings))
+  val actor: ActorRef = system.actorOf(ConnectionActor.props(settings), "eventstore-connection")
 
   val connection: EsConnection = new EsConnection(actor, system, settings.operationTimeout)
 }
