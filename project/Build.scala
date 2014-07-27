@@ -15,9 +15,10 @@ object Build extends Build {
     description          := "Event Store JVM Client",
     startYear            := Some(2013),
     scalacOptions        := Seq("-encoding", "UTF-8", "-unchecked", "-deprecation", "-feature", "-Xlint"),
+    resolvers += "spray" at "http://repo.spray.io/",
     libraryDependencies ++= Seq(
       Akka.actor, Akka.testkit, protobuf, typesafeConfig, codec,
-      Specs2.core, Specs2.mock, mockito)
+      Specs2.core, Specs2.mock, mockito, Spray.json, Spray.client, codec)
   )
 
   object Akka {
@@ -32,6 +33,11 @@ object Build extends Build {
     val mock = apply("mock")
 
     private def apply(x: String) = "org.specs2" %% s"specs2-$x" % "2.4.11" % "test"
+  }
+
+  object Spray {
+    val client    = "io.spray" %% "spray-client" % "1.3.1"
+    val json      = "io.spray" %% "spray-json" % "1.2.6"
   }
 
   val typesafeConfig = "com.typesafe" % "config" % "1.2.1"

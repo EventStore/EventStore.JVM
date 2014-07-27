@@ -5,6 +5,22 @@ sealed trait NodeState {
 }
 
 object NodeState {
+
+  private val map: Map[String, NodeState] = Set(
+    Initializing,
+    Unknown,
+    PreReplica,
+    CatchingUp,
+    Clone,
+    Slave,
+    PreMaster,
+    Master,
+    Manager,
+    ShuttingDown,
+    Shutdown).map(x => x.toString -> x).toMap
+
+  def apply(x: String): NodeState = map.getOrElse(x, sys.error(s"No NodeState found for $x"))
+
   case object Initializing extends NodeState { def isReplica = false }
   case object Unknown extends NodeState { def isReplica = false }
   case object PreReplica extends NodeState { def isReplica = false }
