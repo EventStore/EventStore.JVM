@@ -415,3 +415,8 @@ EventStoreExtension(system).connection.future(ReadEvent(EventStream("stream")))
 ```scala
     libraryDependencies += "com.geteventstore" %% "eventstore-client" % "0.5.0"
 ```
+
+### Roadmap
+
+* Add support of EventStore cluster
+* Release against EventStore 3.0.0 when it is ready. 
