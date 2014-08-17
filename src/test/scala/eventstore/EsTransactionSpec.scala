@@ -66,7 +66,7 @@ class EsTransactionSpec extends ActorSpec {
 
   trait StartScope extends ActorScope {
     val transactionId = 0L
-    implicit val timeout = Timeout(500.millis)
+    implicit val timeout = Timeout(1.second)
     val exception = EsException(EsError.AccessDenied)
 
     def start = {
@@ -95,7 +95,7 @@ class EsTransactionSpec extends ActorSpec {
 
   implicit class RichFuture(self: Future[_]) {
     def mustTimeout = {
-      Await.result(self, 500.millis) must throwA[TimeoutException]
+      Await.result(self, 1.second) must throwA[TimeoutException]
     }
 
     def mustThrow(e: Throwable) = {
