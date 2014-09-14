@@ -65,9 +65,9 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
       val last = lastPosition
       val (linked, link) = linkedAndLink()
       newSubscription(Some(last), resolveLinkTos = false)
-      expectMsgType[IndexedEvent].event mustEqual linked
-      expectMsgType[IndexedEvent]
-      expectMsgType[IndexedEvent].event mustEqual link
+      expectIndexedEvent.event mustEqual linked
+      expectIndexedEvent
+      expectIndexedEvent.event mustEqual link
       fishForLiveProcessingStarted(last)
     }
 
@@ -75,9 +75,9 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
       val last = lastPosition
       val (linked, link) = linkedAndLink()
       newSubscription(Some(last), resolveLinkTos = true)
-      expectMsgType[IndexedEvent].event mustEqual linked
-      expectMsgType[IndexedEvent]
-      expectMsgType[IndexedEvent].event mustEqual ResolvedEvent(linked, link)
+      expectIndexedEvent.event mustEqual linked
+      expectIndexedEvent
+      expectIndexedEvent.event mustEqual ResolvedEvent(linked, link)
       fishForLiveProcessingStarted(last)
     }
 
@@ -85,18 +85,18 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
       newSubscription(Some(lastPosition), resolveLinkTos = false)
       fishForLiveProcessingStarted()
       val (linked, link) = linkedAndLink()
-      expectMsgType[IndexedEvent].event mustEqual linked
-      expectMsgType[IndexedEvent]
-      expectMsgType[IndexedEvent].event mustEqual link
+      expectIndexedEvent.event mustEqual linked
+      expectIndexedEvent
+      expectIndexedEvent.event mustEqual link
     }
 
     "catch link events if resolveLinkTos = true" in new SubscribeToAllCatchingUpScope {
       newSubscription(Some(lastPosition), resolveLinkTos = true)
       fishForLiveProcessingStarted()
       val (linked, link) = linkedAndLink()
-      expectMsgType[IndexedEvent].event mustEqual linked
-      expectMsgType[IndexedEvent]
-      expectMsgType[IndexedEvent].event mustEqual ResolvedEvent(linked, link)
+      expectIndexedEvent.event mustEqual linked
+      expectIndexedEvent
+      expectIndexedEvent.event mustEqual ResolvedEvent(linked, link)
     }
   }
 
@@ -122,7 +122,7 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
       def loop(events: List[EventData], position: Position): List[IndexedEvent] = events match {
         case Nil => Nil
         case head :: tail =>
-          val indexedEvent = testKit.expectMsgType[IndexedEvent]
+          val indexedEvent = testKit.expectIndexedEvent
           indexedEvent.position must beGreaterThanOrEqualTo(position)
           indexedEvent.event must beAnInstanceOf[EventRecord]
           if (indexedEvent.event.data == head) indexedEvent :: loop(tail, indexedEvent.position)
@@ -160,6 +160,12 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
         writeEventsCompleted(events, testKit = TestProbe())
       }
       events
+    }
+
+    def expectIndexedEvent: IndexedEvent = new RichTestKitBase(this).expectIndexedEvent
+
+    implicit class RichTestKitBase(self: TestKitBase) {
+      def expectIndexedEvent: IndexedEvent = self.expectMsgType[IndexedEvent].fixDate
     }
   }
 }

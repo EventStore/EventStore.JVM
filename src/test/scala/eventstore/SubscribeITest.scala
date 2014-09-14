@@ -30,7 +30,7 @@ class SubscribeITest extends TestConnection {
         case (event, index) =>
           val indexedEvent = expectStreamEventAppeared()
           indexedEvent.position.commitPosition must >(subscribed.lastCommit)
-          indexedEvent.event mustEqual EventRecord(streamId, EventNumber(index), event)
+          indexedEvent.event mustEqual EventRecord(streamId, EventNumber(index), event, Some(date))
       }
     }
 

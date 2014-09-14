@@ -1,5 +1,6 @@
 package eventstore
 
+import java.util.Date
 import ReadDirection._
 import akka.actor.Status.Failure
 import akka.testkit._
@@ -10,6 +11,7 @@ abstract class TestConnection extends util.ActorSpec {
 
   abstract class TestConnectionScope extends ActorScope {
     val streamId = newStreamId
+    val date = new Date()
 
     val streamMetadata = ByteString(getClass.getEnclosingClass.getSimpleName)
     val actor = TestActorRef(ConnectionActor.props())
@@ -46,9 +48,9 @@ abstract class TestConnection extends util.ActorSpec {
       event
     }
 
-    def append(x: EventData): EventRecord = EventRecord(
-      streamId,
-      writeEventsCompleted(List(x), testKit = TestProbe()).get.start, x)
+    def append(x: EventData): EventRecord = {
+      EventRecord(streamId, writeEventsCompleted(List(x), testKit = TestProbe()).get.start, x, Some(date))
+    }
 
     def linkedAndLink(): (EventRecord, EventRecord) = {
       val linked = append(newEventData.copy(eventType = "linked"))
@@ -74,7 +76,7 @@ abstract class TestConnection extends util.ActorSpec {
 
     def readEventCompleted(eventNumber: EventNumber, resolveLinkTos: Boolean = false) = {
       actor ! ReadEvent(streamId, eventNumber, resolveLinkTos = resolveLinkTos)
-      val event = expectMsgType[ReadEventCompleted].event
+      val event = expectMsgType[ReadEventCompleted].fixDate.event
       event.streamId mustEqual streamId
       if (!resolveLinkTos) event must beAnInstanceOf[EventRecord]
       if (eventNumber != EventNumber.Last) event.number mustEqual eventNumber
@@ -83,7 +85,7 @@ abstract class TestConnection extends util.ActorSpec {
 
     def readStreamEventsCompleted(fromEventNumber: EventNumber, maxCount: Int, resolveLinkTos: Boolean = false)(implicit direction: ReadDirection) = {
       actor ! ReadStreamEvents(streamId, fromEventNumber, maxCount, direction, resolveLinkTos = resolveLinkTos)
-      val result = expectMsgType[ReadStreamEventsCompleted]
+      val result = expectMsgType[ReadStreamEventsCompleted].fixDate
       result.direction mustEqual direction
 
       val events = result.events
@@ -139,7 +141,7 @@ abstract class TestConnection extends util.ActorSpec {
     }
 
     def expectStreamEventAppeared(testKit: TestKitBase = this) = {
-      val event = testKit.expectMsgType[StreamEventAppeared].event
+      val event = testKit.expectMsgType[StreamEventAppeared].fixDate.event
       event.event.streamId mustEqual streamId
       event
     }
@@ -156,7 +158,7 @@ abstract class TestConnection extends util.ActorSpec {
 
     def readAllEventsCompleted(position: Position, maxCount: Int, resolveLinkTos: Boolean = false)(implicit direction: ReadDirection) = {
       actor ! ReadAllEvents(position, maxCount, direction, resolveLinkTos = resolveLinkTos)
-      val result = expectMsgType[ReadAllEventsCompleted](10.seconds)
+      val result = expectMsgType[ReadAllEventsCompleted](10.seconds).fixDate
       result.direction mustEqual direction
 
       val events = result.events
@@ -196,6 +198,37 @@ abstract class TestConnection extends util.ActorSpec {
       allStreamsEvents(maxCount).map(_.event.data)
 
     def newStreamId: EventStream.Plain = EventStream.Plain(getClass.getEnclosingClass.getSimpleName + "-" + randomUuid.toString)
+
+    implicit class RichEventRecord(self: EventRecord) {
+      def fixDate: EventRecord = self.copy(created = Some(date))
+    }
+
+    implicit class RichEvent(self: Event) {
+      def fixDate: Event = self match {
+        case x: EventRecord   => x.fixDate
+        case x: ResolvedEvent => x.copy(linkedEvent = x.linkedEvent.fixDate, linkEvent = x.linkEvent.fixDate)
+      }
+    }
+
+    implicit class RichIndexedEvent(self: IndexedEvent) {
+      def fixDate: IndexedEvent = self.copy(event = self.event.fixDate)
+    }
+
+    implicit class RichReadAllEventsCompleted(self: ReadAllEventsCompleted) {
+      def fixDate: ReadAllEventsCompleted = self.copy(events = self.events.map(_.fixDate))
+    }
+
+    implicit class RichReadStreamEventsCompleted(self: ReadStreamEventsCompleted) {
+      def fixDate: ReadStreamEventsCompleted = self.copy(events = self.events.map(_.fixDate))
+    }
+
+    implicit class RichStreamEventAppeared(self: StreamEventAppeared) {
+      def fixDate: StreamEventAppeared = self.copy(event = self.event.fixDate)
+    }
+
+    implicit class RichReadEventCompleted(self: ReadEventCompleted) {
+      def fixDate: ReadEventCompleted = self.copy(event = self.event.fixDate)
+    }
   }
 }
 

@@ -11,6 +11,7 @@ import scala.util.Try
 import scala.collection.JavaConverters._
 import java.net.InetSocketAddress
 import java.util.concurrent.TimeUnit
+import java.util.Date
 
 object EventStoreProtoFormats extends EventStoreProtoFormats
 
@@ -73,15 +74,17 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
 
     def parse = j.EventRecord.parseFrom
 
-    def fromProto(x: j.EventRecord) = EventRecord(
-      streamId = EventStream(x.getEventStreamId),
-      number = EventNumber(x.getEventNumber),
-      data = EventData(
-        eventType = x.getEventType,
-        eventId = uuid(x.getEventId),
-        data = Content(byteString(x.getData), ContentType(x.getDataContentType)),
-        metadata = Content(byteString(x.getMetadata), ContentType(x.getMetadataContentType))) /*,
-        created = x.`created` TODO*/ )
+    def fromProto(x: j.EventRecord) = {
+      EventRecord(
+        streamId = EventStream(x.getEventStreamId),
+        number = EventNumber(x.getEventNumber),
+        data = EventData(
+          eventType = x.getEventType,
+          eventId = uuid(x.getEventId),
+          data = Content(byteString(x.getData), ContentType(x.getDataContentType)),
+          metadata = Content(byteString(x.getMetadata), ContentType(x.getMetadataContentType))),
+        created = option(x.hasCreatedEpoch, new Date(x.getCreatedEpoch)))
+    }
   }
 
   implicit object IndexedEventReader extends ProtoReader[IndexedEvent, j.ResolvedEvent] {

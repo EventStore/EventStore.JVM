@@ -159,7 +159,9 @@ class SubscribeToStreamCatchingUpITest extends TestConnection {
       expectNoEvents()
     }
 
-    def expectEvent(x: Event, probe: TestKitBase = this) = probe.expectMsg(x)
+    def expectEvent(x: Event, probe: TestKitBase = this) = {
+      probe.expectMsgType[Event].fixDate mustEqual x
+    }
   }
 }
 
