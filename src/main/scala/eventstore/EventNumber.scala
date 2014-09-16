@@ -10,9 +10,7 @@ object EventNumber {
     case ReadDirection.Backward => Last
   }
 
-  def apply(eventNumber: Int): Exact = Exact(eventNumber)
-
-  def apply(expectedVersion: ExpectedVersion.Exact): Exact = Exact(expectedVersion.value)
+  def apply(eventNumber: Int): EventNumber = if (eventNumber < 0) Last else Exact(eventNumber)
 
   case object Last extends EventNumber {
     def compare(that: EventNumber) = that match {
@@ -38,6 +36,8 @@ object EventNumber {
 
   object Exact {
     implicit val ordering = Ordering.by[Exact, EventNumber](identity)
+
+    def apply(expectedVersion: ExpectedVersion.Exact): Exact = Exact(expectedVersion.value)
 
     def opt(proto: Int): Option[EventNumber.Exact] = if (proto >= 0) Some(Exact(proto)) else None
   }

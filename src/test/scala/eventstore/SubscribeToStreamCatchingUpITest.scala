@@ -23,7 +23,7 @@ class SubscribeToStreamCatchingUpITest extends TestConnection {
     }
 
     "be able to subscribe to non existing stream from number" in new SubscribeCatchingUpScope {
-      val subscriptionActor = newSubscription(Some(EventNumber(0)))
+      val subscriptionActor = newSubscription(Some(EventNumber.Exact(0)))
       append(newEventData)
       expectMsg(LiveProcessingStarted)
       expectNoEvents()
@@ -67,7 +67,7 @@ class SubscribeToStreamCatchingUpITest extends TestConnection {
     }
 
     "filter events and keep listening to new ones" in new SubscribeCatchingUpScope {
-      val subscriptionActor = newSubscription(Some(EventNumber(0)))
+      val subscriptionActor = newSubscription(Some(EventNumber.Exact(0)))
       expectMsg(LiveProcessingStarted)
       append(newEventData)
       val event = append(newEventData)
@@ -80,7 +80,7 @@ class SubscribeToStreamCatchingUpITest extends TestConnection {
     "filter events and keep listening to new ones" in new SubscribeCatchingUpScope {
       append(newEventData)
       val event = append(newEventData)
-      val subscriptionActor = newSubscription(Some(EventNumber(0)))
+      val subscriptionActor = newSubscription(Some(EventNumber.Exact(0)))
       expectEvent(event)
       expectMsg(LiveProcessingStarted)
       expectNoEvents()
@@ -91,7 +91,7 @@ class SubscribeToStreamCatchingUpITest extends TestConnection {
     "filter events and work if nothing was written after subscription" in new SubscribeCatchingUpScope {
       append(newEventData)
       val event = append(newEventData)
-      val subscriptionActor = newSubscription(Some(EventNumber(0)))
+      val subscriptionActor = newSubscription(Some(EventNumber.Exact(0)))
       expectEvent(event)
       expectMsg(LiveProcessingStarted)
       expectNoEvents()

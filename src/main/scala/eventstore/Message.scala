@@ -64,7 +64,9 @@ object WriteEvents {
   }
 }
 
-case class WriteEventsCompleted(numbersRange: Option[EventNumber.Range] = None) extends In
+case class WriteEventsCompleted(
+  numbersRange: Option[EventNumber.Range] = None,
+  position: Option[Position.Exact] = None) extends In
 
 // TODO check softDelete
 case class DeleteStream(
@@ -73,12 +75,7 @@ case class DeleteStream(
   requireMaster: Boolean = true,
   hardDelete: Boolean = false /*TODO*/ ) extends Out
 
-case object DeleteStreamCompleted extends In {
-  /**
-   * Java API
-   */
-  def getInstance = this
-}
+case class DeleteStreamCompleted(position: Option[Position.Exact] = None) extends In
 
 case class TransactionStart(
   streamId: EventStream.Id,
@@ -102,7 +99,10 @@ case class TransactionCommit(transactionId: Long, requireMaster: Boolean = true)
   require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
 }
 
-case class TransactionCommitCompleted(transactionId: Long, numbersRange: Option[EventNumber.Range] = None) extends In {
+case class TransactionCommitCompleted(
+    transactionId: Long,
+    numbersRange: Option[EventNumber.Range] = None,
+    position: Option[Position.Exact] = None) extends In {
   require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
 }
 

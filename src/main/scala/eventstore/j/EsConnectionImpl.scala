@@ -127,7 +127,7 @@ class EsConnectionImpl(connection: eventstore.EsConnection) extends EsConnection
     credentials: UserCredentials) = connection.subscribeToStreamFrom(
     EventStream(stream),
     observer,
-    Some(EventNumber(fromEventNumberExclusive)),
+    Some(EventNumber.Exact(fromEventNumberExclusive)),
     resolveLinkTos,
     Option(credentials))
 

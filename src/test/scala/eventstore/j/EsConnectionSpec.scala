@@ -185,12 +185,12 @@ class EsConnectionSpec extends util.ActorSpec {
     }
 
     "subscribe to all from" in new SubscriptionScope[IndexedEvent] {
-      val closeable = connection.subscribeToAllFrom(observer, Position(0), false, null)
+      val closeable = connection.subscribeToAllFrom(observer, Position.Exact(0), false, null)
       expectMsg(ReadAllEvents(Position(0)))
       val actor = lastSender
-      actor ! ReadAllEventsCompleted(List(event0, event1), Position(0), Position(2), ReadDirection.forward)
+      actor ! ReadAllEventsCompleted(List(event0, event1), Position.Exact(0), Position.Exact(2), ReadDirection.forward)
       expectMsg(ReadAllEvents(Position(2)))
-      actor ! ReadAllEventsCompleted(Nil, Position(2), Position(2), ReadDirection.forward)
+      actor ! ReadAllEventsCompleted(Nil, Position.Exact(2), Position.Exact(2), ReadDirection.forward)
       expectMsg(SubscribeTo(EventStream.All))
       actor ! SubscribeToAllCompleted(0)
       actor ! StreamEventAppeared(event2)
@@ -228,7 +228,7 @@ class EsConnectionSpec extends util.ActorSpec {
       def onLiveProcessingStart(subscription: Closeable) = client.ref ! LiveProcessingStart
     }
 
-    def newEvent(x: Int) = IndexedEvent(EventRecord(streamId, EventNumber(x), EventData("event-type")), Position(x))
+    def newEvent(x: Int) = IndexedEvent(EventRecord(streamId, EventNumber.Exact(x), EventData("event-type")), Position.Exact(x))
 
     val error = EsException(EsError.accessDenied)
 
@@ -244,7 +244,7 @@ class EsConnectionSpec extends util.ActorSpec {
     def readEventsCompleted(xs: IndexedEvent*) = ReadStreamEventsCompleted(
       xs.map(_.event).toList,
       EventNumber(0),
-      EventNumber(2),
+      EventNumber.Exact(2),
       endOfStream = true,
       0,
       ReadDirection.forward)

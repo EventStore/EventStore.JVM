@@ -11,7 +11,7 @@ class EsConnectionSpec extends ActorSpec with Mockito {
     }
 
     "delete stream" in new TestScope {
-      verifyOutIn(mock[DeleteStream], DeleteStreamCompleted)
+      verifyOutIn(mock[DeleteStream], DeleteStreamCompleted())
     }
 
     "transaction start" in new TestScope {

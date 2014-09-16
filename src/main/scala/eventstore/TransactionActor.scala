@@ -31,7 +31,7 @@ object TransactionActor {
   case object WriteCompleted
 
   case object Commit extends Command
-  case class CommitCompleted(range: Option[EventNumber.Range] = None)
+  case class CommitCompleted(range: Option[EventNumber.Range] = None, position: Option[Position.Exact] = None)
 
   /**
    * Java API
@@ -135,8 +135,8 @@ class TransactionActor(
     def commit(client: ActorRef): Receive = {
       toConnection(TransactionCommit(transactionId, requireMaster))
       common orElse failure(client) orElse {
-        case TransactionCommitCompleted(`transactionId`, range) =>
-          client ! CommitCompleted(range)
+        case TransactionCommitCompleted(`transactionId`, range, position) =>
+          client ! CommitCompleted(range, position)
           context stop self
       }
     }

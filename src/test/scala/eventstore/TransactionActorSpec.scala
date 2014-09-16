@@ -102,8 +102,8 @@ class TransactionActorSpec extends ActorSpec {
       expectNoMsgs()
       verifyTransactionId()
 
-      commitCompleted(Some(EventNumber.First to EventNumber(2)))
-      expectMsg(CommitCompleted(Some(EventNumber.First to EventNumber(2))))
+      commitCompleted(Some(EventNumber.First to EventNumber.Exact(2)))
+      expectMsg(CommitCompleted(Some(EventNumber.First to EventNumber.Exact(2))))
 
       expectTerminated
     }
@@ -116,8 +116,8 @@ class TransactionActorSpec extends ActorSpec {
       connection.expectMsg(kickOff.data)
       startCompleted
       expectCommit
-      commitCompleted(Some(EventNumber(0) to EventNumber(2)))
-      expectMsg(CommitCompleted(Some(EventNumber(0) to EventNumber(2))))
+      commitCompleted(Some(EventNumber.Exact(0) to EventNumber.Exact(2)))
+      expectMsg(CommitCompleted(Some(EventNumber.Exact(0) to EventNumber.Exact(2))))
       expectTerminated
       expectNoMsgs()
     }

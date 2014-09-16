@@ -48,7 +48,7 @@ object MarkerByte {
     0x85 -> readerTry[TransactionStartCompleted],
     0x87 -> readerTry[TransactionWriteCompleted],
     0x89 -> readerTry[TransactionCommitCompleted],
-    0x8B -> readerTry[DeleteStreamCompleted.type],
+    0x8B -> readerTry[DeleteStreamCompleted],
     0xB1 -> readerTry[ReadEventCompleted],
 
     0xB3 -> readerTry[ReadStreamEventsCompleted](ReadStreamEventsForwardCompletedReader),

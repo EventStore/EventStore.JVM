@@ -45,14 +45,14 @@ class WriteEventsITest extends TestConnection {
 
     "succeed writing with correct exp ver to existing stream" in new WriteEventsScope {
       appendEventToCreateStream()
-      writeEvent(newEventData, ExpectedVersion.First) must beSome(EventNumber.Range(EventNumber(1)))
-      writeEvent(newEventData, ExpectedVersion(1)) must beSome(EventNumber.Range(EventNumber(2)))
+      writeEvent(newEventData, ExpectedVersion.First) must beSome(EventNumber.Range(EventNumber.Exact(1)))
+      writeEvent(newEventData, ExpectedVersion(1)) must beSome(EventNumber.Range(EventNumber.Exact(2)))
     }
 
     "succeed writing with any exp ver to existing stream" in new WriteEventsScope {
       appendEventToCreateStream()
-      writeEvent(newEventData, Any) must beSome(EventNumber.Range(EventNumber(1)))
-      writeEvent(newEventData, Any) must beSome(EventNumber.Range(EventNumber(2)))
+      writeEvent(newEventData, Any) must beSome(EventNumber.Range(EventNumber.Exact(1)))
+      writeEvent(newEventData, Any) must beSome(EventNumber.Range(EventNumber.Exact(2)))
     }
 
     "fail writing with wrong exp ver to existing stream" in new WriteEventsScope {

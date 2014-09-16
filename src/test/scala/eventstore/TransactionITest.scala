@@ -58,7 +58,7 @@ class TransactionITest extends TestConnection {
       writeEventsCompleted(List(newEventData), testKit = probe)
 
       transactionWrite(newEventData)
-      transactionCommit(Some(EventNumber(3) to EventNumber(4)))
+      transactionCommit(Some(EventNumber.Exact(3) to EventNumber.Exact(4)))
       streamEvents must haveSize(5)
     }
 
@@ -93,7 +93,7 @@ class TransactionITest extends TestConnection {
 
       val transactionId2 = transactionStart(Any)
       transactionWrite(event)(transactionId2)
-      transactionCommit(Some(EventNumber.First to EventNumber.First))(transactionId2)
+      transactionCommit(Some(EventNumber.First to EventNumber.First), position = false)(transactionId2)
       streamEvents mustEqual List(event)
     }
   }
@@ -110,9 +110,12 @@ class TransactionITest extends TestConnection {
       expectMsg(TransactionWriteCompleted(transactionId))
     }
 
-    def transactionCommit(range: Option[EventNumber.Range] = None)(implicit transactionId: Long) {
+    def transactionCommit(range: Option[EventNumber.Range] = None, position: Boolean = true)(implicit transactionId: Long) {
       actor ! TransactionCommit(transactionId)
-      expectMsg(TransactionCommitCompleted(transactionId, range))
+      val result = expectMsgType[TransactionCommitCompleted]
+      result.transactionId mustEqual transactionId
+      result.numbersRange mustEqual range
+      if (position) result.position must beSome else result.position must beNone
     }
 
     def failTransactionCommit(reason: EsError)(implicit transactionId: Long) {

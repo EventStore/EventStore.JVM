@@ -7,7 +7,6 @@ import eventstore.*;
 import eventstore.j.EventDataBuilder;
 import eventstore.j.WriteEventsBuilder;
 import eventstore.tcp.ConnectionActor;
-import scala.Option;
 
 import java.util.UUID;
 
@@ -38,8 +37,7 @@ public class WriteEventExample {
         public void onReceive(Object message) throws Exception {
             if (message instanceof WriteEventsCompleted) {
                 final WriteEventsCompleted completed = (WriteEventsCompleted) message;
-                final Option<EventNumber.Range> range = completed.numbersRange();
-                log.info("range: {}", range);
+                log.info("range: {}, position: {}", completed.numbersRange(), completed.position());
             } else if (message instanceof Status.Failure) {
                 final Status.Failure failure = ((Status.Failure) message);
                 final EsException exception = (EsException) failure.cause();

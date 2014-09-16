@@ -3,10 +3,13 @@ package eventstore
 sealed trait Position extends Ordered[Position]
 
 object Position {
-  val First = Position(0)
+  val First: Exact = Position.Exact(0)
 
-  def apply(position: Long): Exact = Exact(position)
-  def apply(commitPosition: Long, preparePosition: Long): Exact = Exact(commitPosition, preparePosition)
+  def apply(position: Long): Position = Position(position, position)
+  def apply(commitPosition: Long, preparePosition: Long): Position = {
+    if (commitPosition < 0 || preparePosition < 0) Last
+    else Exact(commitPosition, preparePosition)
+  }
 
   def start(direction: ReadDirection): Position = direction match {
     case ReadDirection.Forward  => First

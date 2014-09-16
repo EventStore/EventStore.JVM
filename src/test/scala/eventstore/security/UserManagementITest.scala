@@ -46,7 +46,7 @@ class UserManagementITest extends ActorSpec {
       expectAuthenticated()
 
       actor ! DeleteStream(streamId)
-      expectMsg(DeleteStreamCompleted)
+      expectMsgType[DeleteStreamCompleted]
 
       notifyPasswordChanged()
 
@@ -90,10 +90,10 @@ class UserManagementITest extends ActorSpec {
                        |}""".stripMargin
 
       actor ! WriteEvents.StreamMetadata(streamId, metadata, ExpectedVersion.NoStream)
-      expectMsg(WriteEventsCompleted(Some(EventNumber.First to EventNumber.First)))
+      expectMsgType[WriteEventsCompleted].numbersRange must beSome(EventNumber.First to EventNumber.First)
 
       actor ! WriteEvents(streamId, List(userCreated(user)), ExpectedVersion.NoStream)
-      expectMsg(WriteEventsCompleted(Some(EventNumber.First to EventNumber.First)))
+      expectMsgType[WriteEventsCompleted].numbersRange must beSome(EventNumber.First to EventNumber.First)
     }
 
     def notifyPasswordChanged() {

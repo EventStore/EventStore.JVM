@@ -435,12 +435,12 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
 
     def expectEvent(x: IndexedEvent) = expectMsg(x)
 
-    def newEvent(x: Long) = IndexedEvent(mock[Event], Position(x))
+    def newEvent(x: Long) = IndexedEvent(mock[Event], Position.Exact(x))
 
     def readEvents(x: Long) = ReadAllEvents(Position(x), readBatchSize, Forward, resolveLinkTos = resolveLinkTos)
 
     def readCompleted(position: Long, next: Long, events: IndexedEvent*) =
-      ReadAllEventsCompleted(events.toList, Position(position), Position(next), Forward)
+      ReadAllEventsCompleted(events.toList, Position.Exact(position), Position.Exact(next), Forward)
 
     def position: Option[Position] = None
   }

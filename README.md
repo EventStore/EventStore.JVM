@@ -115,7 +115,6 @@ import eventstore.*;
 import eventstore.j.EventDataBuilder;
 import eventstore.j.WriteEventsBuilder;
 import eventstore.tcp.ConnectionActor;
-import scala.Option;
 
 import java.util.UUID;
 
@@ -146,8 +145,7 @@ public class WriteEventExample {
         public void onReceive(Object message) throws Exception {
             if (message instanceof WriteEventsCompleted) {
                 final WriteEventsCompleted completed = (WriteEventsCompleted) message;
-                final Option<EventNumber.Range> range = completed.numbersRange();
-                log.info("numbersRange: {}", numbersRange);
+                log.info("range: {}, position: {}", completed.numbersRange(), completed.position());
             } else if (message instanceof Status.Failure) {
                 final Status.Failure failure = ((Status.Failure) message);
                 final EsException exception = (EsException) failure.cause();
@@ -281,8 +279,8 @@ object WriteEventExample extends App {
 
   class WriteResult extends Actor with ActorLogging {
     def receive = {
-      case WriteEventsCompleted(numbersRange) =>
-        log.info("numbersRange: {}", numbersRange)
+      case WriteEventsCompleted(range, position) =>
+        log.info("range: {}, position: {}", range, position)
         context.system.shutdown()
 
       case Failure(e: EsException) =>

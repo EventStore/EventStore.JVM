@@ -16,10 +16,10 @@ abstract class TestConnection extends util.ActorSpec {
     val streamMetadata = ByteString(getClass.getEnclosingClass.getSimpleName)
     val actor = TestActorRef(ConnectionActor.props())
 
-    def deleteStream(expVer: ExpectedVersion.Existing = ExpectedVersion.Any) {
+    def deleteStream(expVer: ExpectedVersion.Existing = ExpectedVersion.Any): Unit = {
       val probe = TestProbe()
       actor.!(DeleteStream(streamId, expVer, hardDelete = true))(probe.ref)
-      probe.expectMsg(DeleteStreamCompleted)
+      probe.expectMsgType[DeleteStreamCompleted].position must beSome
     }
 
     def newEventData: EventData = EventData(
@@ -33,10 +33,12 @@ abstract class TestConnection extends util.ActorSpec {
       streamId: EventStream.Id = streamId,
       testKit: TestKitBase = this): Option[EventNumber.Range] = {
       actor.!(WriteEvents(streamId, events, expectedVersion))(testKit.testActor)
-      val range = testKit.expectMsgType[WriteEventsCompleted].numbersRange
+      val completed = testKit.expectMsgType[WriteEventsCompleted]
+      completed.position must beSome
+      val range = completed.numbersRange
       if (expectedVersion == ExpectedVersion.NoStream) events match {
         case Nil => range must beNone
-        case xs  => range must beSome(EventNumber.First to EventNumber(xs.size - 1))
+        case xs  => range must beSome(EventNumber.First to EventNumber.Exact(xs.size - 1))
       }
       range
     }
@@ -65,7 +67,7 @@ abstract class TestConnection extends util.ActorSpec {
       def loop(n: Int) {
         actor.!(WriteEvents(streamId, events, ExpectedVersion.Any))(testKit.testActor)
         testKit.expectMsgPF(10.seconds) {
-          case WriteEventsCompleted(_)                                  => true
+          case _: WriteEventsCompleted                                  => true
           case Failure(EsException(EsError.PrepareTimeout, _)) if n < 3 => loop(n + 1) // TODO
         }
       }

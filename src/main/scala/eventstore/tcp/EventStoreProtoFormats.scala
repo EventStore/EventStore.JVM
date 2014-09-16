@@ -23,8 +23,35 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
     def getMessage(): String
   }
 
-  def range(x: { def getFirstEventNumber(): Int; def getLastEventNumber(): Int }): Option[EventNumber.Range] =
+  type HasRange = {
+    def getFirstEventNumber(): Int
+    def getLastEventNumber(): Int
+  }
+
+  private def range(x: HasRange): Option[EventNumber.Range] =
     EventNumber.Range.opt(x.getFirstEventNumber(), x.getLastEventNumber())
+
+  type HasPosition = {
+    def getCommitPosition(): Long
+    def getPreparePosition(): Long
+  }
+
+  private def position(x: HasPosition): Position.Exact = {
+    Position.Exact(commitPosition = x.getCommitPosition(), preparePosition = x.getPreparePosition())
+  }
+
+  type HasPositionOpt = HasPosition {
+    def hasCommitPosition(): Boolean
+    def hasPreparePosition(): Boolean
+  }
+
+  private def positionOpt(x: HasPositionOpt): Option[Position.Exact] = {
+    if (x.hasCommitPosition() &&
+      x.hasPreparePosition() &&
+      x.getCommitPosition() >= 0 &&
+      x.getPreparePosition() >= 0) Some(position(x))
+    else None
+  }
 
   trait ProtoTryReader[T, P <: Message] extends ProtoReader[Try[T], P] {
     import scala.util.Failure
@@ -77,7 +104,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
     def fromProto(x: j.EventRecord) = {
       EventRecord(
         streamId = EventStream(x.getEventStreamId),
-        number = EventNumber(x.getEventNumber),
+        number = EventNumber.Exact(x.getEventNumber),
         data = EventData(
           eventType = x.getEventType,
           eventId = uuid(x.getEventId),
@@ -93,7 +120,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
 
     def fromProto(x: j.ResolvedEvent) = IndexedEvent(
       event = EventReader.event(x),
-      position = Position(commitPosition = x.getCommitPosition, preparePosition = x.getPreparePosition))
+      position = position(x))
   }
 
   implicit object EventReader extends ProtoReader[Event, j.ResolvedIndexedEvent] {
@@ -130,7 +157,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
 
   implicit object WriteEventsCompletedReader extends ProtoOperationReader[WriteEventsCompleted, j.WriteEventsCompleted] {
     def parse = j.WriteEventsCompleted.parseFrom
-    def success(x: j.WriteEventsCompleted) = WriteEventsCompleted(range(x))
+    def success(x: j.WriteEventsCompleted) = WriteEventsCompleted(range(x), positionOpt(x))
   }
 
   implicit object DeleteStreamWriter extends ProtoWriter[DeleteStream] {
@@ -145,9 +172,9 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
   }
 
   implicit object DeleteStreamCompletedReader
-      extends ProtoOperationReader[DeleteStreamCompleted.type, j.DeleteStreamCompleted] {
+      extends ProtoOperationReader[DeleteStreamCompleted, j.DeleteStreamCompleted] {
     def parse = j.DeleteStreamCompleted.parseFrom
-    def success(x: j.DeleteStreamCompleted) = DeleteStreamCompleted
+    def success(x: j.DeleteStreamCompleted) = DeleteStreamCompleted(positionOpt(x))
   }
 
   implicit object TransactionStartWriter extends ProtoWriter[TransactionStart] {
@@ -194,9 +221,15 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
   implicit object TransactionCommitCompletedReader
       extends ProtoOperationReader[TransactionCommitCompleted, j.TransactionCommitCompleted] {
     def parse = j.TransactionCommitCompleted.parseFrom
-    def success(x: j.TransactionCommitCompleted) = TransactionCommitCompleted(
-      x.getTransactionId,
-      numbersRange = range(x))
+    def success(x: j.TransactionCommitCompleted) = {
+
+      println(x.getResult.toString)
+      println(s"commit: ${option(x.hasCommitPosition, x.getCommitPosition)}, prepare: ${option(x.hasPreparePosition, x.getPreparePosition)}")
+      TransactionCommitCompleted(
+        transactionId = x.getTransactionId,
+        numbersRange = range(x),
+        position = positionOpt(x))
+    }
   }
 
   implicit object ReadEventWriter extends ProtoWriter[ReadEvent] {
@@ -258,8 +291,8 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
     def fromProto(x: j.ReadStreamEventsCompleted) = x.getResult match {
       case Success => Try(ReadStreamEventsCompleted(
         events = x.getEventsList.asScala.map(EventReader.fromProto).toList,
-        nextEventNumber = EventNumberConverter.to(x.getNextEventNumber),
-        lastEventNumber = EventNumber(x.getLastEventNumber),
+        nextEventNumber = EventNumber(x.getNextEventNumber),
+        lastEventNumber = EventNumber.Exact(x.getLastEventNumber),
         endOfStream = x.getIsEndOfStream,
         lastCommitPosition = x.getLastCommitPosition,
         direction = direction))
@@ -275,7 +308,10 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
 
   implicit object ReadAllEventsWriter extends ProtoWriter[ReadAllEvents] {
     def toProto(x: ReadAllEvents) = {
-      val (commitPosition, preparePosition) = PositionConverter.from(x.fromPosition)
+      val (commitPosition, preparePosition) = x.fromPosition match {
+        case Position.Last        => (-1L, -1L)
+        case Position.Exact(c, p) => (c, p)
+      }
       val builder = j.ReadAllEvents.newBuilder()
       builder.setCommitPosition(commitPosition)
       builder.setPreparePosition(preparePosition)
@@ -300,9 +336,9 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
 
     def fromProto(x: j.ReadAllEventsCompleted) = (if (x.hasResult) x.getResult else Success) match {
       case Success => Try(ReadAllEventsCompleted(
-        position = Position(commitPosition = x.getCommitPosition, preparePosition = x.getPreparePosition),
+        position = position(x),
         events = x.getEventsList.asScala.map(IndexedEventReader.fromProto).toList,
-        nextPosition = Position(commitPosition = x.getNextCommitPosition, preparePosition = x.getNextPreparePosition),
+        nextPosition = Position.Exact(commitPosition = x.getNextCommitPosition, preparePosition = x.getNextPreparePosition),
         direction = direction))
       case NotModified => failure(new IllegalArgumentException("ReadAllEventsCompleted.NotModified is not supported"))
       case result      => failure(error(result), option(x.hasError, x.getError))
@@ -333,7 +369,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
       case None => SubscribeToAllCompleted(x.getLastCommitPosition)
       case Some(eventNumber) => SubscribeToStreamCompleted(
         lastCommit = x.getLastCommitPosition,
-        lastEventNumber = if (eventNumber == -1) None else Some(EventNumber(eventNumber)))
+        lastEventNumber = EventNumber.Exact.opt(eventNumber))
     }
   }
 
@@ -429,20 +465,6 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
       case Last         => -1
     }
 
-    def to(x: Int) = Exact.opt(x) getOrElse Last
-  }
-
-  private object PositionConverter extends Converter[Position, (Long, Long)] {
-    import Position._
-
-    def from(x: Position) = x match {
-      case Last        => (-1, -1)
-      case Exact(c, p) => (c, p)
-    }
-
-    def to(x: (Long, Long)) = x match {
-      case (-1, -1) => Last
-      case (c, p)   => Exact(commitPosition = c, preparePosition = p)
-    }
+    def to(x: Int) = EventNumber(x)
   }
 }
