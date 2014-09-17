@@ -1,6 +1,5 @@
 package eventstore
 
-
 class ReadWriteMetadataITest extends TestConnection {
   "write metadata" should {
     "succeed if stream does not exist" in new MetadataScope {

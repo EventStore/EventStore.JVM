@@ -2,7 +2,7 @@ package eventstore
 
 import java.util.Date
 import util.BetterToString
-import scala.PartialFunction.condOpt
+import scala.PartialFunction.{ condOpt, cond }
 
 sealed trait Event extends Ordered[Event] {
   def streamId: EventStream.Id
@@ -22,8 +22,8 @@ sealed trait Event extends Ordered[Event] {
 
 object Event {
   object StreamDeleted {
-    def unapply(x: Event): Option[(EventStream.Id, Uuid)] = condOpt(x.record) {
-      case EventRecord(streamId, EventNumber.Exact(Int.MaxValue), EventData.StreamDeleted(uuid), _) => (streamId, uuid)
+    def unapply(x: Event): Boolean = cond(x.record) {
+      case EventRecord(_, EventNumber.Exact(Int.MaxValue), EventData.StreamDeleted(), _) => true
     }
   }
 
@@ -90,8 +90,8 @@ object EventData {
 
     def apply(eventId: Uuid): EventData = EventData(SystemEventType.streamDeleted, eventId, empty, empty)
 
-    def unapply(x: EventData): Option[Uuid] = condOpt(x) {
-      case EventData(SystemEventType.streamDeleted, eventId, `empty`, `empty`) => eventId
+    def unapply(x: EventData): Boolean = cond(x) {
+      case EventData(SystemEventType.streamDeleted, _, `empty`, `empty`) => true
     }
   }
 
