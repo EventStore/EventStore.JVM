@@ -7,9 +7,12 @@ sealed trait EventStream {
 
 object EventStream {
 
-  def apply(id: String): Id = Id(id)
+  def apply(id: String): EventStream = id match {
+    case null | "" => All
+    case _         => Id(id)
+  }
 
-  def apply(x: UserCredentials): Id = System(x)
+  def apply(x: UserCredentials): EventStream = Id(x)
 
   case object All extends EventStream {
 
@@ -28,6 +31,8 @@ object EventStream {
   }
 
   object Id {
+    def apply(x: UserCredentials): Id = System(x)
+
     def apply(streamId: String): Id = {
       require(streamId != null, "streamId must not be null")
       require(streamId.nonEmpty, "streamId must not be empty")

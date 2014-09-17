@@ -9,7 +9,7 @@ object StartTransactionExample extends App {
   val system = ActorSystem()
   val connection = system.actorOf(ConnectionActor.props(), "connection")
 
-  val kickoff = Start(TransactionStart(EventStream("my-stream")))
+  val kickoff = Start(TransactionStart(EventStream.Id("my-stream")))
   val transaction = system.actorOf(TransactionActor.props(connection, kickoff), "transaction")
   implicit val transactionResult = system.actorOf(Props[TransactionResult], "result")
 

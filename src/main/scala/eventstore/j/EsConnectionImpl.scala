@@ -20,7 +20,7 @@ class EsConnectionImpl(connection: eventstore.EsConnection) extends EsConnection
     credentials: UserCredentials) = {
 
     val out = WriteEvents(
-      streamId = EventStream(stream),
+      streamId = EventStream.Id(stream),
       events = events.asScala.toList,
       expectedVersion = Option(expectedVersion) getOrElse ExpectedVersion.Any)
 
@@ -29,7 +29,7 @@ class EsConnectionImpl(connection: eventstore.EsConnection) extends EsConnection
 
   def deleteStream(stream: String, expectedVersion: ExpectedVersion.Existing, credentials: UserCredentials) = {
     val out = DeleteStream(
-      streamId = EventStream(stream),
+      streamId = EventStream.Id(stream),
       expectedVersion = Option(expectedVersion) getOrElse ExpectedVersion.Any)
     connection.future(out, Option(credentials)).map(_ => ())
   }
@@ -41,7 +41,7 @@ class EsConnectionImpl(connection: eventstore.EsConnection) extends EsConnection
     credentials: UserCredentials) = {
 
     val out = ReadEvent(
-      streamId = EventStream(stream),
+      streamId = EventStream.Id(stream),
       eventNumber = Option(eventNumber) getOrElse EventNumber.Last,
       resolveLinkTos = resolveLinkTos)
 
@@ -56,7 +56,7 @@ class EsConnectionImpl(connection: eventstore.EsConnection) extends EsConnection
     credentials: UserCredentials) = {
 
     val out = ReadStreamEvents(
-      streamId = EventStream(stream),
+      streamId = EventStream.Id(stream),
       fromNumber = Option(fromNumber) getOrElse EventNumber.First,
       maxCount = count,
       direction = eventstore.ReadDirection.Forward,
@@ -73,7 +73,7 @@ class EsConnectionImpl(connection: eventstore.EsConnection) extends EsConnection
     credentials: UserCredentials) = {
 
     val out = ReadStreamEvents(
-      streamId = EventStream(stream),
+      streamId = EventStream.Id(stream),
       fromNumber = Option(fromNumber) getOrElse EventNumber.Last,
       maxCount = maxCount,
       direction = eventstore.ReadDirection.Backward,
@@ -117,7 +117,7 @@ class EsConnectionImpl(connection: eventstore.EsConnection) extends EsConnection
     observer: SubscriptionObserver[Event],
     resolveLinkTos: Boolean,
     credentials: UserCredentials) =
-    connection.subscribeToStream(EventStream(stream), observer, resolveLinkTos, Option(credentials))
+    connection.subscribeToStream(EventStream.Id(stream), observer, resolveLinkTos, Option(credentials))
 
   def subscribeToStreamFrom(
     stream: String,
@@ -125,7 +125,7 @@ class EsConnectionImpl(connection: eventstore.EsConnection) extends EsConnection
     fromEventNumberExclusive: Int, // TODO how to include first event
     resolveLinkTos: Boolean,
     credentials: UserCredentials) = connection.subscribeToStreamFrom(
-    EventStream(stream),
+    EventStream.Id(stream),
     observer,
     Some(EventNumber.Exact(fromEventNumberExclusive)),
     resolveLinkTos,

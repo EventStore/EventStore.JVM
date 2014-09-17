@@ -13,7 +13,7 @@ object EsConnectionExample extends App {
   val connection = EsConnection(system)
   val log = system.log
 
-  val stream = EventStream("my-stream")
+  val stream = EventStream.Id("my-stream")
 
   val readEvent: Future[ReadEventCompleted] = connection.future(ReadEvent(stream))
   readEvent.onComplete {

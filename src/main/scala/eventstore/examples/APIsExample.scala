@@ -9,11 +9,11 @@ class APIsExample {
 
   def methodCall() {
     val connection = EsConnection(system)
-    val future = connection future ReadEvent(EventStream("my-stream"), EventNumber.First)
+    val future = connection future ReadEvent(EventStream.Id("my-stream"), EventNumber.First)
   }
 
   def messageSending() {
     val connection = system.actorOf(ConnectionActor.props())
-    connection ! ReadEvent(EventStream("my-stream"), EventNumber.First)
+    connection ! ReadEvent(EventStream.Id("my-stream"), EventNumber.First)
   }
 }

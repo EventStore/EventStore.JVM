@@ -35,7 +35,7 @@ class EsConnectionSpec extends util.ActorSpec {
       } {
         connection.writeEvents(stream, version, events, uc)
         expect(WriteEvents(
-          streamId = EventStream(stream),
+          streamId = EventStream.Id(stream),
           events = events.asScala.toList,
           expectedVersion = Option(version) getOrElse ExpectedVersion.Any), uc)
       }
@@ -49,7 +49,7 @@ class EsConnectionSpec extends util.ActorSpec {
       } {
         connection.deleteStream(stream, version, uc)
         expect(DeleteStream(
-          streamId = EventStream(stream),
+          streamId = EventStream.Id(stream),
           expectedVersion = Option(version) getOrElse ExpectedVersion.Any), uc)
       }
     }
@@ -63,7 +63,7 @@ class EsConnectionSpec extends util.ActorSpec {
       } {
         connection.readEvent(stream, number, resolveLinkTos, uc)
         expect(ReadEvent(
-          streamId = EventStream(stream),
+          streamId = EventStream.Id(stream),
           eventNumber = Option(number) getOrElse EventNumber.Last,
           resolveLinkTos = resolveLinkTos), uc)
       }
@@ -79,7 +79,7 @@ class EsConnectionSpec extends util.ActorSpec {
       } {
         connection.readStreamEventsForward(stream, number, count, resolveLinkTos, uc)
         expect(ReadStreamEvents(
-          streamId = EventStream(stream),
+          streamId = EventStream.Id(stream),
           fromNumber = Option(number) getOrElse EventNumber.First,
           maxCount = count,
           direction = ReadDirection.forward,
@@ -97,7 +97,7 @@ class EsConnectionSpec extends util.ActorSpec {
       } {
         connection.readStreamEventsBackward(stream, number, count, resolveLinkTos, uc)
         expect(ReadStreamEvents(
-          streamId = EventStream(stream),
+          streamId = EventStream.Id(stream),
           fromNumber = Option(number) getOrElse EventNumber.Last,
           maxCount = count,
           direction = ReadDirection.backward,
@@ -215,7 +215,7 @@ class EsConnectionSpec extends util.ActorSpec {
   }
 
   trait SubscriptionScope[T] extends TestScope {
-    val streamId = EventStream("streamId")
+    val streamId = EventStream.Id("streamId")
     val client = TestProbe()
 
     val observer = new SubscriptionObserver[T] {

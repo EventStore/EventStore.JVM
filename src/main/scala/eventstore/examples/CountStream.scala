@@ -10,7 +10,7 @@ object CountStream extends App {
   val system = ActorSystem()
   val connection = system.actorOf(ConnectionActor.props(), "connection")
   val countStream = system.actorOf(Props[CountStream], "count-stream")
-  system.actorOf(StreamSubscriptionActor.props(connection, countStream, EventStream("chat-GeneralChat")), "subscription")
+  system.actorOf(StreamSubscriptionActor.props(connection, countStream, EventStream.Id("chat-GeneralChat")), "subscription")
 }
 
 class CountStream extends Actor with ActorLogging {

@@ -12,7 +12,7 @@ object WriteEventExample extends App {
 
   val event = EventData("my-event", data = Content("my event data"), metadata = Content("my first event"))
 
-  connection ! WriteEvents(EventStream("my-stream"), List(event))
+  connection ! WriteEvents(EventStream.Id("my-stream"), List(event))
 
   class WriteResult extends Actor with ActorLogging {
     def receive = {

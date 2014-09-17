@@ -9,7 +9,7 @@ class WriteEventsBuilder(streamId: String) extends Builder[WriteEvents]
     with ExpectVersionSnippet[WriteEventsBuilder]
     with RequireMasterSnippet[WriteEventsBuilder] {
 
-  protected val _streamId: EventStream.Id = EventStream(streamId)
+  protected val _streamId: EventStream.Id = EventStream.Id(streamId)
 
   def addEvent(x: EventData): WriteEventsBuilder = EventDataSnippet.addEvent(x)
   def addEvents(xs: Iterable[EventData]): WriteEventsBuilder = EventDataSnippet.addEvents(xs)

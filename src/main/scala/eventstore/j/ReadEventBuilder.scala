@@ -7,7 +7,7 @@ class ReadEventBuilder(streamId: String) extends Builder[ReadEvent]
     with ResolveLinkTosSnippet[ReadEventBuilder]
     with RequireMasterSnippet[ReadEventBuilder] {
 
-  protected val _streamId = EventStream(streamId)
+  protected val _streamId = EventStream.Id(streamId)
   protected var _eventNumber: EventNumber = EventNumber.First
 
   def number(x: EventNumber): ReadEventBuilder = set {

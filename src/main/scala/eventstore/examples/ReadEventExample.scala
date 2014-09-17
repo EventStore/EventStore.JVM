@@ -17,7 +17,7 @@ object ReadEventExample extends App {
   val connection = system.actorOf(ConnectionActor.props(settings))
   implicit val readResult = system.actorOf(Props[ReadResult])
 
-  connection ! ReadEvent(EventStream("my-stream"), EventNumber.First)
+  connection ! ReadEvent(EventStream.Id("my-stream"), EventNumber.First)
 
   class ReadResult extends Actor with ActorLogging {
     def receive = {

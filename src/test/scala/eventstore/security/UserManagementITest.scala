@@ -62,7 +62,7 @@ class UserManagementITest extends ActorSpec {
 
     val actor = TestActorRef(ConnectionActor.props())
 
-    val streamId = EventStream(user)
+    val streamId = EventStream.Id(user)
 
     def expectAuthenticated() {
       actor ! Authenticate.withCredentials(user)
@@ -97,7 +97,7 @@ class UserManagementITest extends ActorSpec {
     }
 
     def notifyPasswordChanged() {
-      actor ! WriteEvents(EventStream("$users-password-notifications"), List(passwordChanged(user.login)))
+      actor ! WriteEvents(EventStream.Id("$users-password-notifications"), List(passwordChanged(user.login)))
       expectMsgType[WriteEventsCompleted]
     }
 

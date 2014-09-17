@@ -103,7 +103,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
 
     def fromProto(x: j.EventRecord) = {
       EventRecord(
-        streamId = EventStream(x.getEventStreamId),
+        streamId = EventStream.Id(x.getEventStreamId),
         number = EventNumber.Exact(x.getEventNumber),
         data = EventData(
           eventType = x.getEventType,

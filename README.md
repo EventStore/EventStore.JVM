@@ -29,7 +29,7 @@ final Future<Event> future = connection.readEvent("my-stream", new EventNumber.E
 
 ```scala
 val connection = EsConnection(system)
-val future = connection future ReadEvent(EventStream("my-stream"), EventNumber.First)
+val future = connection future ReadEvent(EventStream.Id("my-stream"), EventNumber.First)
 ```
 
 * Sending messages to `eventstore.ConnectionActor`
@@ -44,7 +44,7 @@ connection.tell(readEvent, null);
 
 ```scala
 val connection = system.actorOf(ConnectionActor.props())
-connection ! ReadEvent(EventStream("my-stream"), EventNumber.First)
+connection ! ReadEvent(EventStream.Id("my-stream"), EventNumber.First)
 ```
 
 
@@ -244,7 +244,7 @@ object ReadEventExample extends App {
   val connection = system.actorOf(ConnectionActor.props(settings))
   implicit val readResult = system.actorOf(Props[ReadResult])
 
-  connection ! ReadEvent(EventStream("my-stream"), EventNumber.First)
+  connection ! ReadEvent(EventStream.Id("my-stream"), EventNumber.First)
 
   class ReadResult extends Actor with ActorLogging {
     def receive = {
@@ -275,7 +275,7 @@ object WriteEventExample extends App {
 
   val event = EventData("my-event", data = Content("my event data"), metadata = Content("my first event"))
 
-  connection ! WriteEvents(EventStream("my-stream"), List(event))
+  connection ! WriteEvents(EventStream.Id("my-stream"), List(event))
 
   class WriteResult extends Actor with ActorLogging {
     def receive = {
@@ -303,7 +303,7 @@ object StartTransactionExample extends App {
   val system = ActorSystem()
   val connection = system.actorOf(ConnectionActor.props())
 
-  val kickoff = Start(TransactionStart(EventStream("my-stream")))
+  val kickoff = Start(TransactionStart(EventStream.Id("my-stream")))
   val transaction = system.actorOf(TransactionActor.props(connection, kickoff))
 
   transaction ! GetTransactionId // replies with `TransactionId(transactionId)`
@@ -361,7 +361,7 @@ object EsConnectionExample extends App {
   val connection = EsConnection(system)
   val log = system.log
 
-  val stream = EventStream("my-stream")
+  val stream = EventStream.Id("my-stream")
 
   val readEvent: Future[ReadEventCompleted] = connection.future(ReadEvent(stream))
   readEvent.onComplete {
@@ -395,8 +395,8 @@ Most common use case is to have a single Event Store connection per application.
 Thus you can use our akka extension, it will make sure you have a single instance of connection actor.
   
 ```scala  
-EventStoreExtension(system).actor ! ReadEvent(EventStream("stream"))
-EventStoreExtension(system).connection.future(ReadEvent(EventStream("stream")))
+EventStoreExtension(system).actor ! ReadEvent(EventStream.Id("stream"))
+EventStoreExtension(system).connection.future(ReadEvent(EventStream.Id("stream")))
 ```
 
 ## Setup
