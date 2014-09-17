@@ -164,6 +164,7 @@ public interface EsConnection {
             boolean resolveLinkTos,
             UserCredentials credentials);
 
+  // TODO support stream not found
 //    Future<Unit> setStreamMetadataAsync(String stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials credentials);
 //
 //    Future<Unit> setStreamMetadataAsync(String stream, int expectedMetastreamVersion, byte[] metadata, UserCredentials credentials);
