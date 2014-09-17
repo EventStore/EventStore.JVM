@@ -109,6 +109,17 @@ case class ReadEvent(
   resolveLinkTos: Boolean = false,
   requireMaster: Boolean = true) extends Out
 
+object ReadEvent {
+  object StreamMetadata {
+    def apply(
+      streamId: EventStream.Metadata,
+      resolveLinkTos: Boolean = false,
+      requireMaster: Boolean = true): ReadEvent = {
+      ReadEvent(streamId, EventNumber.Last, resolveLinkTos = resolveLinkTos, requireMaster = requireMaster)
+    }
+  }
+}
+
 case class ReadEventCompleted(event: Event) extends In
 
 case class ReadStreamEvents(

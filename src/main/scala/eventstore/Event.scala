@@ -26,6 +26,12 @@ object Event {
       case EventRecord(streamId, EventNumber.Exact(Int.MaxValue), EventData.StreamDeleted(uuid), _) => (streamId, uuid)
     }
   }
+
+  object StreamMetadata {
+    def unapply(x: Event): Option[String] = condOpt(x.record) {
+      case EventRecord(_: EventStream.Metadata, _, EventData.StreamMetadata(metadata), _) => metadata
+    }
+  }
 }
 
 case class EventRecord(
