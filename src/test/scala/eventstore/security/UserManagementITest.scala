@@ -89,7 +89,7 @@ class UserManagementITest extends ActorSpec {
                        |  }
                        |}""".stripMargin
 
-      actor ! WriteEvents.StreamMetadata(streamId, metadata, ExpectedVersion.NoStream)
+      actor ! WriteEvents.StreamMetadata(streamId.metadata, metadata, ExpectedVersion.NoStream)
       expectMsgType[WriteEventsCompleted].numbersRange must beSome(EventNumber.First to EventNumber.First)
 
       actor ! WriteEvents(streamId, List(userCreated(user)), ExpectedVersion.NoStream)

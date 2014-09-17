@@ -50,15 +50,12 @@ object WriteEvents {
 
   object StreamMetadata {
     def apply(
-      streamId: EventStream.Id,
+      streamId: EventStream.Metadata,
       data: String,
       expectedVersion: ExpectedVersion = ExpectedVersion.Any,
       requireMaster: Boolean = true): WriteEvents = WriteEvents(
-      streamId match {
-        case x: EventStream.Metadata    => x
-        case x: EventStream.HasMetadata => x.metadata
-      },
-      List(EventData.StreamMetadata(data)),
+      streamId = streamId,
+      events = List(EventData.StreamMetadata(data)),
       expectedVersion = expectedVersion,
       requireMaster = requireMaster)
   }

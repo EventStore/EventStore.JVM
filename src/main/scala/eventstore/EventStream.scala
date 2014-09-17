@@ -24,6 +24,7 @@ object EventStream {
 
     def value: String
     def prefix: String
+    def metadata: Metadata
   }
 
   object Id {
@@ -83,6 +84,7 @@ object EventStream {
     def prefix = "$$"
     def isSystem = false
     def isMetadata = true
+    def metadata = this
 
     lazy val original: HasMetadata = HasMetadata(value)
 
