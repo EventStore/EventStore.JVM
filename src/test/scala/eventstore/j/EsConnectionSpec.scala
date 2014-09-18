@@ -46,11 +46,13 @@ class EsConnectionSpec extends util.ActorSpec {
         stream <- streams
         version <- existingVersions
         uc <- userCredentials
+        hd <- booleans
       } {
-        connection.deleteStream(stream, version, uc)
+        connection.deleteStream(stream, version, hd, uc)
         expect(DeleteStream(
           streamId = EventStream.Id(stream),
-          expectedVersion = Option(version) getOrElse ExpectedVersion.Any), uc)
+          expectedVersion = Option(version) getOrElse ExpectedVersion.Any,
+          hard = hd), uc)
       }
     }
 

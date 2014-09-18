@@ -166,7 +166,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
       builder.setEventStreamId(x.streamId.streamId)
       builder.setExpectedVersion(expectedVersion(x.expectedVersion))
       builder.setRequireMaster(x.requireMaster)
-      builder.setHardDelete(x.hardDelete)
+      builder.setHardDelete(x.hard)
       builder
     }
   }

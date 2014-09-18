@@ -2,6 +2,8 @@ package eventstore
 package j
 
 import java.util
+import eventstore.ExpectedVersion.Existing
+
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import akka.actor.ActorSystem
@@ -28,9 +30,14 @@ class EsConnectionImpl(connection: eventstore.EsConnection) extends EsConnection
   }
 
   def deleteStream(stream: String, expectedVersion: ExpectedVersion.Existing, credentials: UserCredentials) = {
+    deleteStream(stream, expectedVersion, hardDelete = false, credentials)
+  }
+
+  def deleteStream(stream: String, expectedVersion: Existing, hardDelete: Boolean, credentials: UserCredentials) = {
     val out = DeleteStream(
       streamId = EventStream.Id(stream),
-      expectedVersion = Option(expectedVersion) getOrElse ExpectedVersion.Any)
+      expectedVersion = Option(expectedVersion) getOrElse ExpectedVersion.Any,
+      hard = hardDelete)
     connection.future(out, Option(credentials)).map(_ => ())
   }
 

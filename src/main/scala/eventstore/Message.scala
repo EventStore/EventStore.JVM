@@ -65,12 +65,11 @@ case class WriteEventsCompleted(
   numbersRange: Option[EventNumber.Range] = None,
   position: Option[Position.Exact] = None) extends In
 
-// TODO check softDelete
 case class DeleteStream(
   streamId: EventStream.Id,
   expectedVersion: ExpectedVersion.Existing = ExpectedVersion.Any,
-  requireMaster: Boolean = true,
-  hardDelete: Boolean = false /*TODO*/ ) extends Out
+  hard: Boolean = false,
+  requireMaster: Boolean = true) extends Out
 
 case class DeleteStreamCompleted(position: Option[Position.Exact] = None) extends In
 

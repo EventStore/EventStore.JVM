@@ -40,7 +40,7 @@ class DeleteStreamITest extends TestConnection {
 
   abstract class DeleteStreamScope extends TestConnectionScope {
     def deleteStreamFailed(expVer: ExpectedVersion.Existing = Any) = {
-      actor ! DeleteStream(streamId, expVer)
+      actor ! DeleteStream(streamId, hard = true, expectedVersion = expVer)
       expectException()
     }
   }
