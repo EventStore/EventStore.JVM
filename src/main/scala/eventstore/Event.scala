@@ -1,7 +1,7 @@
 package eventstore
 
 import java.util.Date
-import util.BetterToString
+import eventstore.util.ByteStringToString
 import scala.PartialFunction.{ condOpt, cond }
 
 sealed trait Event extends Ordered[Event] {
@@ -50,8 +50,15 @@ case class ResolvedEvent(linkedEvent: EventRecord, linkEvent: EventRecord) exten
   def created = linkEvent.created
 }
 
-case class Content(value: ByteString = ByteString.empty, contentType: ContentType = ContentType.Binary)
-  extends BetterToString
+case class Content(value: ByteString = ByteString.empty, contentType: ContentType = ContentType.Binary) {
+  override lazy val toString = {
+    val data = contentType match {
+      case ContentType.Json if value.nonEmpty => value.utf8String
+      case _                                  => ByteStringToString(value)
+    }
+    s"Content($data,$contentType)"
+  }
+}
 
 object Content {
   val empty: Content = Content()
