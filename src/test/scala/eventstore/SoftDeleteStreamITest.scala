@@ -119,27 +119,27 @@ class SoftDeleteStreamITest extends TestConnection {
     def readMetadata(): String = {
       actor ! ReadEvent.StreamMetadata(streamId.metadata)
       expectMsgPF() {
-        case ReadEventCompleted(Event.StreamMetadata(metadata)) => metadata
+        case ReadEventCompleted(Event.StreamMetadata(Content.Json(x))) => x
       }
     }
 
     def writeMetadata(metadata: String): Unit = {
-      actor ! WriteEvents.StreamMetadata(streamId.metadata, metadata)
+      actor ! WriteEvents.StreamMetadata(streamId.metadata, Content.Json(metadata))
       expectMsgType[WriteEventsCompleted]
     }
 
-    def readMetadataBinary(): EventData = {
+    def readMetadataBinary(): ByteString = {
       actor ! ReadEvent.StreamMetadata(streamId.metadata)
       expectMsgPF() {
-        case ReadEventCompleted(EventRecord(_: EventStream.Metadata, _, event, _)) => event
+        case ReadEventCompleted(Event.StreamMetadata(x)) => x.value
       }
     }
 
-    def writeMetadataBinary(metadata: Byte*): EventData = {
-      val event = EventData(SystemEventType.metadata, data = Content(metadata.toArray))
-      actor ! WriteEvents(streamId.metadata, List(event))
+    def writeMetadataBinary(metadata: Byte*): ByteString = {
+      val bs = ByteString(metadata.toArray)
+      actor ! WriteEvents.StreamMetadata(streamId.metadata, Content(bs))
       expectMsgType[WriteEventsCompleted]
-      event
+      bs
     }
   }
 }

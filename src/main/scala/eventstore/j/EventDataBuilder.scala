@@ -3,8 +3,8 @@ package j
 
 class EventDataBuilder(val eventType: String) extends Builder[EventData] with ChainSet[EventDataBuilder] {
   protected var _eventId: Uuid = randomUuid
-  protected var _data: Content = Content.empty
-  protected var _metadata: Content = Content.empty
+  protected var _data: Content = Content.Empty
+  protected var _metadata: Content = Content.Empty
 
   def eventId(x: Uuid): EventDataBuilder = set {
     _eventId = x

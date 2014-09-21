@@ -19,6 +19,7 @@ object EsError {
   case object Error extends EsError
   case object ConnectionLost extends EsError
   case object BadRequest extends EsError
+  case class NonMetadataEvent(event: Event) extends EsError
 
   case class NotHandled(reason: NotHandled.Reason) extends EsError
 
@@ -42,7 +43,7 @@ object EsError {
 case class EsException(reason: EsError, message: Option[String] = None)
     extends Exception(message.orNull, null, false, false) {
 
-  override def toString = {
+  override lazy val toString = {
     val body = message.fold(reason.toString)(x => s"$reason, $x")
     s"EsException($body)"
   }

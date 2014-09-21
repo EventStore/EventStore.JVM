@@ -32,6 +32,6 @@ class ReadWriteMetadataITest extends TestConnection {
   }
 
   trait MetadataScope extends TestConnectionScope {
-    val metadata = """{"test":"test"}"""
+    val metadata = Content.Json("""{"test":"test"}""")
   }
 }

@@ -183,11 +183,35 @@ public interface EsConnection {
       UserCredentials credentials);
 
   // TODO support stream not found
-//    Future<Unit> setStreamMetadataAsync(String stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials credentials);
-//
-//    Future<Unit> setStreamMetadataAsync(String stream, int expectedMetastreamVersion, byte[] metadata, UserCredentials credentials);
-//
+//    Future<Unit> setStreamMetadata(String stream, int expectedMetastreamVersion, StreamMetadata metadata, UserCredentials credentials);
+
+
 //    Future<StreamMetadataResult> getStreamMetadataAsync(String stream, UserCredentials credentials);
 //
-//    Future<RawStreamMetadataResult> getStreamMetadataAsRawBytesAsync(String stream, UserCredentials credentials);
+
+  //    Future<RawStreamMetadataResult> getStreamMetadataAsRawBytesAsync(String stream, UserCredentials credentials); TODO
+
+  /**
+   * Sets the metadata for a stream.
+   *
+   * @param stream                    The name of the stream for which to set metadata.
+   * @param expectedMetastreamVersion The expected version for the write to the metadata stream.
+   * @param metadata                  A byte array representing the new metadata.
+   * @param credentials               The optional user credentials to perform operation with
+   * @return {@link scala.concurrent.Future} representing the operation
+   */
+  Future<Unit> setStreamMetadata(
+      String stream,
+      ExpectedVersion expectedMetastreamVersion,
+      byte[] metadata,
+      UserCredentials credentials);
+
+  /**
+   * Reads the metadata for a stream as a byte array.
+   *
+   * @param stream      The name of the stream for which to read metadata.
+   * @param credentials The optional user credentials to perform operation with
+   * @return {@link scala.concurrent.Future} containing the metadata as byte array.
+   */
+  Future<byte[]> getStreamMetadataBytes(String stream, UserCredentials credentials);
 }

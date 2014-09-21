@@ -51,9 +51,9 @@ object WriteEvents {
   object StreamMetadata {
     def apply(
       streamId: EventStream.Metadata,
-      data: String,
+      data: Content,
       expectedVersion: ExpectedVersion = ExpectedVersion.Any,
-      requireMaster: Boolean = true): WriteEvents = WriteEvents(
+      requireMaster: Boolean = true /*TODO use from settings*/ ): WriteEvents = WriteEvents(
       streamId = streamId,
       events = List(EventData.StreamMetadata(data)),
       expectedVersion = expectedVersion,

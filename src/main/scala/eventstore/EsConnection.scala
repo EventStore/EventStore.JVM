@@ -13,6 +13,7 @@ class EsConnection(
     connection: ActorRef,
     factory: ActorRefFactory,
     operationTimeout: FiniteDuration = Settings.Default.operationTimeout) {
+  import scala.concurrent.ExecutionContext.Implicits.global
   implicit val timeout = Timeout(operationTimeout)
 
   def future[OUT <: Out, IN <: In](out: OUT, credentials: Option[UserCredentials] = None)(
@@ -82,6 +83,26 @@ class EsConnection(
     val props = SubscriptionActor.props(connection, client, fromPositionExclusive, resolveLinkTos)
     factory.actorOf(props)
     ActorCloseable(client)
+  }
+
+  def setStreamMetadata(
+    streamId: EventStream.Id,
+    metadata: Content,
+    expectedMetastreamVersion: ExpectedVersion = ExpectedVersion.Any,
+    credentials: Option[UserCredentials] = None): Future[Unit] = {
+    val writeEvents = WriteEvents.StreamMetadata(streamId.metadata, metadata, expectedMetastreamVersion)
+    future(writeEvents, credentials).map(_ => ())
+  }
+
+  // TODO think about replacing content with something similar to what is in the .Net client
+  def getStreamMetadata(streamId: EventStream.Id, credentials: Option[UserCredentials] = None): Future[Content] = {
+    future(ReadEvent.StreamMetadata(streamId.metadata), credentials).map {
+      case ReadEventCompleted(Event.StreamMetadata(data)) => data
+      case ReadEventCompleted(event) =>
+        throw EsException(EsError.NonMetadataEvent(event), Some(s"Non metadata event received $event"))
+    }.recover {
+      case EsException(EsError.StreamNotFound | EsError.StreamDeleted, _) => Content.Empty
+    }
   }
 }
 

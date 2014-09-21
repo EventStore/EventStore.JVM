@@ -3,9 +3,7 @@ package j
 
 import java.util
 import eventstore.ExpectedVersion.Existing
-
 import scala.collection.JavaConverters._
-import scala.concurrent.ExecutionContext.Implicits.global
 import akka.actor.ActorSystem
 
 object EsConnectionImpl {
@@ -14,6 +12,7 @@ object EsConnectionImpl {
 }
 
 class EsConnectionImpl(connection: eventstore.EsConnection) extends EsConnection {
+  import scala.concurrent.ExecutionContext.Implicits.global
 
   def writeEvents(
     stream: String,
@@ -150,4 +149,20 @@ class EsConnectionImpl(connection: eventstore.EsConnection) extends EsConnection
     resolveLinkTos: Boolean,
     credentials: UserCredentials) =
     connection.subscribeToAllFrom(observer, Option(fromPositionExclusive), resolveLinkTos, Option(credentials))
+
+  def setStreamMetadata(
+    stream: String,
+    expectedMetastreamVersion: ExpectedVersion,
+    metadata: Array[Byte],
+    credentials: UserCredentials) = {
+    connection.setStreamMetadata(
+      EventStream.Id(stream),
+      Content(metadata),
+      Option(expectedMetastreamVersion) getOrElse ExpectedVersion.Any,
+      Option(credentials))
+  }
+
+  def getStreamMetadataBytes(stream: String, credentials: UserCredentials) = {
+    connection.getStreamMetadata(EventStream.Id(stream), Option(credentials)).map(_.value.toArray)
+  }
 }

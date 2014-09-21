@@ -12,7 +12,7 @@ trait EsTransaction {
 }
 
 object EsTransaction {
-  implicit val executionContext: ExecutionContext = ExecutionContext.Implicits.global
+  implicit def executionContext: ExecutionContext = ExecutionContext.Implicits.global
 
   def start(actor: ActorRef)(implicit timeout: Timeout): Future[EsTransaction] = {
     import TransactionActor.{ TransactionId, GetTransactionId }

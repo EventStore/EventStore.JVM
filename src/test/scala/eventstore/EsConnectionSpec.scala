@@ -1,6 +1,9 @@
 package eventstore
 
+import akka.actor.Status.Failure
 import org.specs2.mock.Mockito
+import scala.concurrent.Await
+import scala.concurrent.duration._
 import scala.util.Success
 import util.ActorSpec
 
@@ -41,10 +44,43 @@ class EsConnectionSpec extends ActorSpec with Mockito {
     "subscribe to" in new TestScope {
       verifyOutIn(mock[SubscribeTo], mock[SubscribeToStreamCompleted])
     }
+
+    "set stream metadata" in new TestScope {
+      val content = Content(ByteString(1, 2, 3))
+      val sId = streamId.metadata
+      val future = connection.setStreamMetadata(streamId, content)
+
+      expectMsgPF() {
+        case WriteEvents(`sId`, List(EventData(SystemEventType.metadata, _, `content`, _)), ExpectedVersion.Any, true) => true
+      }
+      lastSender ! WriteEventsCompleted()
+      future.value must beSome
+    }
+
+    "get stream metadata" in new GetMetadataScope {
+      val content = Content(ByteString(1, 2, 3))
+      val metadata = EventRecord(streamId.metadata, EventNumber.First, EventData(SystemEventType.metadata, data = content))
+      getStreamMetadata(ReadEventCompleted(metadata)) mustEqual content
+    }
+
+    "get empty metadata when stream not found" in new GetMetadataScope {
+      getStreamMetadata(failure(EsError.StreamNotFound)) mustEqual Content.Empty
+    }
+
+    "get empty metadata when stream deleted" in new GetMetadataScope {
+      getStreamMetadata(failure(EsError.StreamNotFound)) mustEqual Content.Empty
+    }
+
+    "throw exception if non metadata event received" in new GetMetadataScope {
+      val event = EventRecord(streamId, EventNumber.First, EventData("test", data = Content.Empty))
+      getStreamMetadata(ReadEventCompleted(event)) must throwAn[EsException].like {
+        case EsException(EsError.NonMetadataEvent(event), Some(_)) => ok
+      }
+    }
   }
 
-  trait TestScope extends ActorScope {
-    val streamId = EventStream("EventStream")
+  private trait TestScope extends ActorScope {
+    val streamId = EventStream.Id("streamId")
     val events = Seq(EventData("test"))
     val connection = new EsConnection(testActor, system)
 
@@ -55,5 +91,16 @@ class EsConnectionSpec extends ActorSpec with Mockito {
       lastSender ! in
       future.value must beSome(Success(in))
     }
+  }
+
+  private trait GetMetadataScope extends TestScope {
+    def getStreamMetadata(reply: Any): Content = {
+      val future = connection.getStreamMetadata(streamId)
+      expectMsg(ReadEvent.StreamMetadata(streamId.metadata))
+      lastSender ! reply
+      Await.result(future, 3.seconds)
+    }
+
+    def failure(x: EsError) = Failure(EsException(x))
   }
 }

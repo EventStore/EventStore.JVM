@@ -21,12 +21,12 @@ class EsConnectionITest extends ActorSpec {
 
     "read event" in new TestScope {
       val streamId = "java-readEvent-" + randomUuid
-      try await(connection.readEvent(streamId, null, resolveLinkTos = false, null)) catch {
+      try await(connection.readEvent(streamId, null, false, null)) catch {
         case EsException(eventstore.EsError.StreamNotFound, _) =>
       }
 
       await(connection.writeEvents(streamId, null, events, null))
-      val event = await(connection.readEvent(streamId, null, resolveLinkTos = false, null))
+      val event = await(connection.readEvent(streamId, null, false, null))
 
       event.data mustEqual eventData
       event.streamId mustEqual EventStream(streamId)
@@ -36,12 +36,12 @@ class EsConnectionITest extends ActorSpec {
     "read stream events forward" in new TestScope {
       val streamId = "java-readStreamForward-" + randomUuid
 
-      try await(connection.readStreamEventsForward(streamId, null, 10, resolveLinkTos = false, null)) catch {
+      try await(connection.readStreamEventsForward(streamId, null, 10, false, null)) catch {
         case EsException(eventstore.EsError.StreamNotFound, _) =>
       }
       await(connection.writeEvents(streamId, null, events, null))
       val result = await(
-        connection.readStreamEventsForward(streamId, new EventNumber.Exact(0), 10, resolveLinkTos = false, null))
+        connection.readStreamEventsForward(streamId, new EventNumber.Exact(0), 10, false, null))
 
       result.direction mustEqual ReadDirection.forward
       result.lastEventNumber mustEqual EventNumber.Exact(0)
@@ -52,12 +52,12 @@ class EsConnectionITest extends ActorSpec {
 
     "read stream events backward" in new TestScope {
       val streamId = "java-readStreamBackward-" + randomUuid
-      try await(connection.readStreamEventsBackward(streamId, null, 10, resolveLinkTos = false, null)) catch {
+      try await(connection.readStreamEventsBackward(streamId, null, 10, false, null)) catch {
         case EsException(eventstore.EsError.StreamNotFound, _) =>
       }
       await(connection.writeEvents(streamId, null, events, null))
       val result = await {
-        connection.readStreamEventsBackward(streamId, null, 10, resolveLinkTos = false, null)
+        connection.readStreamEventsBackward(streamId, null, 10, false, null)
       }
       result.direction mustEqual ReadDirection.backward
       result.lastEventNumber mustEqual EventNumber.Exact(0)
@@ -67,7 +67,7 @@ class EsConnectionITest extends ActorSpec {
     }
 
     "read all events forward" in new TestScope {
-      val result = await(connection.readAllEventsForward(null, 10, resolveLinkTos = false, null))
+      val result = await(connection.readAllEventsForward(null, 10, false, null))
       result.direction mustEqual ReadDirection.forward
 
       result.events.foreach {
@@ -75,10 +75,12 @@ class EsConnectionITest extends ActorSpec {
           val data = event.event.data
           if (data.eventType == eventData.eventType) data mustEqual eventData
       }
+
+      override def eventType = "java-readAllForward"
     }
 
     "read all events backward" in new TestScope {
-      val result = await(connection.readAllEventsBackward(null, 10, resolveLinkTos = false, null))
+      val result = await(connection.readAllEventsBackward(null, 10, false, null))
       result.direction mustEqual ReadDirection.backward
 
       result.events.foreach {
@@ -87,12 +89,28 @@ class EsConnectionITest extends ActorSpec {
           if (data.eventType == eventData.eventType) data mustEqual eventData
       }
 
-      override def eventType = "java-test-read-all-backward"
+      override def eventType = "java-readAllBackward"
+    }
+
+    "set & get stream metadata bytes" in new TestScope {
+      val streamId = "java-streamMetadata-" + randomUuid
+      val expected = Array[Byte](1, 2, 3)
+      def streamMetadataBytes = connection.getStreamMetadataBytes(streamId, null)
+      val (noStream, actual, deleted) = await(for {
+        noStream <- streamMetadataBytes
+        _ <- connection.setStreamMetadata(streamId, null, expected, null)
+        get <- streamMetadataBytes
+        // _ <- connection.deleteStream("$$" + streamId, null, UserCredentials.defaultAdmin) TODO AccessDenied returned
+        deleted <- streamMetadataBytes
+      } yield (noStream, get, deleted))
+      noStream must beEmpty
+      actual mustEqual expected
+      //      deleted must beEmpty
     }
   }
 
   trait TestScope extends ActorScope {
-    val connection = new EsConnectionImpl(eventstore.EsConnection(system))
+    val connection: EsConnection = new EsConnectionImpl(eventstore.EsConnection(system))
     def eventType = "java-test"
     val eventData = EventData(eventType = eventType, data = Content("data"), metadata = Content("metadata"))
 

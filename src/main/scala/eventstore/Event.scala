@@ -13,7 +13,7 @@ sealed trait Event extends Ordered[Event] {
 
   def compare(that: Event) = this.number.value compare that.number.value
 
-  def link(eventId: Uuid = randomUuid, metadata: Content = Content.empty): EventData = EventData(
+  def link(eventId: Uuid = randomUuid, metadata: Content = Content.Empty): EventData = EventData(
     eventType = SystemEventType.linkTo,
     eventId = eventId,
     data = Content(s"${number.value}@${streamId.value}"),
@@ -28,7 +28,7 @@ object Event {
   }
 
   object StreamMetadata {
-    def unapply(x: Event): Option[String] = condOpt(x.record) {
+    def unapply(x: Event): Option[Content] = condOpt(x.record) {
       case EventRecord(_: EventStream.Metadata, _, EventData.StreamMetadata(metadata), _) => metadata
     }
   }
@@ -61,7 +61,7 @@ case class Content(value: ByteString = ByteString.empty, contentType: ContentTyp
 }
 
 object Content {
-  val empty: Content = Content()
+  val Empty: Content = Content()
 
   def apply(content: String): Content = Content(ByteString(content))
 
@@ -79,8 +79,8 @@ object Content {
 case class EventData(
     eventType: String,
     eventId: Uuid = randomUuid,
-    data: Content = Content.empty,
-    metadata: Content = Content.empty) {
+    data: Content = Content.Empty,
+    metadata: Content = Content.Empty) {
   require(eventType != null, "eventType is null")
   require(eventType.nonEmpty, "eventType is empty")
 }
@@ -93,21 +93,22 @@ object EventData {
   }
 
   object StreamDeleted {
-    import Content.empty
+    import Content.Empty
 
-    def apply(eventId: Uuid): EventData = EventData(SystemEventType.streamDeleted, eventId, empty, empty)
+    def apply(eventId: Uuid): EventData = EventData(SystemEventType.streamDeleted, eventId, Empty, Empty)
 
     def unapply(x: EventData): Boolean = cond(x) {
-      case EventData(SystemEventType.streamDeleted, _, `empty`, `empty`) => true
+      case EventData(SystemEventType.streamDeleted, _, Empty, Empty) => true
     }
   }
 
   object StreamMetadata {
-    def apply(data: String, eventId: Uuid = randomUuid): EventData =
-      EventData(SystemEventType.metadata, data = Content.Json(data))
+    def apply(data: Content, eventId: Uuid = randomUuid): EventData = {
+      EventData(SystemEventType.metadata, eventId, data)
+    }
 
-    def unapply(x: EventData): Option[String] = condOpt(x) {
-      case EventData(SystemEventType.metadata, _, Content.Json(data), _) => data
+    def unapply(x: EventData): Option[Content] = condOpt(x) {
+      case EventData(SystemEventType.metadata, _, data, _) => data
     }
   }
 }
