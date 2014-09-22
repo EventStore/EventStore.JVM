@@ -24,13 +24,13 @@ import akka.event.LoggingAdapter
  * bottom-up) need to be either events or commands; management messages are
  * processed in no particular order.
  *
- * Java base classes are provided in the form of [[AbstractPipePair]]
- * and [[AbstractSymmetricPipePair]] since the Scala function types can be
+ * Java base classes are provided in the form of `AbstractPipePair`
+ * and `AbstractSymmetricPipePair` since the Scala function types can be
  * awkward to handle in Java.
  *
  * @see [[PipelineStage]]
- * @see [[AbstractPipePair]]
- * @see [[AbstractSymmetricPipePair]]
+ * @see `AbstractPipePair`
+ * @see `AbstractSymmetricPipePair`
  * @see [[PipePairFactory]]
  */
 trait PipePair[CmdAbove, CmdBelow, EvtAbove, EvtBelow] {
@@ -75,7 +75,7 @@ trait SymmetricPipePair[Above, Below] extends PipePair[Above, Below, Above, Belo
  * top to bottom, events from bottom to top.
  *
  * @see [[PipelineStage]]
- * @see [[AbstractSymmetricPipePair]]
+ * @see `AbstractSymmetricPipePair`
  * @see [[PipePairFactory]]
  */
 abstract class AbstractPipePair[CmdAbove, CmdBelow, EvtAbove, EvtBelow] {
@@ -148,7 +148,7 @@ abstract class AbstractPipePair[CmdAbove, CmdBelow, EvtAbove, EvtBelow] {
 
   /**
    * Wrap a single command for efficient return to the pipeline’s machinery.
-   * This method avoids allocating a [[scala.util.Right]] and an [[java.lang.Iterable]] by reusing
+   * This method avoids allocating a `scala.util.Right` and an `java.lang.Iterable` by reusing
    * one such instance within the AbstractPipePair, hence it can be used ONLY ONCE by
    * each pipeline stage. Prototypic and safe usage looks like this:
    *
@@ -166,7 +166,7 @@ abstract class AbstractPipePair[CmdAbove, CmdBelow, EvtAbove, EvtBelow] {
 
   /**
    * Wrap a single event for efficient return to the pipeline’s machinery.
-   * This method avoids allocating a [[scala.util.Left]] and an [[java.lang.Iterable]] by reusing
+   * This method avoids allocating a `scala.util.Left` and an `java.lang.Iterable` by reusing
    * one such instance within the AbstractPipePair, hence it can be used ONLY ONCE by
    * each pipeline stage. Prototypic and safe usage looks like this:
    *
@@ -195,7 +195,7 @@ abstract class AbstractPipePair[CmdAbove, CmdBelow, EvtAbove, EvtBelow] {
 }
 
 /**
- * A convenience type for expressing a [[AbstractPipePair]] which has the same types
+ * A convenience type for expressing a `AbstractPipePair` which has the same types
  * for commands and events.
  */
 abstract class AbstractSymmetricPipePair[Above, Below] extends AbstractPipePair[Above, Below, Above, Below]
@@ -207,7 +207,7 @@ abstract class AbstractSymmetricPipePair[Above, Below] extends AbstractPipePair[
 object PipePairFactory {
 
   /**
-   * Scala API: construct a [[PipePair]] from the two given functions; useful for not capturing `$outer` references.
+   * Scala API: construct a [[PipePair]] from the two given functions; useful for not capturing `outer` references.
    */
   def apply[CmdAbove, CmdBelow, EvtAbove, EvtBelow] //
   (commandPL: CmdAbove ⇒ Iterable[Either[EvtAbove, CmdBelow]],
@@ -230,7 +230,7 @@ object PipePairFactory {
   }
 
   /**
-   * Java API: construct a [[PipePair]] from the given [[AbstractPipePair]].
+   * Java API: construct a [[PipePair]] from the given `AbstractPipePair`.
    */
   def create[CmdAbove <: AnyRef, CmdBelow <: AnyRef, EvtAbove <: AnyRef, EvtBelow <: AnyRef] //
   (ctx: PipelineContext, ap: AbstractPipePair[CmdAbove, CmdBelow, EvtAbove, EvtBelow]) //
@@ -242,7 +242,7 @@ object PipePairFactory {
     }
 
   /**
-   * Java API: construct a [[PipePair]] from the given [[AbstractSymmetricPipePair]].
+   * Java API: construct a [[PipePair]] from the given `AbstractSymmetricPipePair`.
    */
   def create[Above <: AnyRef, Below <: AnyRef] //
   (ctx: PipelineContext, ap: AbstractSymmetricPipePair[Above, Below]): SymmetricPipePair[Above, Below] =
@@ -302,7 +302,7 @@ object PipelineFactory {
    * Scala API: build the pipeline attaching the given command and event sinks
    * to its outputs. Exceptions thrown within the pipeline stages will abort
    * processing (i.e. will not be processed in following stages) but will be
-   * caught and passed as [[scala.util.Failure]] into the respective sink.
+   * caught and passed as `scala.util.Failure` into the respective sink.
    *
    * Exceptions thrown while processing management commands are not caught.
    *
@@ -361,7 +361,7 @@ object PipelineFactory {
    * Java API: build the pipeline attaching the given callback object to its
    * outputs. Exceptions thrown within the pipeline stages will abort
    * processing (i.e. will not be processed in following stages) but will be
-   * caught and passed as [[scala.util.Failure]] into the respective sink.
+   * caught and passed as `scala.util.Failure` into the respective sink.
    *
    * Exceptions thrown while processing management commands are not caught.
    *
@@ -490,7 +490,7 @@ trait PipelineContext {
 
   /**
    * Scala API: Wrap a single command for efficient return to the pipeline’s machinery.
-   * This method avoids allocating a [[scala.util.Right]] and an [[scala.collection.Iterable]] by reusing
+   * This method avoids allocating a `scala.util.Right` and an `scala.collection.Iterable` by reusing
    * one such instance within the PipelineContext, hence it can be used ONLY ONCE by
    * each pipeline stage. Prototypic and safe usage looks like this:
    *
@@ -510,7 +510,7 @@ trait PipelineContext {
 
   /**
    * Scala API: Wrap a single event for efficient return to the pipeline’s machinery.
-   * This method avoids allocating a [[scala.util.Left]] and an [[scala.collection.Iterable]] by reusing
+   * This method avoids allocating a `scala.util.Left` and an `scala.collection.Iterable` by reusing
    * one such instance within the context, hence it can be used ONLY ONCE by
    * each pipeline stage. Prototypic and safe usage looks like this:
    *
@@ -604,7 +604,7 @@ abstract class SymmetricPipelineStage[Context <: PipelineContext, Above, Below] 
  * for the actual [[PipePair]] generated by the [[#apply]] method so that a
  * context object can be passed in.
  *
- * @see [[PipelineFactory]]
+ * @see `PipelineFactory`
  */
 abstract class PipelineStage[Context <: PipelineContext, CmdAbove, CmdBelow, EvtAbove, EvtBelow] { left ⇒
 
@@ -614,9 +614,9 @@ abstract class PipelineStage[Context <: PipelineContext, CmdAbove, CmdBelow, Evt
    *
    * INTERNAL API: do not use this method to instantiate a pipeline!
    *
-   * @see [[PipelineFactory]]
-   * @see [[AbstractPipePair]]
-   * @see [[AbstractSymmetricPipePair]]
+   * @see `PipelineFactory`
+   * @see `AbstractPipePair`
+   * @see `AbstractSymmetricPipePair`
    */
   protected[pipeline] def apply(ctx: Context): PipePair[CmdAbove, CmdBelow, EvtAbove, EvtBelow]
 
@@ -1155,7 +1155,7 @@ class StringByteStringAdapter(charset: String = "utf-8")
  */
 trait HasLogging extends PipelineContext {
   /**
-   * Retrieve the [[akka.event.LoggingAdapter]] for this pipeline’s context.
+   * Retrieve the `akka.event.LoggingAdapter` for this pipeline’s context.
    */
   def getLogger: LoggingAdapter
 }
@@ -1167,7 +1167,7 @@ trait HasLogging extends PipelineContext {
  */
 trait HasActorContext extends PipelineContext {
   /**
-   * Retrieve the [[akka.actor.ActorContext]] for this pipeline’s context.
+   * Retrieve the `akka.actor.ActorContext` for this pipeline’s context.
    */
   def getContext: ActorContext
 }

@@ -86,15 +86,15 @@ object TcpPipelineHandler {
   case class Tell(receiver: ActorRef, msg: Any, sender: ActorRef) extends Tcp.Command
 
   /**
-   * The pipeline may want to emit a [[Tcp.Event]] to the registered handler
-   * actor, which is enabled by emitting this [[Tcp.Command]] wrapping an event
+   * The pipeline may want to emit a `Tcp.Event` to the registered handler
+   * actor, which is enabled by emitting this `Tcp.Command` wrapping an event
    * instead. The [[TcpPipelineHandler]] actor will upon reception of this command
    * forward the wrapped event to the handler.
    */
   case class TcpEvent(@BeanProperty evt: Tcp.Event) extends Tcp.Command
 
   /**
-   * create [[akka.actor.Props]] for a pipeline handler
+   * create `akka.actor.Props` for a pipeline handler
    */
   def props[Ctx <: PipelineContext, Cmd, Evt](init: TcpPipelineHandler.Init[Ctx, Cmd, Evt], connection: ActorRef, handler: ActorRef) =
     Props(classOf[TcpPipelineHandler[_, _, _]], init, connection, handler)
@@ -103,7 +103,7 @@ object TcpPipelineHandler {
 
 /**
  * This actor wraps a pipeline and forwards commands and events between that
- * one and a [[Tcp]] connection actor. In order to inject commands into the
+ * one and a `Tcp` connection actor. In order to inject commands into the
  * pipeline send an [[TcpPipelineHandler.Init.Command]] message to this actor; events will be sent
  * to the designated handler wrapped in [[TcpPipelineHandler.Init.Event]] messages.
  *
@@ -116,7 +116,7 @@ object TcpPipelineHandler {
  * Proper function of this actor (and of other pipeline stages like [[TcpReadWriteAdapter]]
  * depends on the fact that stages handling TCP commands and events pass unknown
  * subtypes through unaltered. There are more commands and events than are declared
- * within the [[Tcp]] object and you can even define your own.
+ * within the `Tcp` object and you can even define your own.
  */
 class TcpPipelineHandler[Ctx <: PipelineContext, Cmd, Evt](
   init: TcpPipelineHandler.Init[Ctx, Cmd, Evt],

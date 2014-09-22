@@ -7,7 +7,7 @@ trait SubscriptionObserver[T] {
    * The action liveProcessingStarted is called when the subscription switches from
    * the reading phase to the live subscription phase.
    *
-   * @param subscription A [[Closeable]] representing subscription which can be closed.
+   * @param subscription A `Closeable` representing subscription which can be closed.
    */
   def onLiveProcessingStart(subscription: Closeable)
 
@@ -15,7 +15,7 @@ trait SubscriptionObserver[T] {
    * Method invoked when a new event is received over the subscription
    *
    * @param event A new event pushed to the subscription
-   * @param subscription A [[Closeable]] representing subscription which can be closed.
+   * @param subscription A `Closeable` representing subscription which can be closed.
    */
   def onEvent(event: T, subscription: Closeable)
 
