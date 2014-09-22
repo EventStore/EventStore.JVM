@@ -128,12 +128,12 @@ class EsConnectionImpl(connection: eventstore.EsConnection) extends EsConnection
   def subscribeToStreamFrom(
     stream: String,
     observer: SubscriptionObserver[Event],
-    fromEventNumberExclusive: Int, // TODO how to include first event
+    fromEventNumberExclusive: java.lang.Integer,
     resolveLinkTos: Boolean,
     credentials: UserCredentials) = connection.subscribeToStreamFrom(
     EventStream.Id(stream),
     observer,
-    Some(EventNumber.Exact(fromEventNumberExclusive)),
+    Option(fromEventNumberExclusive).map(EventNumber.Exact(_)),
     resolveLinkTos,
     Option(credentials))
 

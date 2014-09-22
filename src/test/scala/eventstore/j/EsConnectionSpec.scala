@@ -155,13 +155,14 @@ class EsConnectionSpec extends util.ActorSpec {
     }
 
     "subscribe to stream from" in new StreamSubscriptionScope {
-      val closeable = connection.subscribeToStreamFrom(streamId.streamId, observer, 0, false, null)
+      val closeable = connection.subscribeToStreamFrom(streamId.streamId, observer, null, false, null)
       expectMsg(ReadStreamEvents(streamId, EventNumber(0)))
       val actor = lastSender
       actor ! readEventsCompleted(event0, event1)
       expectMsg(SubscribeTo(streamId))
       actor ! SubscribeToStreamCompleted(0, None)
       actor ! StreamEventAppeared(event2)
+      client expectMsg event0.event
       client expectMsg event1.event
       client expectMsg LiveProcessingStart
       client expectMsg event2.event
