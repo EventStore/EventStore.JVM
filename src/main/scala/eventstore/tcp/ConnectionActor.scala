@@ -56,13 +56,13 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
   }
 
   val rcv: PartialFunction[Any, State] = {
-    case Tcp.Connected(`address`, _)       => state rcvConnected sender
+    case Tcp.Connected(`address`, _)       => state rcvConnected sender()
     case Tcp.CommandFailed(_: Tcp.Connect) => state.rcvNotConnected
     case x: Tcp.ConnectionClosed           => state rcvConnectionClosed x
     case x: OutLike                        => state rcvOutLike x
     case x: TcpPackageOut                  => state rcvPackageOut x
     case Terminated(x)                     => state rcvTerminated x
-    case WaitReconnected                   => state rcvWaitReconnected sender
+    case WaitReconnected                   => state rcvWaitReconnected sender()
     case init.Event(x)                     => state rcvPackageIn x
     case Heartbeat                         => state.rcvHeartbeat
     case HeartbeatTimeout(x)               => state rcvHeartbeatTimeout x
@@ -82,11 +82,11 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
   }
 
   def tcpPack(message: OutLike): TcpPackageOut = {
-    val correlationId = binding.y(sender) getOrElse {
+    val correlationId = binding.y(sender()) getOrElse {
       val x = randomUuid
-      log.debug("add sender {} for {}", sender, x)
-      context watch sender
-      binding = binding + (x, sender)
+      log.debug("add sender {} for {}", sender(), x)
+      context watch sender()
+      binding = binding + (x, sender())
       x
     }
     TcpPackageOut(message.out, correlationId, credentials(message))
@@ -299,12 +299,12 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       else Some(reconnect(reconnectionsLeft, reconnectionDelay, clients))
 
     override def rcvOutLike(x: OutLike) = {
-      sender ! connectionLostFailure
+      sender() ! connectionLostFailure
       this
     }
 
     override def rcvPackageOut(x: TcpPackageOut) = {
-      sender ! connectionLostFailure
+      sender() ! connectionLostFailure
       this
     }
   }

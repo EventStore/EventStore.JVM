@@ -20,15 +20,15 @@ class SubscriptionObserverActor[T](observer: SubscriptionObserver[T], tag: Class
 
   def receive = {
     case LiveProcessingStarted =>
-      context watch sender
+      context watch sender()
       observer.onLiveProcessingStart(closeable)
 
     case Failure(error) =>
-      context watch sender
+      context watch sender()
       observer.onError(error)
 
     case tag(x) =>
-      context watch sender
+      context watch sender()
       observer.onEvent(x, closeable)
   }
 

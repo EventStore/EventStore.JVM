@@ -106,7 +106,7 @@ class TransactionActor(
 
   def starting(stash: Queue[StashEntry], awaitingId: Queue[ActorRef]): Receive = {
     case x: Command       => context become starting(stash enqueue StashEntry(x), awaitingId)
-    case GetTransactionId => context become starting(stash, awaitingId enqueue sender)
+    case GetTransactionId => context become starting(stash, awaitingId enqueue sender())
     case TransactionStartCompleted(transactionId) =>
       awaitingId.foreach(_ ! TransactionId(transactionId))
       context become new ContinueReceive(transactionId).apply(stash)
@@ -118,12 +118,12 @@ class TransactionActor(
 
   class ContinueReceive(transactionId: Long) extends (Queue[StashEntry] => Receive) {
     val common: Receive = {
-      case GetTransactionId => sender ! TransactionId(transactionId)
+      case GetTransactionId => sender() ! TransactionId(transactionId)
     }
 
     val empty: Receive = common orElse {
-      case Commit        => context become commit(sender)
-      case Write(events) => context become write(events, sender, Queue())
+      case Commit        => context become commit(sender())
+      case Write(events) => context become write(events, sender(), Queue())
     }
 
     def failure(client: ActorRef): Receive = {
@@ -164,9 +164,9 @@ class TransactionActor(
       }
   }
 
-  def toConnection(x: Out) {
+  def toConnection(x: Out): Unit = {
     connection ! credentials.fold[OutLike](x)(x.withCredentials)
   }
 
-  case class StashEntry(command: Command, client: ActorRef = sender)
+  case class StashEntry(command: Command, client: ActorRef = sender())
 }
