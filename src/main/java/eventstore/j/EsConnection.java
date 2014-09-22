@@ -31,7 +31,7 @@ public interface EsConnection {
    * @param expectedVersion expected version of the stream to write to, or <code>ExpectedVersion.Any</code> if <code>null</code>
    * @param events          events to append to the stream
    * @param credentials     optional user credentials to perform operation with.
-   * @return {@link scala.concurrent.Future} that the caller can await on
+   * @return A {@link scala.concurrent.Future} that the caller can await on
    */
   Future<Unit> writeEvents(
       String stream,
@@ -46,7 +46,7 @@ public interface EsConnection {
    * @param stream          name of the stream to delete
    * @param expectedVersion optional expected version that the stream should have when being deleted, or <code>ExpectedVersion.Any</code> if <code>null</code>
    * @param credentials     optional user credentials to perform operation with.
-   * @return {@link scala.concurrent.Future} that the caller can await on
+   * @return A {@link scala.concurrent.Future} that the caller can await on
    */
   Future<Unit> deleteStream(
       String stream,
@@ -60,7 +60,7 @@ public interface EsConnection {
    * @param expectedVersion optional expected version that the stream should have when being deleted, or <code>ExpectedVersion.Any</code> if <code>null</code>
    * @param hardDelete      Indicator for tombstoning vs soft-deleting the stream. Tombstoned streams can never be recreated. Soft-deleted streams can be written to again, but the EventNumber sequence will not start from 0.
    * @param credentials     optional user credentials to perform operation with.
-   * @return {@link scala.concurrent.Future} that the caller can await on
+   * @return A {@link scala.concurrent.Future} that the caller can await on
    */
   Future<Unit> deleteStream(
       String stream,
@@ -68,12 +68,36 @@ public interface EsConnection {
       boolean hardDelete,
       UserCredentials credentials);
 
-//    Future<EventStoreTransaction> startTransaction(
-//            String stream,
-//            ExpectedVersion expectedVersion,
-//            UserCredentials credentials);
-//
-//    EventStoreTransaction continueTransaction(long transactionId, UserCredentials credentials);
+  /**
+   * Starts a transaction in the event store on a given stream asynchronously
+   * <p/>
+   * A {@link eventstore.j.EsTransaction} allows the calling of multiple writes with multiple
+   * round trips over long periods of time between the caller and the event store. This method
+   * is only available through the TCP interface and no equivalent exists for the RESTful interface.
+   *
+   * @param stream          The stream to start a transaction on
+   * @param expectedVersion The expected version of the stream at the time of starting the transaction
+   * @param credentials     The optional user credentials to perform operation with
+   * @return A {@link scala.concurrent.Future} containing an actual transaction
+   */
+  Future<EsTransaction> startTransaction(
+      String stream,
+      ExpectedVersion expectedVersion,
+      UserCredentials credentials);
+
+
+  /**
+   * Continues transaction by provided transaction ID.
+   * <p/>
+   * A {@link eventstore.j.EsTransaction} allows the calling of multiple writes with multiple
+   * round trips over long periods of time between the caller and the event store. This method
+   * is only available through the TCP interface and no equivalent exists for the RESTful interface.
+   *
+   * @param transactionId The transaction ID that needs to be continued.
+   * @param credentials   The optional user credentials to perform operation with
+   * @return A transaction for given id
+   */
+  EsTransaction continueTransaction(long transactionId, UserCredentials credentials);
 
 
   /**
@@ -83,7 +107,7 @@ public interface EsConnection {
    * @param eventNumber    optional event number to read, or EventNumber.Last for reading latest event, EventNumber.Last if null
    * @param resolveLinkTos whether to resolve LinkTo events automatically
    * @param credentials    The optional user credentials to perform operation with
-   * @return {@link scala.concurrent.Future} containing an event
+   * @return A {@link scala.concurrent.Future} containing an event
    */
   Future<Event> readEvent(
       String stream,
@@ -100,7 +124,7 @@ public interface EsConnection {
    * @param maxCount       maximum count of items to read
    * @param resolveLinkTos whether to resolve LinkTo events automatically
    * @param credentials    The optional user credentials to perform operation with
-   * @return {@link scala.concurrent.Future} containing the results of the read operation
+   * @return A {@link scala.concurrent.Future} containing the results of the read operation
    */
   Future<ReadStreamEventsCompleted> readStreamEventsForward(
       String stream,
@@ -118,7 +142,7 @@ public interface EsConnection {
    * @param maxCount       maximum count of items to read
    * @param resolveLinkTos whether to resolve LinkTo events automatically
    * @param credentials    The optional user credentials to perform operation with
-   * @return {@link scala.concurrent.Future} containing the results of the read operation
+   * @return A {@link scala.concurrent.Future} containing the results of the read operation
    */
   Future<ReadStreamEventsCompleted> readStreamEventsBackward(
       String stream,
@@ -135,7 +159,7 @@ public interface EsConnection {
    * @param maxCount       maximum count of items to read
    * @param resolveLinkTos whether to resolve LinkTo events automatically
    * @param credentials    The optional user credentials to perform operation with
-   * @return {@link scala.concurrent.Future} containing the results of the read operation
+   * @return A {@link scala.concurrent.Future} containing the results of the read operation
    */
   Future<ReadAllEventsCompleted> readAllEventsForward(
       Position fromPosition,
@@ -151,7 +175,7 @@ public interface EsConnection {
    * @param maxCount       maximum count of items to read
    * @param resolveLinkTos whether to resolve LinkTo events automatically
    * @param credentials    The optional user credentials to perform operation with
-   * @return {@link scala.concurrent.Future} containing the results of the read operation
+   * @return A {@link scala.concurrent.Future} containing the results of the read operation
    */
   Future<ReadAllEventsCompleted> readAllEventsBackward(
       Position fromPosition,
@@ -258,7 +282,7 @@ public interface EsConnection {
    * @param expectedMetastreamVersion The expected version for the write to the metadata stream.
    * @param metadata                  A byte array representing the new metadata.
    * @param credentials               The optional user credentials to perform operation with
-   * @return {@link scala.concurrent.Future} representing the operation
+   * @return A {@link scala.concurrent.Future} representing the operation
    */
   Future<Unit> setStreamMetadata(
       String stream,
@@ -271,7 +295,7 @@ public interface EsConnection {
    *
    * @param stream      The name of the stream for which to read metadata.
    * @param credentials The optional user credentials to perform operation with
-   * @return {@link scala.concurrent.Future} containing the metadata as byte array.
+   * @return A {@link scala.concurrent.Future} containing the metadata as byte array.
    */
   Future<byte[]> getStreamMetadataBytes(String stream, UserCredentials credentials);
 }

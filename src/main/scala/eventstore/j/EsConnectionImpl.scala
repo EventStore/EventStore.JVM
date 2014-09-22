@@ -40,6 +40,18 @@ class EsConnectionImpl(connection: eventstore.EsConnection) extends EsConnection
     connection.future(out, Option(credentials)).map(_ => ())
   }
 
+  def startTransaction(stream: String, expectedVersion: ExpectedVersion, credentials: UserCredentials) = {
+    val msg = TransactionStart(
+      streamId = EventStream.Id(stream),
+      expectedVersion = Option(expectedVersion) getOrElse ExpectedVersion.Any)
+    connection.startTransaction(msg, Option(credentials)).map(new EsTransactionImpl(_))
+  }
+
+  def continueTransaction(transactionId: Long, credentials: UserCredentials) = {
+    val transaction = connection.continueTransaction(transactionId, Option(credentials))
+    new EsTransactionImpl(transaction)
+  }
+
   def readEvent(
     stream: String,
     eventNumber: EventNumber,

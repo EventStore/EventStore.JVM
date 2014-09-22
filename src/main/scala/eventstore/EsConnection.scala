@@ -22,14 +22,14 @@ class EsConnection(
     future.mapTo[IN](outIn.inTag)
   }
 
-  def startTransaction(data: TransactionStart): Future[EsTransaction] = {
-    val props = TransactionActor.props(connection, TransactionActor.Start(data))
+  def startTransaction(data: TransactionStart, credentials: Option[UserCredentials] = None): Future[EsTransaction] = {
+    val props = TransactionActor.props(connection, TransactionActor.Start(data), credentials = credentials)
     val actor = factory.actorOf(props)
     EsTransaction.start(actor)
   }
 
-  def continueTransaction(transactionId: Long): EsTransaction = {
-    val props = TransactionActor.props(connection, TransactionActor.Continue(transactionId))
+  def continueTransaction(transactionId: Long, credentials: Option[UserCredentials] = None): EsTransaction = {
+    val props = TransactionActor.props(connection, TransactionActor.Continue(transactionId), credentials = credentials)
     val actor = factory.actorOf(props)
     EsTransaction.continue(transactionId, actor)
   }

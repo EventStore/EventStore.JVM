@@ -4,9 +4,8 @@ package j
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Awaitable }
-import util.ActorSpec
 
-class EsConnectionITest extends ActorSpec {
+class EsConnectionITest extends eventstore.util.ActorSpec {
   "EsConnection" should {
 
     "write events" in new TestScope {
@@ -92,6 +91,31 @@ class EsConnectionITest extends ActorSpec {
       override def eventType = "java-readAllBackward"
     }
 
+    "start transaction" in new TestScope {
+      val streamId = "java-startTransaction-" + randomUuid
+      val transaction = for {
+        t <- connection.startTransaction(streamId, null, null)
+        _ <- t.write(events)
+        _ <- t.commit()
+      } yield t
+      await(transaction).getId must be_>=(-1L)
+    }
+
+    "continue transaction" in new TestScope {
+      val streamId = "java-continueTransaction-" + randomUuid
+      val result = for {
+        started <- connection.startTransaction(streamId, null, null)
+        _ <- started.write(events)
+        continued = connection.continueTransaction(started.getId, null)
+        _ <- continued.write(List(newEventData).asJava)
+        _ <- continued.commit()
+        _ <- started.commit()
+      } yield (started, continued)
+
+      val (started, continued) = await(result)
+      started.getId mustEqual continued.getId
+    }
+
     "set & get stream metadata bytes" in new TestScope {
       val streamId = "java-streamMetadata-" + randomUuid
       val expected = Array[Byte](1, 2, 3)
@@ -109,12 +133,13 @@ class EsConnectionITest extends ActorSpec {
     }
   }
 
-  trait TestScope extends ActorScope {
+  private trait TestScope extends ActorScope {
     val connection: EsConnection = new EsConnectionImpl(eventstore.EsConnection(system))
-    def eventType = "java-test"
-    val eventData = EventData(eventType = eventType, data = Content("data"), metadata = Content("metadata"))
-
+    val eventData = newEventData
     val events = List(eventData).asJava
+
+    def eventType = "java-test"
+    def newEventData = EventData(eventType = eventType, data = Content("data"), metadata = Content("metadata"))
 
     def await[T](awaitable: Awaitable[T]): T = Await.result(awaitable, 2.seconds)
   }

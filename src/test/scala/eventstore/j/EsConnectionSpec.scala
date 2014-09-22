@@ -5,6 +5,7 @@ import scala.collection.JavaConverters._
 import java.io.Closeable
 import akka.actor.Status.Failure
 import akka.testkit.TestProbe
+import scala.concurrent.duration._
 
 class EsConnectionSpec extends util.ActorSpec {
 
@@ -205,9 +206,30 @@ class EsConnectionSpec extends util.ActorSpec {
       expectMsg(Unsubscribe)
       client expectMsg Close
     }
+
+    "start transaction" in new TestScope {
+      for {
+        stream <- streams
+        version <- existingVersions
+        uc <- userCredentials
+      } {
+        connection.startTransaction(stream, version, uc)
+        val msg = TransactionStart(
+          streamId = EventStream.Id(stream),
+          expectedVersion = Option(version) getOrElse ExpectedVersion.Any)
+        expect(msg, uc)
+      }
+    }
+
+    "continue transaction" in new TestScope {
+      for {
+        uc <- userCredentials
+      } connection.continueTransaction(1234, uc)
+      expectNoMsg(1.second)
+    }
   }
 
-  trait TestScope extends ActorScope {
+  private trait TestScope extends ActorScope {
     val underlying = new eventstore.EsConnection(testActor, system)
     val connection: EsConnection = new EsConnectionImpl(underlying)
 
@@ -217,7 +239,7 @@ class EsConnectionSpec extends util.ActorSpec {
     }
   }
 
-  trait SubscriptionScope[T] extends TestScope {
+  private trait SubscriptionScope[T] extends TestScope {
     val streamId = EventStream.Id("streamId")
     val client = TestProbe()
 
@@ -243,7 +265,7 @@ class EsConnectionSpec extends util.ActorSpec {
     case object LiveProcessingStart
   }
 
-  trait StreamSubscriptionScope extends SubscriptionScope[Event] {
+  private trait StreamSubscriptionScope extends SubscriptionScope[Event] {
     def readEventsCompleted(xs: IndexedEvent*) = ReadStreamEventsCompleted(
       xs.map(_.event).toList,
       EventNumber(0),
