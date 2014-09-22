@@ -222,9 +222,6 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
       extends ProtoOperationReader[TransactionCommitCompleted, j.TransactionCommitCompleted] {
     def parse = j.TransactionCommitCompleted.parseFrom
     def success(x: j.TransactionCommitCompleted) = {
-
-      println(x.getResult.toString)
-      println(s"commit: ${option(x.hasCommitPosition, x.getCommitPosition)}, prepare: ${option(x.hasPreparePosition, x.getPreparePosition)}")
       TransactionCommitCompleted(
         transactionId = x.getTransactionId,
         numbersRange = range(x),
