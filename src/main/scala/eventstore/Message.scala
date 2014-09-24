@@ -44,7 +44,7 @@ case class WriteEvents(
   streamId: EventStream.Id,
   events: List[EventData],
   expectedVersion: ExpectedVersion = ExpectedVersion.Any,
-  requireMaster: Boolean = true) extends Out
+  requireMaster: Boolean = Settings.Default.requireMaster) extends Out
 
 object WriteEvents {
 
@@ -53,7 +53,7 @@ object WriteEvents {
       streamId: EventStream.Metadata,
       data: Content,
       expectedVersion: ExpectedVersion = ExpectedVersion.Any,
-      requireMaster: Boolean = true /*TODO use from settings*/ ): WriteEvents = WriteEvents(
+      requireMaster: Boolean = Settings.Default.requireMaster): WriteEvents = WriteEvents(
       streamId = streamId,
       events = List(EventData.StreamMetadata(data)),
       expectedVersion = expectedVersion,
@@ -69,21 +69,24 @@ case class DeleteStream(
   streamId: EventStream.Id,
   expectedVersion: ExpectedVersion.Existing = ExpectedVersion.Any,
   hard: Boolean = false,
-  requireMaster: Boolean = true) extends Out
+  requireMaster: Boolean = Settings.Default.requireMaster) extends Out
 
 case class DeleteStreamCompleted(position: Option[Position.Exact] = None) extends In
 
 case class TransactionStart(
   streamId: EventStream.Id,
   expectedVersion: ExpectedVersion = ExpectedVersion.Any,
-  requireMaster: Boolean = true) extends Out
+  requireMaster: Boolean = Settings.Default.requireMaster) extends Out
 
 // TODO what if 2 transactions started at same time?
 case class TransactionStartCompleted(transactionId: Long) extends In {
   require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
 }
 
-case class TransactionWrite(transactionId: Long, events: List[EventData], requireMaster: Boolean = true) extends Out {
+case class TransactionWrite(
+    transactionId: Long,
+    events: List[EventData],
+    requireMaster: Boolean = Settings.Default.requireMaster) extends Out {
   require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
 }
 
@@ -91,7 +94,9 @@ case class TransactionWriteCompleted(transactionId: Long) extends In {
   require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
 }
 
-case class TransactionCommit(transactionId: Long, requireMaster: Boolean = true) extends Out {
+case class TransactionCommit(
+    transactionId: Long,
+    requireMaster: Boolean = Settings.Default.requireMaster) extends Out {
   require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
 }
 
@@ -106,14 +111,14 @@ case class ReadEvent(
   streamId: EventStream.Id,
   eventNumber: EventNumber = EventNumber.First,
   resolveLinkTos: Boolean = false,
-  requireMaster: Boolean = true) extends Out
+  requireMaster: Boolean = Settings.Default.requireMaster) extends Out
 
 object ReadEvent {
   object StreamMetadata {
     def apply(
       streamId: EventStream.Metadata,
       resolveLinkTos: Boolean = false,
-      requireMaster: Boolean = true): ReadEvent = {
+      requireMaster: Boolean = Settings.Default.requireMaster): ReadEvent = {
       ReadEvent(streamId, EventNumber.Last, resolveLinkTos = resolveLinkTos, requireMaster = requireMaster)
     }
   }
@@ -127,7 +132,7 @@ case class ReadStreamEvents(
     maxCount: Int = Settings.Default.readBatchSize,
     direction: ReadDirection = ReadDirection.Forward,
     resolveLinkTos: Boolean = false,
-    requireMaster: Boolean = true) extends Out {
+    requireMaster: Boolean = Settings.Default.requireMaster) extends Out {
   require(maxCount > 0, s"maxCount must be > 0, but is $maxCount")
   require(maxCount <= MaxBatchSize, s"maxCount must be <= $MaxBatchSize, but is $maxCount")
   require(
@@ -155,7 +160,7 @@ case class ReadAllEvents(
     maxCount: Int = Settings.Default.readBatchSize,
     direction: ReadDirection = ReadDirection.Forward,
     resolveLinkTos: Boolean = false,
-    requireMaster: Boolean = true) extends Out {
+    requireMaster: Boolean = Settings.Default.requireMaster) extends Out {
   require(maxCount > 0, s"maxCount must be > 0, but is $maxCount")
   require(maxCount <= MaxBatchSize, s"maxCount must be <= $MaxBatchSize, but is $maxCount")
 }

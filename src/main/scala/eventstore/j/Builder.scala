@@ -59,6 +59,10 @@ object Builder {
 
   trait RequireMasterSnippetI[T] {
     def requireMaster(x: Boolean): T
+
+    def performOnAnyNode: T = requireMaster(x = false)
+
+    def performOnMasterOnly: T = requireMaster(x = true)
   }
 
   trait RequireMasterSnippet[T] extends RequireMasterSnippetI[T] with ChainSet[T] {

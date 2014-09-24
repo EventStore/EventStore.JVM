@@ -14,6 +14,7 @@ import com.typesafe.config.{ ConfigFactory, Config }
  * @param heartbeatInterval The interval at which to send heartbeat messages.
  * @param heartbeatTimeout The interval after which an unacknowledged heartbeat will cause the connection to be considered faulted and disconnect.
  * @param operationTimeout The amount of time before an operation is considered to have timed out
+ * @param requireMaster Whether or not to require Event Store to refuse serving read or write request if it is not master
  * @param readBatchSize Number of events to be retrieved by client as single message
  * @param backpressure see [[eventstore.pipeline.BackpressureBuffer]]
  */
@@ -27,6 +28,7 @@ case class Settings(
   heartbeatInterval: FiniteDuration = 500.millis,
   heartbeatTimeout: FiniteDuration = 2.seconds,
   operationTimeout: FiniteDuration = 5.seconds,
+  requireMaster: Boolean = true,
   readBatchSize: Int = 500,
   backpressure: BackpressureSettings = BackpressureSettings())
 
@@ -39,6 +41,7 @@ object Settings {
       def duration(path: String) = FiniteDuration(conf.getDuration(path, MILLISECONDS), MILLISECONDS)
       Settings(
         address = new InetSocketAddress(conf getString "address.host", conf getInt "address.port"),
+        connectionTimeout = duration("connection-timeout"),
         maxReconnections = conf getInt "max-reconnections",
         reconnectionDelayMin = duration("reconnection-delay.min"),
         reconnectionDelayMax = duration("reconnection-delay.max"),
@@ -48,8 +51,8 @@ object Settings {
         } yield UserCredentials(login = l, password = p),
         heartbeatInterval = duration("heartbeat.interval"),
         heartbeatTimeout = duration("heartbeat.timeout"),
-        connectionTimeout = duration("connection-timeout"),
         operationTimeout = duration("operation-timeout"),
+        requireMaster = conf getBoolean "require-master",
         readBatchSize = conf getInt "read-batch-size",
         backpressure = BackpressureSettings(conf))
     }

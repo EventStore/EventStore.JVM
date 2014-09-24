@@ -9,7 +9,7 @@ object TransactionActor {
   def props(
     connection: ActorRef,
     kickoff: Kickoff,
-    requireMaster: Boolean = true,
+    requireMaster: Boolean = Settings.Default.requireMaster,
     credentials: Option[UserCredentials] = None): Props =
     Props(classOf[TransactionActor], connection, kickoff, requireMaster, credentials)
 
