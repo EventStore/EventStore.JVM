@@ -78,7 +78,6 @@ case class TransactionStart(
   expectedVersion: ExpectedVersion = ExpectedVersion.Any,
   requireMaster: Boolean = Settings.Default.requireMaster) extends Out
 
-// TODO what if 2 transactions started at same time?
 case class TransactionStartCompleted(transactionId: Long) extends In {
   require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
 }
