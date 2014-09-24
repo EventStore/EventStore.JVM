@@ -4,9 +4,9 @@ package j
 import Builder._
 
 class SubscribeToBuilder extends Builder[SubscribeTo] with ResolveLinkTosSnippet[SubscribeToBuilder] {
-  var _stream: EventStream = null
+  protected var _stream: EventStream = null
 
-  def toAll(): SubscribeToBuilder = set {
+  def toAll: SubscribeToBuilder = set {
     _stream = EventStream.All
   }
 

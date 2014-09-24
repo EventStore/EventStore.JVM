@@ -10,17 +10,17 @@ class SettingsBuilder extends Builder[Settings]
     with RequireMasterSnippet[SettingsBuilder]
     with ResolveLinkTosSnippet[SettingsBuilder] {
 
-  var _address = Default.address
-  var _maxReconnections = Default.maxReconnections
-  var _reconnectionDelayMin = Default.reconnectionDelayMin
-  var _reconnectionDelayMax = Default.reconnectionDelayMax
-  var _defaultCredentials = Default.defaultCredentials
-  var _heartbeatInterval = Default.heartbeatInterval
-  var _heartbeatTimeout = Default.heartbeatTimeout
-  var _connectionTimeout = Default.connectionTimeout
-  var _operationTimeout = Default.operationTimeout
-  var _readBatchSize: Int = Default.readBatchSize
-  var _backpressure = Default.backpressure
+  protected var _address = Default.address
+  protected var _maxReconnections = Default.maxReconnections
+  protected var _reconnectionDelayMin = Default.reconnectionDelayMin
+  protected var _reconnectionDelayMax = Default.reconnectionDelayMax
+  protected var _defaultCredentials = Default.defaultCredentials
+  protected var _heartbeatInterval = Default.heartbeatInterval
+  protected var _heartbeatTimeout = Default.heartbeatTimeout
+  protected var _connectionTimeout = Default.connectionTimeout
+  protected var _operationTimeout = Default.operationTimeout
+  protected var _readBatchSize: Int = Default.readBatchSize
+  protected var _backpressure = Default.backpressure
 
   def address(x: InetSocketAddress): SettingsBuilder = set {
     _address = x

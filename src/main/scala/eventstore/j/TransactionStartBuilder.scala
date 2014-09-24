@@ -7,7 +7,7 @@ class TransactionStartBuilder(streamId: String) extends Builder[TransactionStart
     with ExpectVersionSnippet[TransactionStartBuilder]
     with RequireMasterSnippet[TransactionStartBuilder] {
 
-  private val _streamId = EventStream.Id(streamId)
+  protected val _streamId = EventStream.Id(streamId)
 
   override def expectNoStream: TransactionStartBuilder = super.expectNoStream
   override def expectAnyVersion: TransactionStartBuilder = super.expectAnyVersion

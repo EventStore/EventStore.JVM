@@ -22,7 +22,7 @@ object Builder {
   }
 
   trait ResolveLinkTosSnippet[T] extends ChainSet[T] { self: T =>
-    var _resolveLinkTos = Settings.Default.resolveLinkTos
+    protected var _resolveLinkTos = Settings.Default.resolveLinkTos
 
     def resolveLinkTos(x: Boolean): T = set {
       _resolveLinkTos = x
@@ -41,39 +41,28 @@ object Builder {
     def performOnMasterOnly: T = requireMaster(x = true)
   }
 
-  trait EventDataSnippetI[T] {
-    def addEvent(x: EventData): T
-    def addEvents(xs: java.lang.Iterable[EventData]): T
-    def event(x: EventData): T
-    def events(xs: java.lang.Iterable[EventData]): T
-  }
-
-  trait EventDataSnippet[T] extends EventDataSnippetI[T] with ChainSet[T] {
-    self: T =>
-
+  trait EventDataSnippet[T] extends ChainSet[T] { self: T =>
     import scala.collection.mutable.ListBuffer
     import scala.collection.JavaConverters._
 
-    object EventDataSnippet extends EventDataSnippetI[T] {
-      var value: ListBuffer[EventData] = new ListBuffer()
+    protected var _events: ListBuffer[EventData] = new ListBuffer()
 
-      def addEvent(x: EventData) = set {
-        value += x
-      }
+    def addEvent(x: EventData): T = set {
+      _events += x
+    }
 
-      def addEvents(xs: java.lang.Iterable[EventData]) = set {
-        value ++= xs.asScala
-      }
+    def addEvents(xs: java.lang.Iterable[EventData]): T = set {
+      _events ++= xs.asScala
+    }
 
-      def event(x: EventData) = set {
-        value = new ListBuffer()
-        addEvent(x)
-      }
+    def event(x: EventData): T = set {
+      _events = new ListBuffer()
+      addEvent(x)
+    }
 
-      def events(xs: java.lang.Iterable[EventData]) = set {
-        value = new ListBuffer()
-        addEvents(xs)
-      }
+    def events(xs: java.lang.Iterable[EventData]): T = set {
+      _events = new ListBuffer()
+      addEvents(xs)
     }
   }
 

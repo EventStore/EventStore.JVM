@@ -11,10 +11,10 @@ class WriteEventsBuilder(streamId: String) extends Builder[WriteEvents]
 
   protected val _streamId: EventStream.Id = EventStream.Id(streamId)
 
-  def addEvent(x: EventData): WriteEventsBuilder = EventDataSnippet.addEvent(x)
-  def addEvents(xs: Iterable[EventData]): WriteEventsBuilder = EventDataSnippet.addEvents(xs)
-  def event(x: EventData): WriteEventsBuilder = EventDataSnippet.event(x)
-  def events(xs: Iterable[EventData]): WriteEventsBuilder = EventDataSnippet.events(xs)
+  override def addEvent(x: EventData): WriteEventsBuilder = super.addEvent(x)
+  override def addEvents(xs: Iterable[EventData]): WriteEventsBuilder = super.addEvents(xs)
+  override def event(x: EventData): WriteEventsBuilder = super.event(x)
+  override def events(xs: Iterable[EventData]): WriteEventsBuilder = super.events(xs)
 
   override def expectNoStream: WriteEventsBuilder = super.expectNoStream
   override def expectAnyVersion: WriteEventsBuilder = super.expectAnyVersion
@@ -27,7 +27,7 @@ class WriteEventsBuilder(streamId: String) extends Builder[WriteEvents]
 
   def build: WriteEvents = WriteEvents(
     streamId = _streamId,
-    events = EventDataSnippet.value.toList,
+    events = _events.toList,
     expectedVersion = _expectVersion,
     requireMaster = _requireMaster)
 }
