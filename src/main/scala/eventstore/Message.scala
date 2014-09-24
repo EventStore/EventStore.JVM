@@ -110,14 +110,14 @@ case class TransactionCommitCompleted(
 case class ReadEvent(
   streamId: EventStream.Id,
   eventNumber: EventNumber = EventNumber.First,
-  resolveLinkTos: Boolean = false,
+  resolveLinkTos: Boolean = Settings.Default.resolveLinkTos,
   requireMaster: Boolean = Settings.Default.requireMaster) extends Out
 
 object ReadEvent {
   object StreamMetadata {
     def apply(
       streamId: EventStream.Metadata,
-      resolveLinkTos: Boolean = false,
+      resolveLinkTos: Boolean = Settings.Default.resolveLinkTos,
       requireMaster: Boolean = Settings.Default.requireMaster): ReadEvent = {
       ReadEvent(streamId, EventNumber.Last, resolveLinkTos = resolveLinkTos, requireMaster = requireMaster)
     }
@@ -131,7 +131,7 @@ case class ReadStreamEvents(
     fromNumber: EventNumber = EventNumber.First,
     maxCount: Int = Settings.Default.readBatchSize,
     direction: ReadDirection = ReadDirection.Forward,
-    resolveLinkTos: Boolean = false,
+    resolveLinkTos: Boolean = Settings.Default.resolveLinkTos,
     requireMaster: Boolean = Settings.Default.requireMaster) extends Out {
   require(maxCount > 0, s"maxCount must be > 0, but is $maxCount")
   require(maxCount <= MaxBatchSize, s"maxCount must be <= $MaxBatchSize, but is $maxCount")
@@ -159,7 +159,7 @@ case class ReadAllEvents(
     fromPosition: Position = Position.First,
     maxCount: Int = Settings.Default.readBatchSize,
     direction: ReadDirection = ReadDirection.Forward,
-    resolveLinkTos: Boolean = false,
+    resolveLinkTos: Boolean = Settings.Default.resolveLinkTos,
     requireMaster: Boolean = Settings.Default.requireMaster) extends Out {
   require(maxCount > 0, s"maxCount must be > 0, but is $maxCount")
   require(maxCount <= MaxBatchSize, s"maxCount must be <= $MaxBatchSize, but is $maxCount")
@@ -175,7 +175,7 @@ case class ReadAllEventsCompleted(
   def eventsJava: java.util.List[IndexedEvent] = events.asJava
 }
 
-case class SubscribeTo(stream: EventStream, resolveLinkTos: Boolean = false) extends Out
+case class SubscribeTo(stream: EventStream, resolveLinkTos: Boolean = Settings.Default.resolveLinkTos) extends Out
 
 sealed trait SubscribeCompleted extends In
 

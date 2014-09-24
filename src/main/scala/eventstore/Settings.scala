@@ -14,9 +14,10 @@ import com.typesafe.config.{ ConfigFactory, Config }
  * @param heartbeatInterval The interval at which to send heartbeat messages.
  * @param heartbeatTimeout The interval after which an unacknowledged heartbeat will cause the connection to be considered faulted and disconnect.
  * @param operationTimeout The amount of time before an operation is considered to have timed out
+ * @param resolveLinkTos Whether to resolve LinkTo events automatically
  * @param requireMaster Whether or not to require Event Store to refuse serving read or write request if it is not master
  * @param readBatchSize Number of events to be retrieved by client as single message
- * @param backpressure see [[eventstore.pipeline.BackpressureBuffer]]
+ * @param backpressure See [[eventstore.pipeline.BackpressureBuffer]]
  */
 case class Settings(
   address: InetSocketAddress = new InetSocketAddress("127.0.0.1", 1113),
@@ -28,6 +29,7 @@ case class Settings(
   heartbeatInterval: FiniteDuration = 500.millis,
   heartbeatTimeout: FiniteDuration = 2.seconds,
   operationTimeout: FiniteDuration = 5.seconds,
+  resolveLinkTos: Boolean = false,
   requireMaster: Boolean = true,
   readBatchSize: Int = 500,
   backpressure: BackpressureSettings = BackpressureSettings())
@@ -52,6 +54,7 @@ object Settings {
         heartbeatInterval = duration("heartbeat.interval"),
         heartbeatTimeout = duration("heartbeat.timeout"),
         operationTimeout = duration("operation-timeout"),
+        resolveLinkTos = conf getBoolean "resolve-linkTos",
         requireMaster = conf getBoolean "require-master",
         readBatchSize = conf getInt "read-batch-size",
         backpressure = BackpressureSettings(conf))

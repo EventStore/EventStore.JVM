@@ -37,7 +37,7 @@ class EsConnection(
   def subscribeToStream(
     streamId: EventStream.Id,
     observer: SubscriptionObserver[Event],
-    resolveLinkTos: Boolean = false,
+    resolveLinkTos: Boolean = Settings.Default.resolveLinkTos,
     credentials: Option[UserCredentials] = None): Closeable =
     subscribeToStream(streamId, observer, Some(EventNumber.Last), resolveLinkTos, credentials)
 
@@ -45,7 +45,7 @@ class EsConnection(
     streamId: EventStream.Id,
     observer: SubscriptionObserver[Event],
     fromNumberExclusive: Option[EventNumber.Exact] = None,
-    resolveLinkTos: Boolean = false,
+    resolveLinkTos: Boolean = Settings.Default.resolveLinkTos,
     credentials: Option[UserCredentials] = None): Closeable =
     subscribeToStream(streamId, observer, fromNumberExclusive, resolveLinkTos, credentials)
 
@@ -63,14 +63,14 @@ class EsConnection(
 
   def subscribeToAll(
     observer: SubscriptionObserver[IndexedEvent],
-    resolveLinkTos: Boolean = false,
+    resolveLinkTos: Boolean = Settings.Default.resolveLinkTos,
     credentials: Option[UserCredentials] = None): Closeable =
     subscribeToAll(observer, Some(Position.Last), resolveLinkTos, credentials)
 
   def subscribeToAllFrom(
     observer: SubscriptionObserver[IndexedEvent],
     fromPositionExclusive: Option[Position.Exact] = None,
-    resolveLinkTos: Boolean = false,
+    resolveLinkTos: Boolean = Settings.Default.resolveLinkTos,
     credentials: Option[UserCredentials] = None): Closeable =
     subscribeToAll(observer, fromPositionExclusive, resolveLinkTos, credentials)
 

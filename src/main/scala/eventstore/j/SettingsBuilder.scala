@@ -2,11 +2,14 @@ package eventstore
 package j
 
 import Settings.Default
-import Builder.RequireMasterSnippet
+import Builder.{ ResolveLinkTosSnippet, RequireMasterSnippet }
 import java.net.InetSocketAddress
 import scala.concurrent.duration._
 
-class SettingsBuilder extends Builder[Settings] with ChainSet[SettingsBuilder] with RequireMasterSnippet[SettingsBuilder] {
+class SettingsBuilder extends Builder[Settings]
+    with RequireMasterSnippet[SettingsBuilder]
+    with ResolveLinkTosSnippet[SettingsBuilder] {
+
   var _address = Default.address
   var _maxReconnections = Default.maxReconnections
   var _reconnectionDelayMin = Default.reconnectionDelayMin
@@ -88,6 +91,8 @@ class SettingsBuilder extends Builder[Settings] with ChainSet[SettingsBuilder] w
 
   def operationTimeout(length: Long): SettingsBuilder = operationTimeout(length, SECONDS)
 
+  def resolveLinkTos(x: Boolean) = ResolveLinkTosSnippet.resolveLinkTos(x)
+
   def requireMaster(x: Boolean): SettingsBuilder = RequireMasterSnippet.requireMaster(x)
 
   def readBatchSize(x: Int): SettingsBuilder = set {
@@ -107,6 +112,7 @@ class SettingsBuilder extends Builder[Settings] with ChainSet[SettingsBuilder] w
     heartbeatInterval = _heartbeatInterval,
     heartbeatTimeout = _heartbeatTimeout,
     connectionTimeout = _connectionTimeout,
+    resolveLinkTos = ResolveLinkTosSnippet.value,
     requireMaster = RequireMasterSnippet.value,
     readBatchSize = _readBatchSize,
     backpressure = _backpressure)
