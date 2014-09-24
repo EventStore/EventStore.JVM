@@ -15,6 +15,7 @@ class SettingsBuilder extends Builder[Settings] with ChainSet[SettingsBuilder] {
   var _heartbeatTimeout = Default.heartbeatTimeout
   var _connectionTimeout = Default.connectionTimeout
   var _operationTimeout = Default.operationTimeout
+  var _readBatchSize: Int = Default.readBatchSize
   var _backpressure = Default.backpressure
 
   def address(x: InetSocketAddress): SettingsBuilder = set {
@@ -86,6 +87,10 @@ class SettingsBuilder extends Builder[Settings] with ChainSet[SettingsBuilder] {
 
   def operationTimeout(length: Long): SettingsBuilder = operationTimeout(length, SECONDS)
 
+  def readBatchSize(x: Int): SettingsBuilder = set {
+    _readBatchSize = x
+  }
+
   def backpressure(x: BackpressureSettings): SettingsBuilder = set {
     _backpressure = x
   }
@@ -99,5 +104,6 @@ class SettingsBuilder extends Builder[Settings] with ChainSet[SettingsBuilder] {
     heartbeatInterval = _heartbeatInterval,
     heartbeatTimeout = _heartbeatTimeout,
     connectionTimeout = _connectionTimeout,
+    readBatchSize = _readBatchSize,
     backpressure = _backpressure)
 }

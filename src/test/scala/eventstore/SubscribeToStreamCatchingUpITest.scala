@@ -148,7 +148,7 @@ class SubscribeToStreamCatchingUpITest extends TestConnection {
         streamId = streamId,
         fromNumberExclusive = fromNumberExclusive,
         resolveLinkTos = resolveLinkTos,
-        readBatchSize = 500))
+        readBatchSize = Settings.Default.readBatchSize))
       watch(a)
       a
     }

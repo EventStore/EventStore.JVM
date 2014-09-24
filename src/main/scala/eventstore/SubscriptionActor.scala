@@ -12,7 +12,7 @@ object SubscriptionActor {
     fromPositionExclusive: Option[Position] = None,
     resolveLinkTos: Boolean = false,
     credentials: Option[UserCredentials] = None,
-    readBatchSize: Int = Settings.ReadBatchSize): Props = Props(classOf[SubscriptionActor], connection, client,
+    readBatchSize: Int = Settings.Default.readBatchSize): Props = Props(classOf[SubscriptionActor], connection, client,
     fromPositionExclusive, resolveLinkTos, credentials, readBatchSize)
 
   /**

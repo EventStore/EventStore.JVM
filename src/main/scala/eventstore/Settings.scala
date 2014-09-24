@@ -14,12 +14,12 @@ case class Settings(
   heartbeatTimeout: FiniteDuration = 2.seconds,
   connectionTimeout: FiniteDuration = 1.second,
   operationTimeout: FiniteDuration = 5.seconds,
+  readBatchSize: Int = 500,
   backpressure: BackpressureSettings = BackpressureSettings())
 
 object Settings {
   private lazy val config: Config = ConfigFactory.load()
   lazy val Default: Settings = Settings(config)
-  lazy val ReadBatchSize: Int = config.getInt("eventstore.read-batch-size")
 
   def apply(conf: Config): Settings = {
     def apply(conf: Config): Settings = {
@@ -37,6 +37,7 @@ object Settings {
         heartbeatTimeout = duration("heartbeat.timeout"),
         connectionTimeout = duration("connection-timeout"),
         operationTimeout = duration("operation-timeout"),
+        readBatchSize = conf getInt "read-batch-size",
         backpressure = BackpressureSettings(conf))
     }
     apply(conf.getConfig("eventstore"))

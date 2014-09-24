@@ -127,14 +127,14 @@ abstract class TestConnection extends util.ActorSpec {
     }
 
     def readStreamEventsFailed(implicit direction: ReadDirection): EsError =
-      readStreamEventsFailed(EventNumber.start(direction), 500)
+      readStreamEventsFailed(EventNumber.start(direction), Settings.Default.readBatchSize)
 
     def streamEvents(implicit direction: ReadDirection = Forward): Stream[EventData] =
       streamEventRecords(direction).map(_.data)
 
     def streamEventRecords(implicit direction: ReadDirection = Forward): Stream[Event] = {
       def loop(position: EventNumber): Stream[Event] = {
-        val result = readStreamEventsCompleted(position, 500)
+        val result = readStreamEventsCompleted(position, Settings.Default.readBatchSize)
         val resolvedIndexedEvents = result.events
         if (resolvedIndexedEvents.isEmpty || result.endOfStream) resolvedIndexedEvents.toStream
         else resolvedIndexedEvents.toStream #::: loop(result.nextEventNumber)
@@ -186,7 +186,7 @@ abstract class TestConnection extends util.ActorSpec {
     def readAllEvents(position: Position, maxCount: Int)(implicit direction: ReadDirection): List[Event] =
       readAllEventsCompleted(position = position, maxCount = maxCount).events.map(_.event)
 
-    def allStreamsEvents(maxCount: Int = 500)(implicit direction: ReadDirection): Stream[IndexedEvent] = {
+    def allStreamsEvents(maxCount: Int = Settings.Default.readBatchSize)(implicit direction: ReadDirection): Stream[IndexedEvent] = {
       def loop(position: Position): Stream[IndexedEvent] = {
         val result = readAllEventsCompleted(position, maxCount)
         val events = result.events
@@ -196,7 +196,7 @@ abstract class TestConnection extends util.ActorSpec {
       loop(Position.start(direction))
     }
 
-    def allStreamsEventsData(maxCount: Int = 500)(implicit direction: ReadDirection) =
+    def allStreamsEventsData(maxCount: Int = Settings.Default.readBatchSize)(implicit direction: ReadDirection) =
       allStreamsEvents(maxCount).map(_.event.data)
 
     def newStreamId: EventStream.Plain = EventStream.Plain(getClass.getEnclosingClass.getSimpleName + "-" + randomUuid.toString)
