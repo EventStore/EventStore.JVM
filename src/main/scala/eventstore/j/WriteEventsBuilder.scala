@@ -16,15 +16,18 @@ class WriteEventsBuilder(streamId: String) extends Builder[WriteEvents]
   def event(x: EventData): WriteEventsBuilder = EventDataSnippet.event(x)
   def events(xs: Iterable[EventData]): WriteEventsBuilder = EventDataSnippet.events(xs)
 
-  def expectNoStream: WriteEventsBuilder = ExpectedVersionSnippet.expectNoStream
-  def expectAnyVersion: WriteEventsBuilder = ExpectedVersionSnippet.expectAnyVersion
-  def expectVersion(x: Int): WriteEventsBuilder = ExpectedVersionSnippet.expectVersion(x)
+  override def expectNoStream: WriteEventsBuilder = super.expectNoStream
+  override def expectAnyVersion: WriteEventsBuilder = super.expectAnyVersion
+  override def expectVersion(x: Int): WriteEventsBuilder = super.expectVersion(x)
+  override def expectVersion(x: ExpectedVersion): WriteEventsBuilder = super.expectVersion(x)
 
-  def requireMaster(x: Boolean): WriteEventsBuilder = RequireMasterSnippet.requireMaster(x)
+  override def performOnAnyNode: WriteEventsBuilder = super.performOnAnyNode
+  override def performOnMasterOnly: WriteEventsBuilder = super.performOnMasterOnly
+  override def requireMaster(x: Boolean): WriteEventsBuilder = super.requireMaster(x)
 
   def build: WriteEvents = WriteEvents(
     streamId = _streamId,
     events = EventDataSnippet.value.toList,
-    expectedVersion = ExpectedVersionSnippet.value,
-    requireMaster = RequireMasterSnippet.value)
+    expectedVersion = _expectVersion,
+    requireMaster = _requireMaster)
 }

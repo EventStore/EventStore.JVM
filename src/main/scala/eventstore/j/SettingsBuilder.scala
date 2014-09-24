@@ -91,9 +91,11 @@ class SettingsBuilder extends Builder[Settings]
 
   def operationTimeout(length: Long): SettingsBuilder = operationTimeout(length, SECONDS)
 
-  def resolveLinkTos(x: Boolean) = ResolveLinkTosSnippet.resolveLinkTos(x)
+  override def resolveLinkTos(x: Boolean) = super.resolveLinkTos(x)
 
-  def requireMaster(x: Boolean): SettingsBuilder = RequireMasterSnippet.requireMaster(x)
+  override def performOnAnyNode: SettingsBuilder = super.performOnAnyNode
+  override def performOnMasterOnly: SettingsBuilder = super.performOnMasterOnly
+  override def requireMaster(x: Boolean): SettingsBuilder = super.requireMaster(x)
 
   def readBatchSize(x: Int): SettingsBuilder = set {
     _readBatchSize = x
@@ -112,8 +114,8 @@ class SettingsBuilder extends Builder[Settings]
     heartbeatInterval = _heartbeatInterval,
     heartbeatTimeout = _heartbeatTimeout,
     connectionTimeout = _connectionTimeout,
-    resolveLinkTos = ResolveLinkTosSnippet.value,
-    requireMaster = RequireMasterSnippet.value,
+    resolveLinkTos = _resolveLinkTos,
+    requireMaster = _requireMaster,
     readBatchSize = _readBatchSize,
     backpressure = _backpressure)
 }

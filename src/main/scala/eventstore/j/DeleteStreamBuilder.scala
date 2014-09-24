@@ -10,7 +10,9 @@ class DeleteStreamBuilder(streamId: String) extends Builder[DeleteStream]
   protected var _hard: Boolean = false
   protected var _expectVersion: ExpectedVersion.Existing = ExpectedVersion.Any
 
-  def requireMaster(x: Boolean): DeleteStreamBuilder = RequireMasterSnippet.requireMaster(x)
+  override def performOnAnyNode: DeleteStreamBuilder = super.performOnAnyNode
+  override def performOnMasterOnly: DeleteStreamBuilder = super.performOnMasterOnly
+  override def requireMaster(x: Boolean): DeleteStreamBuilder = super.requireMaster(x)
 
   def expectAnyVersion: DeleteStreamBuilder = expectVersion(ExpectedVersion.Any)
 
@@ -32,5 +34,5 @@ class DeleteStreamBuilder(streamId: String) extends Builder[DeleteStream]
     streamId = _streamId,
     expectedVersion = _expectVersion,
     hard = _hard,
-    requireMaster = RequireMasterSnippet.value)
+    requireMaster = _requireMaster)
 }

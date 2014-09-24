@@ -13,10 +13,12 @@ class TransactionWriteBuilder(transactionId: Long) extends Builder[TransactionWr
   def event(x: EventData): TransactionWriteBuilder = EventDataSnippet.event(x)
   def events(xs: Iterable[EventData]): TransactionWriteBuilder = EventDataSnippet.events(xs)
 
-  def requireMaster(x: Boolean): TransactionWriteBuilder = RequireMasterSnippet.requireMaster(x)
+  override def performOnAnyNode: TransactionWriteBuilder = super.performOnAnyNode
+  override def performOnMasterOnly: TransactionWriteBuilder = super.performOnMasterOnly
+  override def requireMaster(x: Boolean): TransactionWriteBuilder = super.requireMaster(x)
 
   def build: TransactionWrite = TransactionWrite(
     transactionId = transactionId,
     events = EventDataSnippet.value.toList,
-    requireMaster = RequireMasterSnippet.value)
+    requireMaster = _requireMaster)
 }

@@ -9,16 +9,17 @@ class TransactionStartBuilder(streamId: String) extends Builder[TransactionStart
 
   private val _streamId = EventStream.Id(streamId)
 
-  def expectNoStream: TransactionStartBuilder = ExpectedVersionSnippet.expectNoStream
+  override def expectNoStream: TransactionStartBuilder = super.expectNoStream
+  override def expectAnyVersion: TransactionStartBuilder = super.expectAnyVersion
+  override def expectVersion(x: Int): TransactionStartBuilder = super.expectVersion(x)
+  override def expectVersion(x: ExpectedVersion): TransactionStartBuilder = super.expectVersion(x)
 
-  def expectAnyVersion: TransactionStartBuilder = ExpectedVersionSnippet.expectAnyVersion
-
-  def expectVersion(x: Int): TransactionStartBuilder = ExpectedVersionSnippet.expectVersion(x)
-
-  def requireMaster(x: Boolean): TransactionStartBuilder = RequireMasterSnippet.requireMaster(x)
+  override def performOnAnyNode: TransactionStartBuilder = super.performOnAnyNode
+  override def performOnMasterOnly: TransactionStartBuilder = super.performOnMasterOnly
+  override def requireMaster(x: Boolean): TransactionStartBuilder = super.requireMaster(x)
 
   def build: TransactionStart = TransactionStart(
     streamId = _streamId,
-    expectedVersion = ExpectedVersionSnippet.value,
-    requireMaster = RequireMasterSnippet.value)
+    expectedVersion = _expectVersion,
+    requireMaster = _requireMaster)
 }

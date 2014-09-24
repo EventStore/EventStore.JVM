@@ -22,20 +22,21 @@ class ReadAllEventsBuilder extends Builder[ReadAllEvents]
 
   def fromLast: ReadAllEventsBuilder = fromPosition(Position.Last)
 
-  def maxCount(x: Int): ReadAllEventsBuilder = MaxCountSnippet.maxCount(x)
+  override def maxCount(x: Int): ReadAllEventsBuilder = super.maxCount(x)
 
-  def forward: ReadAllEventsBuilder = DirectionSnippet.forward
+  override def forward: ReadAllEventsBuilder = super.forward
+  override def backward: ReadAllEventsBuilder = super.backward
 
-  def backward: ReadAllEventsBuilder = DirectionSnippet.backward
+  override def resolveLinkTos(x: Boolean): ReadAllEventsBuilder = super.resolveLinkTos(x)
 
-  def resolveLinkTos(x: Boolean): ReadAllEventsBuilder = ResolveLinkTosSnippet.resolveLinkTos(x)
-
-  def requireMaster(x: Boolean): ReadAllEventsBuilder = RequireMasterSnippet.requireMaster(x)
+  override def performOnAnyNode: ReadAllEventsBuilder = super.performOnAnyNode
+  override def performOnMasterOnly: ReadAllEventsBuilder = super.performOnMasterOnly
+  override def requireMaster(x: Boolean): ReadAllEventsBuilder = super.requireMaster(x)
 
   def build: ReadAllEvents = ReadAllEvents(
     fromPosition = _fromPosition,
-    maxCount = MaxCountSnippet.value,
-    direction = DirectionSnippet.value,
-    resolveLinkTos = ResolveLinkTosSnippet.value,
-    requireMaster = RequireMasterSnippet.value)
+    maxCount = _maxCount,
+    direction = _direction,
+    resolveLinkTos = _resolveLinkTos,
+    requireMaster = _requireMaster)
 }

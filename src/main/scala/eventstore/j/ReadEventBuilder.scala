@@ -20,13 +20,15 @@ class ReadEventBuilder(streamId: String) extends Builder[ReadEvent]
 
   def last: ReadEventBuilder = number(EventNumber.Last)
 
-  def resolveLinkTos(x: Boolean): ReadEventBuilder = ResolveLinkTosSnippet.resolveLinkTos(x)
+  override def resolveLinkTos(x: Boolean): ReadEventBuilder = super.resolveLinkTos(x)
 
-  def requireMaster(x: Boolean): ReadEventBuilder = RequireMasterSnippet.requireMaster(x)
+  override def performOnAnyNode: ReadEventBuilder = super.performOnAnyNode
+  override def performOnMasterOnly: ReadEventBuilder = super.performOnMasterOnly
+  override def requireMaster(x: Boolean): ReadEventBuilder = super.requireMaster(x)
 
   def build: ReadEvent = eventstore.ReadEvent(
     streamId = _streamId,
     eventNumber = _eventNumber,
-    resolveLinkTos = ResolveLinkTosSnippet.value,
-    requireMaster = RequireMasterSnippet.value)
+    resolveLinkTos = _resolveLinkTos,
+    requireMaster = _requireMaster)
 }

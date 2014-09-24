@@ -22,21 +22,22 @@ class ReadStreamEventsBuilder(streamId: String) extends Builder[ReadStreamEvents
 
   def fromLast: ReadStreamEventsBuilder = fromNumber(EventNumber.Last)
 
-  def maxCount(x: Int): ReadStreamEventsBuilder = MaxCountSnippet.maxCount(x)
+  override def maxCount(x: Int): ReadStreamEventsBuilder = super.maxCount(x)
 
-  def forward: ReadStreamEventsBuilder = DirectionSnippet.forward
+  override def forward: ReadStreamEventsBuilder = super.forward
+  override def backward: ReadStreamEventsBuilder = super.backward
 
-  def backward: ReadStreamEventsBuilder = DirectionSnippet.backward
+  override def resolveLinkTos(x: Boolean): ReadStreamEventsBuilder = super.resolveLinkTos(x)
 
-  def resolveLinkTos(x: Boolean): ReadStreamEventsBuilder = ResolveLinkTosSnippet.resolveLinkTos(x)
-
-  def requireMaster(x: Boolean): ReadStreamEventsBuilder = RequireMasterSnippet.requireMaster(x)
+  override def performOnAnyNode: ReadStreamEventsBuilder = super.performOnAnyNode
+  override def performOnMasterOnly: ReadStreamEventsBuilder = super.performOnMasterOnly
+  override def requireMaster(x: Boolean): ReadStreamEventsBuilder = super.requireMaster(x)
 
   def build: ReadStreamEvents = ReadStreamEvents(
     streamId = _streamId,
     fromNumber = _fromNumber,
-    maxCount = MaxCountSnippet.value,
-    direction = DirectionSnippet.value,
-    resolveLinkTos = ResolveLinkTosSnippet.value,
-    requireMaster = RequireMasterSnippet.value)
+    maxCount = _maxCount,
+    direction = _direction,
+    resolveLinkTos = _resolveLinkTos,
+    requireMaster = _requireMaster)
 }
