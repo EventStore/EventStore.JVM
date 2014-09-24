@@ -4,15 +4,28 @@ import scala.concurrent.duration._
 import java.net.InetSocketAddress
 import com.typesafe.config.{ ConfigFactory, Config }
 
+/**
+ * @param address IP & port of Event Store
+ * @param connectionTimeout The desired connection timeout
+ * @param maxReconnections Maximum number of reconnections before backing off
+ * @param reconnectionDelayMin Delay before first reconnection
+ * @param reconnectionDelayMax Maximum delay on reconnections
+ * @param defaultCredentials The [[UserCredentials]] to use for operations where other [[UserCredentials]] are not explicitly supplied.
+ * @param heartbeatInterval The interval at which to send heartbeat messages.
+ * @param heartbeatTimeout The interval after which an unacknowledged heartbeat will cause the connection to be considered faulted and disconnect.
+ * @param operationTimeout The amount of time before an operation is considered to have timed out
+ * @param readBatchSize Number of events to be retrieved by client as single message
+ * @param backpressure see [[eventstore.pipeline.BackpressureBuffer]]
+ */
 case class Settings(
   address: InetSocketAddress = new InetSocketAddress("127.0.0.1", 1113),
+  connectionTimeout: FiniteDuration = 1.second,
   maxReconnections: Int = 100,
   reconnectionDelayMin: FiniteDuration = 250.millis,
   reconnectionDelayMax: FiniteDuration = 10.seconds,
   defaultCredentials: Option[UserCredentials] = Some(UserCredentials.defaultAdmin),
   heartbeatInterval: FiniteDuration = 500.millis,
   heartbeatTimeout: FiniteDuration = 2.seconds,
-  connectionTimeout: FiniteDuration = 1.second,
   operationTimeout: FiniteDuration = 5.seconds,
   readBatchSize: Int = 500,
   backpressure: BackpressureSettings = BackpressureSettings())

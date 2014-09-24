@@ -24,6 +24,14 @@ class SettingsBuilder extends Builder[Settings] with ChainSet[SettingsBuilder] {
 
   def address(host: String): SettingsBuilder = address(new InetSocketAddress(host, Default.address.getPort))
 
+  def connectionTimeout(x: FiniteDuration): SettingsBuilder = set {
+    _connectionTimeout = x
+  }
+
+  def connectionTimeout(length: Long, unit: TimeUnit): SettingsBuilder = connectionTimeout(FiniteDuration(length, unit))
+
+  def connectionTimeout(length: Long): SettingsBuilder = connectionTimeout(length, SECONDS)
+
   def maxReconnections(x: Int): SettingsBuilder = set {
     _maxReconnections = x
   }
@@ -70,14 +78,6 @@ class SettingsBuilder extends Builder[Settings] with ChainSet[SettingsBuilder] {
   def heartbeatTimeout(length: Long, unit: TimeUnit): SettingsBuilder = heartbeatTimeout(FiniteDuration(length, unit))
 
   def heartbeatTimeout(length: Long): SettingsBuilder = heartbeatTimeout(length, SECONDS)
-
-  def connectionTimeout(x: FiniteDuration): SettingsBuilder = set {
-    _connectionTimeout = x
-  }
-
-  def connectionTimeout(length: Long, unit: TimeUnit): SettingsBuilder = connectionTimeout(FiniteDuration(length, unit))
-
-  def connectionTimeout(length: Long): SettingsBuilder = connectionTimeout(length, SECONDS)
 
   def operationTimeout(x: FiniteDuration): SettingsBuilder = set {
     _operationTimeout = x
