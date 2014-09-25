@@ -189,7 +189,7 @@ public interface EsConnection {
    * pushed to the client.
    *
    * @param stream         The stream to subscribe to
-   * @param observer       An {@link eventstore.SubscriptionObserver} to handle a new event received over the subscription
+   * @param observer       A {@link eventstore.SubscriptionObserver} to handle a new event received over the subscription
    * @param resolveLinkTos Whether to resolve LinkTo events automatically
    * @param credentials    The optional user credentials to perform operation with
    * @return A {@link java.io.Closeable} representing the subscription which can be closed.
@@ -216,7 +216,7 @@ public interface EsConnection {
    * appeared on the subscription.
    *
    * @param stream                   The stream to subscribe to
-   * @param observer                 An {@link eventstore.SubscriptionObserver} to handle a new event received over the subscription
+   * @param observer                 A {@link eventstore.SubscriptionObserver} to handle a new event received over the subscription
    * @param fromEventNumberExclusive The event number from which to start, or <code>null</code> to read all events.
    * @param resolveLinkTos           Whether to resolve LinkTo events automatically
    * @param credentials              The optional user credentials to perform operation with
@@ -233,7 +233,7 @@ public interface EsConnection {
    * Subscribes to all events in the Event Store. New events written to the stream
    * while the subscription is active will be pushed to the client.
    *
-   * @param observer       An {@link eventstore.SubscriptionObserver} to handle a new event received over the subscription
+   * @param observer       A {@link eventstore.SubscriptionObserver} to handle a new event received over the subscription
    * @param resolveLinkTos Whether to resolve LinkTo events automatically
    * @param credentials    The optional user credentials to perform operation with
    * @return A {@link java.io.Closeable} representing the subscription which can be closed.
@@ -257,7 +257,7 @@ public interface EsConnection {
    * is desired, use the position representing the last event processed which
    * appeared on the subscription.
    *
-   * @param observer              An {@link eventstore.SubscriptionObserver} to handle a new event received over the subscription
+   * @param observer              A {@link eventstore.SubscriptionObserver} to handle a new event received over the subscription
    * @param fromPositionExclusive The position from which to start, or <code>null</code> to read all events
    * @param resolveLinkTos        Whether to resolve LinkTo events automatically
    * @param credentials           The optional user credentials to perform operation with
