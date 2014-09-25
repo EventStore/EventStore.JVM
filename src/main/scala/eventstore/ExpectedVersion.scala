@@ -3,11 +3,9 @@ package eventstore
 sealed trait ExpectedVersion
 
 object ExpectedVersion {
-  val First = Exact(0)
+  val First: Exact = Exact(0)
 
-  def apply(expectedVersion: Int): Exact = Exact(expectedVersion)
-
-  def apply(eventNumber: EventNumber.Exact): Exact = Exact(eventNumber.value)
+  def apply(expectedVersion: Int): ExpectedVersion = Exact(expectedVersion)
 
   //The stream being written to should not yet exist. If it does exist treat that as a concurrency problem.
   case object NoStream extends ExpectedVersion {
@@ -26,5 +24,9 @@ object ExpectedVersion {
     require(value >= 0, s"expected version must be >= 0, but is $value")
 
     override def toString = s"Expected.Version($value)"
+  }
+
+  object Exact {
+    def apply(eventNumber: EventNumber.Exact): Exact = Exact(eventNumber.value)
   }
 }

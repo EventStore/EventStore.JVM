@@ -11,7 +11,7 @@ class DeleteStreamITest extends TestConnection {
 
     "fail if doesn't exist and invalid expect version" in new DeleteStreamScope {
       deleteStreamFailed(ExpectedVersion.First) mustEqual WrongExpectedVersion
-      deleteStreamFailed(ExpectedVersion(1)) mustEqual WrongExpectedVersion
+      deleteStreamFailed(ExpectedVersion.Exact(1)) mustEqual WrongExpectedVersion
     }
 
     "succeed if correct expected version" in new DeleteStreamScope {
@@ -26,7 +26,7 @@ class DeleteStreamITest extends TestConnection {
 
     "fail if invalid expected version" in new DeleteStreamScope {
       appendEventToCreateStream()
-      deleteStreamFailed(ExpectedVersion(1)) mustEqual WrongExpectedVersion
+      deleteStreamFailed(ExpectedVersion.Exact(1)) mustEqual WrongExpectedVersion
     }
 
     "fail if already deleted" in new DeleteStreamScope {
@@ -34,7 +34,7 @@ class DeleteStreamITest extends TestConnection {
       deleteStream(ExpectedVersion.First)
       deleteStreamFailed(ExpectedVersion.First) mustEqual StreamDeleted
       deleteStreamFailed(Any) mustEqual StreamDeleted
-      deleteStreamFailed(ExpectedVersion(1)) mustEqual StreamDeleted
+      deleteStreamFailed(ExpectedVersion.Exact(1)) mustEqual StreamDeleted
     }
   }
 

@@ -12,7 +12,7 @@ object WriteResult {
   def opt(x: WriteEventsCompleted): Option[WriteResult] = for {
     r <- x.numbersRange
     p <- x.position
-  } yield WriteResult(ExpectedVersion(r.end), p)
+  } yield WriteResult(ExpectedVersion.Exact(r.end), p)
 }
 
 /**
