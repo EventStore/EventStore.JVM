@@ -23,7 +23,7 @@ object ContentType {
     override def toString = "ContentType.Json"
   }
 
-  /*TODO not yet implemented in EventStore 3.0.0rc9
+  /*TODO not yet implemented in EventStore 3.0.0
   case class Unknown(value: Int) extends ContentType {
     require(value > Known.last.value,
       if (value < Known.head.value) s"content type must be > ${Known.last.value}, but is $value"

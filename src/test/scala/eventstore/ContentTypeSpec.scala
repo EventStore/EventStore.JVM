@@ -6,7 +6,7 @@ import ContentType._
 class ContentTypeSpec extends Specification {
   "ContentType" should {
 
-    /*TODO not yet implemented in EventStore 2.0.1
+    /*TODO not yet implemented in EventStore 3.0.0
     "throw proper exception when using known values as unknown" in foreach(Known) {
       x =>
         Unknown(x.value) must throwAn[IllegalArgumentException].like {
@@ -22,7 +22,7 @@ class ContentTypeSpec extends Specification {
       x => ContentType(x.value) mustEqual x
     }
 
-    /*TODO not yet implemented in EventStore 2.0.1
+    /*TODO not yet implemented in EventStore 3.0.0
     "return ContentType.Unknown instance for unknown values" in {
       val unknown = Known.last.value + 1
       ContentType(unknown) mustEqual ContentType.Unknown(unknown)
