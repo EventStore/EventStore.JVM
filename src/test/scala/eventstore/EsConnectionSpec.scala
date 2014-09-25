@@ -52,7 +52,7 @@ class EsConnectionSpec extends ActorSpec with Mockito {
         case WriteEvents(`sId`, List(EventData(SystemEventType.metadata, _, `content`, _)), ExpectedVersion.Any, true) => true
       }
       lastSender ! WriteEventsCompleted()
-      future.value must beSome
+      future.await_ must beNone
     }
 
     "get stream metadata" in new GetMetadataScope {

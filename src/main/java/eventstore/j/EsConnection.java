@@ -1,7 +1,6 @@
 package eventstore.j;
 
 import eventstore.*;
-import scala.Unit;
 import scala.concurrent.Future;
 import java.io.Closeable;
 import java.util.Collection;
@@ -33,7 +32,7 @@ public interface EsConnection {
    * @param credentials     optional user credentials to perform operation with.
    * @return A {@link scala.concurrent.Future} that the caller can await on
    */
-  Future<Unit> writeEvents(
+  Future<WriteResult> writeEvents(
       String stream,
       ExpectedVersion expectedVersion,
       Collection<EventData> events,
@@ -48,7 +47,7 @@ public interface EsConnection {
    * @param credentials     optional user credentials to perform operation with.
    * @return A {@link scala.concurrent.Future} that the caller can await on
    */
-  Future<Unit> deleteStream(
+  Future<DeleteResult> deleteStream(
       String stream,
       ExpectedVersion.Existing expectedVersion,
       UserCredentials credentials);
@@ -62,7 +61,7 @@ public interface EsConnection {
    * @param credentials     optional user credentials to perform operation with.
    * @return A {@link scala.concurrent.Future} that the caller can await on
    */
-  Future<Unit> deleteStream(
+  Future<DeleteResult> deleteStream(
       String stream,
       ExpectedVersion.Existing expectedVersion,
       boolean hardDelete,
@@ -284,7 +283,7 @@ public interface EsConnection {
    * @param credentials               The optional user credentials to perform operation with
    * @return A {@link scala.concurrent.Future} representing the operation
    */
-  Future<Unit> setStreamMetadata(
+  Future<WriteResult> setStreamMetadata(
       String stream,
       ExpectedVersion expectedMetastreamVersion,
       byte[] metadata,

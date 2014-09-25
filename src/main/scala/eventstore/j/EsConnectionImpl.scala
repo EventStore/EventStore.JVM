@@ -25,7 +25,7 @@ class EsConnectionImpl(connection: eventstore.EsConnection) extends EsConnection
       events = events.asScala.toList,
       expectedVersion = Option(expectedVersion) getOrElse ExpectedVersion.Any)
 
-    connection.future(out, Option(credentials)).map(_ => ())
+    connection.future(out, Option(credentials)).map(x => WriteResult.opt(x).orNull)
   }
 
   def deleteStream(stream: String, expectedVersion: ExpectedVersion.Existing, credentials: UserCredentials) = {
@@ -37,7 +37,7 @@ class EsConnectionImpl(connection: eventstore.EsConnection) extends EsConnection
       streamId = EventStream.Id(stream),
       expectedVersion = Option(expectedVersion) getOrElse ExpectedVersion.Any,
       hard = hardDelete)
-    connection.future(out, Option(credentials)).map(_ => ())
+    connection.future(out, Option(credentials)).map(x => x.position.map(DeleteResult.apply).orNull)
   }
 
   def startTransaction(stream: String, expectedVersion: ExpectedVersion, credentials: UserCredentials) = {
@@ -171,7 +171,7 @@ class EsConnectionImpl(connection: eventstore.EsConnection) extends EsConnection
       EventStream.Id(stream),
       Content(metadata),
       Option(expectedMetastreamVersion) getOrElse ExpectedVersion.Any,
-      Option(credentials))
+      Option(credentials)).map(_.orNull)
   }
 
   def getStreamMetadataBytes(stream: String, credentials: UserCredentials) = {

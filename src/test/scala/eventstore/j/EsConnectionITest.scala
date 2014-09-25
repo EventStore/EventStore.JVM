@@ -7,13 +7,19 @@ class EsConnectionITest extends eventstore.util.ActorSpec {
   "EsConnection" should {
 
     "write events" in new TestScope {
-      await_(connection.writeEvents("java-writeEvents-" + randomUuid, null, events, null))
+      await_(connection.writeEvents("java-writeEvents-" + randomUuid, null, events, null)) mustNotEqual null
     }
 
     "delete stream" in new TestScope {
       val streamId = "java-deleteStream-" + randomUuid
       await_(connection.writeEvents(streamId, null, events, null))
-      await_(connection.deleteStream(streamId, null, null))
+      await_(connection.deleteStream(streamId, null, null)) mustNotEqual null
+    }
+
+    "delete stream" in new TestScope {
+      val streamId = "java-deleteStream-" + randomUuid
+      await_(connection.writeEvents(streamId, null, events, null))
+      await_(connection.deleteStream(streamId, null, true, null)) mustNotEqual null
     }
 
     "read event" in new TestScope {
@@ -120,11 +126,14 @@ class EsConnectionITest extends eventstore.util.ActorSpec {
       def streamMetadataBytes = connection.getStreamMetadataBytes(streamId, null)
       val (noStream, actual, deleted) = await_(for {
         noStream <- streamMetadataBytes
-        _ <- connection.setStreamMetadata(streamId, null, expected, null)
+        result <- connection.setStreamMetadata(streamId, null, expected, null)
         get <- streamMetadataBytes
         // _ <- connection.deleteStream("$$" + streamId, null, UserCredentials.defaultAdmin) TODO AccessDenied returned
         deleted <- streamMetadataBytes
-      } yield (noStream, get, deleted))
+      } yield {
+        result mustNotEqual null
+        (noStream, get, deleted)
+      })
       noStream must beEmpty
       actual mustEqual expected
       //      deleted must beEmpty

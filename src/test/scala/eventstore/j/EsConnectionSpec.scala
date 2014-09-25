@@ -34,11 +34,13 @@ class EsConnectionSpec extends util.ActorSpec {
         version <- versions
         uc <- userCredentials
       } {
-        connection.writeEvents(stream, version, events, uc)
+        val future = connection.writeEvents(stream, version, events, uc)
         expect(WriteEvents(
           streamId = EventStream.Id(stream),
           events = events.asScala.toList,
           expectedVersion = Option(version) getOrElse ExpectedVersion.Any), uc)
+        lastSender ! WriteEventsCompleted(None, None)
+        future.await_ mustEqual null
       }
     }
 
@@ -49,11 +51,13 @@ class EsConnectionSpec extends util.ActorSpec {
         uc <- userCredentials
         hd <- booleans
       } {
-        connection.deleteStream(stream, version, hd, uc)
+        val future = connection.deleteStream(stream, version, hd, uc)
         expect(DeleteStream(
           streamId = EventStream.Id(stream),
           expectedVersion = Option(version) getOrElse ExpectedVersion.Any,
           hard = hd), uc)
+        lastSender ! DeleteStreamCompleted(None)
+        future.await_ mustEqual null
       }
     }
 

@@ -89,9 +89,9 @@ class EsConnection(
     streamId: EventStream.Id,
     metadata: Content,
     expectedMetastreamVersion: ExpectedVersion = ExpectedVersion.Any,
-    credentials: Option[UserCredentials] = None): Future[Unit] = {
+    credentials: Option[UserCredentials] = None): Future[Option[WriteResult]] = {
     val writeEvents = WriteEvents.StreamMetadata(streamId.metadata, metadata, expectedMetastreamVersion)
-    future(writeEvents, credentials).map(_ => ())
+    future(writeEvents, credentials).map(WriteResult.opt)
   }
 
   // TODO think about replacing content with something similar to what is in the .Net client
