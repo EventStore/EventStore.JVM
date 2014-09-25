@@ -5,7 +5,7 @@ import akka.actor.Status.Failure
 import akka.util.Timeout
 import java.util.concurrent.TimeoutException
 import scala.concurrent.duration._
-import scala.concurrent.{ Future, Await }
+import scala.concurrent.Future
 import util.ActorSpec
 
 class EsTransactionSpec extends ActorSpec {
@@ -95,11 +95,11 @@ class EsTransactionSpec extends ActorSpec {
 
   implicit class RichFuture(self: Future[_]) {
     def mustTimeout = {
-      Await.result(self, 1.second) must throwA[TimeoutException]
+      self.await_(1.second) must throwA[TimeoutException]
     }
 
     def mustThrow(e: Throwable) = {
-      Await.result(self, 3.seconds) must throwAn(e)
+      self.await_(3.seconds) must throwAn(e)
     }
   }
 }

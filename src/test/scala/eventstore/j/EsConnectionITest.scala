@@ -2,30 +2,28 @@ package eventstore
 package j
 
 import scala.collection.JavaConverters._
-import scala.concurrent.duration._
-import scala.concurrent.{ Await, Awaitable }
 
 class EsConnectionITest extends eventstore.util.ActorSpec {
   "EsConnection" should {
 
     "write events" in new TestScope {
-      await(connection.writeEvents("java-writeEvents-" + randomUuid, null, events, null))
+      await_(connection.writeEvents("java-writeEvents-" + randomUuid, null, events, null))
     }
 
     "delete stream" in new TestScope {
       val streamId = "java-deleteStream-" + randomUuid
-      await(connection.writeEvents(streamId, null, events, null))
-      await(connection.deleteStream(streamId, null, null))
+      await_(connection.writeEvents(streamId, null, events, null))
+      await_(connection.deleteStream(streamId, null, null))
     }
 
     "read event" in new TestScope {
       val streamId = "java-readEvent-" + randomUuid
-      try await(connection.readEvent(streamId, null, false, null)) catch {
+      try await_(connection.readEvent(streamId, null, false, null)) catch {
         case EsException(eventstore.EsError.StreamNotFound, _) =>
       }
 
-      await(connection.writeEvents(streamId, null, events, null))
-      val event = await(connection.readEvent(streamId, null, false, null))
+      await_(connection.writeEvents(streamId, null, events, null))
+      val event = await_(connection.readEvent(streamId, null, false, null))
 
       event.data mustEqual eventData
       event.streamId mustEqual EventStream(streamId)
@@ -35,11 +33,11 @@ class EsConnectionITest extends eventstore.util.ActorSpec {
     "read stream events forward" in new TestScope {
       val streamId = "java-readStreamForward-" + randomUuid
 
-      try await(connection.readStreamEventsForward(streamId, null, 10, false, null)) catch {
+      try await_(connection.readStreamEventsForward(streamId, null, 10, false, null)) catch {
         case EsException(eventstore.EsError.StreamNotFound, _) =>
       }
-      await(connection.writeEvents(streamId, null, events, null))
-      val result = await(
+      await_(connection.writeEvents(streamId, null, events, null))
+      val result = await_(
         connection.readStreamEventsForward(streamId, new EventNumber.Exact(0), 10, false, null))
 
       result.direction mustEqual ReadDirection.forward
@@ -51,11 +49,11 @@ class EsConnectionITest extends eventstore.util.ActorSpec {
 
     "read stream events backward" in new TestScope {
       val streamId = "java-readStreamBackward-" + randomUuid
-      try await(connection.readStreamEventsBackward(streamId, null, 10, false, null)) catch {
+      try await_(connection.readStreamEventsBackward(streamId, null, 10, false, null)) catch {
         case EsException(eventstore.EsError.StreamNotFound, _) =>
       }
-      await(connection.writeEvents(streamId, null, events, null))
-      val result = await {
+      await_(connection.writeEvents(streamId, null, events, null))
+      val result = await_ {
         connection.readStreamEventsBackward(streamId, null, 10, false, null)
       }
       result.direction mustEqual ReadDirection.backward
@@ -66,7 +64,7 @@ class EsConnectionITest extends eventstore.util.ActorSpec {
     }
 
     "read all events forward" in new TestScope {
-      val result = await(connection.readAllEventsForward(null, 10, false, null))
+      val result = await_(connection.readAllEventsForward(null, 10, false, null))
       result.direction mustEqual ReadDirection.forward
 
       result.events.foreach {
@@ -79,7 +77,7 @@ class EsConnectionITest extends eventstore.util.ActorSpec {
     }
 
     "read all events backward" in new TestScope {
-      val result = await(connection.readAllEventsBackward(null, 10, false, null))
+      val result = await_(connection.readAllEventsBackward(null, 10, false, null))
       result.direction mustEqual ReadDirection.backward
 
       result.events.foreach {
@@ -98,7 +96,7 @@ class EsConnectionITest extends eventstore.util.ActorSpec {
         _ <- t.write(events)
         _ <- t.commit()
       } yield t
-      await(transaction).getId must be_>=(-1L)
+      await_(transaction).getId must be_>=(-1L)
     }
 
     "continue transaction" in new TestScope {
@@ -112,7 +110,7 @@ class EsConnectionITest extends eventstore.util.ActorSpec {
         _ <- started.commit()
       } yield (started, continued)
 
-      val (started, continued) = await(result)
+      val (started, continued) = await_(result)
       started.getId mustEqual continued.getId
     }
 
@@ -120,7 +118,7 @@ class EsConnectionITest extends eventstore.util.ActorSpec {
       val streamId = "java-streamMetadata-" + randomUuid
       val expected = Array[Byte](1, 2, 3)
       def streamMetadataBytes = connection.getStreamMetadataBytes(streamId, null)
-      val (noStream, actual, deleted) = await(for {
+      val (noStream, actual, deleted) = await_(for {
         noStream <- streamMetadataBytes
         _ <- connection.setStreamMetadata(streamId, null, expected, null)
         get <- streamMetadataBytes
@@ -140,7 +138,5 @@ class EsConnectionITest extends eventstore.util.ActorSpec {
 
     def eventType = "java-test"
     def newEventData = EventData(eventType = eventType, data = Content("data"), metadata = Content("metadata"))
-
-    def await[T](awaitable: Awaitable[T]): T = Await.result(awaitable, 2.seconds)
   }
 }

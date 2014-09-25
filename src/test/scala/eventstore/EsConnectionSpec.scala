@@ -2,8 +2,6 @@ package eventstore
 
 import akka.actor.Status.Failure
 import org.specs2.mock.Mockito
-import scala.concurrent.Await
-import scala.concurrent.duration._
 import scala.util.Success
 import util.ActorSpec
 
@@ -98,7 +96,7 @@ class EsConnectionSpec extends ActorSpec with Mockito {
       val future = connection.getStreamMetadata(streamId)
       expectMsg(ReadEvent.StreamMetadata(streamId.metadata))
       lastSender ! reply
-      Await.result(future, 3.seconds)
+      future.await_
     }
 
     def failure(x: EsError) = Failure(EsException(x))
