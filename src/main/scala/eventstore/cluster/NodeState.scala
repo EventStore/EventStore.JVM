@@ -1,7 +1,10 @@
 package eventstore.cluster
 
-sealed trait NodeState {
+sealed trait NodeState extends Ordered[NodeState] {
+  def id: Int
   def isReplica: Boolean
+  def isAllowedToConnect: Boolean
+  def compare(that: NodeState) = this.id compare that.id
 }
 
 object NodeState {
@@ -21,15 +24,69 @@ object NodeState {
 
   def apply(x: String): NodeState = map.getOrElse(x, sys.error(s"No NodeState found for $x"))
 
-  case object Initializing extends NodeState { def isReplica = false }
-  case object Unknown extends NodeState { def isReplica = false }
-  case object PreReplica extends NodeState { def isReplica = false }
-  case object CatchingUp extends NodeState { def isReplica = true }
-  case object Clone extends NodeState { def isReplica = true }
-  case object Slave extends NodeState { def isReplica = true }
-  case object PreMaster extends NodeState { def isReplica = false }
-  case object Master extends NodeState { def isReplica = false }
-  case object Manager extends NodeState { def isReplica = false }
-  case object ShuttingDown extends NodeState { def isReplica = false }
-  case object Shutdown extends NodeState { def isReplica = false }
+  case object Initializing extends NodeState {
+    def id = 0
+    def isReplica = false
+    def isAllowedToConnect = true
+  }
+
+  case object Unknown extends NodeState {
+    def id = 1
+    def isReplica = false
+    def isAllowedToConnect = true
+  }
+
+  case object PreReplica extends NodeState {
+    def id = 2
+    def isReplica = false
+    def isAllowedToConnect = true
+  }
+
+  case object CatchingUp extends NodeState {
+    def id = 3
+    def isReplica = true
+    def isAllowedToConnect = true
+  }
+
+  case object Clone extends NodeState {
+    def id = 4
+    def isReplica = true
+    def isAllowedToConnect = true
+  }
+
+  case object Slave extends NodeState {
+    def id = 5
+    def isReplica = true
+    def isAllowedToConnect = true
+  }
+
+  case object PreMaster extends NodeState {
+    def id = 6
+    def isReplica = false
+    def isAllowedToConnect = true
+  }
+
+  case object Master extends NodeState {
+    def id = 7
+    def isReplica = false
+    def isAllowedToConnect = true
+  }
+
+  case object Manager extends NodeState {
+    def id = 8
+    def isReplica = false
+    def isAllowedToConnect = false
+  }
+
+  case object ShuttingDown extends NodeState {
+    def id = 9
+    def isReplica = false
+    def isAllowedToConnect = false
+  }
+
+  case object Shutdown extends NodeState {
+    def id = 10
+    def isReplica = false
+    def isAllowedToConnect = false
+  }
 }
