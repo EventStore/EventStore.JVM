@@ -9,7 +9,6 @@ import scala.PartialFunction.condOpt
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
 import scala.collection.JavaConverters._
-import java.net.InetSocketAddress
 import java.util.concurrent.TimeUnit
 import java.util.Date
 
@@ -420,12 +419,12 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
     def parse = j.NotHandled.parseFrom
 
     def masterInfo(x: j.NotHandled.MasterInfo): NotHandled.MasterInfo = NotHandled.MasterInfo(
-      tcpAddress = new InetSocketAddress(x.getExternalTcpAddress, x.getExternalTcpPort),
-      httpAddress = new InetSocketAddress(x.getExternalHttpAddress, x.getExternalHttpPort),
+      tcpAddress = x.getExternalTcpAddress :: x.getExternalTcpPort,
+      httpAddress = x.getExternalHttpAddress :: x.getExternalHttpPort,
       tcpSecureAddress = for {
-        t <- option(x.hasExternalSecureTcpAddress, x.getExternalSecureTcpAddress)
+        h <- option(x.hasExternalSecureTcpAddress, x.getExternalSecureTcpAddress)
         p <- option(x.hasExternalSecureTcpPort, x.getExternalSecureTcpPort)
-      } yield new InetSocketAddress(t, p))
+      } yield h :: p)
 
     def masterInfo(x: Option[j.NotHandled.MasterInfo]): NotHandled.MasterInfo = {
       require(x.isDefined, "additionalInfo is not provided for NotHandled.NotMaster")

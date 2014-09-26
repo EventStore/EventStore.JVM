@@ -26,7 +26,7 @@ class SettingsBuilder extends Builder[Settings]
     _address = x
   }
 
-  def address(host: String): SettingsBuilder = address(new InetSocketAddress(host, Default.address.getPort))
+  def address(host: String): SettingsBuilder = address(host :: Default.address.getPort)
 
   def connectionTimeout(x: FiniteDuration): SettingsBuilder = set {
     _connectionTimeout = x

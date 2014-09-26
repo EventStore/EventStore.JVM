@@ -20,7 +20,7 @@ import com.typesafe.config.{ ConfigFactory, Config }
  * @param backpressure See [[eventstore.pipeline.BackpressureBuffer]]
  */
 case class Settings(
-  address: InetSocketAddress = new InetSocketAddress("127.0.0.1", 1113),
+  address: InetSocketAddress = "127.0.0.1" :: 1113,
   connectionTimeout: FiniteDuration = 1.second,
   maxReconnections: Int = 100,
   reconnectionDelayMin: FiniteDuration = 250.millis,
@@ -42,7 +42,7 @@ object Settings {
     def apply(conf: Config): Settings = {
       def duration(path: String) = FiniteDuration(conf.getDuration(path, MILLISECONDS), MILLISECONDS)
       Settings(
-        address = new InetSocketAddress(conf getString "address.host", conf getInt "address.port"),
+        address = (conf getString "address.host") :: (conf getInt "address.port"),
         connectionTimeout = duration("connection-timeout"),
         maxReconnections = conf getInt "max-reconnections",
         reconnectionDelayMin = duration("reconnection-delay.min"),
