@@ -1,8 +1,7 @@
 package eventstore
 package cluster
 
-import java.net.InetSocketAddress
-import java.util.{ Date, UUID }
+import java.util.Date
 import spray.json._
 
 object ClusterProtocol extends DefaultJsonProtocol {
@@ -10,7 +9,7 @@ object ClusterProtocol extends DefaultJsonProtocol {
     def write(x: Uuid) = JsString(x.toString)
 
     def read(json: JsValue) = json match {
-      case JsString(x) => UUID.fromString(x)
+      case JsString(x) => x.uuid
       case _           => deserializationError("Uuid expected")
     }
   }
@@ -38,32 +37,32 @@ object ClusterProtocol extends DefaultJsonProtocol {
     private val MappingFormat = jsonFormat21(Mapping)
 
     def read(json: JsValue) = {
-      val x = MappingFormat.read(json)
+      val m = MappingFormat.read(json)
 
       MemberInfo(
-        instanceId = x.instanceId,
-        timeStamp = x.timeStamp,
-        state = x.state,
-        isAlive = x.isAlive,
-        internalTcp = new InetSocketAddress(x.internalTcpIp, x.internalTcpPort),
-        internalSecureTcp = new InetSocketAddress(x.internalTcpIp, x.internalSecureTcpPort),
-        externalTcp = new InetSocketAddress(x.externalTcpIp, x.externalTcpPort),
-        externalSecureTcp = new InetSocketAddress(x.externalTcpIp, x.externalSecureTcpPort),
-        internalHttp = new InetSocketAddress(x.internalHttpIp, x.internalHttpPort),
-        externalHttp = new InetSocketAddress(x.externalHttpIp, x.externalHttpPort),
-        lastCommitPosition = x.lastCommitPosition,
-        writerCheckpoint = x.writerCheckpoint,
-        chaserCheckpoint = x.chaserCheckpoint,
-        epochPosition = x.epochPosition,
-        epochNumber = x.epochNumber,
-        epochId = x.epochId,
-        nodePriority = x.nodePriority)
+        instanceId = m.instanceId,
+        timestamp = m.timeStamp,
+        state = m.state,
+        isAlive = m.isAlive,
+        internalTcp = m.internalTcpIp :: m.internalTcpPort,
+        externalTcp = m.externalTcpIp :: m.externalTcpPort,
+        internalSecureTcp = m.internalTcpIp :: m.internalSecureTcpPort,
+        externalSecureTcp = m.externalTcpIp :: m.externalSecureTcpPort,
+        internalHttp = m.internalHttpIp :: m.internalHttpPort,
+        externalHttp = m.externalHttpIp :: m.externalHttpPort,
+        lastCommitPosition = m.lastCommitPosition,
+        writerCheckpoint = m.writerCheckpoint,
+        chaserCheckpoint = m.chaserCheckpoint,
+        epochPosition = m.epochPosition,
+        epochNumber = m.epochNumber,
+        epochId = m.epochId,
+        nodePriority = m.nodePriority)
     }
 
     def write(x: MemberInfo) = {
-      val mapping = Mapping(
+      val m = Mapping(
         instanceId = x.instanceId,
-        timeStamp = x.timeStamp,
+        timeStamp = x.timestamp,
         state = x.state,
         isAlive = x.isAlive,
         internalTcpIp = x.internalTcp.getHostString,
@@ -84,7 +83,7 @@ object ClusterProtocol extends DefaultJsonProtocol {
         epochId = x.epochId,
         nodePriority = x.nodePriority)
 
-      MappingFormat.write(mapping)
+      MappingFormat.write(m)
     }
 
     case class Mapping(
@@ -115,18 +114,18 @@ object ClusterProtocol extends DefaultJsonProtocol {
     private val MappingFormat = jsonFormat3(Mapping.apply)
 
     def read(json: JsValue) = {
-      val x = MappingFormat.read(json)
+      val m = MappingFormat.read(json)
       ClusterInfo(
-        members = x.members,
-        serverAddress = new InetSocketAddress(x.serverIp, x.serverPort))
+        serverAddress = m.serverIp :: m.serverPort,
+        members = m.members)
     }
 
     def write(x: ClusterInfo) = {
-      val mapping = Mapping(
+      val m = Mapping(
         members = x.members,
         serverIp = x.serverAddress.getHostString,
         serverPort = x.serverAddress.getPort)
-      MappingFormat.write(mapping)
+      MappingFormat.write(m)
     }
 
     private case class Mapping(members: List[MemberInfo], serverIp: String, serverPort: Int)
