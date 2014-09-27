@@ -417,5 +417,4 @@ EventStoreExtension(system).connection.future(ReadEvent(EventStream.Id("stream")
 
 ### Roadmap
 
-* Add support of EventStore cluster
-* Release against EventStore 3.0.0 when it is ready. 
+* Add support of EventStore cluster 
