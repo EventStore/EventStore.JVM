@@ -1,4 +1,5 @@
 # Event Store JVM Client [![Build Status](https://travis-ci.org/EventStore/EventStore.JVM.png?branch=master)](https://travis-ci.org/EventStore/EventStore.JVM)
+[![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/EventStore/EventStore.JVM?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 **JVM Client works nicely with EventStore 3.0.0**
 
