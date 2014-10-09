@@ -2,6 +2,7 @@ package eventstore
 
 import ReadDirection.Forward
 import akka.testkit.TestProbe
+import EsError.NotHandled.NotReady
 
 class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
   "catch up subscription actor" should {
@@ -359,7 +360,7 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       expectNoActivity()
     }
 
-    "re-subscribe reconnected while subscribing" in new SubscriptionScope {
+    "re-subscribe if reconnected while subscribing" in new SubscriptionScope {
       connection expectMsg readEvents(0)
       actor ! readCompleted(0, 0)
       connection expectMsg subscribeTo
@@ -370,7 +371,7 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       override def position = Some(Position(0))
     }
 
-    "re-subscribe reconnected while subscribing from last" in new SubscriptionScope {
+    "re-subscribe if reconnected while subscribing from last" in new SubscriptionScope {
       connection expectMsg subscribeTo
       actor ! SubscribeToAllCompleted(0)
       reconnect()
@@ -411,6 +412,59 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       connection expectMsg subscribeTo.withCredentials(credentials.get)
 
       override def credentials = Some(UserCredentials("login", "password"))
+    }
+
+    "re-read if NotReady while reading" in new SubscriptionScope() {
+      connection expectMsg readEvents(0)
+      actor ! notHandled(NotReady)
+      connection expectMsg readEvents(0)
+      expectNoActivity()
+    }
+
+    "re-subscribe if NotReady while subscribing" in new SubscriptionScope {
+      connection expectMsg readEvents(0)
+      actor ! readCompleted(0, 0)
+      connection expectMsg subscribeTo
+      actor ! notHandled(NotReady)
+      connection expectMsg subscribeTo
+      expectNoActivity()
+
+      override def position = Some(Position(0))
+    }
+
+    "re-subscribe if NotReady while subscribing from last" in new SubscriptionScope {
+      connection expectMsg subscribeTo
+      actor ! SubscribeToAllCompleted(0)
+      actor ! notHandled(NotReady)
+      connection expectMsg subscribeTo
+
+      override def position = Some(Position.Last)
+    }
+
+    "re-subscribe if NotReady while catching up" in new SubscriptionScope {
+      connection expectMsg readEvents(0)
+      actor ! readCompleted(0, 0)
+      connection expectMsg subscribeTo
+      actor ! SubscribeToAllCompleted(0)
+
+      connection expectMsg readEvents(0)
+      actor ! notHandled(NotReady)
+
+      connection expectMsg subscribeTo
+    }
+
+    "re-subscribe if NotReady while live processing" in new SubscriptionScope {
+      connection expectMsg readEvents(0)
+      actor ! readCompleted(0, 0)
+      connection expectMsg subscribeTo
+      actor ! SubscribeToAllCompleted(0)
+
+      expectMsg(LiveProcessingStarted)
+
+      actor ! notHandled(NotReady)
+      connection expectMsg subscribeTo
+
+      override def position = Some(Position(0))
     }
   }
 

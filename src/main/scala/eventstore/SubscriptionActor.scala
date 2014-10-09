@@ -55,7 +55,7 @@ class SubscriptionActor(
 
   def reading(last: Last, next: Next, ready: Boolean): Receive = {
     readEventsFrom(next)
-    def rcv(ready: Boolean) = rcvFailure orElse rcvReconnected(reading(last, next, ready = true)) orElse rcvReadCompleted {
+    def rcv(ready: Boolean) = rcvReconnected(reading(last, next, ready = true)) orElse rcvFailure orElse rcvReadCompleted {
       (events, next) =>
         if (events.isEmpty) subscribing(last, next)
         else {
@@ -68,7 +68,7 @@ class SubscriptionActor(
 
   def subscribing(last: Last, next: Next): Receive = {
     subscribeToStream()
-    rcvFailureOrUnsubscribe orElse rcvReconnected(last, next) orElse rcvSubscribeCompleted {
+    rcvReconnected(last, next) orElse rcvFailureOrUnsubscribe orElse rcvSubscribeCompleted {
       lastCommit =>
         if (last.exists(_.commitPosition >= lastCommit)) liveProcessing(last, Queue())
         else catchingUp(last, next, lastCommit, Queue())
@@ -77,7 +77,7 @@ class SubscriptionActor(
 
   def subscribingFromLast(): Receive = {
     subscribeToStream()
-    rcvFailureOrUnsubscribe orElse rcvReconnected(subscribingFromLast()) orElse rcvSubscribeCompleted {
+    rcvReconnected(subscribingFromLast()) orElse rcvFailureOrUnsubscribe orElse rcvSubscribeCompleted {
       lastCommit => liveProcessing(None, Queue())
     }
   }
@@ -100,7 +100,7 @@ class SubscriptionActor(
           }
           loop(events, last)
         }
-    } orElse rcvFailureOrUnsubscribe orElse rcvReconnected(last, next) orElse rcvEventAppeared {
+    } orElse rcvReconnected(last, next) orElse rcvFailureOrUnsubscribe orElse rcvEventAppeared {
       x => catchUp(stash enqueue x)
     }
 
@@ -110,7 +110,7 @@ class SubscriptionActor(
 
   def liveProcessing(last: Last, stash: Queue[IndexedEvent]): Receive = {
     def liveProcessing(last: Last, n: Long, ready: Boolean): Receive =
-      rcvFailureOrUnsubscribe orElse rcvReconnected(last, last getOrElse Position.First) orElse rcvEventAppeared {
+      rcvReconnected(last, last getOrElse Position.First) orElse rcvFailureOrUnsubscribe orElse rcvEventAppeared {
         x =>
           val l = process(last, x)
           if (n < readBatchSize) liveProcessing(l, n + 1, ready)
@@ -138,8 +138,9 @@ class SubscriptionActor(
     }
   }
 
-  def readEventsFrom(position: Next) {
-    toConnection(ReadAllEvents(position, readBatchSize, Forward, resolveLinkTos = resolveLinkTos))
+  def readEventsFrom(position: Next) = {
+    val msg = ReadAllEvents(position, readBatchSize, Forward, resolveLinkTos = resolveLinkTos)
+    toConnection(msg)
   }
 
   def rcvReadCompleted(f: (List[IndexedEvent], Position.Exact) => Receive): Receive = {

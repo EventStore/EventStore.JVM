@@ -69,14 +69,14 @@ class StreamSubscriptionActor private (
           else whenReady(reading(l, n, ready = false), ready)
         }
       }
-      receive orElse rcvFailure orElse rcvReconnected(reading(last, next, ready = true))
+      receive orElse rcvReconnected(reading(last, next, ready = true)) orElse rcvFailure
     }
     rcv(ready) orElse rcvReady(rcv(ready = true))
   }
 
   def subscribing(last: Last, next: Next): Receive = {
     subscribeToStream()
-    rcvFailureOrUnsubscribe orElse rcvReconnected(last, next) orElse rcvSubscribeCompleted {
+    rcvReconnected(last, next) orElse rcvFailureOrUnsubscribe orElse rcvSubscribeCompleted {
       case Some(x) if !last.exists(_ >= x) => catchingUp(last, next, x, Queue())
       case _                               => liveProcessing(last, Queue())
     }
@@ -84,7 +84,7 @@ class StreamSubscriptionActor private (
 
   def subscribingFromLast(): Receive = {
     subscribeToStream()
-    rcvFailureOrUnsubscribe orElse rcvReconnected(subscribingFromLast()) orElse rcvSubscribeCompleted {
+    rcvReconnected(subscribingFromLast()) orElse rcvFailureOrUnsubscribe orElse rcvSubscribeCompleted {
       liveProcessing(_, Queue())
     }
   }
@@ -92,7 +92,7 @@ class StreamSubscriptionActor private (
   def catchingUp(last: Last, next: Next, subscriptionNumber: Next, stash: Queue[Event]): Receive = {
     readEventsFrom(next)
 
-    def catchUp(stash: Queue[Event]): Receive = rcvFailureOrUnsubscribe orElse rcvReconnected(last, next) orElse
+    def catchUp(stash: Queue[Event]): Receive = rcvReconnected(last, next) orElse rcvFailureOrUnsubscribe orElse
       rcvEventAppeared(x => catchUp(stash enqueue x.event)) orElse {
         case ReadStreamEventsCompleted(events, n: Next, _, endOfStream, _, Forward) => context become (
           if (endOfStream) liveProcessing(process(last, events), stash)
@@ -117,7 +117,7 @@ class StreamSubscriptionActor private (
 
   def liveProcessing(last: Last, stash: Queue[Event]): Receive = {
     def liveProcessing(last: Last, n: Long, ready: Boolean): Receive =
-      rcvFailureOrUnsubscribe orElse rcvReconnected(last, last getOrElse EventNumber.First) orElse rcvEventAppeared {
+      rcvReconnected(last, last getOrElse EventNumber.First) orElse rcvFailureOrUnsubscribe orElse rcvEventAppeared {
         x =>
           val l = process(last, x.event)
           if (n < readBatchSize) liveProcessing(l, n + 1, ready)
@@ -146,7 +146,7 @@ class StreamSubscriptionActor private (
     }
   }
 
-  def readEventsFrom(number: Next) {
+  def readEventsFrom(number: Next) = {
     toConnection(ReadStreamEvents(streamId, number, readBatchSize, Forward, resolveLinkTos = resolveLinkTos))
   }
 

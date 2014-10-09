@@ -3,6 +3,7 @@ package eventstore
 import akka.actor.Props
 import akka.actor.Status.Failure
 import akka.testkit._
+import eventstore.EsError.NotHandled
 import org.specs2.mock.Mockito
 import scala.concurrent.duration._
 import tcp.ConnectionActor.{ WaitReconnected, Reconnected }
@@ -51,6 +52,8 @@ abstract class AbstractSubscriptionActorSpec extends util.ActorSpec with Mockito
       connection expectMsg WaitReconnected
       actor ! Reconnected
     }
+
+    def notHandled(x: NotHandled.Reason) = Failure(EsException(NotHandled(x)))
 
     def credentials: Option[UserCredentials] = None
   }

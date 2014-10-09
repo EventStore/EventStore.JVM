@@ -3,6 +3,9 @@ package eventstore
 import akka.actor.Status.Failure
 import akka.actor.{ ActorRef, ActorLogging, Actor, Identify, ActorIdentity }
 import tcp.ConnectionActor.{ Reconnected, WaitReconnected }
+import EsError.NotHandled
+import EsError.NotHandled.{ TooBusy, NotReady }
+import scala.concurrent.duration._
 
 trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
   def client: ActorRef
@@ -11,6 +14,8 @@ trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
   def resolveLinkTos: Boolean
   def credentials: Option[UserCredentials]
   def readBatchSize: Int
+
+  import context.dispatcher
 
   type Next
   type Last
@@ -39,6 +44,10 @@ trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
   }
 
   def rcvReconnected(receive: => Receive): Receive = {
+    case Failure(EsException(NotHandled(NotReady | TooBusy), _)) =>
+      val Switch = new {}
+      context.system.scheduler.scheduleOnce(100.millis, self, Switch)
+      context.become({ case Switch => context become receive }, discardOld = false)
     case Reconnected =>
       subscribed = false
       context become receive
@@ -52,25 +61,15 @@ trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
 
   def process(last: Last, event: T): Last
 
-  def toClient(event: T) {
-    client ! event
-  }
+  def toClient(event: T) = client ! event
 
-  def toConnection(x: Out) {
-    connection ! credentials.fold[OutLike](x)(x.withCredentials)
-  }
+  def toConnection(x: Out) = connection ! credentials.fold[OutLike](x)(x.withCredentials)
 
-  def subscribeToStream() {
-    toConnection(SubscribeTo(streamId, resolveLinkTos = resolveLinkTos))
-  }
+  def subscribeToStream() = toConnection(SubscribeTo(streamId, resolveLinkTos = resolveLinkTos))
 
-  override def postStop() {
-    if (subscribed) unsubscribe()
-  }
+  override def postStop() = if (subscribed) unsubscribe()
 
-  def unsubscribe() {
-    toConnection(Unsubscribe)
-  }
+  def unsubscribe() = toConnection(Unsubscribe)
 
   // using Identify & ActorIdentity as throttle
   // receiving ActorIdentity means client finished with all previous events
@@ -81,9 +80,7 @@ trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
     case Ready => context become x
   }
 
-  def checkReadiness() {
-    client ! IsReady
-  }
+  def checkReadiness() = client ! IsReady
 
   def whenReady(x: => Receive, ready: Boolean) = {
     checkReadiness()

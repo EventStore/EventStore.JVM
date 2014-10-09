@@ -2,6 +2,7 @@ package eventstore
 
 import ReadDirection.Forward
 import akka.testkit.TestProbe
+import EsError.NotHandled.TooBusy
 
 class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
   "catch up subscription actor" should {
@@ -355,7 +356,7 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       override def eventNumber = Some(EventNumber(0))
     }
 
-    "re-read reconnected while reading" in new SubscriptionScope {
+    "re-read if reconnected while reading" in new SubscriptionScope {
       connection expectMsg readEvents(0)
       reconnect()
       connection expectMsg readEvents(0)
@@ -364,7 +365,7 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       override def eventNumber = Some(EventNumber(0))
     }
 
-    "re-subscribe reconnected while subscribing" in new SubscriptionScope {
+    "re-subscribe if reconnected while subscribing" in new SubscriptionScope {
       connection expectMsg readEvents(0)
       actor ! readCompleted(0, endOfStream = true)
       connection expectMsg subscribeTo
@@ -375,7 +376,7 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       override def eventNumber = Some(EventNumber(0))
     }
 
-    "re-subscribe reconnected while subscribing from last" in new SubscriptionScope {
+    "re-subscribe if reconnected while subscribing from last" in new SubscriptionScope {
       connection expectMsg subscribeTo
       actor ! subscribeToStreamCompleted(0)
       reconnect()
@@ -411,6 +412,56 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       connection expectMsg subscribeTo.withCredentials(credentials.get)
 
       override def credentials = Some(UserCredentials("login", "password"))
+    }
+
+    "re-read if TooBusy while reading" in new SubscriptionScope {
+      connection expectMsg readEvents(0)
+      actor ! notHandled(TooBusy)
+      connection expectMsg readEvents(0)
+      expectNoActivity()
+
+      override def eventNumber = Some(EventNumber(0))
+    }
+
+    "re-subscribe if TooBusy while subscribing" in new SubscriptionScope {
+      connection expectMsg readEvents(0)
+      actor ! readCompleted(0, endOfStream = true)
+      connection expectMsg subscribeTo
+      actor ! notHandled(TooBusy)
+      connection expectMsg subscribeTo
+      expectNoActivity()
+
+      override def eventNumber = Some(EventNumber(0))
+    }
+
+    "re-subscribe if TooBusy while subscribing from last" in new SubscriptionScope {
+      connection expectMsg subscribeTo
+      actor ! subscribeToStreamCompleted(0)
+      actor ! notHandled(TooBusy)
+      connection expectMsg subscribeTo
+
+      override def eventNumber = Some(EventNumber.Last)
+    }
+
+    "re-subscribe if TooBusy while catching up" in new SubscriptionScope {
+      connection expectMsg readEvents(0)
+      actor ! readCompleted(0, endOfStream = true)
+      connection expectMsg subscribeTo
+      actor ! SubscribeToStreamCompleted(0)
+      actor ! notHandled(TooBusy)
+      connection expectMsg subscribeTo
+    }
+
+    "re-subscribe if TooBusy while live processing" in new SubscriptionScope {
+      connection expectMsg readEvents(0)
+      actor ! readCompleted(0, endOfStream = true)
+      connection expectMsg subscribeTo
+      actor ! SubscribeToStreamCompleted(0)
+      expectMsg(LiveProcessingStarted)
+      actor ! notHandled(TooBusy)
+      connection expectMsg subscribeTo
+
+      override def eventNumber = Some(EventNumber(0))
     }
   }
 
