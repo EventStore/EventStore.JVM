@@ -58,7 +58,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     }
 
     "reconnect when connection lost" in new TcpScope {
-      val (_, tcpConnection) = connect(settings.copy(maxReconnections = 1, reconnectionDelayMin = Duration.Zero))
+      val (_, tcpConnection) = connect(settings.copy(maxReconnections = 1, reconnectionDelayMin = 100.millis))
       tcpConnection ! Abort
       expectMsg(Aborted)
       expectMsgType[Connected]
@@ -70,7 +70,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       verifyReconnections(settings.maxReconnections)
       expectNoMsgs()
 
-      override def settings = Settings(maxReconnections = 1, reconnectionDelayMin = Duration.Zero)
+      override def settings = Settings(maxReconnections = 1, reconnectionDelayMin = 100.millis)
     }
 
     "reconnect when pipeline actor died" in new TestScope {
@@ -79,7 +79,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       verifyReconnections(settings.maxReconnections)
       expectNoMsgs()
 
-      override def settings = Settings(maxReconnections = 1, reconnectionDelayMin = Duration.Zero)
+      override def settings = Settings(maxReconnections = 1, reconnectionDelayMin = 100.millis)
     }
 
     "keep trying to reconnect for maxReconnections times" in new TestScope {
@@ -88,7 +88,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       verifyReconnections(settings.maxReconnections)
       expectNoMsgs()
 
-      override def settings = Settings(maxReconnections = 5, reconnectionDelayMin = Duration.Zero)
+      override def settings = Settings(maxReconnections = 5, reconnectionDelayMin = 100.millis)
     }
 
     "use reconnectionDelay from settings" in new TestScope {

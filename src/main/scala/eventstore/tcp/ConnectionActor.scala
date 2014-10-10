@@ -7,7 +7,7 @@ import akka.io.{ Tcp, IO }
 import scala.collection.immutable.Queue
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success }
-import util.{ CancellableAdapter, BidirectionalMap }
+import util.{ CancellableAdapter, BidirectionalMap, DelayedRetry }
 
 object ConnectionActor {
   def props(settings: Settings = Settings.Default): Props = Props(classOf[ConnectionActor], settings)
@@ -187,18 +187,9 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       }
     }
 
-    def reconnect(reconnectionsLeft: Int, reconnectionDelay: FiniteDuration, clients: Set[ActorRef]): Reconnecting = {
-      def reconnect(reconnectionDelay: FiniteDuration): Reconnecting = {
-        connect("reconnecting", reconnectionDelay)
-        val delay =
-          if (reconnectionDelay == Duration.Zero) Settings.Default.reconnectionDelayMin
-          else {
-            val x = reconnectionDelay * 2
-            if (x > reconnectionDelayMax) reconnectionDelayMax else x
-          }
-        Reconnecting(reconnectionsLeft - 1, delay, clients)
-      }
-      reconnect(Duration.fromNanos(reconnectionDelay.toNanos))
+    def reconnect(retry: DelayedRetry, clients: Set[ActorRef]): Reconnecting = {
+      connect("reconnecting", retry.delay)
+      Reconnecting(retry, clients)
     }
   }
 
@@ -225,13 +216,16 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       binding.yx.keySet.foreach(_ ! connectionLostFailure)
       if (!scheduled.isCancelled) scheduled.cancel()
       val template = "connection lost to {}: {}"
-      if (maxReconnections == 0) {
-        log.error(template, address, reason)
-        context stop self
-        this
-      } else {
-        log.warning(template, address, reason)
-        reconnect(maxReconnections, reconnectionDelayMin, Set.empty)
+
+      DelayedRetry.opt(maxReconnections, reconnectionDelayMin, reconnectionDelayMax) match {
+        case None =>
+          log.error(template, address, reason)
+          context stop self
+          this
+
+        case Some(retry) =>
+          log.warning(template, address, reason)
+          reconnect(retry, Set.empty)
       }
     }
 
@@ -278,7 +272,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
     }
   }
 
-  case class Reconnecting(reconnectionsLeft: Int, reconnectionDelay: FiniteDuration, clients: Set[ActorRef])
+  case class Reconnecting(retry: DelayedRetry, clients: Set[ActorRef])
       extends ConnectingOrReconnecting with ConnectedOrReconnecting {
 
     override def rcvPackageIn(x: TcpPackageIn) = {
@@ -294,9 +288,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
 
     override def rcvWaitReconnected(client: ActorRef): Reconnecting = copy(clients = clients + client)
 
-    override def maybeReconnect =
-      if (reconnectionsLeft == 0) None
-      else Some(reconnect(reconnectionsLeft, reconnectionDelay, clients))
+    override def maybeReconnect = retry.next.map(reconnect(_, clients))
 
     override def rcvOutLike(x: OutLike) = {
       sender() ! connectionLostFailure

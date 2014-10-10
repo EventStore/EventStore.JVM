@@ -7,7 +7,7 @@ import com.typesafe.config.{ ConfigFactory, Config }
 /**
  * @param address IP & port of Event Store
  * @param connectionTimeout The desired connection timeout
- * @param maxReconnections Maximum number of reconnections before backing off
+ * @param maxReconnections Maximum number of reconnections before backing off, -1 to reconnect forever
  * @param reconnectionDelayMin Delay before first reconnection
  * @param reconnectionDelayMax Maximum delay on reconnections
  * @param defaultCredentials The [[UserCredentials]] to use for operations where other [[UserCredentials]] are not explicitly supplied.
@@ -20,19 +20,22 @@ import com.typesafe.config.{ ConfigFactory, Config }
  * @param backpressure See [[eventstore.pipeline.BackpressureBuffer]]
  */
 case class Settings(
-  address: InetSocketAddress = "127.0.0.1" :: 1113,
-  connectionTimeout: FiniteDuration = 1.second,
-  maxReconnections: Int = 100,
-  reconnectionDelayMin: FiniteDuration = 250.millis,
-  reconnectionDelayMax: FiniteDuration = 10.seconds,
-  defaultCredentials: Option[UserCredentials] = Some(UserCredentials.defaultAdmin),
-  heartbeatInterval: FiniteDuration = 500.millis,
-  heartbeatTimeout: FiniteDuration = 2.seconds,
-  operationTimeout: FiniteDuration = 5.seconds,
-  resolveLinkTos: Boolean = false,
-  requireMaster: Boolean = true,
-  readBatchSize: Int = 500,
-  backpressure: BackpressureSettings = BackpressureSettings())
+    address: InetSocketAddress = "127.0.0.1" :: 1113,
+    connectionTimeout: FiniteDuration = 1.second,
+    maxReconnections: Int = 100,
+    reconnectionDelayMin: FiniteDuration = 250.millis,
+    reconnectionDelayMax: FiniteDuration = 10.seconds,
+    defaultCredentials: Option[UserCredentials] = Some(UserCredentials.defaultAdmin),
+    heartbeatInterval: FiniteDuration = 500.millis,
+    heartbeatTimeout: FiniteDuration = 2.seconds,
+    operationTimeout: FiniteDuration = 5.seconds,
+    resolveLinkTos: Boolean = false,
+    requireMaster: Boolean = true,
+    readBatchSize: Int = 500,
+    backpressure: BackpressureSettings = BackpressureSettings()) {
+  require(reconnectionDelayMin > Duration.Zero, "reconnectionDelayMin must be > 0")
+  require(reconnectionDelayMax > Duration.Zero, "reconnectionDelayMax must be > 0")
+}
 
 object Settings {
   private lazy val config: Config = ConfigFactory.load()
