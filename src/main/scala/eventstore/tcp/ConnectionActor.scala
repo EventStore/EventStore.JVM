@@ -15,8 +15,6 @@ object ConnectionActor {
   case object Reconnected
   case object WaitReconnected
 
-  private[eventstore] lazy val connectionLostFailure = Status.Failure(EsException(EsError.ConnectionLost))
-
   /**
    * Java API
    */
@@ -40,7 +38,7 @@ object ConnectionActor {
 
 private[eventstore] class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
 
-  import ConnectionActor.{ Reconnected, WaitReconnected, connectionLostFailure }
+  import ConnectionActor.{ Reconnected, WaitReconnected }
   import context.dispatcher
   import context.system
   import settings._
@@ -213,7 +211,8 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       system.scheduler.scheduleOnce(heartbeatInterval + heartbeatTimeout, self, HeartbeatTimeout(heartbeatId)))
 
     def maybeReconnect(reason: String): State = {
-      binding.yx.keySet.foreach(_ ! connectionLostFailure)
+      val failure = connectionLostFailure
+      binding.yx.keySet.foreach(_ ! failure)
       if (!scheduled.isCancelled) scheduled.cancel()
       val template = "connection lost to {}: {}"
 
@@ -300,4 +299,6 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       this
     }
   }
+
+  private def connectionLostFailure = Status.Failure(EsException(EsError.ConnectionLost))
 }
