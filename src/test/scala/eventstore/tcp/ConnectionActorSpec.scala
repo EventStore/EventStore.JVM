@@ -101,7 +101,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     }
 
     "reconnect if heartbeat timed out" in new TcpScope {
-      val (_, tcpConnection) = connect()
+      val (_, tcpConnection) = connect(settings.copy(heartbeatTimeout = 600.millis))
       val req = expectPack
       req.message mustEqual Success(HeartbeatRequest)
       expectMsg(PeerClosed)
