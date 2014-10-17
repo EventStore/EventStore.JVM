@@ -406,13 +406,13 @@ EventStoreExtension(system).connection.future(ReadEvent(EventStream.Id("stream")
     <dependency>
         <groupId>com.geteventstore</groupId>
         <artifactId>eventstore-client_2.11</artifactId>
-        <version>1.0.0</version>
+        <version>1.0.1</version>
     </dependency>
 ```
 
 * Sbt
 ```scala
-    libraryDependencies += "com.geteventstore" %% "eventstore-client" % "1.0.0"
+    libraryDependencies += "com.geteventstore" %% "eventstore-client" % "1.0.1"
 ```
 
 ### Roadmap
