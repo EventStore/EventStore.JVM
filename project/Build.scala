@@ -21,7 +21,7 @@ object Build extends Build {
     val actor   = apply("actor")
     val testkit = apply("testkit") % "test"
 
-    private def apply(x: String) = "com.typesafe.akka" %% s"akka-$x" % "2.3.6" withSources()
+    private def apply(x: String) = "com.typesafe.akka" %% s"akka-$x" % "2.3.6"
   }
 
   val typesafeConfig = "com.typesafe" % "config" % "1.2.1"
