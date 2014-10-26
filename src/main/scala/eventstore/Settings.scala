@@ -13,6 +13,7 @@ import com.typesafe.config.{ ConfigFactory, Config }
  * @param defaultCredentials The [[UserCredentials]] to use for operations where other [[UserCredentials]] are not explicitly supplied.
  * @param heartbeatInterval The interval at which to send heartbeat messages.
  * @param heartbeatTimeout The interval after which an unacknowledged heartbeat will cause the connection to be considered faulted and disconnect.
+ * @param operationMaxRetries The maximum number of operation retries
  * @param operationTimeout The amount of time before an operation is considered to have timed out
  * @param resolveLinkTos Whether to resolve LinkTo events automatically
  * @param requireMaster Whether or not to require Event Store to refuse serving read or write request if it is not master
@@ -28,6 +29,7 @@ case class Settings(
     defaultCredentials: Option[UserCredentials] = Some(UserCredentials.defaultAdmin),
     heartbeatInterval: FiniteDuration = 500.millis,
     heartbeatTimeout: FiniteDuration = 2.seconds,
+    operationMaxRetries: Int = 10,
     operationTimeout: FiniteDuration = 5.seconds,
     resolveLinkTos: Boolean = false,
     requireMaster: Boolean = true,
@@ -44,6 +46,13 @@ object Settings {
   def apply(conf: Config): Settings = {
     def apply(conf: Config): Settings = {
       def duration(path: String) = FiniteDuration(conf.getDuration(path, MILLISECONDS), MILLISECONDS)
+
+      def operationTimeout = {
+        val deprecated = "operation-timeout"
+        if (conf hasPath deprecated) duration(deprecated)
+        else duration("operation.timeout")
+      }
+
       Settings(
         address = (conf getString "address.host") :: (conf getInt "address.port"),
         connectionTimeout = duration("connection-timeout"),
@@ -56,7 +65,8 @@ object Settings {
         } yield UserCredentials(login = l, password = p),
         heartbeatInterval = duration("heartbeat.interval"),
         heartbeatTimeout = duration("heartbeat.timeout"),
-        operationTimeout = duration("operation-timeout"),
+        operationMaxRetries = conf getInt "operation.max-retries",
+        operationTimeout = operationTimeout,
         resolveLinkTos = conf getBoolean "resolve-linkTos",
         requireMaster = conf getBoolean "require-master",
         readBatchSize = conf getInt "read-batch-size",

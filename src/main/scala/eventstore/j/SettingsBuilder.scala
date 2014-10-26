@@ -17,6 +17,7 @@ class SettingsBuilder extends Builder[Settings]
   protected var _defaultCredentials = Default.defaultCredentials
   protected var _heartbeatInterval = Default.heartbeatInterval
   protected var _heartbeatTimeout = Default.heartbeatTimeout
+  protected var _operationMaxRetries = Default.operationMaxRetries
   protected var _connectionTimeout = Default.connectionTimeout
   protected var _operationTimeout = Default.operationTimeout
   protected var _readBatchSize: Int = Default.readBatchSize
@@ -87,6 +88,24 @@ class SettingsBuilder extends Builder[Settings]
     _operationTimeout = x
   }
 
+  def limitAttemptsForOperationTo(limit: Int): SettingsBuilder = {
+    require(limit >= 1, s"limit must be >= 1 but is $limit")
+    operationMaxRetries(limit - 1)
+  }
+
+  def limitRetriesForOperationTo(limit: Int): SettingsBuilder = {
+    require(limit >= 0, s"limit must be >= 0 but is $limit")
+    operationMaxRetries(limit)
+  }
+
+  def keepRetrying(): SettingsBuilder = {
+    operationMaxRetries(-1)
+  }
+
+  def operationMaxRetries(x: Int): SettingsBuilder = set {
+    _operationMaxRetries = x
+  }
+
   def operationTimeout(length: Long, unit: TimeUnit): SettingsBuilder = operationTimeout(FiniteDuration(length, unit))
 
   def operationTimeout(length: Long): SettingsBuilder = operationTimeout(length, SECONDS)
@@ -113,6 +132,7 @@ class SettingsBuilder extends Builder[Settings]
     defaultCredentials = _defaultCredentials,
     heartbeatInterval = _heartbeatInterval,
     heartbeatTimeout = _heartbeatTimeout,
+    operationMaxRetries = _operationMaxRetries,
     connectionTimeout = _connectionTimeout,
     resolveLinkTos = _resolveLinkTos,
     requireMaster = _requireMaster,
