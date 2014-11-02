@@ -23,8 +23,8 @@ sealed trait Out extends Message with OutLike {
 
 sealed trait InOut extends In with Out
 
-case object HeartbeatRequest extends InOut
-case object HeartbeatResponse extends InOut
+private[eventstore] case object HeartbeatRequest extends InOut
+private[eventstore] case object HeartbeatResponse extends InOut
 
 case object Ping extends InOut
 case object Pong extends InOut
