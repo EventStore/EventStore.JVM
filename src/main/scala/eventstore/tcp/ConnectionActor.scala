@@ -147,10 +147,14 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
 
   def rcvConnectFailed(recover: => Option[Receive]): Receive = {
     case Tcp.CommandFailed(_: Tcp.Connect) =>
-      log.error("connection failed to {}", address)
+      val template = "connection failed to {}"
       recover match {
-        case Some(x) => context become x
-        case None    => context stop self
+        case Some(x) =>
+          log.warning(template, address)
+          context become x
+        case None =>
+          log.error(template, address)
+          context stop self
       }
   }
 
