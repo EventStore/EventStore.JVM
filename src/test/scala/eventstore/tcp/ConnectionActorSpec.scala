@@ -20,12 +20,9 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
   "Connection Actor" should {
 
     "receive init.Event while connecting" in new TestScope {
-      sendConnected()
-      client ! PeerClosed
-      expectConnect()
-      val correlationId = randomUuid
-      client.underlyingActor.binding = client.underlyingActor.binding.+(correlationId, testActor)
-      client ! init.Event(TcpPackageIn(Success(Authenticated), correlationId))
+      val id = randomUuid
+      client ! TcpPackageOut(Authenticate, id)
+      client ! init.Event(TcpPackageIn(Success(Authenticated), id))
       expectMsg(Authenticated)
     }
 
@@ -166,9 +163,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     "stash Out message while connecting for the first time" in new TestScope {
       client ! Ping
       sendConnected()
-      pipeline.expectMsgPF() {
-        case init.Command(TcpPackageOut(Ping, _, _)) =>
-      }
+      pipeline.expectMsgPF() { case init.Command(TcpPackageOut(Ping, _, _)) => }
     }
 
     "stash TcpPackageOut message while connecting for the first time" in new TestScope {
@@ -194,27 +189,18 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       expectNoConnectionFailure()
     }
 
-    "bind actor to correlationId" in new TcpScope {
+    "bind actor to correlationId temporarily" in new TcpScope {
       val (connection, tcpConnection) = connect()
-
-      Seq.fill(5)(TestProbe.apply).foreach {
-        probe =>
-          val actor = probe.ref
-          connection.tell(Ping, actor)
-
-          val pack = expectPack
-          pack.message mustEqual Success(Ping)
-
-          val correlationId = pack.correlationId
-          connection.underlyingActor.binding.x(correlationId) must beSome(actor)
-
-          Seq(HeartbeatResponse, Pong).foreach {
-            msg =>
-              tcpConnection ! write(TcpPackageOut(msg))
-              tcpConnection ! write(TcpPackageOut(msg, correlationId))
-              probe expectMsg msg
-          }
-      }
+      val probe = TestProbe()
+      val actor = probe.ref
+      connection.tell(Ping, actor)
+      val pack = expectPack
+      pack.message mustEqual Success(Ping)
+      val correlationId = pack.correlationId
+      tcpConnection ! write(TcpPackageOut(Pong, correlationId))
+      probe expectMsg Pong
+      tcpConnection ! write(TcpPackageOut(Pong, correlationId))
+      probe.expectNoMsg(1.second)
     }
 
     "unbind actor when stopped" in new TcpScope {
@@ -245,11 +231,38 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       tcpConnection ! write(res)
       probe expectNoMsg 1.second
       deathProbe expectNoMsg 1.second
-
-      connection.underlyingActor.binding must beEmpty
     }
 
-    "stop subscription if initiator actor died" in new SubscriptionScope {
+    "unsubscribe if not yet subscribed and unsubscribe received" in new TestScope {
+      val probe = TestProbe()
+      val subscribe = SubscribeTo(EventStream.All)
+      client ! subscribe
+      client ! Unsubscribe
+
+      sendConnected()
+      val id = pipeline.expectMsgPF() {
+        case init.Command(TcpPackageOut(`subscribe`, id, `credentials`)) => id
+      }
+      val completed = SubscribeToStreamCompleted(0)
+      client ! init.Event(TcpPackageIn(Try(completed), id))
+
+      pipeline.expectMsg(init.Command(TcpPackageOut(Unsubscribe, id, credentials)))
+      client ! init.Event(TcpPackageIn(Try(UnsubscribeCompleted), id))
+
+      expectMsg(completed)
+      expectMsg(UnsubscribeCompleted)
+      expectNoMsg(duration)
+    }
+
+    "not unsubscribe if not yet subscribed and client died" in new TestScope {
+      val probe = TestProbe()
+      client.tell(SubscribeTo(EventStream.All), probe.ref)
+      system stop probe.ref
+      sendConnected()
+      expectNoMsg(duration)
+    }
+
+    "unsubscribe if client died" in new SubscriptionScope {
       def forStream(stream: EventStream, correlationId: Uuid, credentials: Option[UserCredentials], probe: TestProbe) {
         client ! init.Event(TcpPackageIn(Try(SubscribeToStreamCompleted(0)), correlationId))
         system stop probe.ref
@@ -257,12 +270,58 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       }
     }
 
-    "not stop subscription if not completed and initiator actor died" in new SubscriptionScope {
-      def forStream(stream: EventStream, correlationId: Uuid, credentials: Option[UserCredentials], probe: TestProbe) {
+    "unsubscribe if not subscribed and client died" in new SubscriptionScope {
+      def forStream(stream: EventStream, id: Uuid, credentials: Option[UserCredentials], probe: TestProbe) {
         system stop probe.ref
+        pipeline.expectMsg(init.Command(TcpPackageOut(Unsubscribe, id, credentials)))
         expectNoMsg()
       }
     }
+
+    "not unsubscribe twice" in new SubscriptionScope {
+      def forStream(stream: EventStream, id: Uuid, credentials: Option[UserCredentials], probe: TestProbe) = {
+        client ! init.Event(TcpPackageIn(Try(SubscribeToStreamCompleted(0)), id))
+        client.tell(Unsubscribe, probe.ref)
+        system stop probe.ref
+        client.tell(Unsubscribe, probe.ref)
+        pipeline.expectMsg(init.Command(TcpPackageOut(Unsubscribe, id, credentials)))
+        expectNoMsg(duration)
+      }
+    }.pendingUntilFixed
+
+    "not unsubscribe twice if client died" in new SubscriptionScope {
+      def forStream(stream: EventStream, id: Uuid, credentials: Option[UserCredentials], probe: TestProbe) = {
+        client ! init.Event(TcpPackageIn(Try(SubscribeToStreamCompleted(0)), id))
+        system stop probe.ref
+        client.tell(Unsubscribe, probe.ref)
+        pipeline.expectMsg(init.Command(TcpPackageOut(Unsubscribe, id, credentials)))
+        expectNoMsg(duration)
+      }
+    }
+
+    "re-subscribe after reconnected" in new SubscriptionScope {
+      def forStream(stream: EventStream, id: Uuid, credentials: Option[UserCredentials], probe: TestProbe) = {
+        client ! init.Event(TcpPackageIn(Try(SubscribeToStreamCompleted(0)), id))
+        client ! PeerClosed
+        expectConnect()
+        sendConnected()
+        pipeline.expectMsg(init.Command(TcpPackageOut(SubscribeTo(stream), id, credentials)))
+      }
+    }.pendingUntilFixed
+
+    "not unsubscribe after reconnected" in new SubscriptionScope {
+      def forStream(stream: EventStream, id: Uuid, credentials: Option[UserCredentials], probe: TestProbe) = {
+        val completed = SubscribeToStreamCompleted(0)
+        client ! init.Event(TcpPackageIn(Try(completed), id))
+        probe expectMsg completed
+        client ! PeerClosed
+        expectConnect()
+        client.tell(Unsubscribe, probe.ref)
+        probe expectMsg UnsubscribeCompleted
+        sendConnected()
+        pipeline.expectNoMsg()
+      }
+    }.pendingUntilFixed
 
     "use default credentials if not provided with message" in new SecurityScope {
       val x = UserCredentials("login", "password")
@@ -290,10 +349,82 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
         in =>
           val pack = TcpPackageIn(Try(in))
           client ! init.Event(pack)
-          pipeline.expectMsgPF() {
-            case init.Command(TcpPackageOut(Unsubscribe, pack.correlationId, _)) => true
-          } must beTrue
+          pipeline expectMsg init.Command(TcpPackageOut(Unsubscribe, pack.correlationId, `credentials`))
+          success
       }
+    }
+
+    "retry operation after reconnected" in new TestScope {
+      sendConnected()
+      client ! Authenticate
+      val cmd = pipeline.expectMsgPF() {
+        case x @ init.Command(TcpPackageOut(Authenticate, _, `credentials`)) => x
+      }
+      client ! PeerClosed
+      expectConnect()
+      sendConnected()
+
+      pipeline expectMsg cmd
+
+      client ! PeerClosed
+      expectConnect()
+      sendConnected()
+
+      pipeline expectMsg cmd
+    }.pendingUntilFixed
+
+    "retry operation if timed out" in new TestScope {
+      sendConnected()
+
+      client ! Authenticate
+
+      val pack = pipeline.expectMsgPF() {
+        case init.Command(x @ TcpPackageOut(Authenticate, _, `credentials`)) => x
+      }
+      pipeline expectMsg init.Command(pack)
+      pipeline expectMsg init.Command(pack)
+
+      override def settings = super.settings.copy(operationTimeout = 100.millis)
+    }.pendingUntilFixed
+
+    "should process messages from single client in parallel" in new TestScope {
+      sendConnected()
+
+      def tell(msg: Out) = {
+        client ! msg
+        pipeline.expectMsgPF() {
+          case init.Command(TcpPackageOut(`msg`, id, `credentials`)) => id
+        }
+      }
+
+      val id1 = tell(Ping)
+      val id2 = tell(Authenticate)
+
+      id1 mustNotEqual id2
+
+      client ! init.Event(TcpPackageIn(Try(Pong), id2))
+      //      client ! init.Event(TcpPackageIn(Try(Pong), id1)) TODO this should fail, let's test it, ideally this should trigger retry
+      client ! init.Event(TcpPackageIn(Try(Authenticated), id1))
+    }
+
+    "should process messages from different clients in parallel" in new TestScope {
+      sendConnected()
+
+      def tell(msg: Out, probe: TestProbe) = {
+        client.tell(msg, probe.ref)
+        pipeline.expectMsgPF() {
+          case init.Command(TcpPackageOut(`msg`, id, `credentials`)) => id
+        }
+      }
+
+      val probe1 = TestProbe()
+      val probe2 = TestProbe()
+      val id1 = tell(Ping, probe1)
+      val id2 = tell(Authenticate, probe2)
+
+      client ! init.Event(TcpPackageIn(Try(Pong), id2))
+      //      client ! init.Event(TcpPackageIn(Try(Pong), id1)) TODO this should fail, let's test it, ideally this should trigger retry
+      client ! init.Event(TcpPackageIn(Try(Authenticated), id1))
     }
   }
 
@@ -404,7 +535,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
         success
     }
 
-    def forStream(stream: EventStream, correlationId: Uuid, credentials: Option[UserCredentials], probe: TestProbe)
+    def forStream(stream: EventStream, id: Uuid, credentials: Option[UserCredentials], probe: TestProbe)
 
     override def settings = Settings(maxReconnections = 1, heartbeatInterval = 10.seconds, heartbeatTimeout = 20.seconds)
   }
