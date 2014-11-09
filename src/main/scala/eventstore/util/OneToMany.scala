@@ -1,5 +1,7 @@
 package eventstore.util
 
+import scala.collection.GenTraversableOnce
+
 trait OneToMany[T, S, M] {
   def +(t: T): OneToMany[T, S, M]
 
@@ -16,9 +18,12 @@ trait OneToMany[T, S, M] {
   def manySet: Set[M]
 
   def values: Set[T]
+
+  def flatMap[B, That](f: T => GenTraversableOnce[T]): OneToMany[T, S, M]
 }
 
 object OneToMany {
+  // TODO rename t
   def apply[T, S, M](sf: T => S, mf: T => M): OneToMany[T, S, M] = OneToManyImpl[T, S, M](Map(), Map(), sf, mf)
 
   private case class OneToManyImpl[T, S, M](
@@ -60,6 +65,12 @@ object OneToMany {
     def manySet = ms.keySet
 
     def values = ss.values.toSet
+
+    // TODO improve
+    def flatMap[B, That](f: (T) => GenTraversableOnce[T]) = {
+      val ts = values.flatMap(f)
+      ts.foldLeft[OneToMany[T, S, M]](OneToManyImpl[T, S, M](Map(), Map(), sf, mf)) { case (otm, t) => otm + t }
+    }
   }
 
   private[eventstore] implicit class RichMap[M, S](self: Map[M, Set[S]]) extends AnyRef {

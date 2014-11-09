@@ -356,56 +356,6 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       override def eventNumber = Some(EventNumber(0))
     }
 
-    "re-read if reconnected while reading" in new SubscriptionScope {
-      connection expectMsg readEvents(0)
-      reconnect()
-      connection expectMsg readEvents(0)
-      expectNoActivity()
-
-      override def eventNumber = Some(EventNumber(0))
-    }
-
-    "re-subscribe if reconnected while subscribing" in new SubscriptionScope {
-      connection expectMsg readEvents(0)
-      actor ! readCompleted(0, endOfStream = true)
-      connection expectMsg subscribeTo
-      reconnect()
-      connection expectMsg subscribeTo
-      expectNoActivity()
-
-      override def eventNumber = Some(EventNumber(0))
-    }
-
-    "re-subscribe if reconnected while subscribing from last" in new SubscriptionScope {
-      connection expectMsg subscribeTo
-      actor ! subscribeToStreamCompleted(0)
-      reconnect()
-      connection expectMsg subscribeTo
-
-      override def eventNumber = Some(EventNumber.Last)
-    }
-
-    "re-subscribe if reconnected while catching up" in new SubscriptionScope {
-      connection expectMsg readEvents(0)
-      actor ! readCompleted(0, endOfStream = true)
-      connection expectMsg subscribeTo
-      actor ! SubscribeToStreamCompleted(0)
-      reconnect()
-      connection expectMsg subscribeTo
-    }
-
-    "re-subscribe if reconnected while live processing" in new SubscriptionScope {
-      connection expectMsg readEvents(0)
-      actor ! readCompleted(0, endOfStream = true)
-      connection expectMsg subscribeTo
-      actor ! SubscribeToStreamCompleted(0)
-      expectMsg(LiveProcessingStarted)
-      reconnect()
-      connection expectMsg subscribeTo
-
-      override def eventNumber = Some(EventNumber(0))
-    }
-
     "use credentials if given" in new SubscriptionScope {
       connection expectMsg readEvents(0).withCredentials(credentials.get)
       actor ! readCompleted(0, endOfStream = true)

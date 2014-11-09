@@ -2,7 +2,6 @@ package eventstore
 
 import akka.actor.Status.Failure
 import akka.actor.{ ActorRef, ActorLogging, Actor, Identify, ActorIdentity }
-import tcp.ConnectionActor.{ Reconnected, WaitReconnected }
 import EsError.NotHandled
 import EsError.NotHandled.{ TooBusy, NotReady }
 import scala.concurrent.duration._
@@ -26,7 +25,6 @@ trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
   var subscribed = false
 
   val rcvFailure: Receive = {
-    case Failure(EsException(EsError.ConnectionLost, _)) => connection ! WaitReconnected
     case failure @ Failure(e) =>
       log.error(e.toString)
       client ! failure
@@ -44,13 +42,14 @@ trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
   }
 
   def rcvReconnected(receive: => Receive): Receive = {
-    case Failure(EsException(NotHandled(NotReady | TooBusy), _)) =>
+    case Failure(EsException(NotHandled(NotReady | TooBusy), _)) => // TODO test this use case
       val Switch = new {}
       context.system.scheduler.scheduleOnce(100.millis, self, Switch)
       context.become({ case Switch => context become receive }, discardOld = false)
-    case Reconnected =>
-      subscribed = false
-      context become receive
+
+//    case _: SubscribeCompleted =>
+//      subscribed = false
+//      context become receive
   }
 
   def rcvReconnected(last: Last, next: Next): Receive = rcvReconnected(subscribing(last, next))

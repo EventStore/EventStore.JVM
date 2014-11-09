@@ -1,47 +1,44 @@
 package eventstore
 package tcp
 
-import akka.actor.{ Status, ActorRef }
+import akka.actor.ActorRef
 import scala.util.{ Failure, Try, Success }
+import Operation.{ OutFunc, InFunc }
 
 sealed trait Operation {
   def id: Uuid
 
   def client: ActorRef
 
-  def clientTerminated: Option[TcpPackageOut]
+  def clientTerminated: Option[TcpPackageOut] // TODO refactor
 
-  def pack: TcpPackageOut
+  def inspectOut: PartialFunction[Out, Option[Operation]] // TODO iterable and pass credentials
 
-  def inspectOut: PartialFunction[Out, (Operation, Option[TcpPackageOut])] // TODO iterable and pass credentials
+  def inspectIn(in: Try[In]): Option[Operation]
 
-  def inspectIn(x: Try[In])(implicit actor: ActorRef): Option[(Operation, Option[TcpPackageOut])]
+  // TODO connectionLost can be rewritten via inspectIn(EsError.ConnectionLost)
+  def connectionLost(): Option[Operation]
 
-  def connectionLost: Option[Operation]
-
-  def sendToClient(x: Try[In])(implicit actor: ActorRef) = {
-    val reply = x match {
-      case Success(x) => x
-      case Failure(x) => Status.Failure(x)
-    }
-    client ! reply
-  }
+  def connected(outFunc: OutFunc): Option[Operation]
 }
 
 object Operation {
-  def apply(pack: TcpPackageOut, client: ActorRef): Operation = {
+  type OutFunc = TcpPackageOut => Unit
+  type InFunc = Try[In] => Unit
+
+  def apply(pack: TcpPackageOut, client: ActorRef, inFunc: InFunc, outFunc: Option[OutFunc]): Operation = {
     pack.message match {
-      case x: SubscribeTo => SubscriptionOperation(pack.correlationId, x, pack.credentials, client)
-      case _              => SimpleOperation(pack, client)
+      case x: SubscribeTo => SubscriptionOperation(pack.correlationId, x, pack.credentials, client, inFunc, outFunc)
+      case _              => SimpleOperation(pack, client, inFunc)
     }
   }
 }
 
-case class SimpleOperation(pack: TcpPackageOut, client: ActorRef) extends Operation {
+case class SimpleOperation(pack: TcpPackageOut, client: ActorRef, inFunc: InFunc) extends Operation {
   def id = pack.correlationId
 
-  def inspectIn(x: Try[In])(implicit actor: ActorRef) = {
-    sendToClient(x)
+  def inspectIn(in: Try[In]) = {
+    inFunc(in)
     None
   }
 
@@ -49,62 +46,130 @@ case class SimpleOperation(pack: TcpPackageOut, client: ActorRef) extends Operat
 
   def inspectOut = PartialFunction.empty
 
-  def connectionLost = Some(this)
+  def connectionLost() = Some(this)
+
+  def connected(outFunc: OutFunc) = {
+    outFunc(pack)
+    Some(this)
+  }
 }
 
 sealed trait SubscriptionOperation extends Operation
 
 object SubscriptionOperation {
-  def apply(id: Uuid, message: SubscribeTo, credentials: Option[UserCredentials], client: ActorRef): SubscriptionOperation = {
-    new Subscribing(id, message, credentials, client)
+  def apply(id: Uuid,
+            message: SubscribeTo,
+            credentials: Option[UserCredentials],
+            client: ActorRef,
+            inFunc: InFunc,
+            outFunc: Option[OutFunc]): SubscriptionOperation = {
+    new Subscribing(id, message, credentials, client, false, inFunc, outFunc)
   }
+  // TODO maybe new state resubscribe?
 
   case class Subscribing(
       id: Uuid,
       out: SubscribeTo,
       credentials: Option[UserCredentials],
-      client: ActorRef, unsubscribe: Boolean = false) extends SubscriptionOperation {
+      client: ActorRef,
+      unsubscribe: Boolean = false,
+      inFunc: InFunc,
+      outFunc: Option[OutFunc]) extends SubscriptionOperation {
 
     def clientTerminated = Some(TcpPackageOut(Unsubscribe, id, credentials))
 
-    def inspectIn(x: Try[In])(implicit actor: ActorRef) = {
-      val result = x match {
-        case Failure(_) => None
-        case Success(_: SubscribeCompleted) =>
-          val result =
-            if (unsubscribe) (Unsubscribing(id, credentials, client), Some(TcpPackageOut(Unsubscribe, id, credentials)))
-            else (Subscribed(id, out, credentials, client), None)
-          Some(result)
+    def inspectIn(in: Try[In]) = {
 
-        case _ => Some(this -> None)
-      }
-
-      sendToClient(x)
-      result
-    }
-
-    def inspectOut = {
-      case Unsubscribe => (copy(unsubscribe = true), None)
-    }
-
-    def pack = TcpPackageOut(out, id, credentials)
-
-    def connectionLost = Some(this)
-  }
-
-  case class Subscribed(id: Uuid, message: SubscribeTo, credentials: Option[UserCredentials], client: ActorRef) extends SubscriptionOperation {
-    def inspectIn(x: Try[In])(implicit actor: ActorRef) = {
-      x match {
-        case Success(_: StreamEventAppeared) =>
-          sendToClient(x)
-          Some(this -> None)
-
+      in match {
         case Failure(_) =>
-          sendToClient(x)
-          Some(Unsubscribing(id, credentials, client) -> None)
+          inFunc(in)
+          if (unsubscribe) inFunc(Success(UnsubscribeCompleted))
+          None
+
+        case Success(_: SubscribeCompleted) =>
+
+          if (unsubscribe) {
+            inFunc(in)
+            outFunc match {
+              case None =>
+                inFunc(Success(UnsubscribeCompleted))
+                None
+
+              case Some(outFunc) =>
+                outFunc(TcpPackageOut(Unsubscribe, id, credentials))
+                Some(Unsubscribing(id, credentials, client, inFunc, outFunc))
+            }
+          } else {
+            outFunc match {
+              case Some(outFunc) =>
+                inFunc(in)
+                Some(Subscribed(id, out, credentials, client, inFunc, outFunc))
+              case None => Some(this)
+            }
+          }
 
         case _ =>
+          // TODO not handled, should I forward to client or retry ?
+          Some(this)
+      }
+
+    }
+
+    // TODO why not go to Unsubscribe state?
+    def inspectOut = {
+      case Unsubscribe =>
+        outFunc match {
+          case Some(outFunc) =>
+            Some(
+              if (unsubscribe) this // TODO should not happen
+              else copy(unsubscribe = true))
+
+          case None =>
+            inFunc(Success(UnsubscribeCompleted))
+            None
+        }
+      //        (copy(unsubscribe = true), None)
+    }
+
+    //    def pack = TcpPackageOut(out, id, credentials)
+
+    def connectionLost() = {
+      Some(
+        if (outFunc.isEmpty) this
+        else copy(outFunc = None))
+    }
+
+    def connected(outFunc: OutFunc) = {
+      outFunc(TcpPackageOut(out, id, credentials))
+      Some(copy(outFunc = Some(outFunc)))
+    }
+  }
+
+  case class Subscribed(
+      id: Uuid,
+      message: SubscribeTo,
+      credentials: Option[UserCredentials],
+      client: ActorRef,
+      inFunc: InFunc,
+      outFunc: OutFunc) extends SubscriptionOperation {
+
+    def inspectIn(in: Try[In]) = {
+      in match {
+        case Success(UnsubscribeCompleted) =>
+          inFunc(in)
           None
+
+        case Success(_: StreamEventAppeared) =>
+          inFunc(in)
+          Some(this)
+
+        case Failure(_) =>
+          inFunc(in)
+          Some(Unsubscribing(id, credentials, client, inFunc, outFunc))
+
+        case _ =>
+          // TODO not handled, should I forward to client or retry ?
+          Some(this)
       }
     }
 
@@ -112,32 +177,62 @@ object SubscriptionOperation {
 
     def inspectOut = {
       case Unsubscribe =>
-        val out = Unsubscribing(id, credentials, client)
-        val pack = TcpPackageOut(Unsubscribe, id, credentials)
-        (out -> Some(pack))
+        outFunc(TcpPackageOut(Unsubscribe, id, credentials))
+        Some(Unsubscribing(id, credentials, client, inFunc, outFunc))
     }
 
-    def pack = sys.error("'pack' method is not supported")
+    //    def pack = sys.error("'pack' method is not supported")
 
-    def connectionLost = Some(Subscribing(id, message, credentials, client))
+    def connectionLost() = {
+      // TODO maybe new state resubscribing?
+      Some(Subscribing(id, message, credentials, client, false, inFunc, None))
+    }
+
+    def connected(pipeline: TcpPackageOut => Unit) = {
+      // TODO actually this should never happen
+
+      Some(this)
+      //      pipeline(TcpPackageOut(message, id, credentials))
+      //      Some(Subscribing(id, message, credentials, client))
+    }
   }
 
-  case class Unsubscribing(id: Uuid, credentials: Option[UserCredentials], client: ActorRef) extends SubscriptionOperation {
-    def inspectIn(x: Try[In])(implicit actor: ActorRef) = x match {
+  case class Unsubscribing(
+      id: Uuid,
+      credentials: Option[UserCredentials],
+      client: ActorRef,
+      inFunc: InFunc,
+      outFunc: OutFunc) extends SubscriptionOperation {
+    def inspectIn(in: Try[In]) = in match {
+      //      case Success(_: SubscribeCompleted) =>
+      //        inFunc(in)
+      //        Some(this)
+
       case Success(UnsubscribeCompleted) =>
-        sendToClient(x)
+        inFunc(in)
         None
 
       case Failure(_) =>
-        sendToClient(x)
-        Some(this -> None)
+        inFunc(in)
+        Some(this)
 
-      case _ => Some(this -> None)
+      case _ =>
+        // TODO not handled, should I forward to client or retry ?
+        Some(this)
     }
 
     def clientTerminated = None
+
     def inspectOut = PartialFunction.empty
-    def pack = TcpPackageOut(Unsubscribe, id, credentials)
-    def connectionLost = None
+
+    def connectionLost() = {
+      inFunc(Success(UnsubscribeCompleted))
+      None
+    }
+
+    def connected(pipeline: (TcpPackageOut) => Unit) = {
+      // TODO actually this should never happen
+      None
+    }
   }
 }

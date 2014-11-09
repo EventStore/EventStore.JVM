@@ -26,14 +26,13 @@ class SubscriptionActorITest extends AbstractSubscriptionActorITest {
     "survive reconnection after live processing started" in new SubscriptionScope {
       fishForLiveProcessingStarted()
       reconnect()
-      fishForLiveProcessingStarted()
       write()
       expectEvent
     }
 
     "send failure if connection stopped" in new SubscriptionScope {
       system stop connection
-      fishForMessage(30.seconds) {
+      fishForMessage(duration) {
         case LiveProcessingStarted                                  => false
         case _: IndexedEvent                                        => false
         case Status.Failure(EsException(EsError.ConnectionLost, _)) => true
@@ -50,10 +49,11 @@ class SubscriptionActorITest extends AbstractSubscriptionActorITest {
   }
 
   trait SubscriptionScope extends TestScope {
+    val duration = 10.seconds
     val subscription = system.actorOf(SubscriptionActor.props(connection, testActor, fromPositionExclusive))
 
     def fishForLiveProcessingStarted(): Unit = {
-      fishForMessage(30.seconds) {
+      fishForMessage(duration) {
         case LiveProcessingStarted => true
         case _: IndexedEvent       => false
       }

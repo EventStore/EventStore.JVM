@@ -6,7 +6,6 @@ import akka.testkit._
 import eventstore.EsError.NotHandled
 import org.specs2.mock.Mockito
 import scala.concurrent.duration._
-import tcp.ConnectionActor.{ WaitReconnected, Reconnected }
 
 abstract class AbstractSubscriptionActorSpec extends util.ActorSpec with Mockito {
 
@@ -45,12 +44,6 @@ abstract class AbstractSubscriptionActorSpec extends util.ActorSpec with Mockito
       val duration = 1.seconds
       expectNoMsg(duration)
       connection.expectNoMsg(duration)
-    }
-
-    def reconnect() {
-      actor ! Failure(EsException(EsError.ConnectionLost))
-      connection expectMsg WaitReconnected
-      actor ! Reconnected
     }
 
     def notHandled(x: NotHandled.Reason) = Failure(EsException(NotHandled(x)))

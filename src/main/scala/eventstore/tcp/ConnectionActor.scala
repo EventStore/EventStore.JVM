@@ -12,7 +12,6 @@ object ConnectionActor {
   def props(settings: Settings = Settings.Default): Props = Props(classOf[ConnectionActor], settings)
 
   case object Reconnected
-  case object WaitReconnected
 
   /**
    * Java API
@@ -23,21 +22,10 @@ object ConnectionActor {
    * Java API
    */
   def getProps(settings: Settings): Props = props(settings)
-
-  /**
-   * Java API
-   */
-  def reconnected: Reconnected.type = Reconnected
-
-  /**
-   * Java API
-   */
-  def waitReconnected: WaitReconnected.type = WaitReconnected
 }
 
 private[eventstore] class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
 
-  import ConnectionActor.{ Reconnected, WaitReconnected }
   import context.dispatcher
   import context.system
   import settings._
@@ -57,15 +45,16 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
   }
 
   def connecting(operations: Operations): Receive = {
-    def onPipeline(pipeline: ActorRef) = operations.values.foreach(o => sendPack(pipeline, o.pack))
+    def onPipeline(pipeline: ActorRef) = operations.flatMap(_.connected(sendCommand(pipeline, _)))
 
+    // TODO refactor this
     val receive: Receive = {
       case init.Event(x) =>
-        val os = dispatch(operations, x, _ => Unit) // TODO rename result
+        val os = dispatch(operations, x, None) // TODO rename result
         context become connecting(os)
     }
 
-    receive orElse rcvOut(operations, connecting, None) orElse rcvConnected(operations, onPipeline) orElse rcvConnectFailed(None)
+    receive orElse rcvOut(operations, connecting, None) orElse rcvConnected(onPipeline) orElse rcvConnectFailed(None)
   }
 
   def connected(operations: Operations, connection: ActorRef, pipeline: ActorRef, heartbeatId: Long): Receive = {
@@ -73,10 +62,10 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       system.scheduler.scheduleOnce(heartbeatInterval, self, Heartbeat),
       system.scheduler.scheduleOnce(heartbeatInterval + heartbeatTimeout, self, HeartbeatTimeout(heartbeatId)))
 
+    def outFunc(pack: TcpPackageOut): Unit = sendCommand(pipeline, pack)
+
     def maybeReconnect(reason: String) = {
-      val failure = connectionLostFailure
-      operations.manySet.foreach(_ ! failure) // TODO merge
-      //val result = operations.flatMap(_.connectionLost) // TODO
+      val result = operations.flatMap(_.connectionLost())
 
       if (!scheduled.isCancelled) scheduled.cancel()
       val template = "connection lost to {}: {}"
@@ -89,8 +78,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
         case Some(retry) =>
           log.warning(template, address, reason)
           connect("reconnecting", retry.delay)
-          //          context become reconnecting(result, retry, Set.empty)
-          context become reconnecting(Operations.Empty, retry, Set.empty)
+          context become reconnecting(result, retry)
       }
     }
 
@@ -107,14 +95,12 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
         connection ! Tcp.Abort
         maybeReconnect("pipeline actor died")
 
-      case WaitReconnected => sender() ! Reconnected
-
       case init.Event(x) =>
         scheduled.cancel()
-        val result = dispatch(operations, x, sendPack(pipeline, _)) // TODO rename result
+        val result = dispatch(operations, x, Some(pipeline)) // TODO rename result
         context become connected(result, connection, pipeline, heartbeatId + 1)
 
-      case Heartbeat => sendPack(pipeline, TcpPackageOut(HeartbeatRequest))
+      case Heartbeat => outFunc(TcpPackageOut(HeartbeatRequest))
 
       case HeartbeatTimeout(id) => if (id == heartbeatId) {
         connection ! Tcp.Close
@@ -122,32 +108,27 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       }
     }
 
-    receive orElse rcvOut(operations, connected(_, connection, pipeline, heartbeatId), Some(pipeline))
+    receive orElse rcvOut(operations, connected(_, connection, pipeline, heartbeatId), Some(outFunc))
   }
 
-  def reconnecting(operations: Operations, retry: DelayedRetry, clients: Set[ActorRef]): Receive = {
+  def reconnecting(operations: Operations, retry: DelayedRetry): Receive = {
     def reconnect = retry.next.map { retry =>
       connect("reconnecting", retry.delay)
-      reconnecting(operations, retry, clients)
+      reconnecting(operations, retry)
     }
 
-    def onPipeline(pipeline: ActorRef) = {
-      operations.values.foreach { o => sendPack(pipeline, o.pack) }
-      clients.foreach(_ ! Reconnected)
-    }
+    def onPipeline(pipeline: ActorRef) = operations.flatMap(_.connected(sendCommand(pipeline, _)))
 
     val receive: Receive = {
-      case WaitReconnected => context become reconnecting(operations, retry, clients + sender())
       case init.Event(x) =>
-        val result = dispatch(Operations.Empty /*TODO*/ , x, _ => Unit) // TODO rename result
-        context become reconnecting(result, retry, clients)
-      case _: OutLike | _: TcpPackageOut => sender() ! connectionLostFailure // TODO enqueue
+        val result = dispatch(operations, x, None) // TODO rename result
+        context become reconnecting(result, retry)
     }
 
     receive orElse
-      rcvConnected(operations, onPipeline) orElse
+      rcvConnected(onPipeline) orElse
       rcvConnectFailed(reconnect) orElse
-      rcvOut(operations, reconnecting(_, retry, clients), None)
+      rcvOut(operations, reconnecting(_, retry), None)
   }
 
   def rcvConnectFailed(recover: => Option[Receive]): Receive = {
@@ -163,88 +144,83 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       }
   }
 
-  def rcvConnected(operations: Operations, onPipeline: ActorRef => Any): Receive = {
+  def rcvConnected(onPipeline: ActorRef => Operations): Receive = {
     case Tcp.Connected(`address`, _) =>
       log.info("connected to {}", address)
       val connection = sender()
       val pipeline = newPipeline(connection)
+      val operations = onPipeline(pipeline)
       connection ! Tcp.Register(pipeline)
-      onPipeline(pipeline)
       context watch connection
       context watch pipeline
       context become connected(operations, connection, pipeline, 0)
   }
 
-  def sendPack(pipeline: ActorRef, pack: TcpPackageOut): Unit = {
-    log.debug(pack.toString)
-    pipeline ! init.command(pack)
-  }
-
-  def rcvOut(operations: Operations, receive: Operations => Receive, pipeline: Option[ActorRef]): Receive = {
-    def send(pack: TcpPackageOut): Unit = {
-      pipeline.foreach(sendPack(_, pack))
+  def rcvOut(operations: Operations, receive: Operations => Receive, outFunc: Option[TcpPackageOut => Unit]): Receive = {
+    def inFunc(client: ActorRef)(in: Try[In]): Unit = {
+      val msg = in match {
+        case Success(x) => x
+        case Failure(x) => Status.Failure(x)
+      }
+      client ! msg
     }
 
-    def newOperation(pack: TcpPackageOut) = {
-      context watch sender() // TODO don't do that every time
-      send(pack)
-      Operation(pack, sender())
+    def rcvPack(pack: TcpPackageOut): Unit = {
+      val msg = pack.message
+
+      def forId = operations.single(pack.correlationId)
+      def forMsg = operations.many(sender()).find(_.inspectOut.isDefinedAt(msg))
+
+      // TODO current requirement is the only one subscription per actor allowed
+      // TODO operations.single(pack.correlationId) is not checked for isDefined ... hmm....
+      val result = forId orElse forMsg match {
+        case Some(operation) =>
+          println(operation.getClass.getSimpleName)
+          operation.inspectOut(msg) match {
+            case Some(operation) => operations + operation
+            case None            => operations - operation
+          }
+
+        case None =>
+          context watch sender() // TODO don't do that every time
+          outFunc.foreach(_.apply(pack)) // TODO here or in the operation
+          val operation = Operation(pack, sender(), inFunc(sender()), outFunc)
+          operations + operation
+      }
+      context become receive(result)
     }
 
     {
-      case pack: TcpPackageOut =>
-        log.warning(pack.toString)
-        val msg = pack.message
-        // TODO create operations.update
-        // operations.get(pack.correlationId) is not checked for isDefined ... hmm....
-        val operation = operations.single(pack.correlationId) orElse operations.many(sender()).find(_.inspectOut.isDefinedAt(msg)) match {
-          case None => newOperation(pack)
-          case Some(o) =>
-            val (operation, pack) = o.inspectOut(msg)
-            pack.foreach(send) // TODO
-            operation
-        }
-        context become receive(operations + operation)
-
-      case message: OutLike =>
-        // TODO current requirement is the only one subscription per actor allowed
-        val msg = message.out
-        val operation = operations.many(sender()).find(_.inspectOut.isDefinedAt(msg)) match {
-          case Some(o) =>
-            val (operation, pack) = o.inspectOut(msg)
-            pack.foreach(send) // TODO
-            operation
-          case None =>
-            val pack = TcpPackageOut(message.out, randomUuid, credentials(message))
-            val operation = newOperation(pack)
-            operation
-        }
-        context become receive(operations + operation)
-
+      case x: TcpPackageOut => rcvPack(x)
+      case x: OutLike       => rcvPack(TcpPackageOut(x.out, randomUuid, credentials(x)))
       case Terminated(actor) =>
         val os = operations.many(actor)
         if (os.nonEmpty) {
           for {
             o <- os
             p <- o.clientTerminated
-          } send(p)
+            f <- outFunc
+          } f(p)
           context become receive(operations -- os)
         }
     }
   }
 
-  def dispatch(operations: Operations, in: TcpPackageIn, reply: TcpPackageOut => Unit): Operations = {
+  def dispatch(operations: Operations, in: TcpPackageIn, pipeline: Option[ActorRef]): Operations = {
+    def reply(out: TcpPackageOut): Unit = {
+      pipeline.foreach(sendCommand(_, out))
+    }
+
     log.debug(in.toString)
     val correlationId = in.correlationId
 
     def forward(msg: Try[In]): Operations = {
       operations.single(correlationId) match {
         case Some(operation) =>
+          println(operation.getClass.getSimpleName)
           operation.inspectIn(msg) match {
-            case None => operations - operation
-            case Some((operation, pack)) =>
-              pack.foreach(reply)
-              operations + operation
+            case None            => operations - operation
+            case Some(operation) => operations + operation
           }
 
         case None =>
@@ -274,9 +250,13 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
         reply(TcpPackageOut(Pong, in.correlationId))
         operations
 
-      case x =>
-        forward(x)
+      case x => forward(x)
     }
+  }
+
+  def sendCommand(pipeline: ActorRef, pack: TcpPackageOut): Unit = {
+    log.debug(pack.toString)
+    pipeline ! init.Command(pack)
   }
 
   def newPipeline(connection: ActorRef): ActorRef = {
