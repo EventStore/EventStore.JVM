@@ -20,6 +20,7 @@ object EsError {
   case object ConnectionLost extends EsError
   case object BadRequest extends EsError
   case class NonMetadataEvent(event: Event) extends EsError
+  case class OperationTimedOut(operation: Out) extends EsError
 
   case class NotHandled(reason: NotHandled.Reason) extends EsError
 
