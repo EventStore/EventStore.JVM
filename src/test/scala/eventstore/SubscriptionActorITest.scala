@@ -9,6 +9,14 @@ class SubscriptionActorITest extends AbstractSubscriptionActorITest {
       expectEvent.event.number mustEqual EventNumber.First
     }
 
+    "subscribe from the concrete position" in new TestScope {
+      connection ! ReadAllEvents(Position.Last, 2, ReadDirection.Backward)
+      val position = expectMsgType[ReadAllEventsCompleted].events.last.position
+      val subscription = system.actorOf(SubscriptionActor.props(connection, testActor, Some(position)))
+
+      expectMsgType[IndexedEvent].position must beGreaterThan(position)
+    }
+
     "read and then subscribe" in new SubscriptionScope {
       expectEvent
       fishForLiveProcessingStarted()
@@ -38,14 +46,6 @@ class SubscriptionActorITest extends AbstractSubscriptionActorITest {
         case Status.Failure(EsException(EsError.ConnectionLost, _)) => true
       }
     }.pendingUntilFixed()
-
-    /*"subscribe from the concrete position" in new SubscriptionScope {
-      def position = Position(2)
-      println(expectMsgType[Any])
-      expectMsgType[IndexedEvent].position must beGreaterThan(position)
-
-      override def fromPositionExclusive = Some(position)
-    }*/
   }
 
   trait SubscriptionScope extends TestScope {
