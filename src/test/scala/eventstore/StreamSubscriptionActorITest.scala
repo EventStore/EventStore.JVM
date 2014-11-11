@@ -57,7 +57,6 @@ class StreamSubscriptionActorITest extends AbstractSubscriptionActorITest {
       subscribe
       expectLiveProcessingStarted
       reconnect()
-      expectLiveProcessingStarted
       write()
       expectEvent
     }

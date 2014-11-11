@@ -22,8 +22,6 @@ trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
   context watch client
   context watch connection
 
-  var subscribed = false
-
   val rcvFailure: Receive = {
     case failure @ Failure(e) =>
       log.error(e.toString)
@@ -32,26 +30,26 @@ trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
   }
 
   val rcvFailureOrUnsubscribe: Receive = rcvFailure orElse {
+    case UnsubscribeCompleted => context stop self
+  }
+
+  val ignoreUnsubscribeCompleted: Receive = {
     case UnsubscribeCompleted =>
-      subscribed = false
-      context stop self
   }
 
-  def rcvEventAppeared(rcv: IndexedEvent => Receive): Receive = {
-    case StreamEventAppeared(x) => context become rcv(x)
+  def rcvEventAppeared(receive: IndexedEvent => Receive): Receive = {
+    case StreamEventAppeared(x) => context become receive(x)
   }
 
+  @deprecated("will migrate into Operation", "2014-11-10")
   def rcvReconnected(receive: => Receive): Receive = {
-    case Failure(EsException(NotHandled(NotReady | TooBusy), _)) => // TODO test this use case
+    case Failure(EsException(NotHandled(NotReady | TooBusy), _)) => // TODO test this use case and move to operation
       val Switch = new {}
       context.system.scheduler.scheduleOnce(100.millis, self, Switch)
-      context.become({ case Switch => context become receive }, discardOld = false)
-
-//    case _: SubscribeCompleted =>
-//      subscribed = false
-//      context become receive
+      context.become({ case Switch => context become receive })
   }
 
+  @deprecated("will migrate into Operation", "2014-11-10")
   def rcvReconnected(last: Last, next: Next): Receive = rcvReconnected(subscribing(last, next))
 
   def subscribing(last: Last, next: Next): Receive
@@ -66,25 +64,23 @@ trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
 
   def subscribeToStream() = toConnection(SubscribeTo(streamId, resolveLinkTos = resolveLinkTos))
 
-  override def postStop() = if (subscribed) unsubscribe()
-
   def unsubscribe() = toConnection(Unsubscribe)
 
   // using Identify & ActorIdentity as throttle
   // receiving ActorIdentity means client finished with all previous events
-  val IsReady = Identify("throttle")
-  val Ready = ActorIdentity("throttle", Some(client))
+  private val IsReady = Identify("throttle")
+  private val Ready = ActorIdentity("throttle", Some(client))
 
-  def rcvReady(x: => Receive): Receive = {
-    case Ready => context become x
+  def rcvReady(receive: => Receive): Receive = {
+    case Ready => context become receive
   }
 
   def checkReadiness() = client ! IsReady
 
-  def whenReady(x: => Receive, ready: Boolean) = {
+  def whenReady(receive: => Receive, ready: Boolean) = {
     checkReadiness()
-    if (ready) x
-    else rcvFailure orElse rcvReady(x)
+    if (ready) receive
+    else rcvFailure orElse rcvReady(receive)
   }
 }
 

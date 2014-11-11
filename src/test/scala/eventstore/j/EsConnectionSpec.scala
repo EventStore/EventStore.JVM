@@ -156,7 +156,6 @@ class EsConnectionSpec extends util.ActorSpec {
       client expectMsg event1.event
       closeable.close()
       client expectMsg Close
-      expectMsg(Unsubscribe)
     }
 
     "subscribe to stream from" in new StreamSubscriptionScope {
@@ -173,7 +172,6 @@ class EsConnectionSpec extends util.ActorSpec {
       client expectMsg event2.event
       actor ! Failure(error)
       client expectMsg error
-      expectMsg(Unsubscribe)
       client expectMsg Close
     }
 
@@ -189,7 +187,6 @@ class EsConnectionSpec extends util.ActorSpec {
       client expectMsg event1
       closeable.close()
       client expectMsg Close
-      expectMsg(Unsubscribe)
     }
 
     "subscribe to all from" in new SubscriptionScope[IndexedEvent] {
@@ -207,7 +204,6 @@ class EsConnectionSpec extends util.ActorSpec {
       client expectMsg event2
       actor ! Failure(error)
       client expectMsg error
-      expectMsg(Unsubscribe)
       client expectMsg Close
     }
 

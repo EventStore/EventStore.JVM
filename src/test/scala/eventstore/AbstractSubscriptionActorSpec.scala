@@ -22,7 +22,7 @@ abstract class AbstractSubscriptionActorSpec extends util.ActorSpec with Mockito
 
     def streamId: EventStream
 
-    def expectNoActivity() {
+    def expectNoActivity(): Unit = {
       expectNoMsg(duration)
       connection.expectNoMsg(duration)
     }
@@ -31,15 +31,14 @@ abstract class AbstractSubscriptionActorSpec extends util.ActorSpec with Mockito
 
     def subscribeTo = SubscribeTo(streamId, resolveLinkTos = resolveLinkTos)
 
-    def expectActorTerminated(testKit: TestKitBase = this) {
+    def expectActorTerminated(testKit: TestKitBase = this): Unit = {
       testKit.expectTerminated(actor)
     }
 
-    def expectTerminatedOnFailure(expectUnsubscribe: Boolean = false) {
+    def expectTerminatedOnFailure(): Unit = {
       val failure = Failure(EsException(EsError.Error))
       actor ! failure
       expectMsg(failure)
-      if (expectUnsubscribe) connection expectMsg Unsubscribe
       expectTerminated(actor)
       val duration = 1.seconds
       expectNoMsg(duration)

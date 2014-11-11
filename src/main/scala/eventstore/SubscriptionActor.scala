@@ -54,37 +54,50 @@ class SubscriptionActor(
   }
 
   def reading(last: Last, next: Next, ready: Boolean): Receive = {
-    readEventsFrom(next)
-    def rcv(ready: Boolean) = rcvReconnected(reading(last, next, ready = true)) orElse rcvFailure orElse rcvReadCompleted {
-      (events, next) =>
+    def rcv(ready: Boolean) = {
+      def read(events: List[IndexedEvent], next: Position.Exact) = {
         if (events.isEmpty) subscribing(last, next)
         else {
           val l = process(last, events)
           whenReady(reading(l, next, ready = false), ready)
         }
+      }
+
+      rcvReconnected(reading(last, next, ready = true)) orElse
+        rcvReadCompleted(read) orElse
+        rcvFailure
     }
+
+    readEventsFrom(next)
     rcv(ready) orElse rcvReady(rcv(ready = true))
   }
 
   def subscribing(last: Last, next: Next): Receive = {
-    subscribeToStream()
-    rcvReconnected(last, next) orElse rcvFailureOrUnsubscribe orElse rcvSubscribeCompleted {
-      lastCommit =>
-        if (last.exists(_.commitPosition >= lastCommit)) liveProcessing(last, Queue())
-        else catchingUp(last, next, lastCommit, Queue())
+    def subscribed(position: Long) = {
+      if (last.exists(_.commitPosition >= position)) liveProcessing(last, Queue())
+      else catchingUp(last, next, position, Queue())
     }
+
+    subscribeToStream()
+    rcvReconnected(last, next) orElse
+      rcvSubscribeCompleted(subscribed) orElse
+      rcvFailureOrUnsubscribe
   }
 
   def subscribingFromLast(): Receive = {
-    subscribeToStream()
-    rcvReconnected(subscribingFromLast()) orElse rcvFailureOrUnsubscribe orElse rcvSubscribeCompleted {
-      lastCommit => liveProcessing(None, Queue())
+    def subscribed(position: Long) = {
+      liveProcessing(None, Queue())
     }
+
+    subscribeToStream()
+    rcvReconnected(subscribingFromLast()) orElse
+      rcvSubscribeCompleted(subscribed) orElse
+      rcvFailureOrUnsubscribe
   }
 
   def catchingUp(last: Last, next: Next, subscriptionCommit: Long, stash: Queue[IndexedEvent]): Receive = {
-    def catchUp(stash: Queue[IndexedEvent]): Receive = rcvReadCompleted {
-      (events, next) =>
+    def catchUp(subscriptionCommit: Long, stash: Queue[IndexedEvent]): Receive = {
+      def read(events: List[IndexedEvent], next: Position.Exact) = {
         if (events.isEmpty) liveProcessing(last, stash)
         else {
           @tailrec def loop(events: List[IndexedEvent], last: Last): Receive = events match {
@@ -100,31 +113,58 @@ class SubscriptionActor(
           }
           loop(events, last)
         }
-    } orElse rcvReconnected(last, next) orElse rcvFailureOrUnsubscribe orElse rcvEventAppeared {
-      x => catchUp(stash enqueue x)
+      }
+
+      def eventAppeared(event: IndexedEvent) = {
+        catchUp(subscriptionCommit, stash enqueue event)
+      }
+
+      def subscribed(position: Long) = {
+        catchUp(position, Queue())
+      }
+
+      rcvReadCompleted(read) orElse
+        rcvReconnected(last, next) orElse
+        rcvEventAppeared(eventAppeared) orElse
+        rcvSubscribeCompleted(subscribed) orElse
+        rcvFailureOrUnsubscribe
     }
 
     readEventsFrom(next)
-    catchUp(stash)
+    catchUp(subscriptionCommit, stash)
   }
 
   def liveProcessing(last: Last, stash: Queue[IndexedEvent]): Receive = {
-    def liveProcessing(last: Last, n: Long, ready: Boolean): Receive =
-      rcvReconnected(last, last getOrElse Position.First) orElse rcvFailureOrUnsubscribe orElse rcvEventAppeared {
-        x =>
-          val l = process(last, x)
-          if (n < readBatchSize) liveProcessing(l, n + 1, ready)
+    def liveProcessing(last: Last, n: Long, ready: Boolean): Receive = {
+      def eventAppeared(event: IndexedEvent) = {
+        val l = process(last, event)
+        if (n < readBatchSize) liveProcessing(l, n + 1, ready)
+        else {
+          checkReadiness()
+          if (ready) liveProcessing(l, 0, ready = false)
           else {
-            checkReadiness()
-            if (ready) liveProcessing(l, 0, ready = false)
-            else {
-              unsubscribe()
-              rcvFailure orElse rcvReady(reading(l, l getOrElse Position.First, ready = false)) orElse {
-                case UnsubscribeCompleted => subscribed = false
-              }
-            }
+            unsubscribe()
+            rcvReady(reading(l, l getOrElse Position.First, ready = false)) orElse
+              ignoreUnsubscribeCompleted orElse
+              rcvFailure
           }
-      } orElse rcvReady(liveProcessing(last, n, ready = true))
+        }
+      }
+
+      def subscribed(position: Long) = {
+        last match {
+          case Some(last) if position > last.commitPosition => catchingUp(Some(last), last, position, Queue())
+          case _ => liveProcessing(last, n, ready)
+        }
+      }
+
+      rcvReconnected(last, last getOrElse Position.First) orElse
+        rcvEventAppeared(eventAppeared) orElse
+        rcvReady(liveProcessing(last, n, ready = true)) orElse
+        rcvSubscribeCompleted(subscribed) orElse
+        rcvFailureOrUnsubscribe
+    }
+
     client ! LiveProcessingStarted
     liveProcessing(process(last, stash), 0, ready = true)
   }
@@ -143,13 +183,11 @@ class SubscriptionActor(
     toConnection(msg)
   }
 
-  def rcvReadCompleted(f: (List[IndexedEvent], Position.Exact) => Receive): Receive = {
-    case ReadAllEventsCompleted(events, _, next, Forward) => context become f(events, next)
+  def rcvReadCompleted(receive: (List[IndexedEvent], Position.Exact) => Receive): Receive = {
+    case ReadAllEventsCompleted(events, _, next, Forward) => context become receive(events, next)
   }
 
   def rcvSubscribeCompleted(receive: Long => Receive): Receive = {
-    case SubscribeToAllCompleted(lastCommit) =>
-      subscribed = true
-      context become receive(lastCommit)
+    case SubscribeToAllCompleted(x) => context become receive(x)
   }
 }

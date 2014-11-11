@@ -19,7 +19,7 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
 
     "subscribe if last position given" in new SubscriptionScope {
       connection expectMsg subscribeTo
-      actor ! SubscribeToAllCompleted(0)
+      actor ! subscribeCompleted(0)
       connection.expectNoMsg()
       actor ! StreamEventAppeared(event1)
       actor ! StreamEventAppeared(event0)
@@ -84,7 +84,7 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       actor ! readCompleted(0, 0)
       connection.expectMsg(subscribeTo)
 
-      actor ! SubscribeToAllCompleted(1)
+      actor ! subscribeCompleted(1)
 
       connection expectMsg readEvents(0)
       actor ! readCompleted(0, 0)
@@ -112,7 +112,7 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       expectNoMsg(duration)
       connection.expectMsg(subscribeTo)
 
-      actor ! SubscribeToAllCompleted(4)
+      actor ! subscribeCompleted(4)
 
       connection expectMsg readEvents(2)
 
@@ -176,7 +176,7 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       expectNoMsg(duration)
       connection.expectMsg(subscribeTo)
 
-      actor ! SubscribeToAllCompleted(5)
+      actor ! subscribeCompleted(5)
 
       connection expectMsg readEvents(2)
 
@@ -184,7 +184,6 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       actor ! StreamEventAppeared(event4)
 
       actor.stop()
-      connection expectMsg Unsubscribe
       expectTerminated(actor)
     }
 
@@ -195,7 +194,7 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       connection.expectMsg(subscribeTo)
       expectNoMsg(duration)
 
-      actor ! SubscribeToAllCompleted(1)
+      actor ! subscribeCompleted(1)
 
       connection expectMsg readEvents(0)
       actor ! readCompleted(0, 0)
@@ -214,7 +213,7 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
         connection.expectMsg(subscribeTo)
         expectNoMsg(duration)
 
-        actor ! SubscribeToAllCompleted(1)
+        actor ! subscribeCompleted(1)
 
         expectMsg(LiveProcessingStarted)
 
@@ -230,7 +229,7 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       connection.expectMsg(subscribeTo)
       expectNoMsg(duration)
 
-      actor ! SubscribeToAllCompleted(1)
+      actor ! subscribeCompleted(1)
 
       connection expectMsg readEvents(0)
       actor ! readCompleted(0, 0)
@@ -253,7 +252,7 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       actor ! readCompleted(1, 1)
 
       connection.expectMsg(subscribeTo)
-      actor ! SubscribeToAllCompleted(2)
+      actor ! subscribeCompleted(2)
 
       connection expectMsg readEvents(1)
       actor ! readCompleted(1, 1)
@@ -283,14 +282,13 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       actor ! readCompleted(1, 1)
 
       connection.expectMsg(subscribeTo)
-      actor ! SubscribeToAllCompleted(1)
+      actor ! subscribeCompleted(1)
       expectMsg(LiveProcessingStarted)
 
       actor ! StreamEventAppeared(event2)
       expectEvent(event2)
 
       actor.stop()
-      connection expectMsg Unsubscribe
       expectTerminated(actor)
 
       override def position = Some(Position(1))
@@ -335,22 +333,73 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       connection expectMsg readEvents(0)
       actor ! readCompleted(0, 0)
       connection expectMsg subscribeTo
-      actor ! SubscribeToAllCompleted(0)
+      actor ! subscribeCompleted(0)
 
       connection expectMsg readEvents(0)
-      expectTerminatedOnFailure(expectUnsubscribe = true)
+      expectTerminatedOnFailure()
     }
 
     "stop actor if error while live processing" in new SubscriptionScope {
       connection expectMsg readEvents(0)
       actor ! readCompleted(0, 0)
       connection expectMsg subscribeTo
-      actor ! SubscribeToAllCompleted(0)
+      actor ! subscribeCompleted(0)
 
       expectMsg(LiveProcessingStarted)
-      expectTerminatedOnFailure(expectUnsubscribe = true)
+      expectTerminatedOnFailure()
 
       override def position = Some(Position(0))
+    }
+
+    "resubscribe from same position" in new SubscriptionScope {
+      connection expectMsg readEvents(0)
+      actor ! readCompleted(0, 0)
+      connection expectMsg subscribeTo
+      actor ! subscribeCompleted(0)
+      expectMsg(LiveProcessingStarted)
+      actor ! subscribeCompleted(0)
+      expectNoActivity()
+
+      override def position = Some(Position(0))
+    }
+
+    "resubscribe from different position" in new SubscriptionScope {
+      connection expectMsg readEvents(0)
+      actor ! readCompleted(0, 0)
+      connection expectMsg subscribeTo
+      actor ! subscribeCompleted(0)
+      expectMsg(LiveProcessingStarted)
+      actor ! subscribeCompleted(1)
+      connection expectMsg readEvents(0)
+      actor ! StreamEventAppeared(event1)
+      actor ! StreamEventAppeared(event2)
+      actor ! readCompleted(0, 3, event0, event1, event2)
+      expectEvent(event1)
+      expectMsg(LiveProcessingStarted)
+      expectEvent(event2)
+
+      override def position = Some(Position(0))
+    }
+
+    "ignore resubscribed while catching up" in new SubscriptionScope {
+      connection expectMsg readEvents(0)
+      actor ! readCompleted(0, 0)
+      connection expectMsg subscribeTo
+      actor ! subscribeCompleted(0)
+      connection expectMsg readEvents(0)
+      actor ! StreamEventAppeared(event1)
+      actor ! StreamEventAppeared(event2)
+      actor ! StreamEventAppeared(event3)
+      actor ! subscribeCompleted(1)
+      actor ! StreamEventAppeared(event1)
+      actor ! StreamEventAppeared(event2)
+      actor ! StreamEventAppeared(event3)
+      actor ! readCompleted(0, 3, event0, event1, event2)
+
+      expectEvent(event0)
+      expectEvent(event1)
+      expectMsg(LiveProcessingStarted)
+      expectEvent(event2)
     }
 
     "use credentials if given" in new SubscriptionScope {
@@ -381,7 +430,7 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
 
     "re-subscribe if NotReady while subscribing from last" in new SubscriptionScope {
       connection expectMsg subscribeTo
-      actor ! SubscribeToAllCompleted(0)
+      actor ! subscribeCompleted(0)
       actor ! notHandled(NotReady)
       connection expectMsg subscribeTo
 
@@ -392,7 +441,7 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       connection expectMsg readEvents(0)
       actor ! readCompleted(0, 0)
       connection expectMsg subscribeTo
-      actor ! SubscribeToAllCompleted(0)
+      actor ! subscribeCompleted(0)
 
       connection expectMsg readEvents(0)
       actor ! notHandled(NotReady)
@@ -404,7 +453,7 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       connection expectMsg readEvents(0)
       actor ! readCompleted(0, 0)
       connection expectMsg subscribeTo
-      actor ! SubscribeToAllCompleted(0)
+      actor ! subscribeCompleted(0)
 
       expectMsg(LiveProcessingStarted)
 
@@ -444,5 +493,7 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       ReadAllEventsCompleted(events.toList, Position.Exact(position), Position.Exact(next), Forward)
 
     def position: Option[Position] = None
+
+    def subscribeCompleted(lastCommit: Long) = SubscribeToAllCompleted(lastCommit)
   }
 }
