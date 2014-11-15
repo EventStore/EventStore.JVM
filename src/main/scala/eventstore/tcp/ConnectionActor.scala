@@ -11,8 +11,6 @@ import eventstore.util.{ OneToMany, CancellableAdapter, DelayedRetry }
 object ConnectionActor {
   def props(settings: Settings = Settings.Default): Props = Props(classOf[ConnectionActor], settings)
 
-  case object Reconnected
-
   /**
    * Java API
    */
