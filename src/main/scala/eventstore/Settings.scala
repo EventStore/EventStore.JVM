@@ -30,13 +30,14 @@ case class Settings(
     heartbeatInterval: FiniteDuration = 500.millis,
     heartbeatTimeout: FiniteDuration = 2.seconds,
     operationMaxRetries: Int = 10,
-    operationTimeout: FiniteDuration = 5.seconds,
+    operationTimeout: FiniteDuration = 7.seconds,
     resolveLinkTos: Boolean = false,
     requireMaster: Boolean = true,
     readBatchSize: Int = 500,
     backpressure: BackpressureSettings = BackpressureSettings()) {
   require(reconnectionDelayMin > Duration.Zero, "reconnectionDelayMin must be > 0")
   require(reconnectionDelayMax > Duration.Zero, "reconnectionDelayMax must be > 0")
+  require(operationTimeout > Duration.Zero, "operationTimeout must be > 0")
 }
 
 object Settings {
