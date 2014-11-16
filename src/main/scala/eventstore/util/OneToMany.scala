@@ -23,7 +23,6 @@ trait OneToMany[T, S, M] {
 }
 
 object OneToMany {
-  // TODO rename t
   def apply[T, S, M](sf: T => S, mf: T => M): OneToMany[T, S, M] = OneToManyImpl[T, S, M](Map(), Map(), sf, mf)
 
   private case class OneToManyImpl[T, S, M](
@@ -36,7 +35,7 @@ object OneToMany {
       val s = sf(t)
       val m = mf(t)
       val _ms = single(s) match {
-        case None => ms
+        case None | Some(`t`) => ms
         case Some(ot) =>
           val om = mf(ot)
           if (om == m) ms else ms.updatedSet(om, _ - s)
