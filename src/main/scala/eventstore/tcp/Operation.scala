@@ -20,6 +20,10 @@ sealed trait Operation {
   def connectionLost(): Option[Operation]
 
   def connected(outFunc: OutFunc): Option[Operation]
+
+  def timedOut(): Option[Operation]
+
+  def version: Int
 }
 
 object Operation {
@@ -29,12 +33,12 @@ object Operation {
   def apply(pack: TcpPackageOut, client: ActorRef, inFunc: InFunc, outFunc: Option[OutFunc]): Operation = {
     pack.message match {
       case x: SubscribeTo => SubscriptionOperation(pack.correlationId, x, pack.credentials, client, inFunc, outFunc)
-      case _              => SimpleOperation(pack, client, inFunc)
+      case _              => SimpleOperation(pack, client, inFunc, outFunc)
     }
   }
 }
 
-case class SimpleOperation(pack: TcpPackageOut, client: ActorRef, inFunc: InFunc) extends Operation {
+case class SimpleOperation(pack: TcpPackageOut, client: ActorRef, inFunc: InFunc, outFunc: Option[OutFunc]) extends Operation {
   def id = pack.correlationId
 
   def inspectIn(in: Try[In]) = {
@@ -52,6 +56,12 @@ case class SimpleOperation(pack: TcpPackageOut, client: ActorRef, inFunc: InFunc
     outFunc(pack)
     Some(this)
   }
+
+  def timedOut = {
+    inspectIn(Failure(EsException(EsError.OperationTimedOut(pack.message))))
+  }
+
+  def version = 0
 }
 
 sealed trait SubscriptionOperation extends Operation
@@ -63,7 +73,7 @@ object SubscriptionOperation {
             client: ActorRef,
             inFunc: InFunc,
             outFunc: Option[OutFunc]): SubscriptionOperation = {
-    new Subscribing(id, message, credentials, client, false, inFunc, outFunc)
+    new Subscribing(id, message, credentials, client, false, inFunc, outFunc, 0)
   }
   // TODO maybe new state resubscribe?
 
@@ -74,7 +84,8 @@ object SubscriptionOperation {
       client: ActorRef,
       unsubscribe: Boolean = false,
       inFunc: InFunc,
-      outFunc: Option[OutFunc]) extends SubscriptionOperation {
+      outFunc: Option[OutFunc],
+      version: Int) extends SubscriptionOperation {
 
     def clientTerminated = Some(TcpPackageOut(Unsubscribe, id, credentials))
 
@@ -97,13 +108,13 @@ object SubscriptionOperation {
 
               case Some(outFunc) =>
                 outFunc(TcpPackageOut(Unsubscribe, id, credentials))
-                Some(Unsubscribing(id, credentials, client, inFunc, outFunc))
+                Some(Unsubscribing(id, credentials, client, inFunc, outFunc, version + 1))
             }
           } else {
             outFunc match {
               case Some(outFunc) =>
                 inFunc(in)
-                Some(Subscribed(id, out, credentials, client, inFunc, outFunc))
+                Some(Subscribed(id, out, credentials, client, inFunc, outFunc, version + 1))
               case None => Some(this)
             }
           }
@@ -143,6 +154,10 @@ object SubscriptionOperation {
       outFunc(TcpPackageOut(out, id, credentials))
       Some(copy(outFunc = Some(outFunc)))
     }
+
+    def timedOut = {
+      inspectIn(Failure(EsException(EsError.OperationTimedOut(out))))
+    }
   }
 
   case class Subscribed(
@@ -151,7 +166,8 @@ object SubscriptionOperation {
       credentials: Option[UserCredentials],
       client: ActorRef,
       inFunc: InFunc,
-      outFunc: OutFunc) extends SubscriptionOperation {
+      outFunc: OutFunc,
+      version: Int) extends SubscriptionOperation {
 
     def inspectIn(in: Try[In]) = {
       in match {
@@ -163,9 +179,12 @@ object SubscriptionOperation {
           inFunc(in)
           Some(this)
 
+        case Failure(EsException(EsError.OperationTimedOut(_), _)) =>
+          Some(this)
+
         case Failure(_) =>
           inFunc(in)
-          Some(Unsubscribing(id, credentials, client, inFunc, outFunc))
+          Some(Unsubscribing(id, credentials, client, inFunc, outFunc, version + 1))
 
         case _ =>
           // TODO not handled, should I forward to client or retry ?
@@ -177,15 +196,16 @@ object SubscriptionOperation {
 
     def inspectOut = {
       case Unsubscribe =>
+        println("Unsubscribe")
         outFunc(TcpPackageOut(Unsubscribe, id, credentials))
-        Some(Unsubscribing(id, credentials, client, inFunc, outFunc))
+        Some(Unsubscribing(id, credentials, client, inFunc, outFunc, version + 1))
     }
 
     //    def pack = sys.error("'pack' method is not supported")
 
     def connectionLost() = {
       // TODO maybe new state resubscribing?
-      Some(Subscribing(id, message, credentials, client, false, inFunc, None))
+      Some(Subscribing(id, message, credentials, client, false, inFunc, None, version + 1))
     }
 
     def connected(pipeline: TcpPackageOut => Unit) = {
@@ -195,6 +215,9 @@ object SubscriptionOperation {
       //      pipeline(TcpPackageOut(message, id, credentials))
       //      Some(Subscribing(id, message, credentials, client))
     }
+    def timedOut = {
+      inspectIn(Failure(EsException(EsError.OperationTimedOut(message))))
+    }
   }
 
   case class Unsubscribing(
@@ -202,13 +225,15 @@ object SubscriptionOperation {
       credentials: Option[UserCredentials],
       client: ActorRef,
       inFunc: InFunc,
-      outFunc: OutFunc) extends SubscriptionOperation {
-    def inspectIn(in: Try[In]) = in match {
-      //      case Success(_: SubscribeCompleted) =>
-      //        inFunc(in)
-      //        Some(this)
+      outFunc: OutFunc,
+      version: Int) extends SubscriptionOperation {
 
+    def inspectIn(in: Try[In]) = in match {
       case Success(UnsubscribeCompleted) =>
+        inFunc(in)
+        None
+
+      case Failure(EsException(EsError.OperationTimedOut(_), _)) =>
         inFunc(in)
         None
 
@@ -233,6 +258,10 @@ object SubscriptionOperation {
     def connected(pipeline: (TcpPackageOut) => Unit) = {
       // TODO actually this should never happen
       None
+    }
+
+    def timedOut = {
+      inspectIn(Failure(EsException(EsError.OperationTimedOut(Unsubscribe))))
     }
   }
 }

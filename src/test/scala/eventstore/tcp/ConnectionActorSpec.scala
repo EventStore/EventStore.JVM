@@ -189,41 +189,112 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       pipeline.expectMsg(init.Command(pack))
     }
 
-    "reply with NoConnection error on Out message while connection lost" in new TestScope {
+    "reply with OperationTimedOut if no reply received" in new OperationTimedOutScope {
+      sendConnected()
+
+      client ! TcpPackageOut(Ping, id, credentials)
+      client ! init.Event(TcpPackageIn(Try(Pong)))
+
+      client ! Authenticate
+      client ! init.Event(TcpPackageIn(Try(Authenticated)))
+
+      expectNoMsg(100.millis)
+      expectOperationTimedOut(Ping, Authenticate)
+      client ! init.Event(TcpPackageIn(Try(Pong), id))
+      expectNoMsg(100.millis)
+    }
+
+    "reply with OperationTimedOut if not connected within timeout" in new OperationTimedOutScope {
+      client ! TcpPackageOut(Ping, id, credentials)
+      client ! init.Event(TcpPackageIn(Try(Pong)))
+
+      client ! Authenticate
+      client ! init.Event(TcpPackageIn(Try(Authenticated)))
+
+      expectNoMsg(100.millis)
+      expectOperationTimedOut(Ping, Authenticate)
+      client ! init.Event(TcpPackageIn(Try(Pong), id))
+      expectNoMsg(100.millis)
+    }
+
+    "reply with OperationTimedOut if not reconnected within timeout" in new OperationTimedOutScope {
+      client ! TcpPackageOut(Ping, id, credentials)
+      client ! init.Event(TcpPackageIn(Try(Pong)))
+
+      client ! Authenticate
+      client ! init.Event(TcpPackageIn(Try(Authenticated)))
+
+      client ! PeerClosed
+
+      expectNoMsg(100.millis)
+      expectOperationTimedOut(Ping, Authenticate)
+      client ! init.Event(TcpPackageIn(Try(Pong), id))
+      expectNoMsg(100.millis)
+    }
+
+    "reply with OperationTimedOut if not reconnected within timeout" in new OperationTimedOutScope {
       sendConnected()
       client ! PeerClosed
-      expectConnect()
-      client ! Ping
-      expectNoConnectionFailure()
 
-      override def settings = super.settings.copy(operationMaxRetries = 0, operationTimeout = 0.seconds)
-    }.pendingUntilFixed
+      client ! TcpPackageOut(Ping, id, credentials)
+      client ! init.Event(TcpPackageIn(Try(Pong)))
 
-    "reply with NoConnection error on TcpPackageOut message while connection lost" in new TestScope {
-      sendConnected()
+      client ! Authenticate
+      client ! init.Event(TcpPackageIn(Try(Authenticated)))
+
       client ! PeerClosed
-      expectConnect()
-      client ! TcpPackageOut(Ping)
-      expectNoConnectionFailure()
 
-      override def settings = super.settings.copy(operationMaxRetries = 0, operationTimeout = 0.seconds)
-    }.pendingUntilFixed
+      expectNoMsg(100.millis)
+      expectOperationTimedOut(Ping, Authenticate)
+      client ! init.Event(TcpPackageIn(Try(Pong), id))
+      expectNoMsg(100.millis)
+    }
 
-    "reply with OperationTimedout if no reply received" in new TestScope {
+    "reply with OperationTimedOut if no reply received" in new OperationTimedOutScope {
       sendConnected()
-      client ! Ping
-      expectOperationTimedOut(Ping)
+      client ! TcpPackageOut(Ping, id, credentials)
+      client ! init.Event(TcpPackageIn(Try(Pong)))
 
-      override def settings = super.settings.copy(operationMaxRetries = 0, operationTimeout = 0.seconds)
-    }.pendingUntilFixed
+      client ! Authenticate
+      client ! init.Event(TcpPackageIn(Try(Authenticated)))
 
-    "reply with OperationTimedout if no reply received" in new TestScope {
+      client ! PeerClosed
+
+      expectNoMsg(100.millis)
+      expectOperationTimedOut(Ping, Authenticate)
+      client ! init.Event(TcpPackageIn(Try(Pong), id))
+      expectNoMsg(100.millis)
+    }
+
+    "reply with OperationTimedOut if not subscribed within timeout" in new OperationTimedOutScope {
+      client ! TcpPackageOut(SubscribeTo(EventStream.All), id, credentials)
+      client ! init.Event(TcpPackageIn(Try(SubscribeToAllCompleted(0))))
+
+      expectNoMsg(100.millis)
+      expectOperationTimedOut(SubscribeTo(EventStream.All))
+
+      client ! init.Event(TcpPackageIn(Try(SubscribeToAllCompleted(0)), id))
+
+      expectNoMsg(100.millis)
+    }
+
+    "reply with OperationTimedOut if not unsubscribed within timeout" in new OperationTimedOutScope {
       sendConnected()
-      client ! TcpPackageOut(Ping)
-      expectOperationTimedOut(Ping)
+      client ! TcpPackageOut(SubscribeTo(EventStream.All), id, credentials)
+      client ! init.Event(TcpPackageIn(Try(SubscribeToAllCompleted(0))))
+      client ! init.Event(TcpPackageIn(Try(SubscribeToAllCompleted(0)), id))
 
-      override def settings = super.settings.copy(operationMaxRetries = 0, operationTimeout = 0.seconds)
-    }.pendingUntilFixed
+      expectMsg(SubscribeToAllCompleted(0))
+      expectNoMsg(operationTimeout + 100.millis)
+
+      client ! TcpPackageOut(Unsubscribe, id, credentials)
+      expectNoMsg(100.millis)
+      expectOperationTimedOut(Unsubscribe)
+
+      client ! init.Event(TcpPackageIn(Try(UnsubscribeCompleted)))
+      client ! init.Event(TcpPackageIn(Try(UnsubscribeCompleted), id))
+      expectNoMsg(100.millis)
+    }
 
     "bind actor to correlationId temporarily" in new TcpScope {
       val (connection, tcpConnection) = connect()
@@ -365,6 +436,15 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       pipeline.expectNoMsg(duration)
     }
 
+    "unsubscribe if event appeared and no bound operation found" in new TestScope {
+      sendConnected()
+      val id = randomUuid
+      val eventRecord = EventRecord(EventStream.Id("streamId"), EventNumber.First, EventData("test"))
+      val indexedEvent = IndexedEvent(eventRecord, Position.First)
+      client ! init.Event(TcpPackageIn(Try(StreamEventAppeared(indexedEvent)), id))
+      pipeline expectMsg init.Command(TcpPackageOut(Unsubscribe, id, credentials))
+    }
+
     "use default credentials if not provided with message" in new SecurityScope {
       val x = UserCredentials("login", "password")
       ?(default = Some(x)) must beSome(x)
@@ -494,7 +574,8 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
 
     def bind(address: InetSocketAddress = new InetSocketAddress(0)): (InetSocketAddress, ActorRef) = {
       IO(Tcp) ! Bind(self, address)
-      expectMsgType[Bound].localAddress -> lastSender
+      val bound = expectMsgType[Bound]
+      bound.localAddress -> lastSender
     }
 
     def expectPack = Frame.readIn(expectMsgType[Received].data)
@@ -628,9 +709,19 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     def expectNoConnectionFailure() {
       expectMsg(Failure(EsException(EsError.ConnectionLost)))
     }
+  }
 
-    def expectOperationTimedOut(out: Out) {
-      expectMsg(Failure(EsException(EsError.OperationTimedOut(out))))
+  trait OperationTimedOutScope extends TestScope {
+    val operationTimeout = settings.operationTimeout
+    val id = randomUuid
+
+    def expectOperationTimedOut(x: Out, xs: Out*): Unit = {
+      val msgs = (x +: xs).map { x =>
+        Failure(EsException(EsError.OperationTimedOut(x)))
+      }
+      expectMsgAllOf(msgs: _*)
     }
+
+    override def settings = super.settings.copy(operationTimeout = 500.millis)
   }
 }
