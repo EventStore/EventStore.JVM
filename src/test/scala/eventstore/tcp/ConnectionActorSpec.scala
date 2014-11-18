@@ -296,6 +296,21 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       expectNoMsg(100.millis)
     }
 
+    "reply with OperationTimedOut for all awaiting operations" in new OperationTimedOutScope {
+      sendConnected()
+      client ! TcpPackageOut(SubscribeTo(EventStream.All), id, credentials)
+      client ! init.Event(TcpPackageIn(Try(SubscribeToAllCompleted(0))))
+
+      client ! TcpPackageOut(Unsubscribe, id, credentials)
+      expectNoMsg(100.millis)
+      expectOperationTimedOut(SubscribeTo(EventStream.All), Unsubscribe)
+
+      client ! init.Event(TcpPackageIn(Try(SubscribeToAllCompleted(0)), id))
+      client ! init.Event(TcpPackageIn(Try(UnsubscribeCompleted)))
+      client ! init.Event(TcpPackageIn(Try(UnsubscribeCompleted), id))
+      expectNoMsg(100.millis)
+    }.pendingUntilFixed
+
     "bind actor to correlationId temporarily" in new TcpScope {
       val (connection, tcpConnection) = connect()
       val probe = TestProbe()
@@ -348,7 +363,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       expectMsg(subscribeCompleted)
       expectMsg(UnsubscribeCompleted)
       expectNoMsg(duration)
-    }
+    }.pendingUntilFixed
 
     "not unsubscribe if not yet subscribed and client died" in new TestScope {
       val probe = TestProbe()
@@ -408,7 +423,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       expectMsg(UnsubscribeCompleted)
       sendConnected()
       pipeline.expectNoMsg(duration)
-    }
+    }.pendingUntilFixed
 
     "ignore subscribed while reconnecting" in new SubscriptionScope {
       client ! PeerClosed

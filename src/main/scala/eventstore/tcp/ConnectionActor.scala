@@ -6,7 +6,8 @@ import akka.io.{ Tcp, IO }
 import scala.concurrent.duration._
 import scala.util.{ Try, Failure, Success }
 import eventstore.pipeline._
-import eventstore.util.{ OneToMany, CancellableAdapter, DelayedRetry }
+import eventstore.operations.{ Operation, Operations }
+import eventstore.util.{ CancellableAdapter, DelayedRetry }
 
 object ConnectionActor {
   def props(settings: Settings = Settings.Default): Props = Props(classOf[ConnectionActor], settings)
@@ -30,13 +31,6 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
 
   val init = EsPipelineInit(log, backpressure)
 
-  // TODO
-  type Operations = OneToMany[Operation, Uuid, ActorRef]
-  // TODO
-  object Operations {
-    val Empty: Operations = OneToMany[Operation, Uuid, ActorRef](_.id, _.client)
-  }
-
   def receive = {
     connect("connecting", Duration.Zero)
     connecting(Operations.Empty)
@@ -47,11 +41,12 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       operations.flatMap(_.connected(sendCommand(pipeline, _)))
     }
 
-    rcvIncoming(operations, None, connecting) orElse
-      rcvOutgoing(operations, None, connecting) orElse
+    rcvIncoming(operations, connecting, None) orElse
+      rcvOutgoing(operations, connecting, None) orElse
       rcvConnected(onPipeline) orElse
       rcvConnectFailed(None) orElse
-      rcvTimedOut(operations, connecting)
+      rcvTimedOut(operations, connecting) orElse
+      rcvTerminated(operations, connecting)
   }
 
   def connected(operations: Operations, connection: ActorRef, pipeline: ActorRef, heartbeatId: Long): Receive = {
@@ -108,9 +103,10 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       }
 
       receive orElse
-        rcvIncoming(operations, Some(outFunc), onIn) orElse
-        rcvOutgoing(operations, Some(outFunc), this.connected(_, connection, pipeline, heartbeatId)) orElse
-        rcvTimedOut(operations, connected)
+        rcvIncoming(operations, onIn, Some(outFunc)) orElse
+        rcvOutgoing(operations, connected, Some(outFunc)) orElse
+        rcvTimedOut(operations, connected) orElse
+        rcvTerminated(operations, connected)
     }
 
     connected(operations)
@@ -127,17 +123,18 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
         operations.flatMap(_.connected(sendCommand(pipeline, _)))
       }
 
-      rcvIncoming(operations, None, reconnecting) orElse
-        rcvOutgoing(operations, None, reconnecting) orElse
+      rcvIncoming(operations, reconnecting, None) orElse
+        rcvOutgoing(operations, reconnecting, None) orElse
         rcvConnected(onPipeline) orElse
         rcvConnectFailed(reconnect) orElse
-        rcvTimedOut(operations, reconnecting)
+        rcvTimedOut(operations, reconnecting) orElse
+        rcvTerminated(operations, reconnecting)
     }
 
     reconnecting(operations)
   }
 
-  def rcvIncoming(operations: Operations, outFunc: Option[TcpPackageOut => Unit], receive: Operations => Receive): Receive = {
+  def rcvIncoming(operations: Operations, receive: Operations => Receive, outFunc: Option[TcpPackageOut => Unit]): Receive = {
     case init.Event(in) =>
       val correlationId = in.correlationId
       val msg = in.message
@@ -193,7 +190,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       }
   }
 
-  def rcvOutgoing(operations: Operations, outFunc: Option[TcpPackageOut => Unit], receive: Operations => Receive): Receive = {
+  def rcvOutgoing(operations: Operations, receive: Operations => Receive, outFunc: Option[TcpPackageOut => Unit]): Receive = {
     def inFunc(client: ActorRef)(in: Try[In]): Unit = {
       val msg = in match {
         case Success(x) => x
@@ -231,23 +228,19 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       context become receive(result)
     }
 
-    def clientTerminated(client: ActorRef) = {
-      val os = operations.many(client)
-      if (os.nonEmpty) {
-        for {
-          o <- os
-          p <- o.clientTerminated
-          f <- outFunc
-        } f(p)
-        context become receive(operations -- os)
-      }
-    }
-
     {
       case x: TcpPackageOut => rcvPack(x)
       case x: OutLike       => rcvPack(TcpPackageOut(x.out, randomUuid, credentials(x)))
-      case Terminated(x)    => clientTerminated(x)
     }
+  }
+
+  def rcvTerminated(operations: Operations, receive: Operations => Receive): Receive = {
+    case Terminated(client) =>
+      val os = operations.many(client)
+      if (os.nonEmpty) {
+        os.foreach(_.clientTerminated())
+        context become receive(operations -- os)
+      }
   }
 
   def rcvConnectFailed(recover: => Option[Receive]): Receive = {

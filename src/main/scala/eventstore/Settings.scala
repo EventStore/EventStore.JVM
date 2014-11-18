@@ -30,7 +30,7 @@ case class Settings(
     heartbeatInterval: FiniteDuration = 500.millis,
     heartbeatTimeout: FiniteDuration = 2.seconds,
     operationMaxRetries: Int = 10,
-    operationTimeout: FiniteDuration = 7.seconds,
+    operationTimeout: FiniteDuration = 7.seconds, // TODO used for futures?!
     resolveLinkTos: Boolean = false,
     requireMaster: Boolean = true,
     readBatchSize: Int = 500,
