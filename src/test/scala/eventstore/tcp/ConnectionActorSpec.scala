@@ -21,8 +21,8 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
 
     "receive init.Event while connecting" in new TestScope {
       val id = randomUuid
-      client ! TcpPackageOut(Authenticate, id)
-      client ! init.Event(TcpPackageIn(Success(Authenticated), id))
+      client ! PackOut(Authenticate, id)
+      client ! init.Event(PackIn(Success(Authenticated), id))
       expectMsg(Authenticated)
     }
 
@@ -31,13 +31,13 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
 
       client ! Authenticate
       val correlationId = pipeline.expectMsgPF() {
-        case init.Command(TcpPackageOut(Authenticate, x, `credentials`)) => x
+        case init.Command(PackOut(Authenticate, x, `credentials`)) => x
       }
 
-      client ! init.Event(TcpPackageIn(Success(Authenticated)))
+      client ! init.Event(PackIn(Success(Authenticated)))
       expectNoMsg(duration)
 
-      client ! init.Event(TcpPackageIn(Success(Authenticated), correlationId))
+      client ! init.Event(PackIn(Success(Authenticated), correlationId))
       expectMsg(Authenticated)
     }
 
@@ -45,15 +45,15 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       sendConnected()
       client ! Authenticate
       val correlationId = pipeline.expectMsgPF() {
-        case init.Command(TcpPackageOut(Authenticate, x, `credentials`)) => x
+        case init.Command(PackOut(Authenticate, x, `credentials`)) => x
       }
       client ! PeerClosed
       expectConnect()
 
-      client ! init.Event(TcpPackageIn(Success(Authenticated)))
+      client ! init.Event(PackIn(Success(Authenticated)))
       expectNoMsg(duration)
 
-      client ! init.Event(TcpPackageIn(Success(Authenticated), correlationId))
+      client ! init.Event(PackIn(Success(Authenticated), correlationId))
       expectMsg(Authenticated)
     }
 
@@ -127,7 +127,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       val req = expectPack
       req.message mustEqual Success(HeartbeatRequest)
 
-      tcpConnection ! write(TcpPackageOut(HeartbeatResponse, req.correlationId))
+      tcpConnection ! write(PackOut(HeartbeatResponse, req.correlationId))
       expectPack.message mustEqual Success(HeartbeatRequest)
     }
 
@@ -144,14 +144,14 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       val req = expectPack
       req.message mustEqual Success(HeartbeatRequest)
 
-      tcpConnection ! write(TcpPackageOut(HeartbeatResponse, req.correlationId))
+      tcpConnection ! write(PackOut(HeartbeatResponse, req.correlationId))
 
       expectPack.message mustEqual Success(HeartbeatRequest)
     }
 
     "respond with HeartbeatResponseCommand on HeartbeatRequestCommand" in new TcpScope {
       val (_, tcpConnection) = connect(settings.copy(maxReconnections = 0))
-      val req = TcpPackageOut(HeartbeatRequest)
+      val req = PackOut(HeartbeatRequest)
       tcpConnection ! write(req)
 
       val res = expectPack
@@ -166,7 +166,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       val req = expectPack
       req.message mustEqual Success(Ping)
 
-      tcpConnection ! write(TcpPackageOut(Pong, req.correlationId))
+      tcpConnection ! write(PackOut(Pong, req.correlationId))
     }
 
     "pong" in new TcpScope {
@@ -179,11 +179,11 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     "stash Out message while connecting for the first time" in new TestScope {
       client ! Ping
       sendConnected()
-      pipeline.expectMsgPF() { case init.Command(TcpPackageOut(Ping, _, _)) => }
+      pipeline.expectMsgPF() { case init.Command(PackOut(Ping, _, _)) => }
     }
 
-    "stash TcpPackageOut message while connecting for the first time" in new TestScope {
-      val pack = TcpPackageOut(Ping)
+    "stash PackOut message while connecting for the first time" in new TestScope {
+      val pack = PackOut(Ping)
       client ! pack
       sendConnected()
       pipeline.expectMsg(init.Command(pack))
@@ -192,43 +192,43 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     "reply with OperationTimedOut if no reply received" in new OperationTimedOutScope {
       sendConnected()
 
-      client ! TcpPackageOut(Ping, id, credentials)
-      client ! init.Event(TcpPackageIn(Try(Pong)))
+      client ! PackOut(Ping, id, credentials)
+      client ! init.Event(PackIn(Try(Pong)))
 
       client ! Authenticate
-      client ! init.Event(TcpPackageIn(Try(Authenticated)))
+      client ! init.Event(PackIn(Try(Authenticated)))
 
       expectNoMsg(100.millis)
       expectOperationTimedOut(Ping, Authenticate)
-      client ! init.Event(TcpPackageIn(Try(Pong), id))
+      client ! init.Event(PackIn(Try(Pong), id))
       expectNoMsg(100.millis)
     }
 
     "reply with OperationTimedOut if not connected within timeout" in new OperationTimedOutScope {
-      client ! TcpPackageOut(Ping, id, credentials)
-      client ! init.Event(TcpPackageIn(Try(Pong)))
+      client ! PackOut(Ping, id, credentials)
+      client ! init.Event(PackIn(Try(Pong)))
 
       client ! Authenticate
-      client ! init.Event(TcpPackageIn(Try(Authenticated)))
+      client ! init.Event(PackIn(Try(Authenticated)))
 
       expectNoMsg(100.millis)
       expectOperationTimedOut(Ping, Authenticate)
-      client ! init.Event(TcpPackageIn(Try(Pong), id))
+      client ! init.Event(PackIn(Try(Pong), id))
       expectNoMsg(100.millis)
     }
 
     "reply with OperationTimedOut if not reconnected within timeout" in new OperationTimedOutScope {
-      client ! TcpPackageOut(Ping, id, credentials)
-      client ! init.Event(TcpPackageIn(Try(Pong)))
+      client ! PackOut(Ping, id, credentials)
+      client ! init.Event(PackIn(Try(Pong)))
 
       client ! Authenticate
-      client ! init.Event(TcpPackageIn(Try(Authenticated)))
+      client ! init.Event(PackIn(Try(Authenticated)))
 
       client ! PeerClosed
 
       expectNoMsg(100.millis)
       expectOperationTimedOut(Ping, Authenticate)
-      client ! init.Event(TcpPackageIn(Try(Pong), id))
+      client ! init.Event(PackIn(Try(Pong), id))
       expectNoMsg(100.millis)
     }
 
@@ -236,78 +236,78 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       sendConnected()
       client ! PeerClosed
 
-      client ! TcpPackageOut(Ping, id, credentials)
-      client ! init.Event(TcpPackageIn(Try(Pong)))
+      client ! PackOut(Ping, id, credentials)
+      client ! init.Event(PackIn(Try(Pong)))
 
       client ! Authenticate
-      client ! init.Event(TcpPackageIn(Try(Authenticated)))
+      client ! init.Event(PackIn(Try(Authenticated)))
 
       client ! PeerClosed
 
       expectNoMsg(100.millis)
       expectOperationTimedOut(Ping, Authenticate)
-      client ! init.Event(TcpPackageIn(Try(Pong), id))
+      client ! init.Event(PackIn(Try(Pong), id))
       expectNoMsg(100.millis)
     }
 
     "reply with OperationTimedOut if no reply received" in new OperationTimedOutScope {
       sendConnected()
-      client ! TcpPackageOut(Ping, id, credentials)
-      client ! init.Event(TcpPackageIn(Try(Pong)))
+      client ! PackOut(Ping, id, credentials)
+      client ! init.Event(PackIn(Try(Pong)))
 
       client ! Authenticate
-      client ! init.Event(TcpPackageIn(Try(Authenticated)))
+      client ! init.Event(PackIn(Try(Authenticated)))
 
       client ! PeerClosed
 
       expectNoMsg(100.millis)
       expectOperationTimedOut(Ping, Authenticate)
-      client ! init.Event(TcpPackageIn(Try(Pong), id))
+      client ! init.Event(PackIn(Try(Pong), id))
       expectNoMsg(100.millis)
     }
 
     "reply with OperationTimedOut if not subscribed within timeout" in new OperationTimedOutScope {
-      client ! TcpPackageOut(SubscribeTo(EventStream.All), id, credentials)
-      client ! init.Event(TcpPackageIn(Try(SubscribeToAllCompleted(0))))
+      client ! PackOut(SubscribeTo(EventStream.All), id, credentials)
+      client ! init.Event(PackIn(Try(SubscribeToAllCompleted(0))))
 
       expectNoMsg(100.millis)
       expectOperationTimedOut(SubscribeTo(EventStream.All))
 
-      client ! init.Event(TcpPackageIn(Try(SubscribeToAllCompleted(0)), id))
+      client ! init.Event(PackIn(Try(SubscribeToAllCompleted(0)), id))
 
       expectNoMsg(100.millis)
     }
 
     "reply with OperationTimedOut if not unsubscribed within timeout" in new OperationTimedOutScope {
       sendConnected()
-      client ! TcpPackageOut(SubscribeTo(EventStream.All), id, credentials)
-      client ! init.Event(TcpPackageIn(Try(SubscribeToAllCompleted(0))))
-      client ! init.Event(TcpPackageIn(Try(SubscribeToAllCompleted(0)), id))
+      client ! PackOut(SubscribeTo(EventStream.All), id, credentials)
+      client ! init.Event(PackIn(Try(SubscribeToAllCompleted(0))))
+      client ! init.Event(PackIn(Try(SubscribeToAllCompleted(0)), id))
 
       expectMsg(SubscribeToAllCompleted(0))
       expectNoMsg(operationTimeout + 100.millis)
 
-      client ! TcpPackageOut(Unsubscribe, id, credentials)
+      client ! PackOut(Unsubscribe, id, credentials)
       expectNoMsg(100.millis)
       expectOperationTimedOut(Unsubscribe)
 
-      client ! init.Event(TcpPackageIn(Try(UnsubscribeCompleted)))
-      client ! init.Event(TcpPackageIn(Try(UnsubscribeCompleted), id))
+      client ! init.Event(PackIn(Try(UnsubscribeCompleted)))
+      client ! init.Event(PackIn(Try(UnsubscribeCompleted), id))
       expectNoMsg(100.millis)
     }
 
     "reply with OperationTimedOut for all awaiting operations" in new OperationTimedOutScope {
       sendConnected()
-      client ! TcpPackageOut(SubscribeTo(EventStream.All), id, credentials)
-      client ! init.Event(TcpPackageIn(Try(SubscribeToAllCompleted(0))))
+      client ! PackOut(SubscribeTo(EventStream.All), id, credentials)
+      client ! init.Event(PackIn(Try(SubscribeToAllCompleted(0))))
 
-      client ! TcpPackageOut(Unsubscribe, id, credentials)
+      client ! PackOut(Unsubscribe, id, credentials)
       expectNoMsg(100.millis)
       expectOperationTimedOut(SubscribeTo(EventStream.All), Unsubscribe)
 
-      client ! init.Event(TcpPackageIn(Try(SubscribeToAllCompleted(0)), id))
-      client ! init.Event(TcpPackageIn(Try(UnsubscribeCompleted)))
-      client ! init.Event(TcpPackageIn(Try(UnsubscribeCompleted), id))
+      client ! init.Event(PackIn(Try(SubscribeToAllCompleted(0)), id))
+      client ! init.Event(PackIn(Try(UnsubscribeCompleted)))
+      client ! init.Event(PackIn(Try(UnsubscribeCompleted), id))
       expectNoMsg(100.millis)
     }.pendingUntilFixed
 
@@ -319,9 +319,9 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       val pack = expectPack
       pack.message mustEqual Success(Ping)
       val correlationId = pack.correlationId
-      tcpConnection ! write(TcpPackageOut(Pong, correlationId))
+      tcpConnection ! write(PackOut(Pong, correlationId))
       probe expectMsg Pong
-      tcpConnection ! write(TcpPackageOut(Pong, correlationId))
+      tcpConnection ! write(PackOut(Pong, correlationId))
       probe.expectNoMsg(1.second)
     }
 
@@ -341,7 +341,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       val req = expectPack
       req.message mustEqual Success(Ping)
 
-      val res = TcpPackageOut(Pong, req.correlationId)
+      val res = PackOut(Pong, req.correlationId)
       tcpConnection ! write(res)
       probe expectMsg Pong
 
@@ -357,9 +357,9 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
 
     "unsubscribe if not yet subscribed and unsubscribe received" in new SubscriptionScope {
       client ! Unsubscribe
-      client ! init.Event(TcpPackageIn(Try(subscribeCompleted), id))
-      pipeline.expectMsg(init.Command(TcpPackageOut(Unsubscribe, id, credentials)))
-      client ! init.Event(TcpPackageIn(Try(UnsubscribeCompleted), id))
+      client ! init.Event(PackIn(Try(subscribeCompleted), id))
+      pipeline.expectMsg(init.Command(PackOut(Unsubscribe, id, credentials)))
+      client ! init.Event(PackIn(Try(UnsubscribeCompleted), id))
       expectMsg(subscribeCompleted)
       expectMsg(UnsubscribeCompleted)
       expectNoMsg(duration)
@@ -374,48 +374,48 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     }
 
     "unsubscribe if client died" in new SubscriptionScope {
-      client ! init.Event(TcpPackageIn(Try(subscribeCompleted), id))
+      client ! init.Event(PackIn(Try(subscribeCompleted), id))
       system stop testActor
-      pipeline.expectMsg(init.Command(TcpPackageOut(Unsubscribe, id, credentials)))
+      pipeline.expectMsg(init.Command(PackOut(Unsubscribe, id, credentials)))
     }
 
     "unsubscribe if not subscribed and client died" in new SubscriptionScope {
       system stop testActor
-      pipeline.expectMsg(init.Command(TcpPackageOut(Unsubscribe, id, credentials)))
+      pipeline.expectMsg(init.Command(PackOut(Unsubscribe, id, credentials)))
       expectNoMsg()
     }
 
     "not unsubscribe twice" in new SubscriptionScope {
       def forStream(stream: EventStream, id: Uuid, uc: Option[UserCredentials], probe: TestProbe) = {
-        client ! init.Event(TcpPackageIn(Try(subscribeCompleted), id))
+        client ! init.Event(PackIn(Try(subscribeCompleted), id))
         client.tell(Unsubscribe, probe.ref)
         system stop probe.ref
         client.tell(Unsubscribe, probe.ref)
-        pipeline.expectMsg(init.Command(TcpPackageOut(Unsubscribe, id, uc)))
+        pipeline.expectMsg(init.Command(PackOut(Unsubscribe, id, uc)))
         expectNoMsg(duration)
       }
     }
 
     "not unsubscribe twice if client died" in new SubscriptionScope {
-      client ! init.Event(TcpPackageIn(Try(subscribeCompleted), id))
+      client ! init.Event(PackIn(Try(subscribeCompleted), id))
       expectMsg(subscribeCompleted)
       system stop testActor
       client ! Unsubscribe
-      pipeline expectMsg init.Command(TcpPackageOut(Unsubscribe, id, credentials))
+      pipeline expectMsg init.Command(PackOut(Unsubscribe, id, credentials))
       pipeline.expectNoMsg(duration)
     }
 
     "re-subscribe after reconnected" in new SubscriptionScope {
-      client ! init.Event(TcpPackageIn(Try(subscribeCompleted), id))
+      client ! init.Event(PackIn(Try(subscribeCompleted), id))
       client ! PeerClosed
       expectConnect()
       sendConnected()
-      pipeline.expectMsg(init.Command(TcpPackageOut(subscribeTo, id, credentials)))
+      pipeline.expectMsg(init.Command(PackOut(subscribeTo, id, credentials)))
     }
 
     "not unsubscribe after reconnected" in new SubscriptionScope {
       val completed = subscribeCompleted
-      client ! init.Event(TcpPackageIn(Try(completed), id))
+      client ! init.Event(PackIn(Try(completed), id))
       expectMsg(completed)
       client ! PeerClosed
       expectConnect()
@@ -429,21 +429,21 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       client ! PeerClosed
       expectConnect()
       val completed = subscribeCompleted
-      val completedEvent = init.Event(TcpPackageIn(Try(completed), id))
+      val completedEvent = init.Event(PackIn(Try(completed), id))
       client ! completedEvent
       expectNoMsg(duration)
       sendConnected()
-      pipeline expectMsg init.Command(TcpPackageOut(subscribeTo, id, credentials))
+      pipeline expectMsg init.Command(PackOut(subscribeTo, id, credentials))
       client ! completedEvent
       expectMsg(completed)
     }
 
     "reply with unsubscribed if connection lost while unsubscribing" in new SubscriptionScope {
       val completed = subscribeCompleted
-      client ! init.Event(TcpPackageIn(Try(completed), id))
+      client ! init.Event(PackIn(Try(completed), id))
       expectMsg(completed)
       client ! Unsubscribe
-      pipeline expectMsg init.Command(TcpPackageOut(Unsubscribe, id, credentials))
+      pipeline expectMsg init.Command(PackOut(Unsubscribe, id, credentials))
       client ! PeerClosed
       expectConnect()
       expectMsg(UnsubscribeCompleted)
@@ -456,8 +456,8 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       val id = randomUuid
       val eventRecord = EventRecord(EventStream.Id("streamId"), EventNumber.First, EventData("test"))
       val indexedEvent = IndexedEvent(eventRecord, Position.First)
-      client ! init.Event(TcpPackageIn(Try(StreamEventAppeared(indexedEvent)), id))
-      pipeline expectMsg init.Command(TcpPackageOut(Unsubscribe, id, credentials))
+      client ! init.Event(PackIn(Try(StreamEventAppeared(indexedEvent)), id))
+      pipeline expectMsg init.Command(PackOut(Unsubscribe, id, credentials))
     }
 
     "use default credentials if not provided with message" in new SecurityScope {
@@ -484,9 +484,9 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       sendConnected()
       forall(List(SubscribeToAllCompleted(0), SubscribeToStreamCompleted(0))) {
         in =>
-          val pack = TcpPackageIn(Try(in))
+          val pack = PackIn(Try(in))
           client ! init.Event(pack)
-          pipeline expectMsg init.Command(TcpPackageOut(Unsubscribe, pack.correlationId, `credentials`))
+          pipeline expectMsg init.Command(PackOut(Unsubscribe, pack.correlationId, `credentials`))
           success
       }
     }
@@ -495,7 +495,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       sendConnected()
       client ! Authenticate
       val cmd = pipeline.expectMsgPF() {
-        case x @ init.Command(TcpPackageOut(Authenticate, _, `credentials`)) => x
+        case x @ init.Command(PackOut(Authenticate, _, `credentials`)) => x
       }
       client ! PeerClosed
       expectConnect()
@@ -516,7 +516,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       client ! Authenticate
 
       val pack = pipeline.expectMsgPF() {
-        case init.Command(x @ TcpPackageOut(Authenticate, _, `credentials`)) => x
+        case init.Command(x @ PackOut(Authenticate, _, `credentials`)) => x
       }
       pipeline expectMsg init.Command(pack)
       pipeline expectMsg init.Command(pack)
@@ -530,7 +530,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       def tell(msg: Out) = {
         client ! msg
         pipeline.expectMsgPF() {
-          case init.Command(TcpPackageOut(`msg`, id, `credentials`)) => id
+          case init.Command(PackOut(`msg`, id, `credentials`)) => id
         }
       }
 
@@ -539,9 +539,9 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
 
       id1 mustNotEqual id2
 
-      client ! init.Event(TcpPackageIn(Try(Pong), id2))
-      //      client ! init.Event(TcpPackageIn(Try(Pong), id1)) TODO this should fail, let's test it, ideally this should trigger retry
-      client ! init.Event(TcpPackageIn(Try(Authenticated), id1))
+      client ! init.Event(PackIn(Try(Pong), id2))
+      //      client ! init.Event(PackIn(Try(Pong), id1)) TODO this should fail, let's test it, ideally this should trigger retry
+      client ! init.Event(PackIn(Try(Authenticated), id1))
     }
 
     "should process messages from different clients in parallel" in new TestScope {
@@ -550,7 +550,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       def tell(msg: Out, probe: TestProbe) = {
         client.tell(msg, probe.ref)
         pipeline.expectMsgPF() {
-          case init.Command(TcpPackageOut(`msg`, id, `credentials`)) => id
+          case init.Command(PackOut(`msg`, id, `credentials`)) => id
         }
       }
 
@@ -559,9 +559,9 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       val id1 = tell(Ping, probe1)
       val id2 = tell(Authenticate, probe2)
 
-      client ! init.Event(TcpPackageIn(Try(Pong), id2))
-      //      client ! init.Event(TcpPackageIn(Try(Pong), id1)) TODO this should fail, let's test it, ideally this should trigger retry
-      client ! init.Event(TcpPackageIn(Try(Authenticated), id1))
+      client ! init.Event(PackIn(Try(Pong), id2))
+      //      client ! init.Event(PackIn(Try(Pong), id1)) TODO this should fail, let's test it, ideally this should trigger retry
+      client ! init.Event(PackIn(Try(Authenticated), id1))
     }
   }
 
@@ -584,8 +584,9 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       connection
     }
 
-    def write(x: TcpPackageOut): Write = Write(Frame.toByteString(x))
-    def write(x: Out): Write = write(TcpPackageOut(x))
+    def write(x: PackOut): Write = Write(Frame.toByteString(x))
+
+    def write(x: Out): Write = write(PackOut(x))
 
     def bind(address: InetSocketAddress = new InetSocketAddress(0)): (InetSocketAddress, ActorRef) = {
       IO(Tcp) ! Bind(self, address)
@@ -608,13 +609,13 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
 
     implicit val byteOrder = ByteOrder.LITTLE_ENDIAN
 
-    def readIn(bs: ByteString): TcpPackageIn = {
+    def readIn(bs: ByteString): PackIn = {
       val iterator = bs.iterator
       val length = iterator.getInt
-      TcpPackageInReader.read(iterator)
+      PackInReader.read(iterator)
     }
 
-    def readOut(bs: ByteString): TcpPackageOut = {
+    def readOut(bs: ByteString): PackOut = {
       def readPack(bi: ByteIterator) = {
         import util.BytesReader
         val readMessage = MarkerByte.readMessage(bi)
@@ -626,7 +627,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
           else Some(BytesReader[UserCredentials].read(bi))
 
         val message = readMessage(bi)
-        TcpPackageOut(message.get.asInstanceOf[Out], correlationId, credentials)
+        PackOut(message.get.asInstanceOf[Out], correlationId, credentials)
       }
 
       val iterator = bs.iterator
@@ -634,9 +635,9 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       readPack(iterator)
     }
 
-    def toByteString(pack: TcpPackageOut): ByteString = {
+    def toByteString(pack: PackOut): ByteString = {
       val bb = ByteString.newBuilder
-      val data = util.BytesWriter[TcpPackageOut].toByteString(pack)
+      val data = util.BytesWriter[PackOut].toByteString(pack)
       bb.putInt(data.length)
       bb.append(data)
       bb.result()
@@ -666,7 +667,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     sendConnected()
     client ! subscribeTo
     val id = pipeline.expectMsgPF() {
-      case init.Command(TcpPackageOut(`subscribeTo`, id, `credentials`)) => id
+      case init.Command(PackOut(`subscribeTo`, id, `credentials`)) => id
     }
 
     override def settings = Settings(maxReconnections = 1, heartbeatInterval = 10.seconds, heartbeatTimeout = 20.seconds)

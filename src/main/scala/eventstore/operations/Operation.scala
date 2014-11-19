@@ -2,7 +2,7 @@ package eventstore
 package operations
 
 import akka.actor.ActorRef
-import eventstore.tcp.TcpPackageOut
+import eventstore.tcp.PackOut
 import scala.util.Try
 
 trait Operation {
@@ -29,7 +29,7 @@ trait Operation {
 }
 
 object Operation {
-  def apply(pack: TcpPackageOut, client: ActorRef, inFunc: InFunc, outFunc: Option[OutFunc]): Operation = {
+  def apply(pack: PackOut, client: ActorRef, inFunc: InFunc, outFunc: Option[OutFunc]): Operation = {
     pack.message match {
       case x: SubscribeTo => SubscriptionOperation(pack.correlationId, x, pack.credentials, client, inFunc, outFunc)
       case _              => OutInOperation(pack, client, inFunc, outFunc)

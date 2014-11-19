@@ -6,15 +6,15 @@ import util.{ BytesWriter, BytesReader }
 import org.specs2.mutable.Specification
 import scala.util.Success
 
-class TcpPackageFormatSpec extends Specification {
-  "TcpPackageFormat" should {
+class PackFormatSpec extends Specification {
+  "PackFormatFormat" should {
     "read/write" in foreach(List(randomUuid, randomUuid)) {
       correlationId =>
         foreach(List[InOut](HeartbeatRequest, HeartbeatResponse, Ping, Pong)) {
           msg =>
-            val expected = TcpPackageOut(msg, correlationId)
-            val bs = BytesWriter[TcpPackageOut].toByteString(expected)
-            val actual = BytesReader[TcpPackageIn].read(bs)
+            val expected = PackOut(msg, correlationId)
+            val bs = BytesWriter[PackOut].toByteString(expected)
+            val actual = BytesReader[PackIn].read(bs)
             actual.correlationId mustEqual expected.correlationId
             actual.message mustEqual Success(expected.message)
         }

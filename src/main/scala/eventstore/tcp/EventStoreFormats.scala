@@ -55,8 +55,8 @@ trait EventStoreFormats extends EventStoreProtoFormats {
     def read(bi: ByteIterator) = bi.getByte
   }
 
-  implicit object TcpPackageOutWriter extends BytesWriter[TcpPackageOut] {
-    def write(x: TcpPackageOut, builder: ByteStringBuilder) {
+  implicit object PackOutOutWriter extends BytesWriter[PackOut] {
+    def write(x: PackOut, builder: ByteStringBuilder) {
       val (writeMarker, writeMessage) = MarkerByte.writeMessage(x.message)
       writeMarker(builder)
       val credentials = x.credentials
@@ -67,15 +67,15 @@ trait EventStoreFormats extends EventStoreProtoFormats {
     }
   }
 
-  implicit object TcpPackageInReader extends BytesReader[TcpPackageIn] {
-    def read(bi: ByteIterator): TcpPackageIn = {
+  implicit object PackInReader extends BytesReader[PackIn] {
+    def read(bi: ByteIterator): PackIn = {
       val readMessage = MarkerByte.readMessage(bi)
 
       val flags = BytesReader[Flags].read(bi)
       val correlationId = BytesReader[Uuid].read(bi)
       val message = readMessage(bi)
 
-      TcpPackageIn(message, correlationId)
+      PackIn(message, correlationId)
     }
   }
 }

@@ -56,7 +56,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
 
     def connected(operations: Operations): Receive = {
 
-      def outFunc(pack: TcpPackageOut): Unit = sendCommand(pipeline, pack)
+      def outFunc(pack: PackOut): Unit = sendCommand(pipeline, pack)
 
       def maybeReconnect(reason: String) = {
         val result = operations.flatMap(_.connectionLost())
@@ -94,7 +94,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
           connection ! Tcp.Abort
           maybeReconnect("pipeline actor died")
 
-        case Heartbeat => outFunc(TcpPackageOut(HeartbeatRequest))
+        case Heartbeat => outFunc(PackOut(HeartbeatRequest))
 
         case HeartbeatTimeout(id) => if (id == heartbeatId) {
           connection ! Tcp.Close
@@ -134,12 +134,12 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
     reconnecting(operations)
   }
 
-  def rcvIncoming(operations: Operations, receive: Operations => Receive, outFunc: Option[TcpPackageOut => Unit]): Receive = {
+  def rcvIncoming(operations: Operations, receive: Operations => Receive, outFunc: Option[PackOut => Unit]): Receive = {
     case init.Event(in) =>
       val correlationId = in.correlationId
       val msg = in.message
 
-      def reply(out: TcpPackageOut) = {
+      def reply(out: PackOut) = {
         outFunc.foreach(_.apply(out))
       }
 
@@ -158,7 +158,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
                 case Pong | HeartbeatResponse | UnsubscribeCompleted =>
                 case _: SubscribeCompleted | _: StreamEventAppeared =>
                   log.warning("cannot deliver {}, client not found for correlationId: {}, unsubscribing", msg, correlationId)
-                  reply(TcpPackageOut(Unsubscribe, correlationId, defaultCredentials))
+                  reply(PackOut(Unsubscribe, correlationId, defaultCredentials))
 
                 case _ => log.warning("cannot deliver {}, client not found for correlationId: {}", msg, correlationId)
               }
@@ -170,8 +170,8 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       log.debug(in.toString)
       msg match {
         // TODO reconnect on EsException(NotHandled(NotReady))
-        case Success(HeartbeatRequest) => reply(TcpPackageOut(HeartbeatResponse, correlationId))
-        case Success(Ping)             => reply(TcpPackageOut(Pong, correlationId))
+        case Success(HeartbeatRequest) => reply(PackOut(HeartbeatResponse, correlationId))
+        case Success(Ping)             => reply(PackOut(Pong, correlationId))
         case _                         => context become receive(forward)
       }
   }
@@ -190,7 +190,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       }
   }
 
-  def rcvOutgoing(operations: Operations, receive: Operations => Receive, outFunc: Option[TcpPackageOut => Unit]): Receive = {
+  def rcvOutgoing(operations: Operations, receive: Operations => Receive, outFunc: Option[PackOut => Unit]): Receive = {
     def inFunc(client: ActorRef)(in: Try[In]): Unit = {
       val msg = in match {
         case Success(x) => x
@@ -199,7 +199,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       client ! msg
     }
 
-    def rcvPack(pack: TcpPackageOut): Unit = {
+    def rcvPack(pack: PackOut): Unit = {
       val msg = pack.message
       val id = pack.correlationId
 
@@ -229,8 +229,8 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
     }
 
     {
-      case x: TcpPackageOut => rcvPack(x)
-      case x: OutLike       => rcvPack(TcpPackageOut(x.out, randomUuid, credentials(x)))
+      case x: PackOut => rcvPack(x)
+      case x: OutLike => rcvPack(PackOut(x.out, randomUuid, credentials(x)))
     }
   }
 
@@ -268,7 +268,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       context become connected(operations, connection, pipeline, 0)
   }
 
-  def sendCommand(pipeline: ActorRef, pack: TcpPackageOut): Unit = {
+  def sendCommand(pipeline: ActorRef, pack: PackOut): Unit = {
     log.debug(pack.toString)
     pipeline ! init.Command(pack)
   }

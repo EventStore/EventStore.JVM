@@ -9,7 +9,7 @@ import java.nio.ByteOrder
 object EsPipelineInit {
   def apply(
     log: LoggingAdapter,
-    settings: BackpressureSettings): Init[WithinActorContext, TcpPackageOut, TcpPackageIn] =
+    settings: BackpressureSettings): Init[WithinActorContext, PackOut, PackIn] =
     TcpPipelineHandler.withLogger(log,
       new MessageByteStringAdapter >>
         new LengthFieldFrame(

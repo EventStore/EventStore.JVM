@@ -2,10 +2,10 @@ package eventstore
 package operations
 
 import akka.actor.ActorRef
-import eventstore.tcp.TcpPackageOut
+import eventstore.tcp.PackOut
 import scala.util.{ Failure, Try }
 
-case class OutInOperation(pack: TcpPackageOut, client: ActorRef, inFunc: InFunc, outFunc: Option[OutFunc]) extends Operation {
+case class OutInOperation(pack: PackOut, client: ActorRef, inFunc: InFunc, outFunc: Option[OutFunc]) extends Operation {
   def id = pack.correlationId
 
   def inspectIn(in: Try[In]) = {

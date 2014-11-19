@@ -2,7 +2,7 @@ package eventstore
 package operations
 
 import akka.actor.ActorRef
-import eventstore.tcp.TcpPackageOut
+import eventstore.tcp.PackOut
 import scala.util.{ Success, Failure, Try }
 
 sealed trait SubscriptionOperation extends Operation
@@ -29,7 +29,7 @@ object SubscriptionOperation {
       version: Int) extends SubscriptionOperation {
 
     def clientTerminated() = {
-      outFunc.foreach { outFunc => outFunc(TcpPackageOut(Unsubscribe, id, credentials)) }
+      outFunc.foreach { outFunc => outFunc(PackOut(Unsubscribe, id, credentials)) }
     }
 
     def inspectIn(in: Try[In]) = {
@@ -68,7 +68,7 @@ object SubscriptionOperation {
     }
 
     def connected(outFunc: OutFunc) = {
-      outFunc(TcpPackageOut(out, id, credentials))
+      outFunc(PackOut(out, id, credentials))
       Some(copy(outFunc = Some(outFunc)))
     }
 
@@ -108,13 +108,13 @@ object SubscriptionOperation {
     }
 
     def clientTerminated() = {
-      outFunc(TcpPackageOut(Unsubscribe, id, credentials))
+      outFunc(PackOut(Unsubscribe, id, credentials))
     }
 
     def inspectOut = {
       case Unsubscribe =>
         println("Unsubscribe")
-        outFunc(TcpPackageOut(Unsubscribe, id, credentials))
+        outFunc(PackOut(Unsubscribe, id, credentials))
         Some(Unsubscribing(id, credentials, client, inFunc, outFunc, version + 1))
     }
 
