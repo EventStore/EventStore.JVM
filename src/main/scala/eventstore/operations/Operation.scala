@@ -31,13 +31,14 @@ trait Operation {
 object Operation {
   def apply(pack: PackOut, client: ActorRef, inFunc: InFunc, outFunc: Option[OutFunc]): Operation = {
     pack.message match {
-      case x: WriteEvents      => WriteEventsOperation(pack, client, inFunc, outFunc)
-      case x: DeleteStream     => DeleteStreamOperation(pack, client, inFunc, outFunc)
-      case x: TransactionStart => TransactionStartOperation(pack, client, inFunc, outFunc)
-      case x: TransactionWrite => TransactionWriteOperation(pack, client, inFunc, outFunc)
-      case x: ReadEvent        => ReadEventOperation(pack, client, inFunc, outFunc)
-      case x: SubscribeTo      => SubscriptionOperation(pack.correlationId, x, pack.credentials, client, inFunc, outFunc)
-      case _                   => OutInOperation(pack, client, inFunc, outFunc)
+      case x: WriteEvents       => WriteEventsOperation(pack, client, inFunc, outFunc)
+      case x: DeleteStream      => DeleteStreamOperation(pack, client, inFunc, outFunc)
+      case x: TransactionStart  => TransactionStartOperation(pack, client, inFunc, outFunc)
+      case x: TransactionWrite  => TransactionWriteOperation(pack, client, inFunc, outFunc)
+      case x: TransactionCommit => TransactionCommitOperation(pack, client, inFunc, outFunc)
+      case x: ReadEvent         => ReadEventOperation(pack, client, inFunc, outFunc)
+      case x: SubscribeTo       => SubscriptionOperation(pack.correlationId, x, pack.credentials, client, inFunc, outFunc)
+      case _                    => OutInOperation(pack, client, inFunc, outFunc)
     }
   }
 }
