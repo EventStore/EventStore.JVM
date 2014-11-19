@@ -58,8 +58,8 @@ case class DeleteStreamOperation(pack: PackOut, client: ActorRef, inFunc: InFunc
       case Failure(EsException(EsError.AccessDenied, Some(_))) => succeed()
 
       case Failure(x @ EsException(EsError.AccessDenied, None)) =>
-        val writeEvents = pack.message.asInstanceOf[WriteEvents]
-        val exception = x.copy(message = Some(s"Write access denied for ${writeEvents.streamId}"))
+        val deleteStream = pack.message.asInstanceOf[DeleteStream]
+        val exception = x.copy(message = Some(s"Write access denied for ${deleteStream.streamId}"))
         inFunc(Failure(exception))
         None
 
