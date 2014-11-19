@@ -2,15 +2,13 @@ package eventstore
 
 import scala.reflect.ClassTag
 
-sealed trait OutInTag[OUT, IN] {
-  def outTag: ClassTag[OUT]
-  def inTag: ClassTag[IN]
+sealed trait OutInTag[O, I] {
+  def out: ClassTag[O]
+  def in: ClassTag[I]
 }
 
 object OutInTag {
-  abstract class AbstractTag[OUT, IN](
-    implicit val outTag: ClassTag[OUT],
-    val inTag: ClassTag[IN]) extends OutInTag[OUT, IN]
+  abstract class AbstractTag[O, I](implicit val out: ClassTag[O], val in: ClassTag[I]) extends OutInTag[O, I]
 
   implicit object PingPongTag extends AbstractTag[Ping.type, Pong.type]
   implicit object HeartbeatTag extends AbstractTag[HeartbeatRequest.type, HeartbeatResponse.type]

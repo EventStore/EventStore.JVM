@@ -19,7 +19,7 @@ class EsConnection(
   def future[OUT <: Out, IN <: In](out: OUT, credentials: Option[UserCredentials] = None)(
     implicit outIn: OutInTag[OUT, IN]): Future[IN] = {
     val future = connection ? credentials.fold[OutLike](out)(WithCredentials(out, _))
-    future.mapTo[IN](outIn.inTag)
+    future.mapTo[IN](outIn.in)
   }
 
   def startTransaction(data: TransactionStart, credentials: Option[UserCredentials] = None): Future[EsTransaction] = {
