@@ -213,7 +213,6 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
           operation.inspectOut(msg) match {
             case None => operations - operation
             case Some(operation) =>
-              println(s"version: ${operation.version}")
               system.scheduler.scheduleOnce(operationTimeout, self, TimedOut(id, operation.version))
               operations + operation
           }

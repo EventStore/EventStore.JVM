@@ -113,7 +113,6 @@ object SubscriptionOperation {
 
     def inspectOut = {
       case Unsubscribe =>
-        println("Unsubscribe")
         outFunc(PackOut(Unsubscribe, id, credentials))
         Some(Unsubscribing(id, credentials, client, inFunc, outFunc, version + 1))
     }
