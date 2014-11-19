@@ -7,7 +7,7 @@ import eventstore.tcp.PackOut
 
 import scala.util.{ Success, Failure, Try }
 
-case class ReadEventOperation(pack: PackOut, client: ActorRef, inFunc: InFunc, outFunc: Option[OutFunc]) extends Operation {
+case class ReadStreamEventsOperation(pack: PackOut, client: ActorRef, inFunc: InFunc, outFunc: Option[OutFunc]) extends Operation {
   def id = pack.correlationId
 
   def inspectIn(in: Try[In]) = {
@@ -28,9 +28,7 @@ case class ReadEventOperation(pack: PackOut, client: ActorRef, inFunc: InFunc, o
     }
 
     in match {
-      case Success(_: ReadEventCompleted)                  => succeed()
-
-      case Failure(EsException(EsError.EventNotFound, _))  => succeed()
+      case Success(_: ReadStreamEventsCompleted)           => succeed()
 
       case Failure(EsException(EsError.StreamNotFound, _)) => succeed()
 
@@ -47,8 +45,8 @@ case class ReadEventOperation(pack: PackOut, client: ActorRef, inFunc: InFunc, o
       case Failure(EsException(EsError.AccessDenied, Some(_))) => succeed()
 
       case Failure(x @ EsException(EsError.AccessDenied, None)) =>
-        val readEvent = pack.message.asInstanceOf[ReadEvent]
-        val exception = x.copy(message = Some(s"Read access denied for ${readEvent.streamId}"))
+        val readStreamEvents = pack.message.asInstanceOf[ReadStreamEvents]
+        val exception = x.copy(message = Some(s"Read access denied for ${readStreamEvents.streamId}"))
         inFunc(Failure(exception))
         None
 
