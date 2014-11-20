@@ -62,6 +62,8 @@ case class TransactionCommitOperation(pack: PackOut, client: ActorRef, inFunc: I
         inFunc(Failure(exception))
         None
 
+      case Failure(EsException(EsError.OperationTimedOut(_), _)) => succeed()
+
       case Success(x) => unexpectedReply(x)
 
       case Failure(x) => unexpectedReply(x)
