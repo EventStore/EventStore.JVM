@@ -181,7 +181,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       val operation = operations.single(id)
       operation.foreach { operation =>
         if (operation.version == version) {
-          val result = operation.timedOut() match {
+          val result = operation.inspectIn(Failure(EsException(EsError.OperationTimedOut))) match {
             case Some(operation) => operations + operation
             case None            => operations - operation
           }

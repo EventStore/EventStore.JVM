@@ -50,11 +50,11 @@ case class ReadStreamEventsOperation(pack: PackOut, client: ActorRef, inFunc: In
         inFunc(Failure(exception))
         None
 
-      case Failure(EsException(EsError.OperationTimedOut(_), _)) => succeed()
+      case Failure(EsException(EsError.OperationTimedOut, _)) => succeed()
 
-      case Success(x) => unexpectedReply(x)
+      case Success(x)                                         => unexpectedReply(x)
 
-      case Failure(x) => unexpectedReply(x)
+      case Failure(x)                                         => unexpectedReply(x)
     }
   }
 
@@ -67,11 +67,6 @@ case class ReadStreamEventsOperation(pack: PackOut, client: ActorRef, inFunc: In
   def connected(outFunc: OutFunc) = {
     outFunc(pack)
     Some(this)
-  }
-
-  def timedOut = {
-    val timedOut = EsError.OperationTimedOut(pack.message)
-    inspectIn(Failure(EsException(timedOut)))
   }
 
   def version = 0

@@ -191,34 +191,36 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
 
     "reply with OperationTimedOut if no reply received" in new OperationTimedOutScope {
       sendConnected()
-
-      client ! PackOut(Ping, id, credentials)
+      val ping = PackOut(Ping, id, credentials)
+      client ! ping
       client ! init.Event(PackIn(Try(Pong)))
 
       client ! Authenticate
       client ! init.Event(PackIn(Try(Authenticated)))
 
       expectNoMsg(100.millis)
-      expectOperationTimedOut(Ping, Authenticate)
+      expectOperationTimedOut(ping, Authenticate)
       client ! init.Event(PackIn(Try(Pong), id))
       expectNoMsg(100.millis)
     }
 
     "reply with OperationTimedOut if not connected within timeout" in new OperationTimedOutScope {
-      client ! PackOut(Ping, id, credentials)
+      val ping = PackOut(Ping, id, credentials)
+      client ! ping
       client ! init.Event(PackIn(Try(Pong)))
 
       client ! Authenticate
       client ! init.Event(PackIn(Try(Authenticated)))
 
       expectNoMsg(100.millis)
-      expectOperationTimedOut(Ping, Authenticate)
+      expectOperationTimedOut(ping, Authenticate)
       client ! init.Event(PackIn(Try(Pong), id))
       expectNoMsg(100.millis)
     }
 
     "reply with OperationTimedOut if not reconnected within timeout" in new OperationTimedOutScope {
-      client ! PackOut(Ping, id, credentials)
+      val ping = PackOut(Ping, id, credentials)
+      client ! ping
       client ! init.Event(PackIn(Try(Pong)))
 
       client ! Authenticate
@@ -227,7 +229,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       client ! PeerClosed
 
       expectNoMsg(100.millis)
-      expectOperationTimedOut(Ping, Authenticate)
+      expectOperationTimedOut(ping, Authenticate)
       client ! init.Event(PackIn(Try(Pong), id))
       expectNoMsg(100.millis)
     }
@@ -236,7 +238,8 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       sendConnected()
       client ! PeerClosed
 
-      client ! PackOut(Ping, id, credentials)
+      val ping = PackOut(Ping, id, credentials)
+      client ! ping
       client ! init.Event(PackIn(Try(Pong)))
 
       client ! Authenticate
@@ -245,14 +248,15 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       client ! PeerClosed
 
       expectNoMsg(100.millis)
-      expectOperationTimedOut(Ping, Authenticate)
+      expectOperationTimedOut(ping, Authenticate)
       client ! init.Event(PackIn(Try(Pong), id))
       expectNoMsg(100.millis)
     }
 
     "reply with OperationTimedOut if no reply received" in new OperationTimedOutScope {
       sendConnected()
-      client ! PackOut(Ping, id, credentials)
+      val ping = PackOut(Ping, id, credentials)
+      client ! ping
       client ! init.Event(PackIn(Try(Pong)))
 
       client ! Authenticate
@@ -261,17 +265,18 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       client ! PeerClosed
 
       expectNoMsg(100.millis)
-      expectOperationTimedOut(Ping, Authenticate)
+      expectOperationTimedOut(ping, Authenticate)
       client ! init.Event(PackIn(Try(Pong), id))
       expectNoMsg(100.millis)
     }
 
     "reply with OperationTimedOut if not subscribed within timeout" in new OperationTimedOutScope {
-      client ! PackOut(SubscribeTo(EventStream.All), id, credentials)
+      val subscribeTo = PackOut(SubscribeTo(EventStream.All), id, credentials)
+      client ! subscribeTo
       client ! init.Event(PackIn(Try(SubscribeToAllCompleted(0))))
 
       expectNoMsg(100.millis)
-      expectOperationTimedOut(SubscribeTo(EventStream.All))
+      expectOperationTimedOut(subscribeTo)
 
       client ! init.Event(PackIn(Try(SubscribeToAllCompleted(0)), id))
 
@@ -280,7 +285,8 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
 
     "reply with OperationTimedOut if not unsubscribed within timeout" in new OperationTimedOutScope {
       sendConnected()
-      client ! PackOut(SubscribeTo(EventStream.All), id, credentials)
+      val subscribeTo = PackOut(SubscribeTo(EventStream.All), id, credentials)
+      client ! subscribeTo
       client ! init.Event(PackIn(Try(SubscribeToAllCompleted(0))))
       client ! init.Event(PackIn(Try(SubscribeToAllCompleted(0)), id))
 
@@ -298,12 +304,13 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
 
     "reply with OperationTimedOut for all awaiting operations" in new OperationTimedOutScope {
       sendConnected()
-      client ! PackOut(SubscribeTo(EventStream.All), id, credentials)
+      val subscribeTo = PackOut(SubscribeTo(EventStream.All), id, credentials)
+      client ! subscribeTo
       client ! init.Event(PackIn(Try(SubscribeToAllCompleted(0))))
 
       client ! PackOut(Unsubscribe, id, credentials)
       expectNoMsg(100.millis)
-      expectOperationTimedOut(SubscribeTo(EventStream.All), Unsubscribe)
+      expectOperationTimedOut(subscribeTo, Unsubscribe)
 
       client ! init.Event(PackIn(Try(SubscribeToAllCompleted(0)), id))
       client ! init.Event(PackIn(Try(UnsubscribeCompleted)))
@@ -731,11 +738,22 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     val operationTimeout = settings.operationTimeout
     val id = randomUuid
 
-    def expectOperationTimedOut(x: Out, xs: Out*): Unit = {
-      val msgs = (x +: xs).map { x =>
-        Failure(EsException(EsError.OperationTimedOut(x)))
+    def expectOperationTimedOut(x: AnyRef, xs: AnyRef*): Unit = {
+      def removeOne[T](xs: Seq[T], x: T): Seq[T] = {
+        val (h, t) = xs.span(_ != x)
+        h ++ t.drop(1)
       }
-      expectMsgAllOf(msgs: _*)
+
+      def expect(xs: Seq[AnyRef]): Unit = {
+        if (xs.nonEmpty) expectMsgPF() {
+          case Failure(OperationTimeoutException(PackOut(x, _, `credentials`))) if xs contains x =>
+            expect(removeOne(xs, x))
+          case Failure(OperationTimeoutException(x)) if xs contains x =>
+            expect(removeOne(xs, x))
+        }
+      }
+
+      expect(x +: xs)
     }
 
     override def settings = super.settings.copy(operationTimeout = 500.millis)

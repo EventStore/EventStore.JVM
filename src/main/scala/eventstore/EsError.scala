@@ -2,6 +2,10 @@ package eventstore
 
 import java.net.InetSocketAddress
 
+import eventstore.tcp.PackOut
+
+import scala.concurrent.duration.FiniteDuration
+
 sealed trait EsError
 
 object EsError {
@@ -20,7 +24,7 @@ object EsError {
   case object ConnectionLost extends EsError
   case object BadRequest extends EsError
   case class NonMetadataEvent(event: Event) extends EsError
-  case class OperationTimedOut(operation: Out) extends EsError
+  case object OperationTimedOut extends EsError
 
   case class NotHandled(reason: NotHandled.Reason) extends EsError
 
@@ -48,4 +52,9 @@ case class EsException(reason: EsError, message: Option[String] = None)
     val body = message.fold(reason.toString)(x => s"$reason, $x")
     s"EsException($body)"
   }
+}
+
+@SerialVersionUID(1L)
+class IEsException(message: String, cause: Throwable) extends RuntimeException(message, cause) with Serializable {
+  def this(msg: String) = this(msg, null)
 }

@@ -63,11 +63,11 @@ case class WriteEventsOperation(pack: PackOut, client: ActorRef, inFunc: InFunc,
         inFunc(Failure(exception))
         None
 
-      case Failure(EsException(EsError.OperationTimedOut(_), _)) => succeed()
+      case Failure(EsException(EsError.OperationTimedOut, _)) => succeed()
 
-      case Success(x) => unexpectedReply(x)
+      case Success(x)                                         => unexpectedReply(x)
 
-      case Failure(x) => unexpectedReply(x)
+      case Failure(x)                                         => unexpectedReply(x)
     }
   }
 
@@ -80,11 +80,6 @@ case class WriteEventsOperation(pack: PackOut, client: ActorRef, inFunc: InFunc,
   def connected(outFunc: OutFunc) = {
     outFunc(pack)
     Some(this)
-  }
-
-  def timedOut = {
-    val timedOut = EsError.OperationTimedOut(pack.message)
-    inspectIn(Failure(EsException(timedOut)))
   }
 
   def version = 0

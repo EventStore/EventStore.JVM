@@ -23,8 +23,6 @@ trait Operation {
   // TODO prevent this from calling when already connected
   def connected(outFunc: OutFunc): Option[Operation]
 
-  def timedOut(): Option[Operation]
-
   def version: Int
 }
 

@@ -4,6 +4,7 @@ package operations
 import akka.actor.ActorRef
 import eventstore.tcp.PackOut
 import scala.util.{ Success, Failure, Try }
+import scala.concurrent.duration._
 
 sealed trait SubscriptionOperation extends Operation
 
@@ -28,6 +29,8 @@ object SubscriptionOperation {
       outFunc: Option[OutFunc],
       version: Int) extends SubscriptionOperation {
 
+    lazy val pack = PackOut(out, id, credentials)
+
     def clientTerminated() = {
       outFunc.foreach { outFunc => outFunc(PackOut(Unsubscribe, id, credentials)) }
     }
@@ -47,6 +50,10 @@ object SubscriptionOperation {
           Some(this)
 
         case Success(_) => Some(this)
+
+        case Failure(EsException(EsError.OperationTimedOut, _)) =>
+          inFunc(Failure(OperationTimeoutException(pack)))
+          None
 
         case Failure(_) =>
           inFunc(in)
@@ -68,12 +75,8 @@ object SubscriptionOperation {
     }
 
     def connected(outFunc: OutFunc) = {
-      outFunc(PackOut(out, id, credentials))
+      outFunc(pack)
       Some(copy(outFunc = Some(outFunc)))
-    }
-
-    def timedOut() = {
-      inspectIn(Failure(EsException(EsError.OperationTimedOut(out))))
     }
   }
 
@@ -98,10 +101,10 @@ object SubscriptionOperation {
 
         case Success(_) => Some(this)
 
-        case Failure(EsException(EsError.OperationTimedOut(_), _)) =>
+        case Failure(EsException(EsError.OperationTimedOut, _)) =>
           Some(this)
 
-        case Failure(_) =>
+        case Failure(_) => // TODO check this
           inFunc(in)
           Some(Unsubscribing(id, credentials, client, inFunc, outFunc, version + 1))
       }
@@ -113,8 +116,9 @@ object SubscriptionOperation {
 
     def inspectOut = {
       case Unsubscribe =>
-        outFunc(PackOut(Unsubscribe, id, credentials))
-        Some(Unsubscribing(id, credentials, client, inFunc, outFunc, version + 1))
+        val operation = Unsubscribing(id, credentials, client, inFunc, outFunc, version + 1)
+        outFunc(operation.pack)
+        Some(operation)
     }
 
     def connectionLost() = {
@@ -122,8 +126,6 @@ object SubscriptionOperation {
     }
 
     def connected(outFunc: OutFunc) = sys.error("should not be called")
-
-    def timedOut() = Some(this)
   }
 
   case class Unsubscribing(
@@ -134,6 +136,8 @@ object SubscriptionOperation {
       outFunc: OutFunc,
       version: Int) extends SubscriptionOperation {
 
+    lazy val pack = PackOut(Unsubscribe, id, credentials)
+
     def inspectIn(in: Try[In]) = in match {
       case Success(UnsubscribeCompleted) =>
         inFunc(in)
@@ -143,8 +147,8 @@ object SubscriptionOperation {
 
       case Success(_)                      => Some(this)
 
-      case Failure(EsException(EsError.OperationTimedOut(_), _)) =>
-        inFunc(in)
+      case Failure(EsException(EsError.OperationTimedOut, _)) =>
+        inFunc(Failure(OperationTimeoutException(pack)))
         None
 
       case Failure(_) =>
@@ -162,9 +166,5 @@ object SubscriptionOperation {
     }
 
     def connected(outFunc: OutFunc) = sys.error("should not be called")
-
-    def timedOut = {
-      inspectIn(Failure(EsException(EsError.OperationTimedOut(Unsubscribe))))
-    }
   }
 }
