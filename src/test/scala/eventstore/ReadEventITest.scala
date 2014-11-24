@@ -4,18 +4,18 @@ class ReadEventITest extends TestConnection {
 
   "read event" should {
     "fail if stream not found" in new ReadEventScope {
-      readEventFailed(EventNumber(5)) mustEqual EsError.StreamNotFound
+      readEventFailed(EventNumber(5)) must throwA[StreamNotFoundException]
     }
 
     "fail if stream deleted" in new ReadEventScope {
       appendEventToCreateStream()
       deleteStream()
-      readEventFailed(EventNumber(5)) mustEqual EsError.StreamDeleted
+      readEventFailed(EventNumber(5)) must throwA[StreamDeletedException]
     }
 
     "fail if stream does not have such event" in new ReadEventScope {
       appendEventToCreateStream()
-      readEventFailed(EventNumber(5)) mustEqual EsError.EventNotFound
+      readEventFailed(EventNumber(5)) must throwA[EventNotFoundException]
     }
 
     "return existing event" in new ReadEventScope {
@@ -44,7 +44,7 @@ class ReadEventITest extends TestConnection {
   trait ReadEventScope extends TestConnectionScope {
     def readEventFailed(eventNumber: EventNumber) = {
       actor ! ReadEvent(streamId, eventNumber)
-      expectException()
+      expectEsException()
     }
 
     def readEventData(eventNumber: EventNumber): EventData = readEventCompleted(eventNumber).data

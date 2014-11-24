@@ -67,7 +67,7 @@ class EsTransactionSpec extends ActorSpec {
   trait StartScope extends ActorScope {
     val transactionId = 0L
     implicit val timeout = Timeout(1.second)
-    val exception = EsException(EsError.AccessDenied)
+    val exception = new AccessDeniedException("test")
 
     def start = {
       val future = EsTransaction.start(testActor)

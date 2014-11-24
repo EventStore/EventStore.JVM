@@ -17,7 +17,7 @@ class EsConnection(
   implicit val timeout = Timeout(operationTimeout)
 
   def future[OUT <: Out, IN <: In](out: OUT, credentials: Option[UserCredentials] = None)(
-    implicit outIn: OutInTag[OUT, IN]): Future[IN] = {
+    implicit outIn: ClassTags[OUT, IN]): Future[IN] = {
     val future = connection ? credentials.fold[OutLike](out)(WithCredentials(out, _))
     future.mapTo[IN](outIn.in)
   }
@@ -98,10 +98,10 @@ class EsConnection(
   def getStreamMetadata(streamId: EventStream.Id, credentials: Option[UserCredentials] = None): Future[Content] = {
     future(ReadEvent.StreamMetadata(streamId.metadata), credentials).map {
       case ReadEventCompleted(Event.StreamMetadata(data)) => data
-      case ReadEventCompleted(event) =>
-        throw EsException(EsError.NonMetadataEvent(event), Some(s"Non metadata event received $event"))
+      case ReadEventCompleted(event)                      => throw NonMetadataEventException(event)
     }.recover {
-      case EsException(EsError.StreamNotFound | EsError.StreamDeleted, _) => Content.Empty
+      case _: StreamNotFoundException => Content.Empty
+      case _: StreamDeletedException  => Content.Empty
     }
   }
 }

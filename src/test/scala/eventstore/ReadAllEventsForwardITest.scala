@@ -78,8 +78,7 @@ class ReadAllEventsForwardITest extends TestConnection {
       val wrongPosition = Position(
         commitPosition = position.commitPosition - 1,
         preparePosition = position.preparePosition - 1)
-      val failed = readAllEventsFailed(wrongPosition, 10)
-      failed mustEqual EsError.Error
+      readAllEventsFailed(wrongPosition, 10) must throwA[ServerErrorException]
     }
 
     "not read linked events if resolveLinkTos = false" in new TestConnectionScope {

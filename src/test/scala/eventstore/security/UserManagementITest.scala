@@ -73,8 +73,8 @@ class UserManagementITest extends ActorSpec {
       def notAuthenticated = {
         actor ! Authenticate.withCredentials(user)
         expectMsgPF() {
-          case Authenticated                                     => false
-          case Failure(EsException(EsError.NotAuthenticated, _)) => true
+          case Authenticated                         => false
+          case Failure(_: NotAuthenticatedException) => true
         }
       }
       awaitCond(notAuthenticated, max = 1.second)

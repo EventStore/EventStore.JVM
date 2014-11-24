@@ -1,7 +1,6 @@
 package eventstore
 
 import akka.testkit.TestProbe
-import EsError.{ WrongExpectedVersion, StreamDeleted }
 import ExpectedVersion._
 
 class TransactionITest extends TestConnection {
@@ -22,26 +21,26 @@ class TransactionITest extends TestConnection {
     "fail to commit on non existing stream with wrong exp ver" in new TransactionScope {
       implicit val transactionId = transactionStart(ExpectedVersion.First)
       transactionWrite(newEventData)
-      failTransactionCommit(WrongExpectedVersion)
+      failTransactionCommit must throwA[WrongExpectedVersionException]
     }
 
     "do nothing if commits without events to empty stream" in new TransactionScope {
       implicit val transactionId = transactionStart(NoStream)
       transactionCommit()
-      readStreamEventsFailed mustEqual EsError.StreamNotFound
+      readStreamEventsFailed must throwA[StreamNotFoundException]
     }
 
     "do nothing if commits no events to empty stream" in new TransactionScope {
       implicit val transactionId = transactionStart(NoStream)
       transactionWrite()
       transactionCommit()
-      readStreamEventsFailed mustEqual EsError.StreamNotFound
+      readStreamEventsFailed must throwA[StreamNotFoundException]
     }
 
     "validate expectations on commit" in new TransactionScope {
       implicit val transactionId = transactionStart(ExpectedVersion(1))
       transactionWrite(newEventData)
-      failTransactionCommit(WrongExpectedVersion)
+      failTransactionCommit must throwA[WrongExpectedVersionException]
     }
 
     "commit when writing with exp ver ANY even while someone is writing in parallel" in new TransactionScope {
@@ -67,7 +66,7 @@ class TransactionITest extends TestConnection {
       implicit val transactionId = transactionStart(ExpectedVersion.First)
       append(newEventData).number mustEqual EventNumber(1)
       transactionWrite(newEventData)
-      failTransactionCommit(WrongExpectedVersion)
+      failTransactionCommit must throwA[WrongExpectedVersionException]
     }
 
     "succeed to commit if started with wrong ver but committing with correct ver" in new TransactionScope {
@@ -82,7 +81,7 @@ class TransactionITest extends TestConnection {
       appendEventToCreateStream()
       implicit val transactionId = transactionStart(ExpectedVersion.First)
       deleteStream()
-      failTransactionCommit(StreamDeleted)
+      failTransactionCommit must throwA[StreamDeletedException]
     }
 
     "idempotency is correct for explicit transactions with expected version any" in new TransactionScope {
@@ -118,9 +117,9 @@ class TransactionITest extends TestConnection {
       if (position) result.position must beSome else result.position must beNone
     }
 
-    def failTransactionCommit(reason: EsError)(implicit transactionId: Long) {
+    def failTransactionCommit(implicit transactionId: Long) = {
       actor ! TransactionCommit(transactionId)
-      expectException()
+      expectEsException()
     }
   }
 }

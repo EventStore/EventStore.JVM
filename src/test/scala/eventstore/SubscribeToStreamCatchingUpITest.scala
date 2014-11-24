@@ -35,7 +35,7 @@ class SubscribeToStreamCatchingUpITest extends TestConnection {
       appendEventToCreateStream()
       deleteStream()
       val subscriptionActor = newSubscription()
-      expectMsg(Failure(EsException(EsError.StreamDeleted)))
+      expectEsException() must throwA[StreamDeletedException]
       expectTerminated(subscriptionActor)
     }
 

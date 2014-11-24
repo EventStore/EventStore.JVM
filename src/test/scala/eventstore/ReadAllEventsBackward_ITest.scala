@@ -1,6 +1,7 @@
 package eventstore
 
-class ReadAllEventsBackwardITest extends TestConnection {
+// TODO rename later
+class ReadAllEventsBackward_ITest extends TestConnection {
   sequential
 
   implicit val direction = ReadDirection.Backward
@@ -72,8 +73,7 @@ class ReadAllEventsBackwardITest extends TestConnection {
       val wrongPosition = Position(
         commitPosition = position.commitPosition - 1,
         preparePosition = position.preparePosition - 1)
-      val failed = readAllEventsFailed(wrongPosition, 10)
-      failed mustEqual EsError.Error
+      readAllEventsFailed(wrongPosition, 10) must throwA[ServerErrorException]
     }
 
     "not read linked events if resolveLinkTos = false" in new TestConnectionScope {

@@ -1,6 +1,5 @@
 package eventstore
 
-import EsError._
 import ExpectedVersion._
 
 class DeleteStreamITest extends TestConnection {
@@ -10,8 +9,8 @@ class DeleteStreamITest extends TestConnection {
     }
 
     "fail if doesn't exist and invalid expect version" in new DeleteStreamScope {
-      deleteStreamFailed(ExpectedVersion.First) mustEqual WrongExpectedVersion
-      deleteStreamFailed(ExpectedVersion.Exact(1)) mustEqual WrongExpectedVersion
+      deleteStreamFailed(ExpectedVersion.First) must throwA[WrongExpectedVersionException]
+      deleteStreamFailed(ExpectedVersion.Exact(1)) must throwA[WrongExpectedVersionException]
     }
 
     "succeed if correct expected version" in new DeleteStreamScope {
@@ -26,22 +25,22 @@ class DeleteStreamITest extends TestConnection {
 
     "fail if invalid expected version" in new DeleteStreamScope {
       appendEventToCreateStream()
-      deleteStreamFailed(ExpectedVersion.Exact(1)) mustEqual WrongExpectedVersion
+      deleteStreamFailed(ExpectedVersion.Exact(1)) must throwA[WrongExpectedVersionException]
     }
 
     "fail if already deleted" in new DeleteStreamScope {
       appendEventToCreateStream()
       deleteStream(ExpectedVersion.First)
-      deleteStreamFailed(ExpectedVersion.First) mustEqual StreamDeleted
-      deleteStreamFailed(Any) mustEqual StreamDeleted
-      deleteStreamFailed(ExpectedVersion.Exact(1)) mustEqual StreamDeleted
+      deleteStreamFailed(ExpectedVersion.First) must throwA[StreamDeletedException]
+      deleteStreamFailed(Any) must throwA[StreamDeletedException]
+      deleteStreamFailed(ExpectedVersion.Exact(1)) must throwA[StreamDeletedException]
     }
   }
 
   abstract class DeleteStreamScope extends TestConnectionScope {
     def deleteStreamFailed(expVer: ExpectedVersion.Existing = Any) = {
       actor ! DeleteStream(streamId, hard = true, expectedVersion = expVer)
-      expectException()
+      expectEsException()
     }
   }
 }

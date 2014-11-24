@@ -2,7 +2,7 @@ package eventstore
 
 import ReadDirection.Forward
 import akka.testkit.TestProbe
-import EsError.NotHandled.NotReady
+import NotHandled.NotReady
 
 class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
   "catch up subscription actor" should {

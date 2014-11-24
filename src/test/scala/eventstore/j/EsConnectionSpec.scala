@@ -255,7 +255,7 @@ class EsConnectionSpec extends util.ActorSpec {
 
     def newEvent(x: Int) = IndexedEvent(EventRecord(streamId, EventNumber.Exact(x), EventData("event-type")), Position.Exact(x))
 
-    val error = EsException(EsError.accessDenied)
+    val error = new RuntimeException("test")
 
     val event0 = newEvent(0)
     val event1 = newEvent(1)

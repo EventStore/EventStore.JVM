@@ -62,18 +62,16 @@ class EsConnectionSpec extends ActorSpec with Mockito {
     }
 
     "get empty metadata when stream not found" in new GetMetadataScope {
-      getStreamMetadata(failure(EsError.StreamNotFound)) mustEqual Content.Empty
+      getStreamMetadata(failure(StreamNotFoundException(EventStream.Id("test")))) mustEqual Content.Empty
     }
 
     "get empty metadata when stream deleted" in new GetMetadataScope {
-      getStreamMetadata(failure(EsError.StreamNotFound)) mustEqual Content.Empty
+      getStreamMetadata(failure(new StreamDeletedException("test"))) mustEqual Content.Empty
     }
 
     "throw exception if non metadata event received" in new GetMetadataScope {
       val event = EventRecord(streamId, EventNumber.First, EventData("test", data = Content.Empty))
-      getStreamMetadata(ReadEventCompleted(event)) must throwAn[EsException].like {
-        case EsException(EsError.NonMetadataEvent(event), Some(_)) => ok
-      }
+      getStreamMetadata(ReadEventCompleted(event)) must throwA(NonMetadataEventException(event))
     }
   }
 
@@ -82,7 +80,7 @@ class EsConnectionSpec extends ActorSpec with Mockito {
     val events = Seq(EventData("test"))
     val connection = new EsConnection(testActor, system)
 
-    def verifyOutIn[OUT <: Out, IN <: In](out: OUT, in: In)(implicit outIn: OutInTag[OUT, IN]) {
+    def verifyOutIn[OUT <: Out, IN <: In](out: OUT, in: In)(implicit outIn: ClassTags[OUT, IN]) {
       val future = connection.future(out)(outIn = outIn)
       expectMsg(out)
       future.value must beNone
@@ -99,6 +97,6 @@ class EsConnectionSpec extends ActorSpec with Mockito {
       future.await_
     }
 
-    def failure(x: EsError) = Failure(EsException(x))
+    def failure(x: EsException) = Failure(x)
   }
 }

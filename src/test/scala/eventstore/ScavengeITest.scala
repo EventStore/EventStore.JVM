@@ -1,21 +1,24 @@
 package eventstore
 
-import scala.concurrent.duration._
 import akka.testkit.TestProbe
 
 class ScavengeITest extends TestConnection {
+  sequential
+
   "scavenge" should {
     "scavenge database" in new TestConnectionScope {
       actor ! ScavengeDatabase
+      expectMsgType[ScavengeDatabaseCompleted]
+    }
 
+    "fail if scavenge is in progress" in new TestConnectionScope {
       val probe = TestProbe()
       actor.tell(ScavengeDatabase, probe.ref)
 
-      expectMsgType[ScavengeDatabaseCompleted]
+      actor ! ScavengeDatabase
+      expectEsException() must throwA(ScavengeInProgressException)
 
-      probe.expectMsgPF(5.seconds) {
-        case EsException(_: EsError.ScavengeInProgress, msg) => msg
-      } must beSome
-    }.pendingUntilFixed
+      probe.expectMsgType[ScavengeDatabaseCompleted]
+    }
   }
 }

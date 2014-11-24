@@ -2,8 +2,7 @@ package eventstore
 
 import akka.actor.Status.Failure
 import akka.actor.{ ActorRef, ActorLogging, Actor, Identify, ActorIdentity }
-import EsError.NotHandled
-import EsError.NotHandled.{ TooBusy, NotReady }
+import NotHandled.{ TooBusy, NotReady }
 import scala.concurrent.duration._
 
 trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
@@ -30,12 +29,10 @@ trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
   }
 
   val rcvFailureOrUnsubscribe: Receive = rcvFailure orElse {
-    case UnsubscribeCompleted => context stop self
+    case Unsubscribed => context stop self
   }
 
-  val ignoreUnsubscribeCompleted: Receive = {
-    case UnsubscribeCompleted =>
-  }
+  val ignoreUnsubscribed: Receive = { case Unsubscribed => }
 
   def rcvEventAppeared(receive: IndexedEvent => Receive): Receive = {
     case StreamEventAppeared(x) => context become receive(x)
@@ -43,7 +40,7 @@ trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
 
   @deprecated("will migrate into Operation", "2014-11-10")
   def rcvReconnected(receive: => Receive): Receive = {
-    case Failure(EsException(NotHandled(NotReady | TooBusy), _)) => // TODO test this use case and move to operation
+    case Failure(NotHandled(NotReady | TooBusy)) => // TODO test this use case and move to operation
       val Switch = new {}
       context.system.scheduler.scheduleOnce(100.millis, self, Switch)
       context.become({ case Switch => context become receive })

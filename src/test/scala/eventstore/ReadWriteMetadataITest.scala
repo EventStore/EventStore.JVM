@@ -17,7 +17,7 @@ class ReadWriteMetadataITest extends TestConnection {
   "read metadata" should {
     "fail if no metadata stream" in new MetadataScope {
       actor ! ReadEvent.StreamMetadata(streamId.metadata)
-      expectException() mustEqual EsError.StreamNotFound
+      expectEsException() must throwA[StreamNotFoundException]
     }
 
     "succeed if metadata stream exists" in new MetadataScope {

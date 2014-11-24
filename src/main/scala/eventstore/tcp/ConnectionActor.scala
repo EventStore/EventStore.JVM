@@ -155,7 +155,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
             msg match {
               case Failure(x) => log.warning("cannot deliver {}, client not found for correlationId: {}", msg, correlationId)
               case Success(msg) => msg match {
-                case Pong | HeartbeatResponse | UnsubscribeCompleted =>
+                case Pong | HeartbeatResponse | Unsubscribed =>
                 case _: SubscribeCompleted | _: StreamEventAppeared =>
                   log.warning("cannot deliver {}, client not found for correlationId: {}, unsubscribing", msg, correlationId)
                   reply(PackOut(Unsubscribe, correlationId, defaultCredentials))
@@ -181,7 +181,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       val operation = operations.single(id)
       operation.foreach { operation =>
         if (operation.version == version) {
-          val result = operation.inspectIn(Failure(EsException(EsError.OperationTimedOut))) match {
+          val result = operation.inspectIn(Failure(OperationTimedOut)) match {
             case Some(operation) => operations + operation
             case None            => operations - operation
           }
@@ -218,7 +218,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
           }
 
         case None =>
-          context watch sender() // TODO don't do that every time
+          context watch sender()
           outFunc.foreach(_.apply(pack)) // TODO here or in the operation
           val operation = Operation(pack, sender(), inFunc(sender()), outFunc)
           system.scheduler.scheduleOnce(operationTimeout, self, TimedOut(id, operation.version))
@@ -293,8 +293,6 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
   }
 
   def tcp = IO(Tcp)
-
-  def connectionLostFailure = Status.Failure(EsException(EsError.ConnectionLost))
 
   case class HeartbeatTimeout(id: Long)
   case object Heartbeat

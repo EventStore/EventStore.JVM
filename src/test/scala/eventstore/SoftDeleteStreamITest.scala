@@ -1,13 +1,13 @@
 package eventstore
 
 class SoftDeleteStreamITest extends TestConnection {
-  implicit def direction = ReadDirection.Forward
+  implicit def direction: ReadDirection = ReadDirection.Forward
 
   "soft delete" should {
     "succeed for existing stream" in new SoftDeleteScope {
       appendEventToCreateStream()
       deleteStream(hard = false)
-      readStreamEventsFailed mustEqual EsError.StreamNotFound
+      readStreamEventsFailed must throwA[StreamNotFoundException]
     }
 
     "allow recreation of stream if expected version is any" in new SoftDeleteScope {
@@ -26,16 +26,16 @@ class SoftDeleteStreamITest extends TestConnection {
       appendEventToCreateStream()
       deleteStream(hard = false)
       deleteStream(hard = true)
-      readStreamEventsFailed mustEqual EsError.StreamDeleted
+      readStreamEventsFailed must throwA[StreamDeletedException]
 
       actor ! WriteEvents(streamId, List(newEventData))
-      expectException() mustEqual EsError.StreamDeleted
+      expectEsException() must throwA[StreamDeletedException]
     }
 
     "allow recreation only for first write when expected version is no stream" in new SoftDeleteScope {
       val event = allowRecreation(ExpectedVersion.NoStream)
       actor ! WriteEvents(streamId, List(newEventData), ExpectedVersion.NoStream)
-      expectException() mustEqual EsError.WrongExpectedVersion
+      expectEsException() must throwA[WrongExpectedVersionException]
       streamEvents.toList mustEqual List(event)
     }
 
@@ -78,7 +78,7 @@ class SoftDeleteStreamITest extends TestConnection {
     "allow setting nonjson metadata on empty soft deleted stream and recreate stream" in new SoftDeleteScope {
       deleteStream(hard = false)
       val metadata = writeMetadataBinary(1, 2, 3, 4)
-      readStreamEventsFailed mustEqual EsError.StreamNotFound
+      readStreamEventsFailed must throwA[StreamNotFoundException]
       readMetadataBinary() mustEqual metadata
     }
 

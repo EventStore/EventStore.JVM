@@ -36,8 +36,11 @@ object Operation {
       case x: TransactionCommit => TransactionCommitOperation(pack, client, inFunc, outFunc)
       case x: ReadEvent         => ReadEventOperation(pack, client, inFunc, outFunc)
       case x: ReadStreamEvents  => ReadStreamEventsOperation(pack, client, inFunc, outFunc)
+      case x: ReadAllEvents     => ReadAllEventsOperation(pack, client, inFunc, outFunc)
       case x: SubscribeTo       => SubscriptionOperation(pack.correlationId, x, pack.credentials, client, inFunc, outFunc)
-      case _                    => OutInOperation(pack, client, inFunc, outFunc)
+      case ScavengeDatabase     => ScavengeDatabaseOperation(pack, client, inFunc, outFunc)
+      case Authenticate         => OutInOperation(pack, client, inFunc, outFunc)
+      case _                    => OutInOperation(pack, client, inFunc, outFunc) // TODO be more concrete on what goes here
     }
   }
 }

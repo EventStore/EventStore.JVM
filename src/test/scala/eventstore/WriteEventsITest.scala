@@ -2,7 +2,6 @@ package eventstore
 
 import akka.testkit.TestProbe
 import ExpectedVersion._
-import EsError._
 
 class WriteEventsITest extends TestConnection {
   "append to stream" should {
@@ -21,26 +20,26 @@ class WriteEventsITest extends TestConnection {
     }
 
     "fail create stream with wrong exp ver if does not exist" in new WriteEventsScope {
-      writeEventsFailed(newEventData, ExpectedVersion.First) mustEqual WrongExpectedVersion
-      writeEventsFailed(newEventData, ExpectedVersion(1)) mustEqual WrongExpectedVersion
+      writeEventsFailed(newEventData, ExpectedVersion.First) must throwA[WrongExpectedVersionException]
+      writeEventsFailed(newEventData, ExpectedVersion(1)) must throwA[WrongExpectedVersionException]
     }
 
     "fail writing with correct exp ver to deleted stream" in new WriteEventsScope {
       appendEventToCreateStream()
       deleteStream()
-      writeEventsFailed(newEventData, ExpectedVersion.First) mustEqual StreamDeleted
+      writeEventsFailed(newEventData, ExpectedVersion.First) must throwA[StreamDeletedException]
     }
 
     "fail writing with any exp ver to deleted stream" in new WriteEventsScope {
       appendEventToCreateStream()
       deleteStream()
-      writeEventsFailed(newEventData, Any) mustEqual StreamDeleted
+      writeEventsFailed(newEventData, Any) must throwA[StreamDeletedException]
     }
 
     "fail writing with invalid exp ver to deleted stream" in new WriteEventsScope {
       appendEventToCreateStream()
       deleteStream()
-      writeEventsFailed(newEventData, ExpectedVersion(1)) mustEqual StreamDeleted
+      writeEventsFailed(newEventData, ExpectedVersion(1)) must throwA[StreamDeletedException]
     }
 
     "succeed writing with correct exp ver to existing stream" in new WriteEventsScope {
@@ -57,8 +56,8 @@ class WriteEventsITest extends TestConnection {
 
     "fail writing with wrong exp ver to existing stream" in new WriteEventsScope {
       appendEventToCreateStream()
-      writeEventsFailed(newEventData, NoStream) mustEqual WrongExpectedVersion
-      writeEventsFailed(newEventData, ExpectedVersion(1)) mustEqual WrongExpectedVersion
+      writeEventsFailed(newEventData, NoStream) must throwA[WrongExpectedVersionException]
+      writeEventsFailed(newEventData, ExpectedVersion(1)) must throwA[WrongExpectedVersionException]
     }
 
     "be able to append multiple events at once" in new WriteEventsScope {
@@ -92,7 +91,7 @@ class WriteEventsITest extends TestConnection {
 
     def writeEventsFailed(event: EventData, expVer: ExpectedVersion = Any) = {
       actor ! WriteEvents(streamId, List(event), expVer)
-      expectException()
+      expectEsException()
     }
   }
 }

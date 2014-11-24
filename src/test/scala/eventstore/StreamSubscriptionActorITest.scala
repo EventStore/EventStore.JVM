@@ -1,6 +1,7 @@
 package eventstore
 
-import akka.actor.Status
+import akka.actor.Terminated
+import akka.testkit.TestProbe
 import scala.concurrent.duration._
 
 class StreamSubscriptionActorITest extends AbstractSubscriptionActorITest {
@@ -61,12 +62,21 @@ class StreamSubscriptionActorITest extends AbstractSubscriptionActorITest {
       expectEvent
     }
 
-    "send failure if connection stopped" in new SubscriptionScope {
+    "die if connection stopped" in new SubscriptionScope {
+      val subscription = subscribe
+      val probe = TestProbe()
+      probe watch subscription
       system stop connection
-      expectMsgPF() {
-        case Status.Failure(EsException(EsError.ConnectionLost, _)) => true
-      }
-    }.pendingUntilFixed
+      probe.expectMsgPF() { case Terminated(`subscription`) => () }
+    }
+
+    "die if client stopped" in new SubscriptionScope {
+      val subscription = subscribe
+      val probe = TestProbe()
+      probe watch subscription
+      system stop testActor
+      probe.expectMsgPF() { case Terminated(`subscription`) => () }
+    }
   }
 
   trait SubscriptionScope extends TestScope {

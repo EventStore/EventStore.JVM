@@ -2,12 +2,13 @@ package eventstore
 package operations
 
 import akka.actor.ActorRef
+import eventstore.NotHandled.{ TooBusy, NotReady }
 import eventstore.tcp.PackOut
 import scala.util.{ Success, Failure, Try }
-import scala.concurrent.duration._
 
 sealed trait SubscriptionOperation extends Operation
 
+// TODO track the difference of subscribe to stream vs to all
 object SubscriptionOperation {
 
   def apply(
@@ -36,35 +37,52 @@ object SubscriptionOperation {
     }
 
     def inspectIn(in: Try[In]) = {
+      def failed(x: Throwable) = {
+        inFunc(Failure(x))
+        None
+      }
+
+      def retry() = {
+        outFunc.foreach { outFunc => outFunc(pack) }
+        Some(this)
+      }
+
+      def unexpected(x: Any) = failed(new CommandNotExpectedException(x.toString))
+
+      def subscribed() = {
+        outFunc match {
+          case None => Some(this)
+          case Some(outFunc) =>
+            inFunc(in)
+            Some(Subscribed(id, out, credentials, client, inFunc, outFunc, version + 1))
+        }
+      }
+
+      def eventAppeared() = {
+        inFunc(in)
+        Some(this)
+      }
+
+      val streamId = out.stream
+
       in match {
-        case Success(_: SubscribeCompleted) =>
-          outFunc match {
-            case None => Some(this)
-            case Some(outFunc) =>
-              inFunc(in)
-              Some(Subscribed(id, out, credentials, client, inFunc, outFunc, version + 1))
-          }
-
-        case Success(_: StreamEventAppeared) =>
-          inFunc(in)
-          Some(this)
-
-        case Success(_) => Some(this)
-
-        case Failure(EsException(EsError.OperationTimedOut, _)) =>
-          inFunc(Failure(OperationTimeoutException(pack)))
-          None
-
-        case Failure(_) =>
-          inFunc(in)
-          None
+        case Success(_: SubscribeCompleted)            => subscribed()
+        case Success(_: StreamEventAppeared)           => eventAppeared()
+        case Success(x)                                => unexpected(x)
+        case Failure(SubscriptionDropped.AccessDenied) => failed(new AccessDeniedException(s"Subscription to $streamId failed due to access denied"))
+        case Failure(OperationTimedOut)                => failed(OperationTimeoutException(pack))
+        case Failure(NotHandled(NotReady))             => retry()
+        case Failure(NotHandled(TooBusy))              => retry()
+        case Failure(BadRequest)                       => failed(new ServerErrorException(s"Bad request: $pack"))
+        case Failure(NotAuthenticated)                 => failed(NotAuthenticatedException(pack))
+        case Failure(x)                                => unexpected(x)
       }
     }
 
     def inspectOut = {
       case Unsubscribe =>
-        inFunc(Failure(EsException(EsError.Error, Some("Not yet subscribed"))))
-        Some(this)
+        inFunc(Try(Unsubscribed))
+        None
     }
 
     def connectionLost() = {
@@ -91,7 +109,7 @@ object SubscriptionOperation {
 
     def inspectIn(in: Try[In]) = {
       in match {
-        case Success(UnsubscribeCompleted) =>
+        case Success(Unsubscribed) =>
           inFunc(in)
           None
 
@@ -99,10 +117,9 @@ object SubscriptionOperation {
           inFunc(in)
           Some(this)
 
-        case Success(_) => Some(this)
+        case Success(_)                 => Some(this)
 
-        case Failure(EsException(EsError.OperationTimedOut, _)) =>
-          Some(this)
+        case Failure(OperationTimedOut) => Some(this)
 
         case Failure(_) => // TODO check this
           inFunc(in)
@@ -138,22 +155,24 @@ object SubscriptionOperation {
 
     lazy val pack = PackOut(Unsubscribe, id, credentials)
 
-    def inspectIn(in: Try[In]) = in match {
-      case Success(UnsubscribeCompleted) =>
-        inFunc(in)
-        None
+    def inspectIn(in: Try[In]) = {
+      in match {
+        case Success(Unsubscribed) =>
+          inFunc(in)
+          None
 
-      case Success(_: StreamEventAppeared) => Some(this)
+        case Success(_: StreamEventAppeared) => Some(this)
 
-      case Success(_)                      => Some(this)
+        case Success(_)                      => Some(this)
 
-      case Failure(EsException(EsError.OperationTimedOut, _)) =>
-        inFunc(Failure(OperationTimeoutException(pack)))
-        None
+        case Failure(OperationTimedOut) =>
+          inFunc(Failure(OperationTimeoutException(pack)))
+          None
 
-      case Failure(_) =>
-        inFunc(in)
-        Some(this)
+        case Failure(_) =>
+          inFunc(in)
+          Some(this)
+      }
     }
 
     def clientTerminated = {}
@@ -161,7 +180,7 @@ object SubscriptionOperation {
     def inspectOut = PartialFunction.empty
 
     def connectionLost() = {
-      inFunc(Success(UnsubscribeCompleted))
+      inFunc(Success(Unsubscribed))
       None
     }
 

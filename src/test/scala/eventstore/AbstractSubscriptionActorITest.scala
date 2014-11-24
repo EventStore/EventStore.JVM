@@ -6,7 +6,7 @@ import eventstore.tcp.ConnectionActor
 
 abstract class AbstractSubscriptionActorITest extends util.ActorSpec {
   trait TestScope extends ActorScope {
-    val connection = system.actorOf(ConnectionActor.props())
+    val connection = system.actorOf(ConnectionActor.props(settings))
     val streamId = EventStream.Id(randomUuid.toString)
 
     def write(count: Int = 1): Unit = {
@@ -19,5 +19,7 @@ abstract class AbstractSubscriptionActorITest extends util.ActorSpec {
     def expectLiveProcessingStarted = expectMsg(LiveProcessingStarted)
 
     def reconnect() = connection ! PeerClosed
+
+    def settings = Settings.Default
   }
 }

@@ -42,7 +42,7 @@ public class ReadEventExample {
             } else if (message instanceof Failure) {
                 final Failure failure = ((Failure) message);
                 final EsException exception = (EsException) failure.cause();
-                log.error("reason: {}, message: {}", exception.reason(), exception.message());
+                log.error(exception, exception.toString());
             } else
                 unhandled(message);
 

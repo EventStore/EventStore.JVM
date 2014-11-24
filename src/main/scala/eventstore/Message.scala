@@ -196,7 +196,7 @@ case object Unsubscribe extends Out {
    */
   def getInstance = this
 }
-case object UnsubscribeCompleted extends In {
+case object Unsubscribed extends In {
   /**
    * Java API
    */

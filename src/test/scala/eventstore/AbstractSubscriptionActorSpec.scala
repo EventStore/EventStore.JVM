@@ -3,7 +3,6 @@ package eventstore
 import akka.actor.Props
 import akka.actor.Status.Failure
 import akka.testkit._
-import eventstore.EsError.NotHandled
 import org.specs2.mock.Mockito
 import scala.concurrent.duration._
 
@@ -36,7 +35,7 @@ abstract class AbstractSubscriptionActorSpec extends util.ActorSpec with Mockito
     }
 
     def expectTerminatedOnFailure(): Unit = {
-      val failure = Failure(EsException(EsError.Error))
+      val failure = Failure(new ServerErrorException("test"))
       actor ! failure
       expectMsg(failure)
       expectTerminated(actor)
@@ -45,7 +44,7 @@ abstract class AbstractSubscriptionActorSpec extends util.ActorSpec with Mockito
       connection.expectNoMsg(duration)
     }
 
-    def notHandled(x: NotHandled.Reason) = Failure(EsException(NotHandled(x)))
+    def notHandled(x: NotHandled.Reason) = Failure(NotHandled(x))
 
     def credentials: Option[UserCredentials] = None
   }

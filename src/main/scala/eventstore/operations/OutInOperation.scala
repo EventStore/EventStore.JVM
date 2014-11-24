@@ -2,33 +2,22 @@ package eventstore
 package operations
 
 import akka.actor.ActorRef
+import NotHandled.{ TooBusy, NotReady }
 import tcp.PackOut
-import scala.util.{ Failure, Try }
+import scala.util.{ Success, Failure, Try }
 
-case class OutInOperation(pack: PackOut, client: ActorRef, inFunc: InFunc, outFunc: Option[OutFunc]) extends Operation {
-  def id = pack.correlationId
+case class OutInOperation(pack: PackOut, client: ActorRef, inFunc: InFunc, outFunc: Option[OutFunc])
+    extends AbstractOperation {
 
   def inspectIn(in: Try[In]) = {
     in match {
-      case Failure(EsException(EsError.OperationTimedOut, _)) =>
-        inFunc(Failure(OperationTimeoutException(pack)))
-
-      case _ => inFunc(in)
+      case Success(x)                    => succeed(x)
+      case Failure(OperationTimedOut)    => failed(OperationTimeoutException(pack))
+      case Failure(NotHandled(NotReady)) => retry()
+      case Failure(NotHandled(TooBusy))  => retry()
+      case Failure(BadRequest)           => failed(new ServerErrorException(s"Bad request: $pack"))
+      case Failure(NotAuthenticated)     => failed(NotAuthenticatedException(pack))
+      case Failure(x)                    => failed(x)
     }
-    //    inFunc(in) // TODO add type checks
-    None
   }
-
-  def clientTerminated() = {}
-
-  def inspectOut = PartialFunction.empty
-
-  def connectionLost() = Some(this)
-
-  def connected(outFunc: OutFunc) = {
-    outFunc(pack)
-    Some(this)
-  }
-
-  def version = 0
 }

@@ -41,7 +41,7 @@ public class WriteEventExample {
             } else if (message instanceof Status.Failure) {
                 final Status.Failure failure = ((Status.Failure) message);
                 final EsException exception = (EsException) failure.cause();
-                log.error("reason: {}, message: {}", exception.reason(), exception.message());
+                log.error(exception, exception.toString());
             } else
                 unhandled(message);
 

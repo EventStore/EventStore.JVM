@@ -2,85 +2,39 @@ package eventstore
 package operations
 
 import akka.actor.ActorRef
-import eventstore.EsError.NotHandled.{ NotMaster, TooBusy, NotReady }
-import eventstore.tcp.PackOut
-
+import NotHandled.{ TooBusy, NotReady }
+import tcp.PackOut
+import OperationError._
 import scala.util.{ Success, Failure, Try }
 
-case class DeleteStreamOperation(pack: PackOut, client: ActorRef, inFunc: InFunc, outFunc: Option[OutFunc]) extends Operation {
-  def id = pack.correlationId
+case class DeleteStreamOperation(pack: PackOut, client: ActorRef, inFunc: InFunc, outFunc: Option[OutFunc])
+    extends AbstractOperation {
 
   def inspectIn(in: Try[In]) = {
+    val deleteStream = pack.message.asInstanceOf[DeleteStream]
+    val streamId = deleteStream.streamId
+    val expectedVersion = deleteStream.expectedVersion
 
-    def unexpectedReply(in: Any) = {
-      val out = pack.message
-      sys.error(s"Unexpected reply for $out: $in")
-    }
-
-    def retry() = {
-      outFunc.foreach { outFunc => outFunc(pack) }
-      Some(this)
-    }
-
-    def succeed() = {
-      inFunc(in)
-      None
+    def operationError(x: OperationError) = x match {
+      case PrepareTimeout       => retry()
+      case CommitTimeout        => retry()
+      case ForwardTimeout       => retry()
+      case WrongExpectedVersion => failed(WrongExpectedVersionException(s"Delete stream failed due to WrongExpectedVersion: $streamId, $expectedVersion"))
+      case StreamDeleted        => failed(new StreamDeletedException(s"Delete stream failed due to $streamId has been deleted"))
+      case InvalidTransaction   => failed(InvalidTransactionException)
+      case AccessDenied         => failed(new AccessDeniedException(s"Write access denied for $streamId"))
     }
 
     in match {
-      case Success(_: DeleteStreamCompleted)                           => succeed()
-
-      case Failure(EsException(EsError.PrepareTimeout, _))             => retry()
-
-      case Failure(EsException(EsError.ForwardTimeout, _))             => retry()
-
-      case Failure(EsException(EsError.CommitTimeout, _))              => retry()
-
-      case Failure(EsException(EsError.WrongExpectedVersion, Some(_))) => succeed()
-
-      case Failure(x @ EsException(EsError.WrongExpectedVersion, None)) =>
-        val deleteStream = pack.message.asInstanceOf[DeleteStream]
-        val message = s"Delete stream failed due to WrongExpectedVersion: ${deleteStream.streamId}, ${deleteStream.expectedVersion}"
-        val exception = x.copy(message = Some(message))
-        inFunc(Failure(exception))
-        None
-
-      case Failure(EsException(EsError.StreamDeleted, _))      => succeed()
-
-      case Failure(EsException(EsError.InvalidTransaction, _)) => succeed()
-
-      case Failure(x @ EsException(EsError.NotHandled(reason), _)) => reason match {
-        case NotReady     => retry()
-        case TooBusy      => retry()
-        case NotMaster(_) => unexpectedReply(x)
-      }
-
-      case Failure(EsException(EsError.AccessDenied, Some(_))) => succeed()
-
-      case Failure(x @ EsException(EsError.AccessDenied, None)) =>
-        val deleteStream = pack.message.asInstanceOf[DeleteStream]
-        val exception = x.copy(message = Some(s"Write access denied for ${deleteStream.streamId}"))
-        inFunc(Failure(exception))
-        None
-
-      case Failure(EsException(EsError.OperationTimedOut, _)) => succeed()
-
-      case Success(x)                                         => unexpectedReply(x)
-
-      case Failure(x)                                         => unexpectedReply(x)
+      case Success(x: DeleteStreamCompleted) => succeed(x)
+      case Success(x)                        => unexpected(x)
+      case Failure(x: OperationError)        => operationError(x)
+      case Failure(OperationTimedOut)        => failed(OperationTimeoutException(pack))
+      case Failure(NotHandled(NotReady))     => retry()
+      case Failure(NotHandled(TooBusy))      => retry()
+      case Failure(BadRequest)               => failed(new ServerErrorException(s"Bad request: $pack"))
+      case Failure(NotAuthenticated)         => failed(NotAuthenticatedException(pack))
+      case Failure(x)                        => unexpected(x)
     }
   }
-
-  def clientTerminated() = {}
-
-  def inspectOut = PartialFunction.empty
-
-  def connectionLost() = Some(this)
-
-  def connected(outFunc: OutFunc) = {
-    outFunc(pack)
-    Some(this)
-  }
-
-  def version = 0
 }

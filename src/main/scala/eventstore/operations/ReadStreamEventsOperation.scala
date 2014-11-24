@@ -2,72 +2,33 @@ package eventstore
 package operations
 
 import akka.actor.ActorRef
-import eventstore.EsError.NotHandled.{ NotMaster, TooBusy, NotReady }
-import eventstore.tcp.PackOut
-
+import NotHandled.{ TooBusy, NotReady }
+import tcp.PackOut
+import ReadStreamEventsError._
 import scala.util.{ Success, Failure, Try }
 
-case class ReadStreamEventsOperation(pack: PackOut, client: ActorRef, inFunc: InFunc, outFunc: Option[OutFunc]) extends Operation {
-  def id = pack.correlationId
+case class ReadStreamEventsOperation(pack: PackOut, client: ActorRef, inFunc: InFunc, outFunc: Option[OutFunc])
+    extends AbstractOperation {
 
   def inspectIn(in: Try[In]) = {
+    val readStreamEvents = pack.message.asInstanceOf[ReadStreamEvents]
+    val streamId = readStreamEvents.streamId
 
-    def unexpectedReply(in: Any) = {
-      val out = pack.message
-      sys.error(s"Unexpected reply for $out: $in")
-    }
-
-    def retry() = {
-      outFunc.foreach { outFunc => outFunc(pack) }
-      Some(this)
-    }
-
-    def succeed() = {
-      inFunc(in)
-      None
+    def readStreamEventsError(x: ReadStreamEventsError) = x match {
+      case StreamNotFound => StreamNotFoundException(streamId)
+      case StreamDeleted  => new StreamDeletedException(s"Read failed due to $streamId has been deleted")
+      case Error(error)   => new ServerErrorException(error.orNull)
+      case AccessDenied   => new AccessDeniedException(s"Read access denied for $streamId")
     }
 
     in match {
-      case Success(_: ReadStreamEventsCompleted)           => succeed()
-
-      case Failure(EsException(EsError.StreamNotFound, _)) => succeed()
-
-      case Failure(EsException(EsError.StreamDeleted, _))  => succeed()
-
-      case Failure(x @ EsException(EsError.NotHandled(reason), _)) => reason match {
-        case NotReady     => retry()
-        case TooBusy      => retry()
-        case NotMaster(_) => unexpectedReply(x)
-      }
-
-      case Failure(EsException(EsError.Error, _))              => succeed()
-
-      case Failure(EsException(EsError.AccessDenied, Some(_))) => succeed()
-
-      case Failure(x @ EsException(EsError.AccessDenied, None)) =>
-        val readStreamEvents = pack.message.asInstanceOf[ReadStreamEvents]
-        val exception = x.copy(message = Some(s"Read access denied for ${readStreamEvents.streamId}"))
-        inFunc(Failure(exception))
-        None
-
-      case Failure(EsException(EsError.OperationTimedOut, _)) => succeed()
-
-      case Success(x)                                         => unexpectedReply(x)
-
-      case Failure(x)                                         => unexpectedReply(x)
+      case Success(x: ReadStreamEventsCompleted) => succeed(x)
+      case Success(x)                            => unexpected(x)
+      case Failure(x: ReadStreamEventsError)     => failed(readStreamEventsError(x))
+      case Failure(OperationTimedOut)            => failed(OperationTimeoutException(pack))
+      case Failure(NotHandled(NotReady))         => retry()
+      case Failure(NotHandled(TooBusy))          => retry()
+      case Failure(x)                            => unexpected(x)
     }
   }
-
-  def clientTerminated() = {}
-
-  def inspectOut = PartialFunction.empty
-
-  def connectionLost() = Some(this)
-
-  def connected(outFunc: OutFunc) = {
-    outFunc(pack)
-    Some(this)
-  }
-
-  def version = 0
 }

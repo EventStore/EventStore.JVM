@@ -178,7 +178,7 @@ class TransactionActorSpec extends ActorSpec {
       case Terminated(`actor`) =>
     }
 
-    val failure = Failure(EsException(EsError.AccessDenied))
+    val failure = Failure(new AccessDeniedException("test"))
 
     def sendFailure {
       (actor ! failure) mustNotEqual throwAn[EsException]

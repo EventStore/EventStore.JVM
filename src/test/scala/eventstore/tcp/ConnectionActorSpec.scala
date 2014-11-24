@@ -297,8 +297,8 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       expectNoMsg(100.millis)
       expectOperationTimedOut(Unsubscribe)
 
-      client ! init.Event(PackIn(Try(UnsubscribeCompleted)))
-      client ! init.Event(PackIn(Try(UnsubscribeCompleted), id))
+      client ! init.Event(PackIn(Try(Unsubscribed)))
+      client ! init.Event(PackIn(Try(Unsubscribed), id))
       expectNoMsg(100.millis)
     }
 
@@ -313,8 +313,8 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       expectOperationTimedOut(subscribeTo, Unsubscribe)
 
       client ! init.Event(PackIn(Try(SubscribeToAllCompleted(0)), id))
-      client ! init.Event(PackIn(Try(UnsubscribeCompleted)))
-      client ! init.Event(PackIn(Try(UnsubscribeCompleted), id))
+      client ! init.Event(PackIn(Try(Unsubscribed)))
+      client ! init.Event(PackIn(Try(Unsubscribed), id))
       expectNoMsg(100.millis)
     }.pendingUntilFixed
 
@@ -366,9 +366,9 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       client ! Unsubscribe
       client ! init.Event(PackIn(Try(subscribeCompleted), id))
       pipeline.expectMsg(init.Command(PackOut(Unsubscribe, id, credentials)))
-      client ! init.Event(PackIn(Try(UnsubscribeCompleted), id))
+      client ! init.Event(PackIn(Try(Unsubscribed), id))
       expectMsg(subscribeCompleted)
-      expectMsg(UnsubscribeCompleted)
+      expectMsg(Unsubscribed)
       expectNoMsg(duration)
     }.pendingUntilFixed
 
@@ -427,10 +427,10 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       client ! PeerClosed
       expectConnect()
       client ! Unsubscribe
-      expectMsg(UnsubscribeCompleted)
+      expectMsg(Unsubscribed)
       sendConnected()
       pipeline.expectNoMsg(duration)
-    }.pendingUntilFixed
+    }
 
     "ignore subscribed while reconnecting" in new SubscriptionScope {
       client ! PeerClosed
@@ -453,7 +453,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       pipeline expectMsg init.Command(PackOut(Unsubscribe, id, credentials))
       client ! PeerClosed
       expectConnect()
-      expectMsg(UnsubscribeCompleted)
+      expectMsg(Unsubscribed)
       sendConnected()
       pipeline.expectNoMsg(duration)
     }
@@ -727,10 +727,6 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       expectConnect()
       client ! CommandFailed(connect)
       verifyReconnections(n - 1)
-    }
-
-    def expectNoConnectionFailure() {
-      expectMsg(Failure(EsException(EsError.ConnectionLost)))
     }
   }
 

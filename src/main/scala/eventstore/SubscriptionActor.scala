@@ -145,7 +145,7 @@ class SubscriptionActor(
           else {
             unsubscribe()
             rcvReady(reading(l, l getOrElse Position.First, ready = false)) orElse
-              ignoreUnsubscribeCompleted orElse
+              ignoreUnsubscribed orElse
               rcvFailure
           }
         }

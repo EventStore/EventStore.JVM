@@ -2,84 +2,38 @@ package eventstore
 package operations
 
 import akka.actor.ActorRef
-import eventstore.EsError.NotHandled.{ NotMaster, TooBusy, NotReady }
-import eventstore.tcp.PackOut
-
+import NotHandled.{ TooBusy, NotReady }
+import OperationError._
+import tcp.PackOut
 import scala.util.{ Success, Failure, Try }
 
-case class TransactionCommitOperation(pack: PackOut, client: ActorRef, inFunc: InFunc, outFunc: Option[OutFunc]) extends Operation {
-  def id = pack.correlationId
+case class TransactionCommitOperation(pack: PackOut, client: ActorRef, inFunc: InFunc, outFunc: Option[OutFunc])
+    extends AbstractOperation {
 
   def inspectIn(in: Try[In]) = {
+    val transactionCommit = pack.message.asInstanceOf[TransactionCommit]
+    val transactionId = transactionCommit.transactionId
 
-    def unexpectedReply(in: Any) = {
-      val out = pack.message
-      sys.error(s"Unexpected reply for $out: $in")
-    }
-
-    def retry() = {
-      outFunc.foreach { outFunc => outFunc(pack) }
-      Some(this)
-    }
-
-    def succeed() = {
-      inFunc(in)
-      None
+    def operationError(x: OperationError) = x match {
+      case PrepareTimeout       => retry()
+      case CommitTimeout        => retry()
+      case ForwardTimeout       => retry()
+      case WrongExpectedVersion => failed(WrongExpectedVersionException(s"Transaction commit failed due to WrongExpectedVersion, transactionId: $transactionId"))
+      case StreamDeleted        => failed(new StreamDeletedException(s"Transaction commit due to stream has been deleted, transactionId: $transactionId"))
+      case InvalidTransaction   => failed(InvalidTransactionException)
+      case AccessDenied         => failed(new AccessDeniedException(s"Write access denied"))
     }
 
     in match {
-      case Success(_: TransactionCommitCompleted)                      => succeed()
-
-      case Failure(EsException(EsError.PrepareTimeout, _))             => retry()
-
-      case Failure(EsException(EsError.CommitTimeout, _))              => retry()
-
-      case Failure(EsException(EsError.ForwardTimeout, _))             => retry()
-
-      case Failure(EsException(EsError.WrongExpectedVersion, Some(_))) => succeed()
-
-      case Failure(x @ EsException(EsError.WrongExpectedVersion, None)) =>
-        val transactionCommit = pack.message.asInstanceOf[TransactionCommit]
-        val message = s"Transaction commit failed due to WrongExpectedVersion. TransactionID: ${transactionCommit.transactionId}"
-        val exception = x.copy(message = Some(message))
-        inFunc(Failure(exception))
-        None
-
-      case Failure(EsException(EsError.StreamDeleted, _))      => succeed()
-
-      case Failure(EsException(EsError.InvalidTransaction, _)) => succeed()
-
-      case Failure(x @ EsException(EsError.NotHandled(reason), _)) => reason match {
-        case NotReady     => retry()
-        case TooBusy      => retry()
-        case NotMaster(_) => unexpectedReply(x)
-      }
-
-      case Failure(EsException(EsError.AccessDenied, Some(_))) => succeed()
-
-      case Failure(x @ EsException(EsError.AccessDenied, None)) =>
-        val exception = x.copy(message = Some("Write access denied"))
-        inFunc(Failure(exception))
-        None
-
-      case Failure(EsException(EsError.OperationTimedOut, _)) => succeed()
-
-      case Success(x)                                         => unexpectedReply(x)
-
-      case Failure(x)                                         => unexpectedReply(x)
+      case Success(x: TransactionCommitCompleted) => succeed(x)
+      case Success(x)                             => unexpected(x)
+      case Failure(x: OperationError)             => operationError(x)
+      case Failure(OperationTimedOut)             => failed(OperationTimeoutException(pack))
+      case Failure(NotHandled(NotReady))          => retry()
+      case Failure(NotHandled(TooBusy))           => retry()
+      case Failure(BadRequest)                    => failed(new ServerErrorException(s"Bad request: $pack"))
+      case Failure(NotAuthenticated)              => failed(NotAuthenticatedException(pack))
+      case Failure(x)                             => unexpected(x)
     }
   }
-
-  def clientTerminated() = {}
-
-  def inspectOut = PartialFunction.empty
-
-  def connectionLost() = Some(this)
-
-  def connected(outFunc: OutFunc) = {
-    outFunc(pack)
-    Some(this)
-  }
-
-  def version = 0
 }

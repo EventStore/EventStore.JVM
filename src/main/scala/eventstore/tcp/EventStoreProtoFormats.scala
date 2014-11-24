@@ -5,7 +5,6 @@ import ReadDirection.{ Backward, Forward }
 import proto.{ EventStoreMessages => j, _ }
 import util.DefaultFormats
 import scala.language.reflectiveCalls
-import scala.PartialFunction.condOpt
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
 import scala.collection.JavaConverters._
@@ -55,29 +54,30 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
   trait ProtoTryReader[T, P <: Message] extends ProtoReader[Try[T], P] {
     import scala.util.Failure
 
-    def failure(reason: Option[EsError], errMsg: Option[String]): Failure[T] =
-      failure(EsException(reason getOrElse EsError.Error, message(errMsg)))
+    // TODO
+    //    def failure(reason: Option[EsError], errMsg: Option[String]): Failure[T] =
+    //      failure(EsException(reason getOrElse E.Error, message(errMsg)))
 
     def failure(e: Throwable): Failure[T] = Failure(e)
   }
 
   trait ProtoOperationReader[T, P <: OperationMessage] extends ProtoTryReader[T, P] {
-    def error(x: j.OperationResult): Option[EsError] = {
+    def fromProto(x: P): Try[T] = {
       import j.OperationResult._
-      condOpt(x) {
-        case PrepareTimeout       => EsError.PrepareTimeout
-        case CommitTimeout        => EsError.CommitTimeout
-        case ForwardTimeout       => EsError.ForwardTimeout
-        case WrongExpectedVersion => EsError.WrongExpectedVersion
-        case StreamDeleted        => EsError.StreamDeleted
-        case InvalidTransaction   => EsError.InvalidTransaction
-        case AccessDenied         => EsError.AccessDenied
-      }
-    }
+      import eventstore.{ OperationError => E }
 
-    def fromProto(x: P): Try[T] = x.getResult() match {
-      case j.OperationResult.Success => Try(success(x))
-      case e                         => failure(error(e), option(x.hasMessage(), x.getMessage()))
+      def failure(x: OperationError) = this.failure(x) // TODO add somehow generic?
+
+      x.getResult() match {
+        case Success              => Try(success(x))
+        case PrepareTimeout       => failure(E.PrepareTimeout)
+        case CommitTimeout        => failure(E.CommitTimeout)
+        case ForwardTimeout       => failure(E.ForwardTimeout)
+        case WrongExpectedVersion => failure(E.WrongExpectedVersion)
+        case StreamDeleted        => failure(E.StreamDeleted)
+        case InvalidTransaction   => failure(E.InvalidTransaction)
+        case AccessDenied         => failure(E.AccessDenied)
+      }
     }
 
     def success(x: P): T
@@ -240,21 +240,21 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
   }
 
   implicit object ReadEventCompletedReader extends ProtoTryReader[ReadEventCompleted, j.ReadEventCompleted] {
-    import j.ReadEventCompleted.ReadEventResult._
-
     def parse = j.ReadEventCompleted.parseFrom
 
-    def error(x: j.ReadEventCompleted.ReadEventResult): Option[EsError] = condOpt(x) {
-      case NotFound      => EsError.EventNotFound
-      case NoStream      => EsError.StreamNotFound
-      case StreamDeleted => EsError.StreamDeleted
-      case Error         => EsError.Error
-      case AccessDenied  => EsError.AccessDenied
-    }
+    def fromProto(x: j.ReadEventCompleted) = {
+      import j.ReadEventCompleted.ReadEventResult._
+      import eventstore.{ ReadEventError => E }
 
-    def fromProto(x: j.ReadEventCompleted) = x.getResult match {
-      case Success => Try(ReadEventCompleted(EventReader.fromProto(x.getEvent)))
-      case e       => failure(error(e), option(x.hasError, x.getError))
+      def failure(x: ReadEventError) = this.failure(x)
+      x.getResult match {
+        case Success       => Try(ReadEventCompleted(EventReader.fromProto(x.getEvent)))
+        case NotFound      => failure(E.EventNotFound)
+        case NoStream      => failure(E.StreamNotFound)
+        case StreamDeleted => failure(E.StreamDeleted)
+        case Error         => failure(E.Error(message(option(x.hasError, x.getError))))
+        case AccessDenied  => failure(E.AccessDenied)
+      }
     }
   }
 
@@ -272,30 +272,31 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
 
   abstract class ReadStreamEventsCompletedReader(direction: ReadDirection)
       extends ProtoTryReader[ReadStreamEventsCompleted, j.ReadStreamEventsCompleted] {
-    import j.ReadStreamEventsCompleted.ReadStreamResult._
-    import j.ReadStreamEventsCompleted.ReadStreamResult
 
     def parse = j.ReadStreamEventsCompleted.parseFrom
 
-    def error(x: ReadStreamResult): Option[EsError] = condOpt(x) {
-      case NoStream      => EsError.StreamNotFound
-      case StreamDeleted => EsError.StreamDeleted
-      case Error         => EsError.Error
-      case AccessDenied  => EsError.AccessDenied
-    }
+    def fromProto(x: j.ReadStreamEventsCompleted) = {
+      import j.ReadStreamEventsCompleted.ReadStreamResult._
+      import eventstore.{ ReadStreamEventsError => E }
 
-    def fromProto(x: j.ReadStreamEventsCompleted) = x.getResult match {
-      case Success => Try(ReadStreamEventsCompleted(
+      def failure(x: ReadStreamEventsError) = this.failure(x)
+
+      def readStreamEventsCompleted = ReadStreamEventsCompleted(
         events = x.getEventsList.asScala.map(EventReader.fromProto).toList,
         nextEventNumber = EventNumber(x.getNextEventNumber),
         lastEventNumber = EventNumber.Exact(x.getLastEventNumber),
         endOfStream = x.getIsEndOfStream,
         lastCommitPosition = x.getLastCommitPosition,
-        direction = direction))
+        direction = direction)
 
-      case NotModified => failure(new IllegalArgumentException("ReadStreamEventsCompleted.NotModified is not supported"))
-
-      case e           => failure(error(e), option(x.hasError, x.getError))
+      x.getResult match {
+        case Success       => Try(readStreamEventsCompleted)
+        case NoStream      => failure(E.StreamNotFound)
+        case StreamDeleted => failure(E.StreamDeleted)
+        case NotModified   => this.failure(new IllegalArgumentException("ReadStreamEventsCompleted.NotModified is not supported"))
+        case Error         => failure(E.Error(message(option(x.hasError, x.getError))))
+        case AccessDenied  => failure(E.AccessDenied)
+      }
     }
   }
 
@@ -320,24 +321,29 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
 
   abstract class ReadAllEventsCompletedReader(direction: ReadDirection)
       extends ProtoTryReader[ReadAllEventsCompleted, j.ReadAllEventsCompleted] {
-    import j.ReadAllEventsCompleted.ReadAllResult._
-    import j.ReadAllEventsCompleted.ReadAllResult
 
     def parse = j.ReadAllEventsCompleted.parseFrom
 
-    def error(x: ReadAllResult): Option[EsError] = condOpt(x) {
-      case Error        => EsError.Error
-      case AccessDenied => EsError.AccessDenied
-    }
+    def fromProto(x: j.ReadAllEventsCompleted) = {
+      import j.ReadAllEventsCompleted.ReadAllResult._
+      import eventstore.{ ReadAllEventsError => E }
 
-    def fromProto(x: j.ReadAllEventsCompleted) = (if (x.hasResult) x.getResult else Success) match {
-      case Success => Try(ReadAllEventsCompleted(
+      def failure(x: ReadAllEventsError) = this.failure(x)
+
+      def readAllEventsCompleted = ReadAllEventsCompleted(
         position = position(x),
         events = x.getEventsList.asScala.map(IndexedEventReader.fromProto).toList,
         nextPosition = Position.Exact(commitPosition = x.getNextCommitPosition, preparePosition = x.getNextPreparePosition),
-        direction = direction))
-      case NotModified => failure(new IllegalArgumentException("ReadAllEventsCompleted.NotModified is not supported"))
-      case result      => failure(error(result), option(x.hasError, x.getError))
+        direction = direction)
+
+      val result = if (x.hasResult) x.getResult else Success
+
+      result match {
+        case Success      => Try(readAllEventsCompleted)
+        case NotModified  => this.failure(new IllegalArgumentException("ReadAllEventsCompleted.NotModified is not supported"))
+        case Error        => failure(E.Error(message(option(x.hasError, x.getError))))
+        case AccessDenied => failure(E.AccessDenied)
+      }
     }
   }
 
@@ -374,15 +380,18 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
     def fromProto(x: j.StreamEventAppeared) = StreamEventAppeared(event = IndexedEventReader.fromProto(x.getEvent))
   }
 
-  implicit object SubscriptionDroppedReader extends ProtoTryReader[UnsubscribeCompleted.type, j.SubscriptionDropped] {
-    import j.SubscriptionDropped.SubscriptionDropReason._
+  implicit object SubscriptionDroppedReader extends ProtoTryReader[Unsubscribed.type, j.SubscriptionDropped] {
 
     def parse = j.SubscriptionDropped.parseFrom
 
     def fromProto(x: j.SubscriptionDropped) = {
-      (if (x.hasReason) x.getReason else Unsubscribed) match {
-        case Unsubscribed => Try(UnsubscribeCompleted)
-        case AccessDenied => failure(Some(EsError.AccessDenied), None)
+      import j.SubscriptionDropped.{ SubscriptionDropReason => P }
+
+      def unsubscribed = Try(Unsubscribed)
+      if (!x.hasReason) unsubscribed
+      else x.getReason match {
+        case P.Unsubscribed => unsubscribed
+        case P.AccessDenied => failure(SubscriptionDropped.AccessDenied)
       }
     }
   }
@@ -393,28 +402,26 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
 
     def parse = j.ScavengeDatabaseCompleted.parseFrom
 
-    def fromProto(x: j.ScavengeDatabaseCompleted) = x.getResult match {
-      case Success => Try(success(x))
-      case _       => failure(error(x), option(x.hasError, x.getError))
-    }
+    def fromProto(x: j.ScavengeDatabaseCompleted) = {
+      import eventstore.{ ScavengeError => E }
 
-    def error(x: j.ScavengeDatabaseCompleted): Option[EsError] = condOpt(x.getResult) {
-      case InProgress => EsError.ScavengeInProgress(
-        totalTimeMs = x.getTotalTimeMs,
+      def scavengeDatabaseCompleted = ScavengeDatabaseCompleted(
+        totalTime = FiniteDuration(x.getTotalTimeMs, TimeUnit.MILLISECONDS),
         totalSpaceSaved = x.getTotalSpaceSaved)
-      case Failed => EsError.ScavengeInProgress(
-        totalTimeMs = x.getTotalTimeMs,
-        totalSpaceSaved = x.getTotalSpaceSaved)
-    }
 
-    def success(x: j.ScavengeDatabaseCompleted) = ScavengeDatabaseCompleted(
-      totalTime = FiniteDuration(x.getTotalTimeMs, TimeUnit.MILLISECONDS),
-      totalSpaceSaved = x.getTotalSpaceSaved)
+      def failure(x: ScavengeError) = this.failure(x)
+
+      // TODO test this
+      x.getResult match {
+        case Success    => Try(scavengeDatabaseCompleted)
+        case InProgress => failure(E.InProgress)
+        case Failed     => failure(E.Failed(message(option(x.hasError, x.getError))))
+      }
+    }
   }
 
-  implicit object NotHandledReader extends ProtoReader[EsError.NotHandled, j.NotHandled] {
+  implicit object NotHandledReader extends ProtoReader[NotHandled, j.NotHandled] {
     import j.NotHandled.NotHandledReason._
-    import EsError.NotHandled
 
     def parse = j.NotHandled.parseFrom
 
@@ -435,7 +442,6 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
       case NotReady  => NotHandled.NotReady
       case TooBusy   => NotHandled.TooBusy
       case NotMaster => NotHandled.NotMaster(masterInfo(x.getAdditionalInfo))
-      case reason    => throw new IllegalArgumentException(s"NotHandled.$reason is not supported")
     })
   }
 

@@ -151,7 +151,7 @@ class StreamSubscriptionActor private (
           else {
             unsubscribe()
             rcvReady(reading(l, l getOrElse EventNumber.First, ready = false)) orElse
-              ignoreUnsubscribeCompleted orElse
+              ignoreUnsubscribed orElse
               rcvFailure
           }
         }
@@ -198,6 +198,6 @@ class StreamSubscriptionActor private (
   }
 
   def rcvStreamNotFound(receive: => Receive): Receive = {
-    case Failure(EsException(EsError.StreamNotFound, _)) => context become receive
+    case Failure(_: StreamNotFoundException) => context become receive
   }
 }

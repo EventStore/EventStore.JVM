@@ -14,13 +14,13 @@ class ReadStreamEventsBackwardITest extends TestConnection {
     }
 
     "fail if stream not found" in new TestConnectionScope {
-      readStreamEventsFailed(EventNumber.Last, 1000) mustEqual EsError.StreamNotFound
+      readStreamEventsFailed(EventNumber.Last, 1000) must throwA[StreamNotFoundException]
     }
 
     "fail if stream has been deleted" in new TestConnectionScope {
       appendEventToCreateStream()
       deleteStream()
-      readStreamEventsFailed(EventNumber.Last, 1000) mustEqual EsError.StreamDeleted
+      readStreamEventsFailed(EventNumber.Last, 1000) must throwA[StreamDeletedException]
     }
 
     "get empty slice if called with non existing range" in new TestConnectionScope {

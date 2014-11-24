@@ -23,9 +23,9 @@ object MarkerByte {
       case NonFatal(e) => Failure(e)
     }
 
-  def readerFailure(x: EsError): Reader = (_: ByteIterator) => Failure(EsException(x))
+  def readerFailure(x: ServerError): Reader = (_: ByteIterator) => Failure(x)
 
-  def readerFailure[T <: EsError](implicit reader: BytesReader[T]): Reader = (x: ByteIterator) => Failure(EsException(reader.read(x)))
+  def readerFailure[T <: ServerError](implicit reader: BytesReader[T]): Reader = (x: ByteIterator) => Failure(reader.read(x))
 
   val readers: Map[Byte, Reader] = Map[Int, Reader](
     0x01 -> reader[HeartbeatRequest.type],
@@ -59,14 +59,14 @@ object MarkerByte {
 
     0xC1 -> reader[SubscribeCompleted],
     0xC2 -> reader[StreamEventAppeared],
-    0xC4 -> readerTry[UnsubscribeCompleted.type],
+    0xC4 -> readerTry[Unsubscribed.type],
 
     0xD1 -> readerTry[ScavengeDatabaseCompleted],
 
-    0xF0 -> readerFailure(EsError.BadRequest),
-    0xF1 -> readerFailure[EsError.NotHandled],
+    0xF0 -> readerFailure(BadRequest),
+    0xF1 -> readerFailure[NotHandled],
     0xF3 -> reader[Authenticated.type],
-    0xF4 -> readerFailure(EsError.NotAuthenticated)).map {
+    0xF4 -> readerFailure(NotAuthenticated)).map {
       case (key, value) => key.toByte -> value
     }
 

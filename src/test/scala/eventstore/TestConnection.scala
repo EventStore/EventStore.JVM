@@ -63,16 +63,8 @@ abstract class TestConnection extends util.ActorSpec {
 
     def appendMany(size: Int = 10, testKit: TestKitBase = this): List[EventData] = {
       val events = (1 to size).map(_ => newEventData).toList
-
-      def loop(n: Int) {
-        actor.!(WriteEvents(streamId, events, ExpectedVersion.Any))(testKit.testActor)
-        testKit.expectMsgPF(10.seconds) {
-          case _: WriteEventsCompleted                                  => true
-          case Failure(EsException(EsError.PrepareTimeout, _)) if n < 3 => loop(n + 1) // TODO
-        }
-      }
-
-      loop(0)
+      actor.!(WriteEvents(streamId, events, ExpectedVersion.Any))(testKit.testActor)
+      testKit.expectMsgType[WriteEventsCompleted]
       events
     }
 
@@ -117,17 +109,18 @@ abstract class TestConnection extends util.ActorSpec {
       result.events.map(_.data)
     }
 
-    def expectException(): EsError = expectMsgPF() {
-      case Failure(e: EsException) => e.reason
+    def expectEsException(): Unit = {
+      expectMsgPF() { case Failure(e: EsException) => throw e }
     }
 
-    def readStreamEventsFailed(fromEventNumber: EventNumber, maxCount: Int)(implicit direction: ReadDirection): EsError = {
+    def readStreamEventsFailed(fromEventNumber: EventNumber, maxCount: Int)(implicit direction: ReadDirection): Unit = {
       actor ! ReadStreamEvents(streamId, fromEventNumber, maxCount, direction)
-      expectException()
+      expectEsException()
     }
 
-    def readStreamEventsFailed(implicit direction: ReadDirection): EsError =
+    def readStreamEventsFailed(implicit direction: ReadDirection): Unit = {
       readStreamEventsFailed(EventNumber.start(direction), Settings.Default.readBatchSize)
+    }
 
     def streamEvents(implicit direction: ReadDirection = Forward): Stream[EventData] =
       streamEventRecords(direction).map(_.data)
@@ -180,7 +173,7 @@ abstract class TestConnection extends util.ActorSpec {
 
     def readAllEventsFailed(position: Position, maxCount: Int)(implicit direction: ReadDirection) = {
       actor ! ReadAllEvents(position, maxCount, direction)
-      expectException()
+      expectEsException()
     }
 
     def readAllEvents(position: Position, maxCount: Int)(implicit direction: ReadDirection): List[Event] =
