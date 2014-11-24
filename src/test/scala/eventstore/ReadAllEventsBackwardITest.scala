@@ -1,7 +1,6 @@
 package eventstore
 
-// TODO rename later
-class ReadAllEventsBackward_ITest extends TestConnection {
+class ReadAllEventsBackwardITest extends TestConnection {
   sequential
 
   implicit val direction = ReadDirection.Backward
