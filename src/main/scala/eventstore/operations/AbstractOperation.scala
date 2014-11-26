@@ -4,7 +4,7 @@ package operations
 import tcp.PackOut
 import scala.util.{ Success, Failure }
 
-trait AbstractOperation extends Operation {
+private[eventstore] trait AbstractOperation extends Operation {
 
   def pack: PackOut
 

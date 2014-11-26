@@ -5,12 +5,10 @@ import akka.actor.ActorRef
 import eventstore.tcp.PackOut
 import scala.util.Try
 
-trait Operation {
+private[eventstore] trait Operation {
   def id: Uuid
 
   def client: ActorRef
-
-  def clientTerminated(): Unit
 
   def inspectOut: PartialFunction[Out, Option[Operation]] // TODO iterable and pass credentials
 
@@ -23,22 +21,27 @@ trait Operation {
   // TODO prevent this from calling when already connected
   def connected(outFunc: OutFunc): Option[Operation]
 
+  def clientTerminated(): Unit
+
   def version: Int
 }
 
-object Operation {
+private[eventstore] object Operation {
   def apply(pack: PackOut, client: ActorRef, inFunc: InFunc, outFunc: Option[OutFunc]): Operation = {
+
+    def base(x: Inspection) = BaseOperation(pack, client, inFunc, outFunc, x)
+
     pack.message match {
-      case x: WriteEvents       => WriteEventsOperation(pack, client, inFunc, outFunc)
-      case x: DeleteStream      => DeleteStreamOperation(pack, client, inFunc, outFunc)
-      case x: TransactionStart  => TransactionStartOperation(pack, client, inFunc, outFunc)
-      case x: TransactionWrite  => TransactionWriteOperation(pack, client, inFunc, outFunc)
-      case x: TransactionCommit => TransactionCommitOperation(pack, client, inFunc, outFunc)
-      case x: ReadEvent         => ReadEventOperation(pack, client, inFunc, outFunc)
-      case x: ReadStreamEvents  => ReadStreamEventsOperation(pack, client, inFunc, outFunc)
-      case x: ReadAllEvents     => ReadAllEventsOperation(pack, client, inFunc, outFunc)
+      case x: WriteEvents       => base(new WriteEventsInspection(x))
+      case x: DeleteStream      => base(new DeleteStreamInspection(x))
+      case x: TransactionStart  => base(new TransactionStartInspection(x))
+      case x: TransactionWrite  => base(new TransactionWriteInspection(x))
+      case x: TransactionCommit => base(new TransactionCommitInspection(x))
+      case x: ReadEvent         => base(new ReadEventInspection(x))
+      case x: ReadStreamEvents  => base(new ReadStreamEventsInspection(x))
+      case x: ReadAllEvents     => base(new ReadAllEventsInspection(x))
       case x: SubscribeTo       => SubscriptionOperation(pack.correlationId, x, pack.credentials, client, inFunc, outFunc)
-      case ScavengeDatabase     => ScavengeDatabaseOperation(pack, client, inFunc, outFunc)
+      case ScavengeDatabase     => base(ScavengeDatabaseInspection)
       case Authenticate         => OutInOperation(pack, client, inFunc, outFunc)
       case _                    => OutInOperation(pack, client, inFunc, outFunc) // TODO be more concrete on what goes here
     }

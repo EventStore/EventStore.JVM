@@ -1,8 +1,7 @@
 package eventstore
 package tcp
 
-import akka.actor.Status.Failure
-import akka.actor.{ Terminated, ActorRef }
+import akka.actor.{ Terminated, ActorRef, Status }
 import akka.io.Tcp._
 import akka.io.{ Tcp, IO }
 import akka.testkit.{ TestProbe, TestActorRef }
@@ -11,7 +10,7 @@ import java.net.InetSocketAddress
 import java.nio.ByteOrder
 import org.specs2.mock.Mockito
 import scala.concurrent.duration._
-import scala.util.{ Try, Success }
+import scala.util.{ Try, Success, Failure }
 
 class ConnectionActorSpec extends util.ActorSpec with Mockito {
 
@@ -517,18 +516,37 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       pipeline expectMsg cmd
     }
 
-    "retry operation if timed out" in new TestScope {
+    "retry operation if TooBusy" in new TestScope {
       sendConnected()
-
       client ! Authenticate
-
-      val pack = pipeline.expectMsgPF() {
-        case init.Command(x @ PackOut(Authenticate, _, `credentials`)) => x
+      val (cmd, id) = pipeline.expectMsgPF() {
+        case x @ init.Command(PackOut(Authenticate, id, `credentials`)) => (x, id)
       }
-      pipeline expectMsg init.Command(pack)
-      pipeline expectMsg init.Command(pack)
 
-      override def settings = super.settings.copy(operationTimeout = 100.millis)
+      client ! init.Event(PackIn(Failure(NotHandled(NotHandled.NotReady)), id))
+      pipeline expectMsg cmd
+    }
+
+    "retry operation if NotReady" in new TestScope {
+      sendConnected()
+      client ! Authenticate
+      val (cmd, id) = pipeline.expectMsgPF() {
+        case x @ init.Command(PackOut(Authenticate, id, `credentials`)) => (x, id)
+      }
+
+      client ! init.Event(PackIn(Failure(NotHandled(NotHandled.NotReady)), id))
+      pipeline expectMsg cmd
+    }
+
+    "retry operation after connected but NotReady" in new TestScope {
+      client ! Authenticate
+      sendConnected()
+      val (cmd, id) = pipeline.expectMsgPF() {
+        case x @ init.Command(PackOut(Authenticate, id, `credentials`)) => (x, id)
+      }
+      client ! init.Event(PackIn(Failure(NotHandled(NotHandled.NotReady)), id))
+
+      pipeline expectMsg cmd
     }.pendingUntilFixed
 
     "should process messages from single client in parallel" in new TestScope {
@@ -742,9 +760,9 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
 
       def expect(xs: Seq[AnyRef]): Unit = {
         if (xs.nonEmpty) expectMsgPF() {
-          case Failure(OperationTimeoutException(PackOut(x, _, `credentials`))) if xs contains x =>
+          case Status.Failure(OperationTimeoutException(PackOut(x, _, `credentials`))) if xs contains x =>
             expect(removeOne(xs, x))
-          case Failure(OperationTimeoutException(x)) if xs contains x =>
+          case Status.Failure(OperationTimeoutException(x)) if xs contains x =>
             expect(removeOne(xs, x))
         }
       }
