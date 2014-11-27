@@ -42,8 +42,12 @@ private[eventstore] object Operation {
       case x: ReadAllEvents     => base(new ReadAllEventsInspection(x))
       case x: SubscribeTo       => SubscriptionOperation(pack.correlationId, x, pack.credentials, client, inFunc, outFunc)
       case ScavengeDatabase     => base(ScavengeDatabaseInspection)
-      case Authenticate         => OutInOperation(pack, client, inFunc, outFunc)
-      case _                    => OutInOperation(pack, client, inFunc, outFunc) // TODO be more concrete on what goes here
+      case Ping                 => base(PingInspection)
+      case Authenticate         => base(AuthenticateInspection)
+      case Pong                 => ???
+      case Unsubscribe          => base(UnsubscribeInspection)
+      case HeartbeatRequest     => ???
+      case HeartbeatResponse    => ???
     }
   }
 }
