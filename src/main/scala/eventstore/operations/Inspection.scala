@@ -1,14 +1,14 @@
 package eventstore
 package operations
 
-import scala.util.{ Failure, Success, Try }
+import scala.util.Try
 
-trait Inspection {
+private[eventstore] trait Inspection {
   def expected: Class[_]
   def pf: PartialFunction[Try[In], Inspection.Decision]
 }
 
-object Inspection {
+private[eventstore] object Inspection {
   sealed trait Decision
 
   object Decision {
