@@ -613,7 +613,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
 
     def write(x: Out): Write = write(PackOut(x))
 
-    def bind(address: InetSocketAddress = new InetSocketAddress(0)): (InetSocketAddress, ActorRef) = {
+    def bind(address: InetSocketAddress = new InetSocketAddress("127.0.0.1", 0)): (InetSocketAddress, ActorRef) = {
       IO(Tcp) ! Bind(self, address)
       val bound = expectMsgType[Bound]
       bound.localAddress -> lastSender
