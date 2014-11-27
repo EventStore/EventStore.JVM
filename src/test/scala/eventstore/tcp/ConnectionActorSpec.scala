@@ -547,7 +547,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       client ! init.Event(PackIn(Failure(NotHandled(NotHandled.NotReady)), id))
 
       pipeline expectMsg cmd
-    }.pendingUntilFixed
+    }
 
     "should process messages from single client in parallel" in new TestScope {
       sendConnected()
