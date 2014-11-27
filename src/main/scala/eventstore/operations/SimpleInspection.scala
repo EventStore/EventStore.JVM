@@ -14,3 +14,5 @@ private[eventstore] object AuthenticateInspection extends SimpleInspection(Authe
 private[eventstore] object PingInspection extends SimpleInspection(Pong)
 
 private[eventstore] object UnsubscribeInspection extends SimpleInspection(Unsubscribed)
+
+private[eventstore] object HeartbeatRequestInspection extends SimpleInspection(HeartbeatResponse)

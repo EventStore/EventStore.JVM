@@ -41,12 +41,12 @@ private[eventstore] object Operation {
       case x: ReadStreamEvents  => base(new ReadStreamEventsInspection(x))
       case x: ReadAllEvents     => base(new ReadAllEventsInspection(x))
       case x: SubscribeTo       => SubscriptionOperation(pack.correlationId, x, pack.credentials, client, inFunc, outFunc)
-      case ScavengeDatabase     => base(ScavengeDatabaseInspection)
-      case Ping                 => base(PingInspection)
-      case Authenticate         => base(AuthenticateInspection)
-      case Pong                 => ???
       case Unsubscribe          => base(UnsubscribeInspection)
-      case HeartbeatRequest     => ???
+      case ScavengeDatabase     => base(ScavengeDatabaseInspection)
+      case Authenticate         => base(AuthenticateInspection)
+      case Ping                 => base(PingInspection)
+      case Pong                 => ???
+      case HeartbeatRequest     => base(HeartbeatRequestInspection)
       case HeartbeatResponse    => ???
     }
   }
