@@ -29,7 +29,7 @@ class BaseOperationSpec extends Specification with Mockito {
       val newOutFunc = mock[OutFunc]
       val actual = operation.copy(outFunc = None).connected(newOutFunc)
       actual must beSome
-      actual.get.outFunc must beSome(newOutFunc)
+      actual.get.outFunc mustEqual Some(newOutFunc)
       there were noCallsTo(outFunc, inFunc, client)
       there was one(newOutFunc).apply(pack)
     }
@@ -38,7 +38,7 @@ class BaseOperationSpec extends Specification with Mockito {
       val newOutFunc = mock[OutFunc]
       val actual = operation.copy(outFunc = None).connected(newOutFunc)
       actual must beSome
-      actual.get.outFunc must beSome(newOutFunc)
+      actual.get.outFunc mustEqual Some(newOutFunc)
       there were noCallsTo(outFunc, inFunc, client)
       there was one(newOutFunc).apply(pack)
     }
