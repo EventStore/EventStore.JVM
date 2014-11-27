@@ -7,7 +7,7 @@ import Inspection.Decision.Stop
 import scala.reflect.ClassTag
 import scala.util.{ Failure, Success }
 
-private[eventstore] abstract class AbstractInspection[I <: In, E](implicit val in: ClassTag[I], error: ClassTag[E])
+private[eventstore] abstract class ErrorInspection[I <: In, E](implicit val in: ClassTag[I], error: ClassTag[E])
     extends Inspection {
 
   def expected = in.runtimeClass

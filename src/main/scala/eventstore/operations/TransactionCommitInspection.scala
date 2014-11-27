@@ -5,7 +5,7 @@ import OperationError._
 import Inspection.Decision._
 
 private[eventstore] class TransactionCommitInspection(out: TransactionCommit)
-    extends AbstractInspection[TransactionCommitCompleted, OperationError] {
+    extends ErrorInspection[TransactionCommitCompleted, OperationError] {
 
   def decision(error: OperationError) = {
     error match {

@@ -5,7 +5,7 @@ import OperationError._
 import Inspection.Decision._
 
 private[eventstore] class WriteEventsInspection(out: WriteEvents)
-    extends AbstractInspection[WriteEventsCompleted, OperationError] {
+    extends ErrorInspection[WriteEventsCompleted, OperationError] {
 
   def decision(error: OperationError) = error match {
     case PrepareTimeout       => Retry

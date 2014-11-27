@@ -5,7 +5,7 @@ import OperationError._
 import Inspection.Decision._
 
 private[eventstore] class DeleteStreamInspection(out: DeleteStream)
-    extends AbstractInspection[DeleteStreamCompleted, OperationError] {
+    extends ErrorInspection[DeleteStreamCompleted, OperationError] {
 
   def decision(error: OperationError) = {
     error match {

@@ -5,7 +5,7 @@ import ScavengeError._
 import Inspection.Decision._
 
 private[eventstore] object ScavengeDatabaseInspection
-    extends AbstractInspection[ScavengeDatabaseCompleted, ScavengeError] {
+    extends ErrorInspection[ScavengeDatabaseCompleted, ScavengeError] {
 
   def decision(error: ScavengeError) = {
     val result = error match {

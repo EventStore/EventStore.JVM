@@ -5,7 +5,7 @@ import ReadEventError._
 import Inspection.Decision._
 
 private[eventstore] class ReadEventInspection(out: ReadEvent)
-    extends AbstractInspection[ReadEventCompleted, ReadEventError] {
+    extends ErrorInspection[ReadEventCompleted, ReadEventError] {
 
   def decision(error: ReadEventError) = {
     val result = error match {
