@@ -21,7 +21,10 @@ private[eventstore] class WriteEventsInspection(out: WriteEvents)
 
   def expectedVersion = out.expectedVersion
 
-  def wrongExpectedVersion = WrongExpectedVersionException(s"Write failed due to WrongExpectedVersion: $streamId, $expectedVersion")
+  def wrongExpectedVersion = {
+    val msg = s"Write failed due to WrongExpectedVersion: $streamId, $expectedVersion"
+    new WrongExpectedVersionException(msg)
+  }
 
   def streamDeleted = new StreamDeletedException(s"Write failed due to $streamId has been deleted")
 }

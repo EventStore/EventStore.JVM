@@ -16,7 +16,7 @@ class AccessDeniedException(message: String) extends EsException(message)
 
 case object InvalidTransactionException extends EsException
 
-case class WrongExpectedVersionException(message: String) extends EsException(message)
+class WrongExpectedVersionException(message: String) extends EsException(message)
 
 class ServerErrorException(message: String) extends EsException(message)
 

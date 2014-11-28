@@ -22,7 +22,8 @@ private[eventstore] class TransactionCommitInspection(out: TransactionCommit)
   def transactionId = out.transactionId
 
   def wrongExpectedVersionException = {
-    WrongExpectedVersionException(s"Transaction commit failed due to WrongExpectedVersion, transactionId: $transactionId")
+    val msg = s"Transaction commit failed due to WrongExpectedVersion, transactionId: $transactionId"
+    new WrongExpectedVersionException(msg)
   }
 
   def streamDeletedException = {

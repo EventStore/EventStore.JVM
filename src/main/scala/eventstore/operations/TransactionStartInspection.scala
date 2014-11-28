@@ -24,7 +24,8 @@ private[eventstore] class TransactionStartInspection(out: TransactionStart)
   def expectedVersion = out.expectedVersion
 
   def wrongExpectedVersion = {
-    WrongExpectedVersionException(s"Transaction start failed due to WrongExpectedVersion: $streamId, $expectedVersion")
+    val msg = s"Transaction start failed due to WrongExpectedVersion: $streamId, $expectedVersion"
+    new WrongExpectedVersionException(msg)
   }
 
   def streamDeletedException = {

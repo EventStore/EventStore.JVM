@@ -24,7 +24,8 @@ private[eventstore] class DeleteStreamInspection(out: DeleteStream)
   def expectedVersion = out.expectedVersion
 
   def wrongExpectedVersionException = {
-    WrongExpectedVersionException(s"Delete stream failed due to WrongExpectedVersion: $streamId, $expectedVersion")
+    val msg = s"Delete stream failed due to WrongExpectedVersion: $streamId, $expectedVersion"
+    new WrongExpectedVersionException(msg)
   }
 
   def streamDeletedException = {
