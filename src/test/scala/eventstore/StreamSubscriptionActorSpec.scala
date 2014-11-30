@@ -2,7 +2,6 @@ package eventstore
 
 import ReadDirection.Forward
 import akka.testkit.TestProbe
-import NotHandled.TooBusy
 
 class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
   "catch up subscription actor" should {
