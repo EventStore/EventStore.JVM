@@ -27,9 +27,9 @@ private[eventstore] trait Operation {
 }
 
 private[eventstore] object Operation {
-  def apply(pack: PackOut, client: ActorRef, inFunc: InFunc, outFunc: Option[OutFunc]): Operation = {
+  def opt(pack: PackOut, client: ActorRef, inFunc: InFunc, outFunc: Option[OutFunc]): Option[Operation] = {
 
-    def base(x: Inspection) = BaseOperation(pack, client, inFunc, outFunc, x)
+    def base(x: Inspection) = Some(BaseOperation(pack, client, inFunc, outFunc, x))
 
     pack.message match {
       case x: WriteEvents       => base(new WriteEventsInspection(x))
@@ -40,14 +40,14 @@ private[eventstore] object Operation {
       case x: ReadEvent         => base(new ReadEventInspection(x))
       case x: ReadStreamEvents  => base(new ReadStreamEventsInspection(x))
       case x: ReadAllEvents     => base(new ReadAllEventsInspection(x))
-      case x: SubscribeTo       => SubscriptionOperation(x, pack, client, inFunc, outFunc)
+      case x: SubscribeTo       => Some(SubscriptionOperation(x, pack, client, inFunc, outFunc))
       case Unsubscribe          => base(UnsubscribeInspection)
       case ScavengeDatabase     => base(ScavengeDatabaseInspection)
       case Authenticate         => base(AuthenticateInspection)
       case Ping                 => base(PingInspection)
-      case Pong                 => ???
+      case Pong                 => None
       case HeartbeatRequest     => base(HeartbeatRequestInspection)
-      case HeartbeatResponse    => ???
+      case HeartbeatResponse    => None
     }
   }
 }

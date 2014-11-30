@@ -5,9 +5,9 @@ import akka.actor._
 import akka.io.{ Tcp, IO }
 import scala.concurrent.duration._
 import scala.util.{ Try, Failure, Success }
-import eventstore.pipeline._
-import eventstore.operations.{ Operation, Operations }
-import eventstore.util.{ CancellableAdapter, DelayedRetry }
+import pipeline._
+import operations.{ Operation, Operations }
+import util.{ CancellableAdapter, DelayedRetry }
 
 object ConnectionActor {
   def props(settings: Settings = Settings.Default): Props = Props(classOf[ConnectionActor], settings)
@@ -218,11 +218,14 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
           }
 
         case None =>
-          context watch sender()
-          outFunc.foreach(_.apply(pack)) // TODO here or in the operation
-          val operation = Operation(pack, sender(), inFunc(sender()), outFunc)
-          system.scheduler.scheduleOnce(operationTimeout, self, TimedOut(id, operation.version))
-          operations + operation
+          Operation.opt(pack, sender(), inFunc(sender()), outFunc) match {
+            case None => operations
+            case Some(operation) =>
+              context watch sender()
+              outFunc.foreach(_.apply(pack)) // TODO here or in the operation
+              system.scheduler.scheduleOnce(operationTimeout, self, TimedOut(id, operation.version))
+              operations + operation
+          }
       }
       context become receive(result)
     }
