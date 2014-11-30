@@ -25,9 +25,14 @@ class MessagesPerSecond extends Actor with ActorLogging {
       if (!scheduled) context.system.scheduler.scheduleOnce(1.second, self, Tick)
       context become receive(n + 1, ns, scheduled = true)
 
-    case Tick if n > 100 =>
-      log.info(ms(n))
-      context become receive(0, n :: ns, scheduled = false)
+    case Tick =>
+      val (x, xs) =
+        if (n <= 100) (n, ns)
+        else {
+          log.info(ms(n))
+          (0L, n :: ns)
+        }
+      context become receive(x, xs, scheduled = false)
 
     case ReceiveTimeout if ns.nonEmpty =>
       log.info("{} in average", ms(ns.sum / ns.size))
