@@ -34,7 +34,7 @@ private[eventstore] case class BaseOperation(
         case Success(x) => x
         case Failure(x) => x
       }
-      val expected = inspection.expected
+      val expected = inspection.expected.getSimpleName
       val exception = new CommandNotExpectedException(s"Expected: $expected, actual: $actual")
       stop(Failure(exception))
     }
