@@ -169,7 +169,6 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
 
       log.debug(in.toString)
       msg match {
-        // TODO reconnect on EsException(NotHandled(NotReady))
         case Success(HeartbeatRequest) => reply(PackOut(HeartbeatResponse, correlationId))
         case Success(Ping)             => reply(PackOut(Pong, correlationId))
         case _                         => context become receive(forward)
@@ -203,11 +202,10 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       val msg = pack.message
       val id = pack.correlationId
 
-      def forId = operations.single(id)
+      def forId = operations.single(id).find(_.inspectOut.isDefinedAt(msg))
       def forMsg = operations.many(sender()).find(_.inspectOut.isDefinedAt(msg))
 
       // TODO current requirement is the only one subscription per actor allowed
-      // TODO operations.single(pack.correlationId) is not checked for isDefined ... hmm....
       val result = forId orElse forMsg match {
         case Some(operation) =>
           operation.inspectOut(msg) match {
@@ -222,7 +220,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
             case None => operations
             case Some(operation) =>
               context watch sender()
-              outFunc.foreach(_.apply(pack)) // TODO here or in the operation
+              outFunc.foreach(_.apply(pack))
               system.scheduler.scheduleOnce(operationTimeout, self, TimedOut(id, operation.version))
               operations + operation
           }
