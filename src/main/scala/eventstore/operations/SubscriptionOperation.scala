@@ -47,7 +47,7 @@ private[eventstore] object SubscriptionOperation {
     client: ActorRef,
     inFunc: InFunc,
     outFunc: Option[OutFunc]): Operation = {
-    new Subscribing(subscribeTo, pack, client, inFunc, outFunc, 0)
+    Subscribing(subscribeTo, pack, client, inFunc, outFunc, 0)
   }
 
   case class Subscribing(
@@ -87,9 +87,7 @@ private[eventstore] object SubscriptionOperation {
         stop(new AccessDeniedException(msg))
       }
 
-      def unexpected(x: Any) = {
-        this.unexpected(x, Completed.expected)
-      }
+      def unexpected(x: Any) = this.unexpected(x, Completed.expected)
 
       in match {
         case Success(Completed())                      => subscribed
@@ -108,8 +106,7 @@ private[eventstore] object SubscriptionOperation {
     def inspectOut = {
       case Unsubscribe =>
         outFunc.foreach { outFunc => outFunc(pack.copy(message = Unsubscribe)) }
-        inFunc(Try(Unsubscribed))
-        None
+        stop(Try(Unsubscribed))
     }
 
     def connectionLost(): Option[Subscribing] = {
@@ -147,11 +144,6 @@ private[eventstore] object SubscriptionOperation {
     def stream = subscribeTo.stream
 
     def inspectIn(in: Try[In]) = {
-      def unsubscribed = {
-        inFunc(in)
-        None
-      }
-
       def eventAppeared = {
         inFunc(in)
         Some(this)
@@ -162,22 +154,18 @@ private[eventstore] object SubscriptionOperation {
         stop(new AccessDeniedException(msg))
       }
 
-      def unexpected(x: Any) = {
-        this.unexpected(x, classOf[StreamEventAppeared])
-      }
+      def unexpected(x: Any) = this.unexpected(x, classOf[StreamEventAppeared])
 
       in match {
         case Success(EventAppeared()) => eventAppeared
-        case Success(Unsubscribed)    => unsubscribed
+        case Success(Unsubscribed)    => stop(in)
         case Success(x)               => unexpected(x)
         case Failure(AccessDenied)    => accessDenied
         case Failure(x)               => unexpected(x)
       }
     }
 
-    def clientTerminated() = {
-      outFunc(pack.copy(message = Unsubscribe))
-    }
+    def clientTerminated() = outFunc(pack.copy(message = Unsubscribe))
 
     def inspectOut = {
       case Unsubscribe =>
@@ -211,9 +199,7 @@ private[eventstore] object SubscriptionOperation {
         Some(this)
       }
 
-      def unexpected(x: Any) = {
-        this.unexpected(x, Unsubscribed.getClass)
-      }
+      def unexpected(x: Any) = this.unexpected(x, Unsubscribed.getClass)
 
       def accessDenied = {
         val msg = s"Unsubscribed from $stream due to access denied"
@@ -233,9 +219,7 @@ private[eventstore] object SubscriptionOperation {
       }
     }
 
-    def clientTerminated() = {
-      inFunc(Success(Unsubscribed))
-    }
+    def clientTerminated() = inFunc(Success(Unsubscribed))
 
     def inspectOut = PartialFunction.empty
 
