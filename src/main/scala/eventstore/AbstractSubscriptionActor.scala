@@ -2,8 +2,6 @@ package eventstore
 
 import akka.actor.Status.Failure
 import akka.actor.{ ActorRef, ActorLogging, Actor, Identify, ActorIdentity }
-import NotHandled.{ TooBusy, NotReady }
-import scala.concurrent.duration._
 
 trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
   def client: ActorRef
@@ -12,8 +10,6 @@ trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
   def resolveLinkTos: Boolean
   def credentials: Option[UserCredentials]
   def readBatchSize: Int
-
-  import context.dispatcher
 
   type Next
   type Last
