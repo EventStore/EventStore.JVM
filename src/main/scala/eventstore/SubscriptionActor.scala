@@ -63,9 +63,7 @@ class SubscriptionActor(
         }
       }
 
-      rcvReconnected(reading(last, next, ready = true)) orElse
-        rcvReadCompleted(read) orElse
-        rcvFailure
+      rcvReadCompleted(read) orElse rcvFailure
     }
 
     readEventsFrom(next)
@@ -79,8 +77,7 @@ class SubscriptionActor(
     }
 
     subscribeToStream()
-    rcvReconnected(last, next) orElse
-      rcvSubscribeCompleted(subscribed) orElse
+    rcvSubscribeCompleted(subscribed) orElse
       rcvFailureOrUnsubscribe
   }
 
@@ -90,8 +87,7 @@ class SubscriptionActor(
     }
 
     subscribeToStream()
-    rcvReconnected(subscribingFromLast()) orElse
-      rcvSubscribeCompleted(subscribed) orElse
+    rcvSubscribeCompleted(subscribed) orElse
       rcvFailureOrUnsubscribe
   }
 
@@ -124,7 +120,6 @@ class SubscriptionActor(
       }
 
       rcvReadCompleted(read) orElse
-        rcvReconnected(last, next) orElse
         rcvEventAppeared(eventAppeared) orElse
         rcvSubscribeCompleted(subscribed) orElse
         rcvFailureOrUnsubscribe
@@ -158,8 +153,7 @@ class SubscriptionActor(
         }
       }
 
-      rcvReconnected(last, last getOrElse Position.First) orElse
-        rcvEventAppeared(eventAppeared) orElse
+      rcvEventAppeared(eventAppeared) orElse
         rcvReady(liveProcessing(last, n, ready = true)) orElse
         rcvSubscribeCompleted(subscribed) orElse
         rcvFailureOrUnsubscribe

@@ -38,17 +38,6 @@ trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
     case StreamEventAppeared(x) => context become receive(x)
   }
 
-  @deprecated("will migrate into Operation", "2014-11-10")
-  def rcvReconnected(receive: => Receive): Receive = {
-    case Failure(NotHandled(NotReady | TooBusy)) => // TODO test this use case and move to operation
-      val Switch = new {}
-      context.system.scheduler.scheduleOnce(100.millis, self, Switch)
-      context.become({ case Switch => context become receive })
-  }
-
-  @deprecated("will migrate into Operation", "2014-11-10")
-  def rcvReconnected(last: Last, next: Next): Receive = rcvReconnected(subscribing(last, next))
-
   def subscribing(last: Last, next: Next): Receive
 
   def process(last: Last, events: Seq[T]): Last = events.foldLeft(last)(process)

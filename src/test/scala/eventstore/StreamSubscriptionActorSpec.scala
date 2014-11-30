@@ -396,56 +396,6 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
 
       override def credentials = Some(UserCredentials("login", "password"))
     }
-
-    "re-read if TooBusy while reading" in new SubscriptionScope {
-      connection expectMsg readEvents(0)
-      actor ! notHandled(TooBusy)
-      connection expectMsg readEvents(0)
-      expectNoActivity()
-
-      override def eventNumber = Some(EventNumber(0))
-    }
-
-    "re-subscribe if TooBusy while subscribing" in new SubscriptionScope {
-      connection expectMsg readEvents(0)
-      actor ! readCompleted(0, endOfStream = true)
-      connection expectMsg subscribeTo
-      actor ! notHandled(TooBusy)
-      connection expectMsg subscribeTo
-      expectNoActivity()
-
-      override def eventNumber = Some(EventNumber(0))
-    }
-
-    "re-subscribe if TooBusy while subscribing from last" in new SubscriptionScope {
-      connection expectMsg subscribeTo
-      actor ! subscribeCompleted(0)
-      actor ! notHandled(TooBusy)
-      connection expectMsg subscribeTo
-
-      override def eventNumber = Some(EventNumber.Last)
-    }
-
-    "re-subscribe if TooBusy while catching up" in new SubscriptionScope {
-      connection expectMsg readEvents(0)
-      actor ! readCompleted(0, endOfStream = true)
-      connection expectMsg subscribeTo
-      actor ! subscribeCompleted(0)
-      actor ! notHandled(TooBusy)
-      connection expectMsg subscribeTo
-    }.pendingUntilFixed
-
-    "re-subscribe if TooBusy while live processing" in new SubscriptionScope {
-      connection expectMsg readEvents(0)
-      actor ! readCompleted(0, endOfStream = true)
-      connection expectMsg subscribeTo
-      actor ! subscribeCompleted(0)
-      expectMsg(LiveProcessingStarted)
-      actor ! notHandled(TooBusy)
-      connection expectMsg subscribeTo
-
-      override def eventNumber = Some(EventNumber(0))
-    }
   }
 
   trait SubscriptionScope extends AbstractScope {
