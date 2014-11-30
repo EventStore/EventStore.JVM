@@ -2,7 +2,7 @@ package eventstore
 package operations
 
 import akka.actor.ActorRef
-import eventstore.tcp.PackOut
+import tcp.PackOut
 import scala.util.Try
 
 private[eventstore] trait Operation {
@@ -40,7 +40,7 @@ private[eventstore] object Operation {
       case x: ReadEvent         => base(new ReadEventInspection(x))
       case x: ReadStreamEvents  => base(new ReadStreamEventsInspection(x))
       case x: ReadAllEvents     => base(new ReadAllEventsInspection(x))
-      case x: SubscribeTo       => SubscriptionOperation(pack.correlationId, x, pack.credentials, client, inFunc, outFunc)
+      case x: SubscribeTo       => SubscriptionOperation(x, pack, client, inFunc, outFunc)
       case Unsubscribe          => base(UnsubscribeInspection)
       case ScavengeDatabase     => base(ScavengeDatabaseInspection)
       case Authenticate         => base(AuthenticateInspection)

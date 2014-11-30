@@ -687,7 +687,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
   trait SubscriptionScope extends TestScope {
     val stream: EventStream = EventStream.Id("stream")
     val subscribeTo = SubscribeTo(stream)
-    val subscribeCompleted = SubscribeToAllCompleted(0)
+    val subscribeCompleted = SubscribeToStreamCompleted(0)
 
     sendConnected()
     client ! subscribeTo
