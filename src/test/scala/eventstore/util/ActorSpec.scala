@@ -1,5 +1,6 @@
 package eventstore.util
 
+import com.typesafe.config.{ Config, ConfigFactory }
 import org.specs2.mutable.Specification
 import org.specs2.specification.{ Scope, Step, Fragments }
 import akka.actor.ActorSystem
@@ -8,7 +9,9 @@ import scala.concurrent.{ Awaitable, Await }
 import scala.concurrent.duration._
 
 abstract class ActorSpec extends Specification with NoConversions {
-  implicit val system = ActorSystem()
+  implicit val system = ActorSystem("test", config)
+
+  def config: Config = ConfigFactory.load
 
   override def map(fs: => Fragments) = super.map(fs) ^ Step(TestKit.shutdownActorSystem(system))
 
