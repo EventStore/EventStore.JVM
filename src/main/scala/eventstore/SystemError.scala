@@ -1,7 +1,6 @@
 package eventstore
 
 import java.net.InetSocketAddress
-
 import scala.util.control.NoStackTrace
 
 trait SystemError extends RuntimeException with NoStackTrace with Serializable
