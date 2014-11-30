@@ -35,8 +35,8 @@ private[eventstore] case class BaseOperation(
         case Failure(x) => x
       }
       val expected = inspection.expected.getSimpleName
-      val exception = new CommandNotExpectedException(s"Expected: $expected, actual: $actual")
-      stop(Failure(exception))
+      val msg = s"Expected: $expected, actual: $actual"
+      stop(Failure(new CommandNotExpectedException(msg)))
     }
 
     inspection.pf.applyOrElse(in, fallback) match {
