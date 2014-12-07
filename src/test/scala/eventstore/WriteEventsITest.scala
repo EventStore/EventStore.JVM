@@ -86,7 +86,7 @@ class WriteEventsITest extends TestConnection {
     }
   }
 
-  trait WriteEventsScope extends TestConnectionScope {
+  private trait WriteEventsScope extends TestConnectionScope {
     def writeEvent(event: EventData, expVer: ExpectedVersion = Any) = writeEventsCompleted(List(event), expVer)
 
     def writeEventsFailed(event: EventData, expVer: ExpectedVersion = Any) = {

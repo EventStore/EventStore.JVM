@@ -81,7 +81,7 @@ class SubscribeITest extends TestConnection {
     }
   }
 
-  trait SubscribeScope extends TestConnectionScope {
+  private trait SubscribeScope extends TestConnectionScope {
     def subscribeToStream(resolveLinkTos: Boolean = false, testKit: TestKitBase = this): SubscribeToStreamCompleted = {
       actor.!(SubscribeTo(streamId, resolveLinkTos = resolveLinkTos))(testKit.testActor)
       testKit.expectMsgType[SubscribeToStreamCompleted]

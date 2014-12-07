@@ -51,7 +51,7 @@ class PositionSpec extends Specification {
     }
   }
 
-  trait PositionScope extends Scope {
+  private trait PositionScope extends Scope {
     val values = List(0, 1, Int.MaxValue)
     val positions = Last :: (for {
       commitPosition <- values

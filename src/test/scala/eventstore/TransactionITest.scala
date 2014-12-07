@@ -97,7 +97,7 @@ class TransactionITest extends TestConnection {
     }
   }
 
-  trait TransactionScope extends TestConnectionScope {
+  private trait TransactionScope extends TestConnectionScope {
 
     def transactionStart(expVer: ExpectedVersion = Any): Long = {
       actor ! TransactionStart(streamId, expVer)

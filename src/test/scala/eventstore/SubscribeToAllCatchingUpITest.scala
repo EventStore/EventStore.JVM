@@ -100,7 +100,7 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
     }
   }
 
-  trait SubscribeToAllCatchingUpScope extends TestConnectionScope {
+  private trait SubscribeToAllCatchingUpScope extends TestConnectionScope {
 
     def lastPosition = allStreamsEvents()(Backward).head.position
 

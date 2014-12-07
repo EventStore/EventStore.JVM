@@ -42,7 +42,7 @@ class OneToManySpec extends Specification {
     }
   }
 
-  trait TestScope extends Scope {
+  private trait TestScope extends Scope {
     val empty = OneToMany[Entry, Int, String](_.x1, _.x2)
   }
 

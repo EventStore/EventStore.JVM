@@ -54,7 +54,7 @@ class SubscribeToAllITest extends TestConnection {
     }
   }
 
-  trait SubscribeToAll extends TestConnectionScope {
+  private trait SubscribeToAll extends TestConnectionScope {
     def subscribeToAll(resolveLinkTos: Boolean = false, testKit: TestKitBase = this) = {
       actor.!(SubscribeTo(EventStream.All, resolveLinkTos = resolveLinkTos))(testKit.testActor)
       testKit.expectMsgType[SubscribeToAllCompleted].lastCommit
