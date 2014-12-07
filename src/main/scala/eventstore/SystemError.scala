@@ -9,9 +9,9 @@ case object OperationTimedOut extends SystemError
 
 sealed trait ServerError extends SystemError
 
-case object BadRequest extends ServerError // TODO check use case
+case object BadRequest extends ServerError
 
-case object NotAuthenticated extends ServerError // TODO check use case
+case object NotAuthenticated extends ServerError
 
 sealed trait OperationError extends ServerError
 
