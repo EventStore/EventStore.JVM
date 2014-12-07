@@ -12,13 +12,12 @@ private[eventstore] trait Operation {
 
   def inspectOut: PartialFunction[Out, Option[Operation]] // TODO iterable and pass credentials
 
-  // TODO what if not handled, should I forward to client ?
   def inspectIn(in: Try[In]): Option[Operation]
 
-  // TODO prevent this from calling when already disconnected
+  // TODO prevent this from calling when disconnected
   def connectionLost(): Option[Operation]
 
-  // TODO prevent this from calling when already connected
+  // TODO prevent this from calling when connected
   def connected(outFunc: OutFunc): Option[Operation]
 
   def clientTerminated(): Unit
