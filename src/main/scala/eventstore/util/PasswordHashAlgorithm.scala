@@ -13,7 +13,7 @@ object PasswordHashAlgorithm {
 
   private object Rfc2898PasswordHashAlgorithm extends PasswordHashAlgorithm {
     val random = java.security.SecureRandom.getInstance("SHA1PRNG")
-    val factory = javax.crypto.SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
+    val factory = javax.crypto.SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1")
     val base64 = new org.apache.commons.codec.binary.Base64()
 
     def hash(password: String): (Hash, Salt) = {
