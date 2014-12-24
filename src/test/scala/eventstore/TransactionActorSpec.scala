@@ -18,7 +18,7 @@ class TransactionActorSpec extends ActorSpec {
       connection.expectMsg(kickOff.data)
       expectNoMsgs()
 
-      startCompleted
+      startCompleted()
 
       expectMsg(TransactionId(transactionId))
 
@@ -114,7 +114,7 @@ class TransactionActorSpec extends ActorSpec {
       actor ! Write(es2)
 
       connection.expectMsg(kickOff.data)
-      startCompleted
+      startCompleted()
       expectCommit
       commitCompleted(Some(EventNumber.Exact(0) to EventNumber.Exact(2)))
       expectMsg(CommitCompleted(Some(EventNumber.Exact(0) to EventNumber.Exact(2))))
@@ -163,7 +163,7 @@ class TransactionActorSpec extends ActorSpec {
       connection.expectNoMsg(duration)
     }
 
-    def startCompleted = actor ! TransactionStartCompleted(transactionId)
+    def startCompleted() = actor ! TransactionStartCompleted(transactionId)
 
     def expectWrite(xs: List[EventData]) = connection.expectMsg(TransactionWrite(transactionId, xs))
     def writeCompleted(transactionId: Long = this.transactionId) = actor ! TransactionWriteCompleted(transactionId)
@@ -174,13 +174,13 @@ class TransactionActorSpec extends ActorSpec {
       actor ! TransactionCommitCompleted(transactionId, range)
     }
 
-    def expectTerminated = expectMsgPF() {
+    def expectTerminated(): Unit = expectMsgPF() {
       case Terminated(`actor`) =>
     }
 
     val failure = Failure(new AccessDeniedException("test"))
 
-    def sendFailure {
+    def sendFailure() = {
       (actor ! failure) mustNotEqual throwAn[EsException]
     }
 

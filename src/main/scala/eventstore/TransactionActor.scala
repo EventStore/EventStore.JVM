@@ -121,7 +121,7 @@ class TransactionActor(
       case GetTransactionId => sender() ! TransactionId(transactionId)
     }
 
-    val empty: Receive = common orElse {
+    val empty: Receive = common or {
       case Commit        => context become commit(sender())
       case Write(events) => context become write(events, sender(), Queue())
     }
@@ -134,7 +134,7 @@ class TransactionActor(
 
     def commit(client: ActorRef): Receive = {
       toConnection(TransactionCommit(transactionId, requireMaster))
-      common orElse failure(client) orElse {
+      common or failure(client) or {
         case TransactionCommitCompleted(`transactionId`, range, position) =>
           client ! CommitCompleted(range, position)
           context stop self
@@ -146,7 +146,7 @@ class TransactionActor(
       writing(client, stash)
     }
 
-    def writing(client: ActorRef, stash: Queue[StashEntry]): Receive = common orElse failure(client) orElse {
+    def writing(client: ActorRef, stash: Queue[StashEntry]): Receive = common or failure(client) or {
       case x: Command => context become writing(client, stash enqueue StashEntry(x))
       case TransactionWriteCompleted(`transactionId`) =>
         client ! WriteCompleted

@@ -63,11 +63,11 @@ class SubscriptionActor(
         }
       }
 
-      rcvReadCompleted(read) orElse rcvFailure
+      rcvReadCompleted(read) or rcvFailure
     }
 
     readEventsFrom(next)
-    rcv(ready) orElse rcvReady(rcv(ready = true))
+    rcv(ready) or rcvReady(rcv(ready = true))
   }
 
   def subscribing(last: Last, next: Next): Receive = {
@@ -77,7 +77,7 @@ class SubscriptionActor(
     }
 
     subscribeToStream()
-    rcvSubscribeCompleted(subscribed) orElse
+    rcvSubscribeCompleted(subscribed) or
       rcvFailureOrUnsubscribe
   }
 
@@ -87,7 +87,7 @@ class SubscriptionActor(
     }
 
     subscribeToStream()
-    rcvSubscribeCompleted(subscribed) orElse
+    rcvSubscribeCompleted(subscribed) or
       rcvFailureOrUnsubscribe
   }
 
@@ -119,9 +119,9 @@ class SubscriptionActor(
         catchUp(position, Queue())
       }
 
-      rcvReadCompleted(read) orElse
-        rcvEventAppeared(eventAppeared) orElse
-        rcvSubscribeCompleted(subscribed) orElse
+      rcvReadCompleted(read) or
+        rcvEventAppeared(eventAppeared) or
+        rcvSubscribeCompleted(subscribed) or
         rcvFailureOrUnsubscribe
     }
 
@@ -139,8 +139,8 @@ class SubscriptionActor(
           if (ready) liveProcessing(l, 0, ready = false)
           else {
             unsubscribe()
-            rcvReady(reading(l, l getOrElse Position.First, ready = false)) orElse
-              ignoreUnsubscribed orElse
+            rcvReady(reading(l, l getOrElse Position.First, ready = false)) or
+              ignoreUnsubscribed or
               rcvFailure
           }
         }
@@ -153,9 +153,9 @@ class SubscriptionActor(
         }
       }
 
-      rcvEventAppeared(eventAppeared) orElse
-        rcvReady(liveProcessing(last, n, ready = true)) orElse
-        rcvSubscribeCompleted(subscribed) orElse
+      rcvEventAppeared(eventAppeared) or
+        rcvReady(liveProcessing(last, n, ready = true)) or
+        rcvSubscribeCompleted(subscribed) or
         rcvFailureOrUnsubscribe
     }
 

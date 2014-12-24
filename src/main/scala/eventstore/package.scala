@@ -1,5 +1,6 @@
 import java.net.{ InetAddress, InetSocketAddress }
 import java.util.UUID
+import akka.actor.Actor
 
 package object eventstore {
   type Uuid = java.util.UUID
@@ -17,5 +18,10 @@ package object eventstore {
   implicit class EsInt(val self: Int) extends AnyVal {
     def ::(host: String): InetSocketAddress = new InetSocketAddress(host, self)
     def ::(host: InetAddress): InetSocketAddress = new InetSocketAddress(host, self)
+  }
+
+  implicit class RichPartialFunction(val self: Actor.Receive) extends AnyVal {
+    // workaround for https://issues.scala-lang.org/browse/SI-8861
+    def or(pf: Actor.Receive): Actor.Receive = self.orElse[Any, Unit](pf)
   }
 }

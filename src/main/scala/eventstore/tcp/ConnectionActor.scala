@@ -41,11 +41,11 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       operations.flatMap(_.connected(sendCommand(pipeline, _)))
     }
 
-    rcvIncoming(operations, connecting, None) orElse
-      rcvOutgoing(operations, connecting, None) orElse
-      rcvConnected(onPipeline) orElse
-      rcvConnectFailed(None) orElse
-      rcvTimedOut(operations, connecting) orElse
+    rcvIncoming(operations, connecting, None) or
+      rcvOutgoing(operations, connecting, None) or
+      rcvConnected(onPipeline) or
+      rcvConnectFailed(None) or
+      rcvTimedOut(operations, connecting) or
       rcvTerminated(operations, connecting)
   }
 
@@ -102,10 +102,10 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
         }
       }
 
-      receive orElse
-        rcvIncoming(operations, onIn, Some(outFunc)) orElse
-        rcvOutgoing(operations, connected, Some(outFunc)) orElse
-        rcvTimedOut(operations, connected) orElse
+      receive or
+        rcvIncoming(operations, onIn, Some(outFunc)) or
+        rcvOutgoing(operations, connected, Some(outFunc)) or
+        rcvTimedOut(operations, connected) or
         rcvTerminated(operations, connected)
     }
 
@@ -123,11 +123,11 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
         operations.flatMap(_.connected(sendCommand(pipeline, _)))
       }
 
-      rcvIncoming(operations, reconnecting, None) orElse
-        rcvOutgoing(operations, reconnecting, None) orElse
-        rcvConnected(onPipeline) orElse
-        rcvConnectFailed(reconnect) orElse
-        rcvTimedOut(operations, reconnecting) orElse
+      rcvIncoming(operations, reconnecting, None) or
+        rcvOutgoing(operations, reconnecting, None) or
+        rcvConnected(onPipeline) or
+        rcvConnectFailed(reconnect) or
+        rcvTimedOut(operations, reconnecting) or
         rcvTerminated(operations, reconnecting)
     }
 

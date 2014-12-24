@@ -14,7 +14,7 @@ object Build extends Build {
     organizationHomepage := Some(new URL("http://geteventstore.com")),
     description          := "Event Store JVM Client",
     startYear            := Some(2013),
-    scalacOptions        := Seq("-encoding", "UTF-8", "-unchecked", "-deprecation", "-feature"),
+    scalacOptions        := Seq("-encoding", "UTF-8", "-unchecked", "-deprecation", "-feature", "-Xlint"),
     libraryDependencies ++= Seq(
       Akka.actor, Akka.testkit, protobuf, typesafeConfig, codec,
       Specs2.core, Specs2.mock, mockito)

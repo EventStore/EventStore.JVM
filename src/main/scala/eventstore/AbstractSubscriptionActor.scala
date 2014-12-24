@@ -24,7 +24,7 @@ trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
       context stop self
   }
 
-  val rcvFailureOrUnsubscribe: Receive = rcvFailure orElse {
+  val rcvFailureOrUnsubscribe: Receive = rcvFailure or {
     case Unsubscribed => context stop self
   }
 
@@ -59,10 +59,10 @@ trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
 
   def checkReadiness() = client ! IsReady
 
-  def whenReady(receive: => Receive, ready: Boolean) = {
+  def whenReady(receive: => Receive, ready: Boolean): Receive = {
     checkReadiness()
     if (ready) receive
-    else rcvFailure orElse rcvReady(receive)
+    else rcvFailure or rcvReady(receive)
   }
 }
 

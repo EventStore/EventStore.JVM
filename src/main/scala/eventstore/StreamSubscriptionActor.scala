@@ -66,13 +66,13 @@ class StreamSubscriptionActor private (
         else whenReady(reading(l, n, ready = false), ready)
       }
 
-      rcvReadCompleted(read) orElse
-        rcvStreamNotFound(subscribing(last, next)) orElse
+      rcvReadCompleted(read) or
+        rcvStreamNotFound(subscribing(last, next)) or
         rcvFailure
     }
 
     readEventsFrom(next)
-    rcv(ready) orElse rcvReady(rcv(ready = true))
+    rcv(ready) or rcvReady(rcv(ready = true))
   }
 
   def subscribing(last: Last, next: Next): Receive = {
@@ -84,7 +84,7 @@ class StreamSubscriptionActor private (
     }
 
     subscribeToStream()
-    rcvSubscribeCompleted(subscribed) orElse
+    rcvSubscribeCompleted(subscribed) or
       rcvFailureOrUnsubscribe
   }
 
@@ -94,7 +94,7 @@ class StreamSubscriptionActor private (
     }
 
     subscribeToStream()
-    rcvSubscribeCompleted(subscribed) orElse
+    rcvSubscribeCompleted(subscribed) or
       rcvFailureOrUnsubscribe
   }
 
@@ -126,9 +126,9 @@ class StreamSubscriptionActor private (
         catchUp(subscriptionNumber, Queue())
       }
 
-      rcvEventAppeared(eventAppeared) orElse
-        rcvSubscribeCompleted(subscribed) orElse
-        rcvReadCompleted(read) orElse
+      rcvEventAppeared(eventAppeared) or
+        rcvSubscribeCompleted(subscribed) or
+        rcvReadCompleted(read) or
         rcvFailureOrUnsubscribe
     }
 
@@ -146,8 +146,8 @@ class StreamSubscriptionActor private (
           if (ready) liveProcessing(l, 0, ready = false)
           else {
             unsubscribe()
-            rcvReady(reading(l, l getOrElse EventNumber.First, ready = false)) orElse
-              ignoreUnsubscribed orElse
+            rcvReady(reading(l, l getOrElse EventNumber.First, ready = false)) or
+              ignoreUnsubscribed or
               rcvFailure
           }
         }
@@ -160,9 +160,9 @@ class StreamSubscriptionActor private (
         }
       }
 
-      rcvEventAppeared(eventAppeared) orElse
-        rcvReady(liveProcessing(last, n, ready = true)) orElse
-        rcvSubscribeCompleted(subscribed) orElse
+      rcvEventAppeared(eventAppeared) or
+        rcvReady(liveProcessing(last, n, ready = true)) or
+        rcvSubscribeCompleted(subscribed) or
         rcvFailureOrUnsubscribe
     }
 
