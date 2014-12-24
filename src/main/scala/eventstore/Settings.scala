@@ -41,8 +41,7 @@ case class Settings(
 }
 
 object Settings {
-  private lazy val config: Config = ConfigFactory.load()
-  lazy val Default: Settings = Settings(config)
+  lazy val Default: Settings = Settings(ConfigFactory.load())
 
   def apply(conf: Config): Settings = {
     def apply(conf: Config): Settings = {
