@@ -539,14 +539,55 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     }
 
     "retry operation after connected but NotReady" in new TestScope {
-      client ! Authenticate
       sendConnected()
+      client ! Authenticate
+
       val (cmd, id) = pipeline.expectMsgPF() {
         case x @ init.Command(PackOut(Authenticate, id, `credentials`)) => (x, id)
       }
       client ! init.Event(PackIn(Failure(NotHandled(NotHandled.NotReady)), id))
-
       pipeline expectMsg cmd
+    }
+
+    "keep retrying until max retries reached" in new TestScope {
+      sendConnected()
+      client ! Authenticate
+      val (cmd, id) = pipeline.expectMsgPF() {
+        case x @ init.Command(PackOut(Authenticate, id, `credentials`)) => (x, id)
+      }
+      val notReady = init.Event(PackIn(Failure(NotHandled(NotHandled.NotReady)), id))
+      client ! notReady
+      pipeline expectMsg cmd
+      client ! notReady
+      pipeline expectMsg cmd
+      client ! notReady
+
+      expectMsgPF() {
+        case Status.Failure(_: RetriesLimitReachedException) =>
+      }
+
+      override def settings = super.settings.copy(operationMaxRetries = 2)
+    }
+
+    "keep retrying subscription until max retries reached" in new TestScope {
+      sendConnected()
+      client ! SubscribeTo(EventStream.Id("stream"))
+      val (cmd, id) = pipeline.expectMsgPF() {
+        case x @ init.Command(PackOut(subscribeTo, id, `credentials`)) => (x, id)
+      }
+
+      val tooBusy = init.Event(PackIn(Failure(NotHandled(NotHandled.TooBusy)), id))
+      client ! tooBusy
+      pipeline expectMsg cmd
+      client ! tooBusy
+      pipeline expectMsg cmd
+      client ! tooBusy
+
+      expectMsgPF() {
+        case Status.Failure(_: RetriesLimitReachedException) =>
+      }
+
+      override def settings = super.settings.copy(operationMaxRetries = 2)
     }
 
     "should process messages from single client in parallel" in new TestScope {

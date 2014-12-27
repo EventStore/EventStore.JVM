@@ -133,6 +133,18 @@ class SubscriptionOperationSpec extends OperationSpec {
       }
     }
 
+    "keep retrying until max retries limit reached" in foreach(streams) { implicit stream =>
+      new SubscribingScope {
+        val failure = Failure(NotHandled(TooBusy))
+        val o2 = operation.inspectIn(Failure(NotHandled(TooBusy)))
+        o2 must beSome
+        thereWasRetry()
+        o2.get.inspectIn(failure) must beNone
+        there was noMoreCallsTo(outFunc)
+        there was one(inFunc).apply(failureType[RetriesLimitReachedException])
+      }
+    }
+
     "stop on OperationTimedOut" in foreach(streams) { implicit stream =>
       new SubscribingScope {
         operation.inspectIn(Failure(OperationTimedOut)) must beNone
@@ -475,7 +487,7 @@ class SubscriptionOperationSpec extends OperationSpec {
     val subscribeTo = SubscribeTo(stream)
     val pack = PackOut(subscribeTo)
     val unsubscribe = PackOut(Unsubscribe, pack.correlationId, pack.credentials)
-    val operation = SO.Subscribing(subscribeTo, pack, client, inFunc, Some(outFunc), 0)
+    val operation = SO.Subscribing(subscribeTo, pack, client, inFunc, Some(outFunc), 0, 1, 1)
 
     lazy val subscribeCompleted = stream match {
       case x: EventStream.Id => SubscribeToStreamCompleted(0)
@@ -487,7 +499,7 @@ class SubscriptionOperationSpec extends OperationSpec {
     val subscribeTo = SubscribeTo(stream)
     val pack = PackOut(subscribeTo)
     val unsubscribe = PackOut(Unsubscribe, pack.correlationId, pack.credentials)
-    val operation = SO.Subscribed(subscribeTo, pack, client, inFunc, outFunc, 0)
+    val operation = SO.Subscribed(subscribeTo, pack, client, inFunc, outFunc, 0, 1)
   }
 
   private abstract class UnsubscribingScope(implicit val stream: EventStream) extends SubscriptionScope {

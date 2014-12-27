@@ -11,7 +11,9 @@ private[eventstore] case class BaseOperation(
     client: ActorRef,
     inFunc: InFunc,
     outFunc: Option[OutFunc],
-    inspection: Inspection) extends Operation {
+    inspection: Inspection,
+    retriesLeft: Int,
+    maxRetries: Int) extends Operation {
   import Inspection.Decision._
 
   def id = pack.correlationId
@@ -25,8 +27,17 @@ private[eventstore] case class BaseOperation(
     }
 
     def retry() = {
-      outFunc.foreach { outFunc => outFunc(pack) }
-      Some(this)
+      outFunc match {
+        case None => Some(this)
+        case Some(outFunc) =>
+          if (retriesLeft > 0) {
+            outFunc(pack)
+            Some(copy(retriesLeft = retriesLeft - 1))
+          } else {
+            inFunc(Failure(new RetriesLimitReachedException(s"Operation $pack reached retries limit: $maxRetries")))
+            None
+          }
+      }
     }
 
     def unexpected() = {
@@ -52,6 +63,7 @@ private[eventstore] case class BaseOperation(
   }
 
   def connected(outFunc: OutFunc) = {
+    // TODO correlate maxRetries with outFunc(pack)
     outFunc(pack)
     Some(copy(outFunc = Some(outFunc)))
   }
@@ -71,4 +83,21 @@ private[eventstore] case class BaseOperation(
       case Failure(x)                    => Unexpected
     }
   }
+}
+
+private[eventstore] object BaseOperation {
+  def apply(
+    pack: PackOut,
+    client: ActorRef,
+    inFunc: InFunc,
+    outFunc: Option[OutFunc],
+    inspection: Inspection,
+    retries: Int): BaseOperation = BaseOperation(
+    pack,
+    client,
+    inFunc,
+    outFunc,
+    inspection,
+    retriesLeft = retries,
+    maxRetries = retries)
 }

@@ -69,6 +69,16 @@ class BaseOperationSpec extends OperationSpec {
       thereWasRetry()
     }
 
+    "keep retrying until max retries limit reached" in new BaseOperationScope {
+      val failure = Failure(NotHandled(TooBusy))
+      val o2 = operation.inspectIn(Failure(NotHandled(TooBusy)))
+      o2 must beSome
+      thereWasRetry()
+      o2.get.inspectIn(failure) must beNone
+      there was noMoreCallsTo(outFunc)
+      there was one(inFunc).apply(failureType[RetriesLimitReachedException])
+    }
+
     "stop on OperationTimedOut" in new BaseOperationScope {
       operation.inspectIn(Failure(OperationTimedOut)) must beNone
       thereWasStop(OperationTimeoutException(pack))
@@ -113,7 +123,7 @@ class BaseOperationSpec extends OperationSpec {
       }
     }
 
-    val operation = BaseOperation(pack, client, inFunc, Some(outFunc), inspection)
+    val operation = BaseOperation(pack, client, inFunc, Some(outFunc), inspection, 1)
 
     object TestError extends RuntimeException with NoStackTrace
     object TestException extends EsException with NoStackTrace

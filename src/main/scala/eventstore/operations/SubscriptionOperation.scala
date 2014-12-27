@@ -46,8 +46,9 @@ private[eventstore] object SubscriptionOperation {
     pack: PackOut,
     client: ActorRef,
     inFunc: InFunc,
-    outFunc: Option[OutFunc]): Operation = {
-    Subscribing(subscribeTo, pack, client, inFunc, outFunc, 0)
+    outFunc: Option[OutFunc],
+    maxRetries: Int): Operation = {
+    Subscribing(subscribeTo, pack, client, inFunc, outFunc, 0, maxRetries, maxRetries)
   }
 
   case class Subscribing(
@@ -56,7 +57,9 @@ private[eventstore] object SubscriptionOperation {
       client: ActorRef,
       inFunc: InFunc,
       outFunc: Option[OutFunc],
-      version: Int) extends SubscriptionOperation {
+      version: Int,
+      retriesLeft: Int,
+      maxRetries: Int) extends SubscriptionOperation {
 
     def stream = subscribeTo.stream
 
@@ -66,15 +69,24 @@ private[eventstore] object SubscriptionOperation {
 
     def inspectIn(in: Try[In]): Option[SubscriptionOperation] = {
       def retry() = {
-        outFunc.foreach { outFunc => outFunc(pack) }
-        Some(this)
+        outFunc match {
+          case None => Some(this)
+          case Some(outFunc) =>
+            if (retriesLeft > 0) {
+              outFunc(pack)
+              Some(copy(retriesLeft = retriesLeft - 1))
+            } else {
+              inFunc(Failure(new RetriesLimitReachedException(s"Operation $pack reached retries limit: $maxRetries")))
+              None
+            }
+        }
       }
 
       def subscribed = outFunc match {
         case None => Some(this)
         case Some(outFunc) =>
           inFunc(in)
-          Some(Subscribed(subscribeTo, pack, client, inFunc, outFunc, version + 1))
+          Some(Subscribed(subscribeTo, pack, client, inFunc, outFunc, version + 1, maxRetries))
       }
 
       def eventAppeared = {
@@ -139,7 +151,8 @@ private[eventstore] object SubscriptionOperation {
       client: ActorRef,
       inFunc: InFunc,
       outFunc: OutFunc,
-      version: Int) extends SubscriptionOperation {
+      version: Int,
+      maxRetries: Int) extends SubscriptionOperation {
 
     def stream = subscribeTo.stream
 
@@ -176,12 +189,13 @@ private[eventstore] object SubscriptionOperation {
     }
 
     def connectionLost() = {
-      Some(Subscribing(subscribeTo, pack, client, inFunc, None, version + 1))
+      Some(Subscribing(subscribeTo, pack, client, inFunc, None, version + 1, maxRetries, maxRetries))
     }
 
     def connected(outFunc: OutFunc) = {
+      // TODO correlate maxRetries with outFunc(pack)
       outFunc(pack)
-      Some(Subscribing(subscribeTo, pack, client, inFunc, Some(outFunc), version + 1))
+      Some(Subscribing(subscribeTo, pack, client, inFunc, Some(outFunc), version + 1, maxRetries - 1, maxRetries))
     }
   }
 

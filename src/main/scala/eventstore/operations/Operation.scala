@@ -26,9 +26,9 @@ private[eventstore] trait Operation {
 }
 
 private[eventstore] object Operation {
-  def opt(pack: PackOut, client: ActorRef, inFunc: InFunc, outFunc: Option[OutFunc]): Option[Operation] = {
+  def opt(pack: PackOut, client: ActorRef, inFunc: InFunc, outFunc: Option[OutFunc], maxRetries: Int): Option[Operation] = {
 
-    def base(x: Inspection) = Some(BaseOperation(pack, client, inFunc, outFunc, x))
+    def base(x: Inspection) = Some(BaseOperation(pack, client, inFunc, outFunc, x, maxRetries))
 
     pack.message match {
       case x: WriteEvents       => base(new WriteEventsInspection(x))
@@ -39,7 +39,7 @@ private[eventstore] object Operation {
       case x: ReadEvent         => base(new ReadEventInspection(x))
       case x: ReadStreamEvents  => base(new ReadStreamEventsInspection(x))
       case x: ReadAllEvents     => base(new ReadAllEventsInspection(x))
-      case x: SubscribeTo       => Some(SubscriptionOperation(x, pack, client, inFunc, outFunc))
+      case x: SubscribeTo       => Some(SubscriptionOperation(x, pack, client, inFunc, outFunc, maxRetries))
       case Unsubscribe          => base(UnsubscribeInspection)
       case ScavengeDatabase     => base(ScavengeDatabaseInspection)
       case Authenticate         => base(AuthenticateInspection)

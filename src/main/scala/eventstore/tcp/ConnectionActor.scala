@@ -217,7 +217,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
           }
 
         case None =>
-          Operation.opt(pack, sender(), inFunc(sender()), outFunc) match {
+          Operation.opt(pack, sender(), inFunc(sender()), outFunc, operationMaxRetries) match {
             case None => operations
             case Some(operation) =>
               context watch sender()

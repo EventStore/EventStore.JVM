@@ -39,3 +39,5 @@ case object ScavengeInProgressException extends EsException
 class ScavengeFailedException(message: String) extends EsException(message)
 
 class CommandNotExpectedException(message: String) extends EsException(message)
+
+class RetriesLimitReachedException(message: String) extends EsException(message)
