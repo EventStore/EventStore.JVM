@@ -202,8 +202,9 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       val msg = pack.message
       val id = pack.correlationId
 
-      def forId = operations.single(id).find(_.inspectOut.isDefinedAt(msg))
-      def forMsg = operations.many(sender()).find(_.inspectOut.isDefinedAt(msg))
+      def isDefined(x: Iterable[Operation]) = x.find(_.inspectOut.isDefinedAt(msg))
+      def forId = isDefined(operations.single(id))
+      def forMsg = isDefined(operations.many(sender()))
 
       // TODO current requirement is the only one subscription per actor allowed
       val result = forId orElse forMsg match {
