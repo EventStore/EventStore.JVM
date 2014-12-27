@@ -19,7 +19,7 @@ trait OneToMany[T, S, M] {
 
   def values: Set[T]
 
-  def flatMap[B, That](f: T => GenTraversableOnce[T]): OneToMany[T, S, M]
+  def flatMap(f: T => GenTraversableOnce[T]): OneToMany[T, S, M]
 }
 
 object OneToMany {
@@ -66,7 +66,7 @@ object OneToMany {
     def values = ss.values.toSet
 
     // TODO improve
-    def flatMap[B, That](f: (T) => GenTraversableOnce[T]) = {
+    def flatMap(f: (T) => GenTraversableOnce[T]) = {
       val ts = values.flatMap(f)
       ts.foldLeft[OneToMany[T, S, M]](OneToManyImpl[T, S, M](Map(), Map(), sf, mf)) { case (otm, t) => otm + t }
     }
