@@ -23,9 +23,9 @@ trait OneToMany[T, S, M] {
 }
 
 object OneToMany {
-  def apply[T, S, M](sf: T => S, mf: T => M): OneToMany[T, S, M] = OneToManyImpl[T, S, M](Map(), Map(), sf, mf)
+  def apply[T, S, M](sf: T => S, mf: T => M): OneToMany[T, S, M] = Impl[T, S, M](Map(), Map(), sf, mf)
 
-  private case class OneToManyImpl[T, S, M](
+  private case class Impl[T, S, M](
       ss: Map[S, T],
       ms: Map[M, Set[S]],
       sf: T => S,
@@ -65,10 +65,9 @@ object OneToMany {
 
     def values = ss.values.toSet
 
-    // TODO improve
     def flatMap(f: (T) => GenTraversableOnce[T]) = {
       val ts = values.flatMap(f)
-      ts.foldLeft[OneToMany[T, S, M]](OneToManyImpl[T, S, M](Map(), Map(), sf, mf)) { case (otm, t) => otm + t }
+      ts.foldLeft[OneToMany[T, S, M]](Impl[T, S, M](Map(), Map(), sf, mf)) { case (otm, t) => otm + t }
     }
   }
 
