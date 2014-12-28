@@ -28,7 +28,7 @@ private[eventstore] trait Operation {
 private[eventstore] object Operation {
   def opt(pack: PackOut, client: ActorRef, inFunc: InFunc, outFunc: Option[OutFunc], maxRetries: Int): Option[Operation] = {
 
-    def base(x: Inspection) = Some(BaseOperation(pack, client, outFunc, x, maxRetries))
+    def base(x: Inspection) = Some(RetryableOperation(BaseOperation(pack, client, outFunc, x), maxRetries, outFunc.isEmpty))
 
     pack.message match {
       case x: WriteEvents       => base(WriteEventsInspection(x))

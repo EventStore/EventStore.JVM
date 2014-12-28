@@ -11,23 +11,14 @@ private[eventstore] case class BaseOperation(
     pack: PackOut,
     client: ActorRef,
     outFunc: Option[OutFunc],
-    inspection: Inspection,
-    retriesLeft: Int,
-    maxRetries: Int) extends Operation {
+    inspection: Inspection) extends Operation {
 
   def id = pack.correlationId
 
   def inspectOut = PartialFunction.empty
 
   def inspectIn(in: Try[In]): Decision = {
-    def retry() = {
-      outFunc match {
-        case None => Retry(this, pack)
-        case Some(outFunc) =>
-          if (retriesLeft > 0) Retry(copy(retriesLeft = retriesLeft - 1), pack)
-          else Stop(new RetriesLimitReachedException(s"Operation $pack reached retries limit: $maxRetries"))
-      }
-    }
+    def retry = Retry(this, pack)
 
     def unexpected() = {
       val actual = in match {
@@ -41,8 +32,8 @@ private[eventstore] case class BaseOperation(
 
     def fallback(in: Try[In]): Decision = in match {
       case Success(x)                    => unexpected()
-      case Failure(NotHandled(NotReady)) => retry()
-      case Failure(NotHandled(TooBusy))  => retry()
+      case Failure(NotHandled(NotReady)) => retry
+      case Failure(NotHandled(TooBusy))  => retry
       case Failure(OperationTimedOut)    => Stop(OperationTimeoutException(pack))
       case Failure(BadRequest)           => Stop(new ServerErrorException(s"Bad request: $pack"))
       case Failure(NotAuthenticated)     => Stop(NotAuthenticatedException(pack))
@@ -51,7 +42,7 @@ private[eventstore] case class BaseOperation(
 
     val pf = inspection.pf andThen {
       case Inspection.Decision.Stop       => Stop(in)
-      case Inspection.Decision.Retry      => retry()
+      case Inspection.Decision.Retry      => retry
       case Inspection.Decision.Fail(x)    => Stop(x)
       case Inspection.Decision.Unexpected => unexpected()
     }
@@ -72,19 +63,4 @@ private[eventstore] case class BaseOperation(
   def clientTerminated() = {}
 
   def version = 0
-}
-
-private[eventstore] object BaseOperation {
-  def apply(
-    pack: PackOut,
-    client: ActorRef,
-    outFunc: Option[OutFunc],
-    inspection: Inspection,
-    retries: Int): BaseOperation = BaseOperation(
-    pack,
-    client,
-    outFunc,
-    inspection,
-    retriesLeft = retries,
-    maxRetries = retries)
 }

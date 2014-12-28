@@ -1,7 +1,6 @@
 package eventstore
 package operations
 
-import NotHandled.{ TooBusy, NotReady }
 import Decision._
 import tcp.PackOut
 import scala.util.control.NoStackTrace
@@ -57,25 +56,6 @@ class BaseOperationSpec extends OperationSpec {
       operation.inspectIn(Failure(TestError)) mustEqual Stop(TestException)
     }
 
-    "retry on NotReady" in new BaseOperationScope {
-      val result = operation.inspectIn(Failure(NotHandled(NotReady)))
-      result mustEqual Retry(operation.copy(retriesLeft = operation.retriesLeft - 1), pack)
-    }
-
-    "retry on TooBusy" in new BaseOperationScope {
-      operation.inspectIn(Failure(NotHandled(TooBusy))) mustEqual Retry(operation.copy(retriesLeft = operation.retriesLeft - 1), pack)
-    }
-
-    "keep retrying until max retries limit reached" in new BaseOperationScope {
-      val failure = Failure(NotHandled(TooBusy))
-
-      val o2 = operation.copy(retriesLeft = operation.retriesLeft - 1)
-      operation.inspectIn(Failure(NotHandled(TooBusy))) mustEqual Retry(o2, pack)
-      o2.inspectIn(failure) must beLike {
-        case Stop(Failure(_: RetriesLimitReachedException)) => ok
-      }
-    }
-
     "stop on OperationTimedOut" in new BaseOperationScope {
       operation.inspectIn(Failure(OperationTimedOut)) mustEqual Stop(OperationTimeoutException(pack))
     }
@@ -123,7 +103,7 @@ class BaseOperationSpec extends OperationSpec {
       }
     }
 
-    val operation = BaseOperation(pack, client, Some(outFunc), inspection, 1)
+    val operation = BaseOperation(pack, client, Some(outFunc), inspection)
 
     object TestError extends RuntimeException with NoStackTrace
     object TestException extends EsException with NoStackTrace
