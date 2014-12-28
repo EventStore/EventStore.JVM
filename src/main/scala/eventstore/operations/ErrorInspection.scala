@@ -1,7 +1,6 @@
 package eventstore
 package operations
 
-import Inspection.Decision
 import Inspection.Decision.Stop
 
 import scala.reflect.ClassTag
@@ -17,5 +16,5 @@ private[eventstore] abstract class ErrorInspection[I <: In, E](implicit val in: 
     case Failure(error(x)) => decision(x)
   }
 
-  def decision(error: E): Decision
+  def decision(error: E): Inspection.Decision
 }

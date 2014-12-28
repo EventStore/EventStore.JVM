@@ -3,6 +3,7 @@ package operations
 
 import NotHandled.{ NotReady, TooBusy }
 import tcp.PackOut
+import Decision._
 import scala.util.{ Try, Success, Failure }
 import operations.{ SubscriptionOperation => SO }
 
@@ -22,7 +23,7 @@ class SubscriptionOperationSpec extends OperationSpec {
         val actual = operation.connectionLost()
         actual must beSome
         actual.get.outFunc must beNone
-        there were noCallsTo(outFunc, inFunc, client)
+        there were noCallsTo(outFunc, inFunc)
       }
     }
 
@@ -32,7 +33,7 @@ class SubscriptionOperationSpec extends OperationSpec {
         val actual = operation.copy(outFunc = None).connected(newOutFunc)
         actual must beSome
         actual.get.outFunc mustEqual Some(newOutFunc)
-        there were noCallsTo(outFunc, inFunc, client)
+        there were noCallsTo(outFunc, inFunc)
         there was one(newOutFunc).apply(pack)
       }
     }
@@ -43,7 +44,7 @@ class SubscriptionOperationSpec extends OperationSpec {
         val actual = operation.copy(outFunc = None).connected(newOutFunc)
         actual must beSome
         actual.get.outFunc mustEqual Some(newOutFunc)
-        there were noCallsTo(outFunc, inFunc, client)
+        there were noCallsTo(outFunc, inFunc)
         there was one(newOutFunc).apply(pack)
       }
     }
@@ -52,7 +53,7 @@ class SubscriptionOperationSpec extends OperationSpec {
       new SubscribingScope {
         operation.clientTerminated()
         there was one(outFunc).apply(PackOut(Unsubscribe, pack.correlationId, pack.credentials))
-        there were noCallsTo(inFunc, client)
+        there were noCallsTo(inFunc)
       }
     }
 
@@ -73,96 +74,86 @@ class SubscriptionOperationSpec extends OperationSpec {
 
         there was one(outFunc).apply(unsubscribe)
         there was one(inFunc).apply(Try(Unsubscribed))
-        there were noCallsTo(client)
       }
     }
 
     "forward new events" in foreach(streams) { implicit stream =>
       new SubscribingScope {
         val event = eventAppeared(streamId)
-        val result = operation.inspectIn(Success(event))
-        there was one(inFunc).apply(Success(event))
-        there were noCallsTo(outFunc, client)
-        result must beSome(operation)
+        operation.inspectIn(Success(event)) mustEqual Continue(operation, Success(event))
       }
     }
 
     "stop on unexpected events" in new SubscribingScope()(streamId) {
       val event = eventAppeared(EventStream.Id("unexpected"))
-      operation.inspectIn(Success(event)) must beNone
-      thereWasStop[CommandNotExpectedException]
+      operation.inspectIn(Success(event)) must beLike {
+        case Stop(Failure(_: CommandNotExpectedException)) => ok
+      }
     }
 
     "become subscribed on success" in foreach(streams) { implicit stream =>
       new SubscribingScope {
-        val result = operation.inspectIn(Success(subscribeCompleted))
-        result must beSome
-        result.get must beAnInstanceOf[SubscriptionOperation.Subscribed]
-        result.get.version mustEqual 1
-        there were noCallsTo(client)
+        operation.inspectIn(Success(subscribeCompleted)) mustEqual Continue(SubscriptionOperation.Subscribed(subscribeTo, pack, client, inFunc, outFunc, 1, 1), Success(subscribeCompleted))
       }
     }
 
     "stay on success if disconnected" in foreach(streams) { implicit stream =>
       new SubscribingScope {
         val disconnected = operation.copy(outFunc = None)
-        val result = disconnected.inspectIn(Success(subscribeCompleted))
-        there were noCallsTo(outFunc, inFunc, client)
-        result must beSome(disconnected)
+        disconnected.inspectIn(Success(subscribeCompleted)) mustEqual Ignore
       }
     }
 
     "stop on expected error" in foreach(streams) { implicit stream =>
       new SubscribingScope {
-        operation.inspectIn(Failure(SubscriptionDropped.AccessDenied)) must beNone
-        thereWasStop[AccessDeniedException]
+        operation.inspectIn(Failure(SubscriptionDropped.AccessDenied)) must beLike {
+          case Stop(Failure(_: AccessDeniedException)) => ok
+        }
       }
     }
 
     "retry on NotReady" in foreach(streams) { implicit stream =>
       new SubscribingScope {
-        operation.inspectIn(Failure(NotHandled(NotReady))) must beSome
-        thereWasRetry()
+        operation.inspectIn(Failure(NotHandled(NotReady))) mustEqual Retry(operation.copy(retriesLeft = operation.retriesLeft - 1), pack)
       }
     }
 
     "retry on TooBusy" in foreach(streams) { implicit stream =>
       new SubscribingScope {
-        operation.inspectIn(Failure(NotHandled(TooBusy))) must beSome
-        thereWasRetry()
+        operation.inspectIn(Failure(NotHandled(TooBusy))) mustEqual Retry(operation.copy(retriesLeft = operation.retriesLeft - 1), pack)
       }
     }
 
     "keep retrying until max retries limit reached" in foreach(streams) { implicit stream =>
       new SubscribingScope {
         val failure = Failure(NotHandled(TooBusy))
-        val o2 = operation.inspectIn(Failure(NotHandled(TooBusy)))
-        o2 must beSome
-        thereWasRetry()
-        o2.get.inspectIn(failure) must beNone
-        there was noMoreCallsTo(outFunc)
-        there was one(inFunc).apply(failureType[RetriesLimitReachedException])
+        val o2 = operation.copy(retriesLeft = operation.retriesLeft - 1)
+        operation.inspectIn(Failure(NotHandled(TooBusy))) mustEqual Retry(o2, pack)
+        o2.inspectIn(failure) must beLike {
+          case Stop(Failure(_: RetriesLimitReachedException)) => ok
+        }
       }
     }
 
     "stop on OperationTimedOut" in foreach(streams) { implicit stream =>
       new SubscribingScope {
-        operation.inspectIn(Failure(OperationTimedOut)) must beNone
-        thereWasStop(OperationTimeoutException(pack))
+        operation.inspectIn(Failure(OperationTimedOut)) mustEqual Stop(OperationTimeoutException(pack))
       }
     }
 
     "stop on NotAuthenticated" in foreach(streams) { implicit stream =>
       new SubscribingScope {
-        operation.inspectIn(Failure(NotAuthenticated)) must beNone
-        thereWasStop[NotAuthenticatedException]
+        operation.inspectIn(Failure(NotAuthenticated)) must beLike {
+          case Stop(Failure(_: NotAuthenticatedException)) => ok
+        }
       }
     }
 
     "stop on BadRequest" in foreach(streams) { implicit stream =>
       new SubscribingScope {
-        operation.inspectIn(Failure(BadRequest)) must beNone
-        thereWasStop[ServerErrorException]
+        operation.inspectIn(Failure(BadRequest)) must beLike {
+          case Stop(Failure(_: ServerErrorException)) => ok
+        }
       }
     }
 
@@ -172,15 +163,17 @@ class SubscriptionOperationSpec extends OperationSpec {
           case _: EventStream.Id => SubscribeToAllCompleted(0)
           case _                 => SubscribeToStreamCompleted(0)
         }
-        operation.inspectIn(Success(unexpected))
-        thereWasStop[CommandNotExpectedException]
+        operation.inspectIn(Success(unexpected)) must beLike {
+          case Stop(Failure(_: CommandNotExpectedException)) => ok
+        }
       }
     }
 
     "stop on unexpected error" in foreach(streams) { implicit stream =>
       new SubscribingScope {
-        operation.inspectIn(Failure(ReadEventError.StreamDeleted))
-        thereWasStop[CommandNotExpectedException]
+        operation.inspectIn(Failure(ReadEventError.StreamDeleted)) must beLike {
+          case Stop(Failure(_: CommandNotExpectedException)) => ok
+        }
       }
     }
 
@@ -210,7 +203,7 @@ class SubscriptionOperationSpec extends OperationSpec {
         subscribing must beAnInstanceOf[SubscriptionOperation.Subscribing]
         subscribing.outFunc must beNone
         actual.get.version mustEqual 1
-        there were noCallsTo(outFunc, inFunc, client)
+        there were noCallsTo(outFunc, inFunc)
       }
     }
 
@@ -221,7 +214,7 @@ class SubscriptionOperationSpec extends OperationSpec {
         actual must beSome
         actual.get.outFunc mustEqual Some(newOutFunc)
         actual.get.version mustEqual 1
-        there were noCallsTo(outFunc, inFunc, client)
+        there were noCallsTo(outFunc, inFunc)
         there was one(newOutFunc).apply(pack)
       }
     }
@@ -230,7 +223,7 @@ class SubscriptionOperationSpec extends OperationSpec {
       new SubscribedScope {
         operation.clientTerminated()
         there was one(outFunc).apply(PackOut(Unsubscribe, pack.correlationId, pack.credentials))
-        there were noCallsTo(inFunc, client)
+        there were noCallsTo(inFunc)
       }
     }
 
@@ -251,86 +244,91 @@ class SubscriptionOperationSpec extends OperationSpec {
         unsubscribing must beSome
         unsubscribing.get.version mustEqual 1
         there was one(outFunc).apply(unsubscribe)
-        there were noCallsTo(inFunc, client)
+        there were noCallsTo(inFunc)
       }
     }
 
     "forward new events" in foreach(streams) { implicit stream =>
       new SubscribedScope {
         val event = eventAppeared(streamId)
-        val result = operation.inspectIn(Success(event))
-        there was one(inFunc).apply(Success(event))
-        there were noCallsTo(outFunc, client)
-        result must beSome(operation)
+        operation.inspectIn(Success(event)) mustEqual Continue(operation, Success(event))
       }
     }
 
     "stop on unexpected events" in new SubscribedScope()(streamId) {
       val event = eventAppeared(EventStream.Id("unexpected"))
-      operation.inspectIn(Success(event)) must beNone
-      thereWasStop[CommandNotExpectedException]
+      operation.inspectIn(Success(event)) must beLike {
+        case Stop(Failure(_: CommandNotExpectedException)) => ok
+      }
     }
 
     "stop on AccessDenied" in foreach(streams) { implicit stream =>
       new SubscribedScope {
-        operation.inspectIn(Failure(SubscriptionDropped.AccessDenied)) must beNone
-        thereWasStop[AccessDeniedException]
+        operation.inspectIn(Failure(SubscriptionDropped.AccessDenied)) must beLike {
+          case Stop(Failure(_: AccessDeniedException)) => ok
+        }
       }
     }
 
     "stop on Unsubscribed" in foreach(streams) { implicit stream =>
       new SubscribedScope {
-        operation.inspectIn(Success(Unsubscribed)) must beNone
-        thereWasStop(Success(Unsubscribed))
+        operation.inspectIn(Success(Unsubscribed)) mustEqual Stop(Unsubscribed)
       }
     }
 
     "stop on NotReady" in foreach(streams) { implicit stream =>
       new SubscribedScope {
-        operation.inspectIn(Failure(NotHandled(NotReady))) must beNone
-        thereWasStop[CommandNotExpectedException]
+        operation.inspectIn(Failure(NotHandled(NotReady))) must beLike {
+          case Stop(Failure(_: CommandNotExpectedException)) => ok
+        }
       }
     }
 
     "stop on TooBusy" in foreach(streams) { implicit stream =>
       new SubscribedScope {
-        operation.inspectIn(Failure(NotHandled(TooBusy))) must beNone
-        thereWasStop[CommandNotExpectedException]
+        operation.inspectIn(Failure(NotHandled(TooBusy))) must beLike {
+          case Stop(Failure(_: CommandNotExpectedException)) => ok
+        }
       }
     }
 
     "stop on OperationTimedOut" in foreach(streams) { implicit stream =>
       new SubscribedScope {
-        operation.inspectIn(Failure(OperationTimedOut)) must beNone
-        thereWasStop[CommandNotExpectedException]
+        operation.inspectIn(Failure(OperationTimedOut)) must beLike {
+          case Stop(Failure(_: CommandNotExpectedException)) => ok
+        }
       }
     }
 
     "stop on NotAuthenticated" in foreach(streams) { implicit stream =>
       new SubscribedScope {
-        operation.inspectIn(Failure(NotAuthenticated)) must beNone
-        thereWasStop[CommandNotExpectedException]
+        operation.inspectIn(Failure(NotAuthenticated)) must beLike {
+          case Stop(Failure(_: CommandNotExpectedException)) => ok
+        }
       }
     }
 
     "stop on BadRequest" in foreach(streams) { implicit stream =>
       new SubscribedScope {
-        operation.inspectIn(Failure(BadRequest)) must beNone
-        thereWasStop[CommandNotExpectedException]
+        operation.inspectIn(Failure(BadRequest)) must beLike {
+          case Stop(Failure(_: CommandNotExpectedException)) => ok
+        }
       }
     }
 
     "stop on unexpected" in foreach(streams) { implicit stream =>
       new SubscribedScope {
-        operation.inspectIn(Success(Pong))
-        thereWasStop[CommandNotExpectedException]
+        operation.inspectIn(Success(Pong)) must beLike {
+          case Stop(Failure(_: CommandNotExpectedException)) => ok
+        }
       }
     }
 
     "stop on unexpected error" in foreach(streams) { implicit stream =>
       new SubscribedScope {
-        operation.inspectIn(Failure(ReadEventError.StreamDeleted))
-        thereWasStop[CommandNotExpectedException]
+        operation.inspectIn(Failure(ReadEventError.StreamDeleted)) must beLike {
+          case Stop(Failure(_: CommandNotExpectedException)) => ok
+        }
       }
     }
 
@@ -376,56 +374,66 @@ class SubscriptionOperationSpec extends OperationSpec {
       new UnsubscribingScope {
         operation.inspectOut mustEqual PartialFunction.empty
         operation.inspectOut.isDefinedAt(Unsubscribe) must beFalse
-        there were noCallsTo(outFunc, inFunc, client)
+        there were noCallsTo(outFunc, inFunc)
       }
     }
 
     "stop on success" in foreach(streams) { implicit stream =>
       new UnsubscribingScope {
-        operation.inspectIn(Success(Unsubscribed)) must beNone
-        thereWasStop(Success(Unsubscribed))
+        operation.inspectIn(Success(Unsubscribed)) mustEqual Stop(Unsubscribed)
       }
     }
 
     "stop on expected error" in foreach(streams) { implicit stream =>
       new UnsubscribingScope {
-        operation.inspectIn(Failure(SubscriptionDropped.AccessDenied)) must beNone
-        thereWasStop[AccessDeniedException]
+        operation.inspectIn(Failure(SubscriptionDropped.AccessDenied)) must beLike {
+          case Stop(Failure(_: AccessDeniedException)) => ok
+        }
       }
     }
 
     "retry on NotReady" in foreach(streams) { implicit stream =>
       new UnsubscribingScope {
-        operation.inspectIn(Failure(NotHandled(NotReady))) must beSome
-        thereWasRetry()
+        operation.inspectIn(Failure(NotHandled(NotReady))) mustEqual Retry(operation.copy(retriesLeft = operation.retriesLeft - 1), pack)
       }
     }
 
     "retry on TooBusy" in foreach(streams) { implicit stream =>
       new UnsubscribingScope {
-        operation.inspectIn(Failure(NotHandled(TooBusy))) must beSome
-        thereWasRetry()
+        operation.inspectIn(Failure(NotHandled(TooBusy))) mustEqual Retry(operation.copy(retriesLeft = operation.retriesLeft - 1), pack)
+      }
+    }
+
+    "keep retrying until max retries limit reached" in foreach(streams) { implicit stream =>
+      new UnsubscribingScope {
+        val failure = Failure(NotHandled(TooBusy))
+        val o2 = operation.copy(retriesLeft = operation.retriesLeft - 1)
+        operation.inspectIn(Failure(NotHandled(TooBusy))) mustEqual Retry(o2, pack)
+        o2.inspectIn(failure) must beLike {
+          case Stop(Failure(_: RetriesLimitReachedException)) => ok
+        }
       }
     }
 
     "stop on OperationTimedOut" in foreach(streams) { implicit stream =>
       new UnsubscribingScope {
-        operation.inspectIn(Failure(OperationTimedOut)) must beNone
-        thereWasStop(OperationTimeoutException(pack))
+        operation.inspectIn(Failure(OperationTimedOut)) mustEqual Stop(OperationTimeoutException(pack))
       }
     }
 
     "stop on NotAuthenticated" in foreach(streams) { implicit stream =>
       new UnsubscribingScope {
-        operation.inspectIn(Failure(NotAuthenticated)) must beNone
-        thereWasStop[CommandNotExpectedException]
+        operation.inspectIn(Failure(NotAuthenticated)) must beLike {
+          case Stop(Failure(_: CommandNotExpectedException)) => ok
+        }
       }
     }
 
     "stop on BadRequest" in foreach(streams) { implicit stream =>
       new UnsubscribingScope {
-        operation.inspectIn(Failure(BadRequest)) must beNone
-        thereWasStop[ServerErrorException]
+        operation.inspectIn(Failure(BadRequest)) must beLike {
+          case Stop(Failure(_: ServerErrorException)) => ok
+        }
       }
     }
 
@@ -435,30 +443,31 @@ class SubscriptionOperationSpec extends OperationSpec {
           case x: EventStream.Id => SubscribeToStreamCompleted(0)
           case _                 => SubscribeToAllCompleted(0)
         }
-        operation.inspectIn(Success(unexpected))
-        thereWasStop[CommandNotExpectedException]
+        operation.inspectIn(Success(unexpected)) must beLike {
+          case Stop(Failure(_: CommandNotExpectedException)) => ok
+        }
       }
     }
 
     "stop on unexpected error" in foreach(streams) { implicit stream =>
       new UnsubscribingScope {
-        operation.inspectIn(Failure(ReadEventError.StreamDeleted))
-        thereWasStop[CommandNotExpectedException]
+        operation.inspectIn(Failure(ReadEventError.StreamDeleted)) must beLike {
+          case Stop(Failure(_: CommandNotExpectedException)) => ok
+        }
       }
     }
 
     "ignore new events" in foreach(streams) { implicit stream =>
       new UnsubscribingScope {
-        val result = operation.inspectIn(Success(eventAppeared(streamId)))
-        there were noCallsTo(outFunc, inFunc, client)
-        result must beSome(operation)
+        operation.inspectIn(Success(eventAppeared(streamId))) mustEqual Ignore
       }
     }
 
     "stop on unexpected events" in new SubscribedScope()(streamId) {
       val event = eventAppeared(EventStream.Id("unexpected"))
-      operation.inspectIn(Success(event)) must beNone
-      thereWasStop[CommandNotExpectedException]
+      operation.inspectIn(Success(event)) must beLike {
+        case Stop(Failure(_: CommandNotExpectedException)) => ok
+      }
     }
 
     "return 0 for version" in foreach(streams) { implicit stream =>
@@ -505,6 +514,6 @@ class SubscriptionOperationSpec extends OperationSpec {
   private abstract class UnsubscribingScope(implicit val stream: EventStream) extends SubscriptionScope {
     val subscribeTo = SubscribeTo(stream)
     val pack = PackOut(Unsubscribe)
-    val operation = SO.Unsubscribing(stream, pack, client, inFunc, outFunc, 0)
+    val operation = SO.Unsubscribing(stream, pack, client, inFunc, outFunc, 0, 1, 1)
   }
 }

@@ -12,7 +12,7 @@ private[eventstore] trait Operation {
 
   def inspectOut: PartialFunction[Out, Option[Operation]] // TODO iterable and pass credentials
 
-  def inspectIn(in: Try[In]): Option[Operation]
+  def inspectIn(in: Try[In]): Decision
 
   // TODO prevent this from calling when disconnected
   def connectionLost(): Option[Operation]
@@ -28,7 +28,7 @@ private[eventstore] trait Operation {
 private[eventstore] object Operation {
   def opt(pack: PackOut, client: ActorRef, inFunc: InFunc, outFunc: Option[OutFunc], maxRetries: Int): Option[Operation] = {
 
-    def base(x: Inspection) = Some(BaseOperation(pack, client, inFunc, outFunc, x, maxRetries))
+    def base(x: Inspection) = Some(BaseOperation(pack, client, outFunc, x, maxRetries))
 
     pack.message match {
       case x: WriteEvents       => base(new WriteEventsInspection(x))

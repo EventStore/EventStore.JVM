@@ -6,7 +6,7 @@ import akka.io.{ Tcp, IO }
 import scala.concurrent.duration._
 import scala.util.{ Try, Failure, Success }
 import pipeline._
-import operations.{ Operation, Operations }
+import eventstore.operations.{ Decision, Operation, Operations }
 import util.{ CancellableAdapter, DelayedRetry }
 
 object ConnectionActor {
@@ -45,7 +45,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       rcvOutgoing(operations, connecting, None) or
       rcvConnected(onPipeline) or
       rcvConnectFailed(None) or
-      rcvTimedOut(operations, connecting) or
+      rcvTimedOut(operations, connecting, None) or
       rcvTerminated(operations, connecting)
   }
 
@@ -105,7 +105,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       receive or
         rcvIncoming(operations, onIn, Some(outFunc)) or
         rcvOutgoing(operations, connected, Some(outFunc)) or
-        rcvTimedOut(operations, connected) or
+        rcvTimedOut(operations, connected, Some(outFunc)) or
         rcvTerminated(operations, connected)
     }
 
@@ -127,7 +127,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
         rcvOutgoing(operations, reconnecting, None) or
         rcvConnected(onPipeline) or
         rcvConnectFailed(reconnect) or
-        rcvTimedOut(operations, reconnecting) or
+        rcvTimedOut(operations, reconnecting, None) or
         rcvTerminated(operations, reconnecting)
     }
 
@@ -147,8 +147,20 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
         operations.single(correlationId) match {
           case Some(operation) =>
             operation.inspectIn(msg) match {
-              case Some(operation) => operations + operation
-              case None            => operations - operation
+              case Decision.Ignore =>
+                operations
+
+              case Decision.Stop(in) =>
+                inFunc(operation.client, in)
+                operations - operation
+
+              case Decision.Retry(operation, pack) =>
+                outFunc.foreach { outFunc => outFunc(pack) }
+                operations + operation
+
+              case Decision.Continue(operation, in) =>
+                inFunc(operation.client, in)
+                operations + operation
             }
 
           case None =>
@@ -175,14 +187,26 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       }
   }
 
-  def rcvTimedOut(operations: Operations, receive: Operations => Receive): Receive = {
+  def rcvTimedOut(operations: Operations, receive: Operations => Receive, outFunc: Option[PackOut => Unit]): Receive = {
     case TimedOut(id, version) =>
       val operation = operations.single(id)
       operation.foreach { operation =>
         if (operation.version == version) {
           val result = operation.inspectIn(Failure(OperationTimedOut)) match {
-            case Some(operation) => operations + operation
-            case None            => operations - operation
+            case Decision.Ignore =>
+              operations
+
+            case Decision.Stop(in) =>
+              inFunc(operation.client, in)
+              operations - operation
+
+            case Decision.Retry(operation, pack) =>
+              outFunc.foreach { outFunc => outFunc(pack) }
+              operations + operation
+
+            case Decision.Continue(operation, in) =>
+              inFunc(operation.client, in)
+              operations + operation
           }
           context become receive(result)
         }
@@ -190,13 +214,6 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
   }
 
   def rcvOutgoing(operations: Operations, receive: Operations => Receive, outFunc: Option[PackOut => Unit]): Receive = {
-    def inFunc(client: ActorRef)(in: Try[In]): Unit = {
-      val msg = in match {
-        case Success(x) => x
-        case Failure(x) => Status.Failure(x)
-      }
-      client ! msg
-    }
 
     def rcvPack(pack: PackOut): Unit = {
       val msg = pack.message
@@ -217,7 +234,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
           }
 
         case None =>
-          Operation.opt(pack, sender(), inFunc(sender()), outFunc, operationMaxRetries) match {
+          Operation.opt(pack, sender(), inFunc(sender(), _), outFunc, operationMaxRetries) match {
             case None => operations
             case Some(operation) =>
               context watch sender()
@@ -267,6 +284,14 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       context watch connection
       context watch pipeline
       context become connected(operations, connection, pipeline, 0)
+  }
+
+  def inFunc(client: ActorRef, in: Try[In]): Unit = {
+    val msg = in match {
+      case Success(x) => x
+      case Failure(x) => Status.Failure(x)
+    }
+    client ! msg
   }
 
   def sendCommand(pipeline: ActorRef, pack: PackOut): Unit = {
