@@ -4,7 +4,7 @@ package operations
 import OperationError._
 import Inspection.Decision._
 
-private[eventstore] class WriteEventsInspection(out: WriteEvents)
+private[eventstore] case class WriteEventsInspection(out: WriteEvents)
     extends ErrorInspection[WriteEventsCompleted, OperationError] {
 
   def decision(error: OperationError) = error match {

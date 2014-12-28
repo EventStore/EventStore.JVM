@@ -9,10 +9,10 @@ private[eventstore] class SimpleInspection(in: In) extends Inspection {
   def pf = { case Success(`in`) => Stop }
 }
 
-private[eventstore] object AuthenticateInspection extends SimpleInspection(Authenticated)
+private[eventstore] case object AuthenticateInspection extends SimpleInspection(Authenticated)
 
-private[eventstore] object PingInspection extends SimpleInspection(Pong)
+private[eventstore] case object PingInspection extends SimpleInspection(Pong)
 
-private[eventstore] object UnsubscribeInspection extends SimpleInspection(Unsubscribed)
+private[eventstore] case object UnsubscribeInspection extends SimpleInspection(Unsubscribed)
 
-private[eventstore] object HeartbeatRequestInspection extends SimpleInspection(HeartbeatResponse)
+private[eventstore] case object HeartbeatRequestInspection extends SimpleInspection(HeartbeatResponse)

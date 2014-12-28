@@ -4,7 +4,7 @@ package operations
 import ReadEventError._
 import Inspection.Decision._
 
-private[eventstore] class ReadEventInspection(out: ReadEvent)
+private[eventstore] case class ReadEventInspection(out: ReadEvent)
     extends ErrorInspection[ReadEventCompleted, ReadEventError] {
 
   def decision(error: ReadEventError) = {

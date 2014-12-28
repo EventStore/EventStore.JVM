@@ -4,7 +4,7 @@ package operations
 import OperationError._
 import Inspection.Decision._
 
-private[eventstore] class DeleteStreamInspection(out: DeleteStream)
+private[eventstore] case class DeleteStreamInspection(out: DeleteStream)
     extends ErrorInspection[DeleteStreamCompleted, OperationError] {
 
   def decision(error: OperationError) = {

@@ -4,7 +4,7 @@ package operations
 import OperationError._
 import Inspection.Decision._
 
-private[eventstore] class TransactionCommitInspection(out: TransactionCommit)
+private[eventstore] case class TransactionCommitInspection(out: TransactionCommit)
     extends ErrorInspection[TransactionCommitCompleted, OperationError] {
 
   def decision(error: OperationError) = {
