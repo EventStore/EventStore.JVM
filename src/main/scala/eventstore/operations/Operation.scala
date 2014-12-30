@@ -15,7 +15,7 @@ private[eventstore] trait Operation {
   def inspectIn(in: Try[In]): Decision
 
   // TODO prevent this from calling when disconnected
-  def connectionLost(): Option[Operation]
+  def disconnected: OnDisconnected
 
   // TODO prevent this from calling when connected
   def connected(outFunc: OutFunc): Option[Operation]
@@ -27,7 +27,7 @@ private[eventstore] trait Operation {
 
 private[eventstore] object Operation {
   def opt(pack: PackOut, client: ActorRef, inFunc: InFunc, outFunc: Option[OutFunc], maxRetries: Int): Option[Operation] = {
-    def retryable(x: Operation) = RetryableOperation(x, maxRetries, outFunc.isEmpty)
+    def retryable(x: Operation) = RetryableOperation(x, maxRetries, outFunc.isDefined)
     def base(x: Inspection) = retryable(BaseOperation(pack, client, outFunc, x))
 
     pack.message match {

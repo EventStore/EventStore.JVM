@@ -13,10 +13,10 @@ class BaseOperationSpec extends OperationSpec {
       operation.id mustEqual pack.correlationId
     }
 
-    "drop OutFunc on connectionLost" in new BaseOperationScope {
-      val actual = operation.connectionLost()
-      actual must beSome
-      actual.get.outFunc must beNone
+    "drop OutFunc on disconnected" in new BaseOperationScope {
+      operation.disconnected must beLike {
+        case OnDisconnected.Continue(BaseOperation(`pack`, _, None, _)) => ok
+      }
       there were noCallsTo(outFunc, inFunc)
     }
 
@@ -95,10 +95,11 @@ class BaseOperationSpec extends OperationSpec {
 
     "always return 0 for version" in new BaseOperationScope {
       operation.version mustEqual 0
-      val o1 = operation.connectionLost().get
-      o1.version mustEqual 0
-      val o2 = operation.connected(outFunc).get
-      o2.version mustEqual 0
+      operation.disconnected must beLike {
+        case OnDisconnected.Continue(operation) if operation.version == 0 =>
+          operation.connected(outFunc).get.version mustEqual 0
+          ok
+      }
     }
   }
 

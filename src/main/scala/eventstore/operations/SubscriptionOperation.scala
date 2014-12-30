@@ -96,9 +96,9 @@ private[eventstore] object SubscriptionOperation {
         stop(Try(Unsubscribed))
     }
 
-    def connectionLost(): Option[Subscribing] = {
+    def disconnected = {
       val operation = outFunc.fold(this) { _ => copy(outFunc = None) }
-      Some(operation)
+      OnDisconnected.Continue(operation)
     }
 
     def connected(outFunc: OutFunc) = {
@@ -152,8 +152,9 @@ private[eventstore] object SubscriptionOperation {
         Some(operation)
     }
 
-    def connectionLost() = {
-      Some(Subscribing(subscribeTo, pack, client, inFunc, None, version + 1))
+    def disconnected = {
+      val operation = Subscribing(subscribeTo, pack, client, inFunc, None, version + 1)
+      OnDisconnected.Continue(operation)
     }
 
     def connected(outFunc: OutFunc) = {
@@ -190,7 +191,7 @@ private[eventstore] object SubscriptionOperation {
 
     def inspectOut = PartialFunction.empty
 
-    def connectionLost() = stop(Success(Unsubscribed))
+    def disconnected = OnDisconnected.Stop(Success(Unsubscribed))
 
     def connected(outFunc: OutFunc) = stop(Success(Unsubscribed))
   }

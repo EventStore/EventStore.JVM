@@ -8,7 +8,7 @@ private[eventstore] case class RetryableOperation(
     operation: Operation,
     retriesLeft: Int,
     maxRetries: Int,
-    disconnected: Boolean) extends Operation {
+    ongoing: Boolean) extends Operation {
 
   def id = operation.id
 
@@ -18,15 +18,16 @@ private[eventstore] case class RetryableOperation(
 
   def connected(outFunc: OutFunc) = {
     operation.connected(outFunc).map { operation =>
-      copy(operation = operation, disconnected = false)
+      copy(operation = operation, ongoing = true)
     }
   }
 
   def clientTerminated = operation.clientTerminated
 
-  def connectionLost() = {
-    operation.connectionLost().map { operation =>
-      copy(operation = operation, disconnected = true)
+  def disconnected = {
+    operation.disconnected match {
+      case x: OnDisconnected.Stop     => x
+      case OnDisconnected.Continue(x) => OnDisconnected.Continue(copy(operation = x, ongoing = false))
     }
   }
 
@@ -39,7 +40,7 @@ private[eventstore] case class RetryableOperation(
     case Ignore                  => Ignore
     case Continue(operation, in) => Continue(reset(operation), in)
     case Retry(operation, pack) =>
-      if (disconnected) Retry(wrap(operation), pack)
+      if (!ongoing) Retry(wrap(operation), pack)
       else if (retriesLeft > 0) Retry(decrement(operation), pack)
       else Stop(new RetriesLimitReachedException(s"Operation $pack reached retries limit: $maxRetries"))
   }
@@ -52,7 +53,7 @@ private[eventstore] case class RetryableOperation(
 }
 
 private[eventstore] object RetryableOperation {
-  def apply(operation: Operation, maxRetries: Int, disconnected: Boolean): RetryableOperation = {
-    RetryableOperation(operation, maxRetries, maxRetries, disconnected)
+  def apply(operation: Operation, maxRetries: Int, ongoing: Boolean): RetryableOperation = {
+    RetryableOperation(operation, maxRetries, maxRetries, ongoing)
   }
 }

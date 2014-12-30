@@ -6,7 +6,7 @@ import akka.io.{ Tcp, IO }
 import scala.concurrent.duration._
 import scala.util.{ Try, Failure, Success }
 import pipeline._
-import eventstore.operations.{ Decision, Operation, Operations }
+import eventstore.operations.{ OnDisconnected, Decision, Operation, Operations }
 import util.{ CancellableAdapter, DelayedRetry }
 
 object ConnectionActor {
@@ -59,7 +59,14 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       def outFunc(pack: PackOut): Unit = sendCommand(pipeline, pack)
 
       def maybeReconnect(reason: String) = {
-        val result = operations.flatMap(_.connectionLost())
+        val result = operations.flatMap { operation =>
+          operation.disconnected match {
+            case OnDisconnected.Continue(operation) => Iterable(operation)
+            case OnDisconnected.Stop(in) =>
+              toClient(operation.client, in)
+              Iterable.empty
+          }
+        }
 
         if (!scheduled.isCancelled) scheduled.cancel()
         val template = "connection lost to {}: {}"
@@ -151,7 +158,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
                 operations
 
               case Decision.Stop(in) =>
-                inFunc(operation.client, in)
+                toClient(operation.client, in)
                 operations - operation
 
               case Decision.Retry(operation, pack) =>
@@ -159,7 +166,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
                 operations + operation
 
               case Decision.Continue(operation, in) =>
-                inFunc(operation.client, in)
+                toClient(operation.client, in)
                 operations + operation
             }
 
@@ -197,7 +204,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
               operations
 
             case Decision.Stop(in) =>
-              inFunc(operation.client, in)
+              toClient(operation.client, in)
               operations - operation
 
             case Decision.Retry(operation, pack) =>
@@ -205,7 +212,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
               operations + operation
 
             case Decision.Continue(operation, in) =>
-              inFunc(operation.client, in)
+              toClient(operation.client, in)
               operations + operation
           }
           context become receive(result)
@@ -234,7 +241,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
           }
 
         case None =>
-          Operation.opt(pack, sender(), inFunc(sender(), _), outFunc, operationMaxRetries) match {
+          Operation.opt(pack, sender(), toClient(sender(), _), outFunc, operationMaxRetries) match {
             case None => operations
             case Some(operation) =>
               context watch sender()
@@ -290,7 +297,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       context become connected(operations, connection, pipeline, 0)
   }
 
-  def inFunc(client: ActorRef, in: Try[In]): Unit = {
+  def toClient(client: ActorRef, in: Try[In]): Unit = {
     val msg = in match {
       case Success(x) => x
       case Failure(x) => Status.Failure(x)

@@ -18,11 +18,10 @@ class SubscriptionOperationSpec extends OperationSpec {
       }
     }
 
-    "drop OutFunc on connectionLost" in foreach(streams) { implicit stream =>
+    "drop OutFunc on disconnected" in foreach(streams) { implicit stream =>
       new SubscribingScope {
-        val actual = operation.connectionLost()
-        actual must beSome
-        actual.get.outFunc must beNone
+        val expected = operation.copy(outFunc = None)
+        val actual = operation.disconnected mustEqual OnDisconnected.Continue(expected)
         there were noCallsTo(outFunc, inFunc)
       }
     }
@@ -170,10 +169,11 @@ class SubscriptionOperationSpec extends OperationSpec {
     "return 0 for version" in foreach(streams) { implicit stream =>
       new SubscribingScope {
         operation.version mustEqual 0
-        val o1 = operation.connectionLost().get
-        o1.version mustEqual 0
-        val o2 = operation.connected(outFunc).get
-        o2.version mustEqual 0
+        val o1 = operation.disconnected must beLike {
+          case OnDisconnected.Continue(x) if x.version == 0 =>
+            x.connected(outFunc).get.version mustEqual 0
+            ok
+        }
       }
     }
   }
@@ -185,14 +185,11 @@ class SubscriptionOperationSpec extends OperationSpec {
       }
     }
 
-    "become subscribing on connectionLost" in foreach(streams) { implicit stream =>
+    "become subscribing on disconnected" in foreach(streams) { implicit stream =>
       new SubscribedScope {
-        val actual = operation.connectionLost()
-        actual must beSome
-        val subscribing = actual.get
-        subscribing must beAnInstanceOf[SubscriptionOperation.Subscribing]
-        subscribing.outFunc must beNone
-        actual.get.version mustEqual 1
+        val actual = operation.disconnected must beLike {
+          case OnDisconnected.Continue(SubscriptionOperation.Subscribing(_, _, _, _, None, 1)) => ok
+        }
         there were noCallsTo(outFunc, inFunc)
       }
     }
@@ -324,8 +321,9 @@ class SubscriptionOperationSpec extends OperationSpec {
     "return 0 for version" in foreach(streams) { implicit stream =>
       new SubscribedScope {
         operation.version mustEqual 0
-        val o1 = operation.connectionLost().get
-        o1.version mustEqual 1
+        val o1 = operation.disconnected must beLike {
+          case OnDisconnected.Continue(x) if x.version == 1 => ok
+        }
       }
     }
   }
@@ -337,10 +335,9 @@ class SubscriptionOperationSpec extends OperationSpec {
       }
     }
 
-    "stop on connectionLost" in foreach(streams) { implicit stream =>
+    "stop on disconnected" in foreach(streams) { implicit stream =>
       new UnsubscribingScope {
-        operation.connectionLost() must beNone
-        thereWasStop(Success(Unsubscribed))
+        operation.disconnected mustEqual OnDisconnected.Stop(Success(Unsubscribed))
       }
     }
 

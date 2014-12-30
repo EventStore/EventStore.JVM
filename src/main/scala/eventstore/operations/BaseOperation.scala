@@ -50,9 +50,7 @@ private[eventstore] case class BaseOperation(
     pf.applyOrElse(in, fallback)
   }
 
-  def connectionLost() = {
-    Some(copy(outFunc = None))
-  }
+  def disconnected = OnDisconnected.Continue(copy(outFunc = None))
 
   def connected(outFunc: OutFunc) = {
     outFunc(pack)
