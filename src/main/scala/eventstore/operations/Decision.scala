@@ -17,7 +17,6 @@ object Decision {
 
   case class Retry(operation: Operation, pack: PackOut) extends Decision
 
-  // TODO always Success()
   case class Continue(operation: Operation, in: Try[In]) extends Decision
 
   case object Ignore extends Decision
