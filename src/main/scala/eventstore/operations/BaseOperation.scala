@@ -55,7 +55,6 @@ private[eventstore] case class BaseOperation(
   }
 
   def connected(outFunc: OutFunc) = {
-    // TODO correlate maxRetries with outFunc(pack)
     outFunc(pack)
     Some(copy(outFunc = Some(outFunc)))
   }

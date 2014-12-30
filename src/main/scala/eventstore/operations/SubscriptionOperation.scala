@@ -10,7 +10,9 @@ import scala.util.{ Success, Failure, Try }
 
 private[eventstore] sealed trait SubscriptionOperation extends Operation {
   def stream: EventStream
+
   def pack: PackOut
+
   def inFunc: InFunc
 
   def id = pack.correlationId
@@ -25,6 +27,10 @@ private[eventstore] sealed trait SubscriptionOperation extends Operation {
     val msg = s"Expected: $expected, actual: $actual"
     Stop(new CommandNotExpectedException(msg))
   }
+
+  protected def retry: Decision = Retry(this, pack)
+
+  protected def accessDenied(msg: String): Decision = Stop(new AccessDeniedException(msg))
 
   object EventAppeared {
     def unapply(x: StreamEventAppeared): Boolean = {
@@ -45,9 +51,8 @@ private[eventstore] object SubscriptionOperation {
     pack: PackOut,
     client: ActorRef,
     inFunc: InFunc,
-    outFunc: Option[OutFunc],
-    maxRetries: Int): Operation = {
-    Subscribing(subscribeTo, pack, client, inFunc, outFunc, 0, maxRetries, maxRetries)
+    outFunc: Option[OutFunc]): Operation = {
+    Subscribing(subscribeTo, pack, client, inFunc, outFunc, 0)
   }
 
   case class Subscribing(
@@ -56,9 +61,7 @@ private[eventstore] object SubscriptionOperation {
       client: ActorRef,
       inFunc: InFunc,
       outFunc: Option[OutFunc],
-      version: Int,
-      retriesLeft: Int,
-      maxRetries: Int) extends SubscriptionOperation {
+      version: Int) extends SubscriptionOperation {
 
     def stream = subscribeTo.stream
 
@@ -66,43 +69,26 @@ private[eventstore] object SubscriptionOperation {
       outFunc.foreach { outFunc => outFunc(pack.copy(message = Unsubscribe)) }
     }
 
-    def inspectIn(in: Try[In]): Decision = {
-      def retry() = {
-        outFunc match {
-          case None => Retry(this, pack)
-          case Some(outFunc) =>
-            if (retriesLeft > 0) {
-              Retry(copy(retriesLeft = retriesLeft - 1), pack)
-            } else {
-              Stop(new RetriesLimitReachedException(s"Operation $pack reached retries limit: $maxRetries"))
-            }
-        }
-      }
-
+    def inspectIn(in: Try[In]) = {
       def subscribed = outFunc match {
         case None => Ignore
         case Some(outFunc) =>
-          Continue(Subscribed(subscribeTo, pack, client, inFunc, outFunc, version + 1, maxRetries), in)
-      }
-
-      def accessDenied = {
-        val msg = s"Subscription to $stream failed due to access denied"
-        Stop(new AccessDeniedException(msg))
+          Continue(Subscribed(subscribeTo, pack, client, inFunc, outFunc, version + 1), in)
       }
 
       def unexpected(x: Any) = this.unexpected(x, Completed.expected)
 
       in match {
-        case Success(Completed())                      => subscribed
-        case Success(EventAppeared())                  => Continue(this, in)
-        case Success(x)                                => unexpected(x)
-        case Failure(SubscriptionDropped.AccessDenied) => accessDenied
-        case Failure(OperationTimedOut)                => Stop(OperationTimeoutException(pack))
-        case Failure(NotHandled(NotReady))             => retry()
-        case Failure(NotHandled(TooBusy))              => retry()
-        case Failure(BadRequest)                       => Stop(new ServerErrorException(s"Bad request: $pack"))
-        case Failure(NotAuthenticated)                 => Stop(NotAuthenticatedException(pack))
-        case Failure(x)                                => unexpected(x)
+        case Success(Completed())          => subscribed
+        case Success(EventAppeared())      => Continue(this, in)
+        case Success(x)                    => unexpected(x)
+        case Failure(AccessDenied)         => accessDenied(s"Subscription to $stream failed due to access denied")
+        case Failure(OperationTimedOut)    => Stop(OperationTimeoutException(pack))
+        case Failure(NotHandled(NotReady)) => retry
+        case Failure(NotHandled(TooBusy))  => retry
+        case Failure(BadRequest)           => Stop(new ServerErrorException(s"Bad request: $pack"))
+        case Failure(NotAuthenticated)     => Stop(NotAuthenticatedException(pack))
+        case Failure(x)                    => unexpected(x)
       }
     }
 
@@ -142,24 +128,18 @@ private[eventstore] object SubscriptionOperation {
       client: ActorRef,
       inFunc: InFunc,
       outFunc: OutFunc,
-      version: Int,
-      maxRetries: Int) extends SubscriptionOperation {
+      version: Int) extends SubscriptionOperation {
 
     def stream = subscribeTo.stream
 
     def inspectIn(in: Try[In]): Decision = {
-      def accessDenied = {
-        val msg = s"Subscription on $stream dropped due to access denied"
-        Stop(new AccessDeniedException(msg))
-      }
-
       def unexpected(x: Any) = this.unexpected(x, classOf[StreamEventAppeared])
 
       in match {
         case Success(EventAppeared()) => Continue(this, in)
         case Success(Unsubscribed)    => Stop(in)
         case Success(x)               => unexpected(x)
-        case Failure(AccessDenied)    => accessDenied
+        case Failure(AccessDenied)    => accessDenied(s"Subscription on $stream dropped due to access denied")
         case Failure(x)               => unexpected(x)
       }
     }
@@ -170,18 +150,17 @@ private[eventstore] object SubscriptionOperation {
       case Unsubscribe =>
         val pack = this.pack.copy(message = Unsubscribe)
         outFunc(pack)
-        val operation = Unsubscribing(stream, pack, client, inFunc, outFunc, version + 1, maxRetries, maxRetries)
+        val operation = Unsubscribing(stream, pack, client, inFunc, outFunc, version + 1)
         Some(operation)
     }
 
     def connectionLost() = {
-      Some(Subscribing(subscribeTo, pack, client, inFunc, None, version + 1, maxRetries, maxRetries))
+      Some(Subscribing(subscribeTo, pack, client, inFunc, None, version + 1))
     }
 
     def connected(outFunc: OutFunc) = {
-      // TODO correlate maxRetries with outFunc(pack)
       outFunc(pack)
-      Some(Subscribing(subscribeTo, pack, client, inFunc, Some(outFunc), version + 1, maxRetries - 1, maxRetries))
+      Some(Subscribing(subscribeTo, pack, client, inFunc, Some(outFunc), version + 1))
     }
   }
 
@@ -191,36 +170,21 @@ private[eventstore] object SubscriptionOperation {
       client: ActorRef,
       inFunc: InFunc,
       outFunc: OutFunc,
-      version: Int,
-      retriesLeft: Int,
-      maxRetries: Int) extends SubscriptionOperation {
+      version: Int) extends SubscriptionOperation {
 
     def inspectIn(in: Try[In]) = {
-      def retry() = {
-        if (retriesLeft > 0) {
-          Retry(copy(retriesLeft = retriesLeft - 1), pack)
-        } else {
-          Stop(new RetriesLimitReachedException(s"Operation $pack reached retries limit: $maxRetries"))
-        }
-      }
-
       def unexpected(x: Any) = this.unexpected(x, Unsubscribed.getClass)
 
-      def accessDenied = {
-        val msg = s"Unsubscribed from $stream due to access denied"
-        Stop(new AccessDeniedException(msg))
-      }
-
       in match {
-        case Success(Unsubscribed)                     => Stop(Unsubscribed)
-        case Success(EventAppeared())                  => Ignore
-        case Success(x)                                => unexpected(x)
-        case Failure(SubscriptionDropped.AccessDenied) => accessDenied
-        case Failure(OperationTimedOut)                => Stop(OperationTimeoutException(pack))
-        case Failure(NotHandled(NotReady))             => retry()
-        case Failure(NotHandled(TooBusy))              => retry()
-        case Failure(BadRequest)                       => Stop(new ServerErrorException(s"Bad request: $pack"))
-        case Failure(x)                                => unexpected(x)
+        case Success(Unsubscribed)         => Stop(Unsubscribed)
+        case Success(EventAppeared())      => Ignore
+        case Success(x)                    => unexpected(x)
+        case Failure(AccessDenied)         => accessDenied(s"Unsubscribed from $stream due to access denied")
+        case Failure(OperationTimedOut)    => Stop(OperationTimeoutException(pack))
+        case Failure(NotHandled(NotReady)) => retry
+        case Failure(NotHandled(TooBusy))  => retry
+        case Failure(BadRequest)           => Stop(new ServerErrorException(s"Bad request: $pack"))
+        case Failure(x)                    => unexpected(x)
       }
     }
 

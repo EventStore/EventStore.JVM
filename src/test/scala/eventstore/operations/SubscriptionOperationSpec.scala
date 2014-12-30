@@ -93,7 +93,9 @@ class SubscriptionOperationSpec extends OperationSpec {
 
     "become subscribed on success" in foreach(streams) { implicit stream =>
       new SubscribingScope {
-        operation.inspectIn(Success(subscribeCompleted)) mustEqual Continue(SubscriptionOperation.Subscribed(subscribeTo, pack, client, inFunc, outFunc, 1, 1), Success(subscribeCompleted))
+        operation.inspectIn(Success(subscribeCompleted)) mustEqual Continue(
+          SubscriptionOperation.Subscribed(subscribeTo, pack, client, inFunc, outFunc, 1),
+          Success(subscribeCompleted))
       }
     }
 
@@ -114,24 +116,13 @@ class SubscriptionOperationSpec extends OperationSpec {
 
     "retry on NotReady" in foreach(streams) { implicit stream =>
       new SubscribingScope {
-        operation.inspectIn(Failure(NotHandled(NotReady))) mustEqual Retry(operation.copy(retriesLeft = operation.retriesLeft - 1), pack)
+        operation.inspectIn(Failure(NotHandled(NotReady))) mustEqual Retry(operation, pack)
       }
     }
 
     "retry on TooBusy" in foreach(streams) { implicit stream =>
       new SubscribingScope {
-        operation.inspectIn(Failure(NotHandled(TooBusy))) mustEqual Retry(operation.copy(retriesLeft = operation.retriesLeft - 1), pack)
-      }
-    }
-
-    "keep retrying until max retries limit reached" in foreach(streams) { implicit stream =>
-      new SubscribingScope {
-        val failure = Failure(NotHandled(TooBusy))
-        val o2 = operation.copy(retriesLeft = operation.retriesLeft - 1)
-        operation.inspectIn(Failure(NotHandled(TooBusy))) mustEqual Retry(o2, pack)
-        o2.inspectIn(failure) must beLike {
-          case Stop(Failure(_: RetriesLimitReachedException)) => ok
-        }
+        operation.inspectIn(Failure(NotHandled(TooBusy))) mustEqual Retry(operation, pack)
       }
     }
 
@@ -394,24 +385,13 @@ class SubscriptionOperationSpec extends OperationSpec {
 
     "retry on NotReady" in foreach(streams) { implicit stream =>
       new UnsubscribingScope {
-        operation.inspectIn(Failure(NotHandled(NotReady))) mustEqual Retry(operation.copy(retriesLeft = operation.retriesLeft - 1), pack)
+        operation.inspectIn(Failure(NotHandled(NotReady))) mustEqual Retry(operation, pack)
       }
     }
 
     "retry on TooBusy" in foreach(streams) { implicit stream =>
       new UnsubscribingScope {
-        operation.inspectIn(Failure(NotHandled(TooBusy))) mustEqual Retry(operation.copy(retriesLeft = operation.retriesLeft - 1), pack)
-      }
-    }
-
-    "keep retrying until max retries limit reached" in foreach(streams) { implicit stream =>
-      new UnsubscribingScope {
-        val failure = Failure(NotHandled(TooBusy))
-        val o2 = operation.copy(retriesLeft = operation.retriesLeft - 1)
-        operation.inspectIn(Failure(NotHandled(TooBusy))) mustEqual Retry(o2, pack)
-        o2.inspectIn(failure) must beLike {
-          case Stop(Failure(_: RetriesLimitReachedException)) => ok
-        }
+        operation.inspectIn(Failure(NotHandled(TooBusy))) mustEqual Retry(operation, pack)
       }
     }
 
@@ -496,7 +476,7 @@ class SubscriptionOperationSpec extends OperationSpec {
     val subscribeTo = SubscribeTo(stream)
     val pack = PackOut(subscribeTo)
     val unsubscribe = PackOut(Unsubscribe, pack.correlationId, pack.credentials)
-    val operation = SO.Subscribing(subscribeTo, pack, client, inFunc, Some(outFunc), 0, 1, 1)
+    val operation = SO.Subscribing(subscribeTo, pack, client, inFunc, Some(outFunc), 0)
 
     lazy val subscribeCompleted = stream match {
       case x: EventStream.Id => SubscribeToStreamCompleted(0)
@@ -508,12 +488,12 @@ class SubscriptionOperationSpec extends OperationSpec {
     val subscribeTo = SubscribeTo(stream)
     val pack = PackOut(subscribeTo)
     val unsubscribe = PackOut(Unsubscribe, pack.correlationId, pack.credentials)
-    val operation = SO.Subscribed(subscribeTo, pack, client, inFunc, outFunc, 0, 1)
+    val operation = SO.Subscribed(subscribeTo, pack, client, inFunc, outFunc, 0)
   }
 
   private abstract class UnsubscribingScope(implicit val stream: EventStream) extends SubscriptionScope {
     val subscribeTo = SubscribeTo(stream)
     val pack = PackOut(Unsubscribe)
-    val operation = SO.Unsubscribing(stream, pack, client, inFunc, outFunc, 0, 1, 1)
+    val operation = SO.Unsubscribing(stream, pack, client, inFunc, outFunc, 0)
   }
 }

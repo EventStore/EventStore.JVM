@@ -2,6 +2,7 @@ package eventstore
 package operations
 
 import Decision._
+import NotHandled.{ NotReady, TooBusy }
 import tcp.PackOut
 import scala.util.control.NoStackTrace
 import scala.util.{ Success, Failure }
@@ -54,6 +55,15 @@ class BaseOperationSpec extends OperationSpec {
 
     "stop on expected error" in new BaseOperationScope {
       operation.inspectIn(Failure(TestError)) mustEqual Stop(TestException)
+    }
+
+    "retry on NotReady" in new BaseOperationScope {
+      val result = operation.inspectIn(Failure(NotHandled(NotReady)))
+      result mustEqual Retry(operation, pack)
+    }
+
+    "retry on TooBusy" in new BaseOperationScope {
+      operation.inspectIn(Failure(NotHandled(TooBusy))) mustEqual Retry(operation, pack)
     }
 
     "stop on OperationTimedOut" in new BaseOperationScope {
