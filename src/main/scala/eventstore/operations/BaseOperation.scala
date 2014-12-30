@@ -59,7 +59,7 @@ private[eventstore] case class BaseOperation(
     Some(copy(outFunc = Some(outFunc)))
   }
 
-  def clientTerminated() = {}
+  def clientTerminated = None
 
   def version = 0
 }

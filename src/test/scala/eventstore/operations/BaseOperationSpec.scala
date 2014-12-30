@@ -39,8 +39,7 @@ class BaseOperationSpec extends OperationSpec {
     }
 
     "ignore clientTerminated" in new BaseOperationScope {
-      operation.clientTerminated()
-      there were noCallsTo(outFunc, inFunc)
+      operation.clientTerminated must beNone
     }
 
     "ignore out messages" in new BaseOperationScope {

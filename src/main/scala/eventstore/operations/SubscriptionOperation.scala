@@ -65,9 +65,7 @@ private[eventstore] object SubscriptionOperation {
 
     def stream = subscribeTo.stream
 
-    def clientTerminated() = {
-      outFunc.foreach { outFunc => outFunc(pack.copy(message = Unsubscribe)) }
-    }
+    def clientTerminated = Some(pack.copy(message = Unsubscribe))
 
     def inspectIn(in: Try[In]) = {
       def subscribed = outFunc match {
@@ -144,7 +142,7 @@ private[eventstore] object SubscriptionOperation {
       }
     }
 
-    def clientTerminated() = outFunc(pack.copy(message = Unsubscribe))
+    def clientTerminated = Some(pack.copy(message = Unsubscribe))
 
     def inspectOut = {
       case Unsubscribe =>
@@ -188,7 +186,7 @@ private[eventstore] object SubscriptionOperation {
       }
     }
 
-    def clientTerminated() = inFunc(Success(Unsubscribed))
+    def clientTerminated = None
 
     def inspectOut = PartialFunction.empty
 

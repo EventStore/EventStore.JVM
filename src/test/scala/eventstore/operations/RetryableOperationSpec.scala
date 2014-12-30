@@ -41,8 +41,8 @@ class RetryableOperationSpec extends Specification with Mockito {
     }
 
     "proxy clientTerminated" in new TestScope {
-      operation.clientTerminated()
-      there was one(underlying).clientTerminated()
+      operation.clientTerminated mustEqual underlying.clientTerminated
+      there was two(underlying).clientTerminated
     }
 
     "wrap underlying connectionLost result if Some" in new TestScope {
@@ -112,6 +112,7 @@ class RetryableOperationSpec extends Specification with Mockito {
     val inspectOut = spy(new InspectOut)
     val underlying = {
       val operation = mock[Operation]
+      operation.clientTerminated returns None
       operation.id returns randomUuid
       operation.version returns Random.nextInt()
       operation.connected(outFunc) returns None

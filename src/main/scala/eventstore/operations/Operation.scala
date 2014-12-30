@@ -20,7 +20,7 @@ private[eventstore] trait Operation {
   // TODO prevent this from calling when connected
   def connected(outFunc: OutFunc): Option[Operation]
 
-  def clientTerminated(): Unit
+  def clientTerminated: Option[PackOut]
 
   def version: Int
 }

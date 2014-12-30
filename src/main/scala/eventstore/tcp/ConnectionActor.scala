@@ -46,7 +46,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       rcvConnected(onPipeline) or
       rcvConnectFailed(None) or
       rcvTimedOut(operations, connecting, None) or
-      rcvTerminated(operations, connecting)
+      rcvTerminated(operations, connecting, None)
   }
 
   def connected(operations: Operations, connection: ActorRef, pipeline: ActorRef, heartbeatId: Long): Receive = {
@@ -106,7 +106,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
         rcvIncoming(operations, onIn, Some(outFunc)) or
         rcvOutgoing(operations, connected, Some(outFunc)) or
         rcvTimedOut(operations, connected, Some(outFunc)) or
-        rcvTerminated(operations, connected)
+        rcvTerminated(operations, connected, Some(outFunc))
     }
 
     connected(operations)
@@ -128,7 +128,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
         rcvConnected(onPipeline) or
         rcvConnectFailed(reconnect) or
         rcvTimedOut(operations, reconnecting, None) or
-        rcvTerminated(operations, reconnecting)
+        rcvTerminated(operations, reconnecting, None)
     }
 
     reconnecting(operations)
@@ -252,11 +252,15 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
     }
   }
 
-  def rcvTerminated(operations: Operations, receive: Operations => Receive): Receive = {
+  def rcvTerminated(operations: Operations, receive: Operations => Receive, outFunc: Option[PackOut => Unit]): Receive = {
     case Terminated(client) =>
       val os = operations.many(client)
       if (os.nonEmpty) {
-        os.foreach(_.clientTerminated())
+        for {
+          f <- outFunc.toList
+          o <- os
+          p <- o.clientTerminated
+        } f(p)
         context become receive(operations -- os)
       }
   }

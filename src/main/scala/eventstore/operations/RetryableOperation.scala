@@ -22,7 +22,7 @@ private[eventstore] case class RetryableOperation(
     }
   }
 
-  def clientTerminated() = operation.clientTerminated()
+  def clientTerminated = operation.clientTerminated
 
   def connectionLost() = {
     operation.connectionLost().map { operation =>

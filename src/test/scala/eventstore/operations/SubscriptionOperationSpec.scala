@@ -51,8 +51,7 @@ class SubscriptionOperationSpec extends OperationSpec {
 
     "unsubscribe on clientTerminated" in foreach(streams) { implicit stream =>
       new SubscribingScope {
-        operation.clientTerminated()
-        there was one(outFunc).apply(PackOut(Unsubscribe, pack.correlationId, pack.credentials))
+        operation.clientTerminated must beSome(pack.copy(message = Unsubscribe))
         there were noCallsTo(inFunc)
       }
     }
@@ -212,8 +211,7 @@ class SubscriptionOperationSpec extends OperationSpec {
 
     "unsubscribe on clientTerminated" in foreach(streams) { implicit stream =>
       new SubscribedScope {
-        operation.clientTerminated()
-        there was one(outFunc).apply(PackOut(Unsubscribe, pack.correlationId, pack.credentials))
+        operation.clientTerminated must beSome(pack.copy(message = Unsubscribe))
         there were noCallsTo(inFunc)
       }
     }
@@ -356,8 +354,7 @@ class SubscriptionOperationSpec extends OperationSpec {
 
     "stop on clientTerminated" in foreach(streams) { implicit stream =>
       new UnsubscribingScope {
-        operation.clientTerminated()
-        thereWasStop(Success(Unsubscribed))
+        operation.clientTerminated must beNone
       }
     }
 
