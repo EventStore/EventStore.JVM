@@ -1,11 +1,11 @@
 package eventstore
 package operations
 
-import NotHandled.{ NotReady, TooBusy }
-import tcp.PackOut
-import OnIncoming._
+import eventstore.NotHandled.{ NotReady, TooBusy }
+import eventstore.tcp.PackOut
+import eventstore.operations.OnIncoming._
+import eventstore.operations.{ SubscriptionOperation => SO }
 import scala.util.{ Try, Success, Failure }
-import operations.{ SubscriptionOperation => SO }
 
 class SubscriptionOperationSpec extends OperationSpec {
   val streamId = EventStream.Id("streamId")
@@ -68,10 +68,7 @@ class SubscriptionOperationSpec extends OperationSpec {
           ScavengeDatabase)
         foreach(outs) { x => operation.inspectOut.isDefinedAt(x) must beFalse }
 
-        operation.inspectOut(Unsubscribe) must beNone
-
-        there was one(outFunc).apply(unsubscribe)
-        there was one(inFunc).apply(Try(Unsubscribed))
+        operation.inspectOut(Unsubscribe) mustEqual OnOutgoing.Stop(unsubscribe, Try(Unsubscribed))
       }
     }
 
@@ -227,10 +224,9 @@ class SubscriptionOperationSpec extends OperationSpec {
         foreach(outs) { x => operation.inspectOut.isDefinedAt(x) must beFalse }
 
         val unsubscribing = operation.inspectOut(Unsubscribe)
-        unsubscribing must beSome
-        unsubscribing.get.version mustEqual 1
-        there was one(outFunc).apply(unsubscribe)
-        there were noCallsTo(inFunc)
+        unsubscribing must beLike {
+          case OnOutgoing.Continue(x, `unsubscribe`) if x.version == 1 => ok
+        }
       }
     }
 

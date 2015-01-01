@@ -1,7 +1,7 @@
 package eventstore
 package operations
 
-import OnIncoming._
+import eventstore.operations.OnIncoming._
 import scala.util.Try
 
 private[eventstore] case class RetryableOperation(
@@ -31,8 +31,9 @@ private[eventstore] case class RetryableOperation(
     }
   }
 
-  def inspectOut = operation.inspectOut andThen { x =>
-    x.map { operation => wrap(operation) }
+  def inspectOut = operation.inspectOut andThen {
+    case OnOutgoing.Continue(x, p) => OnOutgoing.Continue(x, p)
+    case x: OnOutgoing.Stop        => x
   }
 
   def inspectIn(in: Try[In]) = operation.inspectIn(in) match {

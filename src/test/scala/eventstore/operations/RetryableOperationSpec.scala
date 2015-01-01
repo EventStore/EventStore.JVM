@@ -4,8 +4,8 @@ package operations
 import org.specs2.mock.Mockito
 import org.specs2.mutable.Specification
 import org.specs2.specification.Scope
-import tcp.PackOut
-import OnIncoming._
+import eventstore.tcp.PackOut
+import eventstore.operations.OnIncoming._
 
 import scala.util.control.NoStackTrace
 import scala.util.{ Success, Random, Failure }
@@ -58,11 +58,11 @@ class RetryableOperationSpec extends Specification with Mockito {
 
     "wrap underlying inspectOut result if Some" in new TestScope {
       val result = mock[Operation]
-      val pf: PartialFunction[Out, Option[Operation]] = {
-        case `out` => Some(result)
+      val pf: PartialFunction[Out, OnOutgoing] = {
+        case `out` => OnOutgoing.Continue(result, pack)
       }
       underlying.inspectOut returns pf
-      operation.inspectOut(out) must beSome(operation.copy(operation = result))
+      operation.inspectOut(out) mustEqual OnOutgoing.Continue(result, pack)
       there was one(underlying).inspectOut
     }
 
@@ -128,7 +128,7 @@ class RetryableOperationSpec extends Specification with Mockito {
     class TestException extends Exception with NoStackTrace
   }
 
-  class InspectOut extends PartialFunction[Out, Option[Operation]] {
+  class InspectOut extends PartialFunction[Out, OnOutgoing] {
     def isDefinedAt(x: Out) = false
     def apply(v1: Out) = sys.error("")
   }

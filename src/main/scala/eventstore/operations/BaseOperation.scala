@@ -3,8 +3,7 @@ package operations
 
 import akka.actor.ActorRef
 import NotHandled.{ TooBusy, NotReady }
-import tcp.PackOut
-import operations.OnIncoming._
+import eventstore.tcp.PackOut
 import scala.util.{ Try, Success, Failure }
 
 private[eventstore] case class BaseOperation(
@@ -18,6 +17,8 @@ private[eventstore] case class BaseOperation(
   def inspectOut = PartialFunction.empty
 
   def inspectIn(in: Try[In]): OnIncoming = {
+    import OnIncoming._
+
     def retry = Retry(this, pack)
 
     def unexpected() = {

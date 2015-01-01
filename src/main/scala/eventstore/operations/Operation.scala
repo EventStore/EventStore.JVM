@@ -2,7 +2,7 @@ package eventstore
 package operations
 
 import akka.actor.ActorRef
-import tcp.PackOut
+import eventstore.tcp.PackOut
 import scala.util.Try
 
 private[eventstore] trait Operation {
@@ -10,7 +10,7 @@ private[eventstore] trait Operation {
 
   def client: ActorRef
 
-  def inspectOut: PartialFunction[Out, Option[Operation]] // TODO iterable and pass credentials
+  def inspectOut: PartialFunction[Out, OnOutgoing] // TODO iterable and pass credentials
 
   def inspectIn(in: Try[In]): OnIncoming
 

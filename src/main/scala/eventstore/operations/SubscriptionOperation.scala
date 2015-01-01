@@ -2,10 +2,10 @@ package eventstore
 package operations
 
 import akka.actor.ActorRef
-import NotHandled.{ TooBusy, NotReady }
-import tcp.PackOut
-import SubscriptionDropped.AccessDenied
-import OnIncoming._
+import eventstore.NotHandled.{ TooBusy, NotReady }
+import eventstore.tcp.PackOut
+import eventstore.SubscriptionDropped.AccessDenied
+import eventstore.operations.OnIncoming._
 import scala.util.{ Success, Failure, Try }
 
 private[eventstore] sealed trait SubscriptionOperation extends Operation {
@@ -91,9 +91,7 @@ private[eventstore] object SubscriptionOperation {
     }
 
     def inspectOut = {
-      case Unsubscribe =>
-        outFunc.foreach { outFunc => outFunc(pack.copy(message = Unsubscribe)) }
-        stop(Try(Unsubscribed))
+      case Unsubscribe => OnOutgoing.Stop(pack.copy(message = Unsubscribe), Try(Unsubscribed))
     }
 
     def disconnected = {
@@ -147,9 +145,8 @@ private[eventstore] object SubscriptionOperation {
     def inspectOut = {
       case Unsubscribe =>
         val pack = this.pack.copy(message = Unsubscribe)
-        outFunc(pack)
         val operation = Unsubscribing(stream, pack, client, inFunc, outFunc, version + 1)
-        Some(operation)
+        OnOutgoing.Continue(operation, pack)
     }
 
     def disconnected = {
@@ -191,7 +188,7 @@ private[eventstore] object SubscriptionOperation {
 
     def inspectOut = PartialFunction.empty
 
-    def disconnected = OnDisconnected.Stop(Success(Unsubscribed))
+    def disconnected = OnDisconnected.Stop(Try(Unsubscribed))
 
     def connected(outFunc: OutFunc) = stop(Success(Unsubscribed))
   }
