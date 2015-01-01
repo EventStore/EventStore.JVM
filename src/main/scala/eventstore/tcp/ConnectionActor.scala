@@ -6,7 +6,7 @@ import akka.io.{ Tcp, IO }
 import scala.concurrent.duration._
 import scala.util.{ Try, Failure, Success }
 import pipeline._
-import eventstore.operations.{ OnDisconnected, Decision, Operation, Operations }
+import eventstore.operations.{ OnDisconnected, OnIncoming, Operation, Operations }
 import util.{ CancellableAdapter, DelayedRetry }
 
 object ConnectionActor {
@@ -154,18 +154,18 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
         operations.single(correlationId) match {
           case Some(operation) =>
             operation.inspectIn(msg) match {
-              case Decision.Ignore =>
+              case OnIncoming.Ignore =>
                 operations
 
-              case Decision.Stop(in) =>
+              case OnIncoming.Stop(in) =>
                 toClient(operation.client, in)
                 operations - operation
 
-              case Decision.Retry(operation, pack) =>
+              case OnIncoming.Retry(operation, pack) =>
                 outFunc.foreach { outFunc => outFunc(pack) }
                 operations + operation
 
-              case Decision.Continue(operation, in) =>
+              case OnIncoming.Continue(operation, in) =>
                 toClient(operation.client, in)
                 operations + operation
             }
@@ -200,18 +200,18 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       operation.foreach { operation =>
         if (operation.version == version) {
           val result = operation.inspectIn(Failure(OperationTimedOut)) match {
-            case Decision.Ignore =>
+            case OnIncoming.Ignore =>
               operations
 
-            case Decision.Stop(in) =>
+            case OnIncoming.Stop(in) =>
               toClient(operation.client, in)
               operations - operation
 
-            case Decision.Retry(operation, pack) =>
+            case OnIncoming.Retry(operation, pack) =>
               outFunc.foreach { outFunc => outFunc(pack) }
               operations + operation
 
-            case Decision.Continue(operation, in) =>
+            case OnIncoming.Continue(operation, in) =>
               toClient(operation.client, in)
               operations + operation
           }

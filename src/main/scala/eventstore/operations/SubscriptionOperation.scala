@@ -5,7 +5,7 @@ import akka.actor.ActorRef
 import NotHandled.{ TooBusy, NotReady }
 import tcp.PackOut
 import SubscriptionDropped.AccessDenied
-import Decision._
+import OnIncoming._
 import scala.util.{ Success, Failure, Try }
 
 private[eventstore] sealed trait SubscriptionOperation extends Operation {
@@ -22,15 +22,15 @@ private[eventstore] sealed trait SubscriptionOperation extends Operation {
     None
   }
 
-  protected def unexpected(actual: Any, expectedClass: Class[_]): Decision = {
+  protected def unexpected(actual: Any, expectedClass: Class[_]): OnIncoming = {
     val expected = expectedClass.getSimpleName
     val msg = s"Expected: $expected, actual: $actual"
     Stop(new CommandNotExpectedException(msg))
   }
 
-  protected def retry: Decision = Retry(this, pack)
+  protected def retry: OnIncoming = Retry(this, pack)
 
-  protected def accessDenied(msg: String): Decision = Stop(new AccessDeniedException(msg))
+  protected def accessDenied(msg: String): OnIncoming = Stop(new AccessDeniedException(msg))
 
   object EventAppeared {
     def unapply(x: StreamEventAppeared): Boolean = {
@@ -130,7 +130,7 @@ private[eventstore] object SubscriptionOperation {
 
     def stream = subscribeTo.stream
 
-    def inspectIn(in: Try[In]): Decision = {
+    def inspectIn(in: Try[In]): OnIncoming = {
       def unexpected(x: Any) = this.unexpected(x, classOf[StreamEventAppeared])
 
       in match {

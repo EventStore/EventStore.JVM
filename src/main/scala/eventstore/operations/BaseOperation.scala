@@ -4,7 +4,7 @@ package operations
 import akka.actor.ActorRef
 import NotHandled.{ TooBusy, NotReady }
 import tcp.PackOut
-import operations.Decision._
+import operations.OnIncoming._
 import scala.util.{ Try, Success, Failure }
 
 private[eventstore] case class BaseOperation(
@@ -17,7 +17,7 @@ private[eventstore] case class BaseOperation(
 
   def inspectOut = PartialFunction.empty
 
-  def inspectIn(in: Try[In]): Decision = {
+  def inspectIn(in: Try[In]): OnIncoming = {
     def retry = Retry(this, pack)
 
     def unexpected() = {
@@ -30,7 +30,7 @@ private[eventstore] case class BaseOperation(
       Stop(new CommandNotExpectedException(msg))
     }
 
-    def fallback(in: Try[In]): Decision = in match {
+    def fallback(in: Try[In]): OnIncoming = in match {
       case Success(x)                    => unexpected()
       case Failure(NotHandled(NotReady)) => retry
       case Failure(NotHandled(TooBusy))  => retry

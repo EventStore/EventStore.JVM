@@ -1,7 +1,7 @@
 package eventstore
 package operations
 
-import Decision._
+import OnIncoming._
 import scala.util.Try
 
 private[eventstore] case class RetryableOperation(

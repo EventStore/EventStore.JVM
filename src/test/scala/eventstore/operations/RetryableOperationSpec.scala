@@ -5,7 +5,7 @@ import org.specs2.mock.Mockito
 import org.specs2.mutable.Specification
 import org.specs2.specification.Scope
 import tcp.PackOut
-import Decision._
+import OnIncoming._
 
 import scala.util.control.NoStackTrace
 import scala.util.{ Success, Random, Failure }
@@ -117,8 +117,8 @@ class RetryableOperationSpec extends Specification with Mockito {
       operation.connected(outFunc) returns None
       operation.disconnected returns OnDisconnected.Stop(Success(Pong))
       operation.inspectOut returns inspectOut
-      operation.inspectIn(forceRetry) returns Decision.Retry(operation, pack)
-      operation.inspectIn(forceContinue) returns Decision.Continue(operation, forceContinue)
+      operation.inspectIn(forceRetry) returns OnIncoming.Retry(operation, pack)
+      operation.inspectIn(forceContinue) returns OnIncoming.Continue(operation, forceContinue)
       operation
     }
     val operation = RetryableOperation(underlying, maxRetries, ongoing = true)

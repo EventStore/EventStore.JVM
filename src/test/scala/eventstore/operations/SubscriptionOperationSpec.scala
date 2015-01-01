@@ -3,7 +3,7 @@ package operations
 
 import NotHandled.{ NotReady, TooBusy }
 import tcp.PackOut
-import Decision._
+import OnIncoming._
 import scala.util.{ Try, Success, Failure }
 import operations.{ SubscriptionOperation => SO }
 

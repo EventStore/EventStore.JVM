@@ -12,7 +12,7 @@ private[eventstore] trait Operation {
 
   def inspectOut: PartialFunction[Out, Option[Operation]] // TODO iterable and pass credentials
 
-  def inspectIn(in: Try[In]): Decision
+  def inspectIn(in: Try[In]): OnIncoming
 
   // TODO prevent this from calling when disconnected
   def disconnected: OnDisconnected

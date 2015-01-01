@@ -1,7 +1,7 @@
 package eventstore
 package operations
 
-import Decision._
+import OnIncoming._
 import NotHandled.{ NotReady, TooBusy }
 import tcp.PackOut
 import scala.util.control.NoStackTrace
