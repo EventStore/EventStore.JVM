@@ -3,7 +3,7 @@ package operations
 
 import akka.actor.ActorRef
 import eventstore.tcp.PackOut
-import scala.util.Try
+import scala.util.{ Failure, Try }
 
 private[eventstore] trait Operation {
   def id: Uuid
@@ -49,4 +49,40 @@ private[eventstore] object Operation {
       case HeartbeatResponse    => None
     }
   }
+}
+
+sealed trait OnConnected
+
+object OnConnected {
+  case class Retry(operation: Operation, out: PackOut) extends OnConnected
+  case class Stop(in: Try[In]) extends OnConnected
+}
+
+sealed trait OnIncoming
+
+object OnIncoming {
+  case class Stop(in: Try[In]) extends OnIncoming
+
+  object Stop {
+    def apply(x: EsException): Stop = Stop(Failure(x))
+    def apply(x: In): Stop = Stop(Try(x))
+  }
+
+  case class Retry(operation: Operation, pack: PackOut) extends OnIncoming
+  case class Continue(operation: Operation, in: Try[In]) extends OnIncoming
+  case object Ignore extends OnIncoming
+}
+
+sealed trait OnOutgoing
+
+object OnOutgoing {
+  case class Stop(out: PackOut, in: Try[In]) extends OnOutgoing
+  case class Continue(operation: Operation, out: PackOut) extends OnOutgoing
+}
+
+sealed trait OnDisconnected
+
+object OnDisconnected {
+  case class Continue(operation: Operation) extends OnDisconnected
+  case class Stop(in: Try[In]) extends OnDisconnected
 }
