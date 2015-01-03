@@ -10,14 +10,12 @@ private[eventstore] trait Operation {
 
   def client: ActorRef
 
-  def inspectOut: PartialFunction[Out, OnOutgoing] // TODO iterable and pass credentials
+  def inspectOut: PartialFunction[Out, OnOutgoing]
 
   def inspectIn(in: Try[In]): OnIncoming
 
-  // TODO prevent this from calling when disconnected
   def disconnected: OnDisconnected
 
-  // TODO prevent this from calling when connected
   def connected: OnConnected
 
   def clientTerminated: Option[PackOut]
