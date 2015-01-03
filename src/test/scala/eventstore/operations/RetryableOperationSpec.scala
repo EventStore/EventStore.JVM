@@ -8,7 +8,7 @@ import eventstore.tcp.PackOut
 import eventstore.operations.OnIncoming._
 
 import scala.util.control.NoStackTrace
-import scala.util.{ Success, Random, Failure }
+import scala.util.{ Try, Random, Failure }
 
 class RetryableOperationSpec extends Specification with Mockito {
   "RetryableOperation" should {
@@ -27,16 +27,16 @@ class RetryableOperationSpec extends Specification with Mockito {
       there was two(underlying).version
     }
 
-    "wrap underlying connected result if Some" in new TestScope {
+    "wrap underlying connected result if Retry" in new TestScope {
       val result = mock[Operation]
-      underlying.connected(outFunc) returns Some(result)
-      operation.copy(ongoing = false).connected(outFunc) must beSome(operation.copy(operation = result))
-      there was one(underlying).connected(outFunc)
+      underlying.connected returns OnConnected.Retry(result, pack)
+      val expected = operation.copy(operation = result)
+      operation.copy(ongoing = false).connected mustEqual OnConnected.Retry(expected, pack)
     }
 
-    "return underlying connected result if None" in new TestScope {
-      operation.copy(ongoing = false).connected(outFunc) must beNone
-      there was one(underlying).connected(outFunc)
+    "return underlying connected result if Stop" in new TestScope {
+      operation.copy(ongoing = false).connected mustEqual OnConnected.Stop(in)
+      there was one(underlying).connected
     }
 
     "proxy clientTerminated" in new TestScope {
@@ -52,7 +52,7 @@ class RetryableOperationSpec extends Specification with Mockito {
     }
 
     "return underlying on disconnected result if Stop" in new TestScope {
-      operation.disconnected mustEqual OnDisconnected.Stop(Success(Pong))
+      operation.disconnected mustEqual OnDisconnected.Stop(in)
       there was one(underlying).disconnected
     }
 
@@ -105,8 +105,8 @@ class RetryableOperationSpec extends Specification with Mockito {
   private trait TestScope extends Scope {
     val forceRetry = Failure(new TestException)
     val forceContinue = Failure(new TestException)
-    val outFunc = mock[OutFunc]
     val out = mock[Out]
+    val in = Try(Pong)
     val pack = PackOut(out)
     val inspectOut = spy(new InspectOut)
     val underlying = {
@@ -114,8 +114,8 @@ class RetryableOperationSpec extends Specification with Mockito {
       operation.clientTerminated returns None
       operation.id returns randomUuid
       operation.version returns Random.nextInt()
-      operation.connected(outFunc) returns None
-      operation.disconnected returns OnDisconnected.Stop(Success(Pong))
+      operation.connected returns OnConnected.Stop(in)
+      operation.disconnected returns OnDisconnected.Stop(in)
       operation.inspectOut returns inspectOut
       operation.inspectIn(forceRetry) returns OnIncoming.Retry(operation, pack)
       operation.inspectIn(forceContinue) returns OnIncoming.Continue(operation, forceContinue)

@@ -13,14 +13,7 @@ private[eventstore] sealed trait SubscriptionOperation extends Operation {
 
   def pack: PackOut
 
-  def inFunc: InFunc
-
   def id = pack.correlationId
-
-  protected def stop(x: Try[In]): Option[SubscriptionOperation] = {
-    inFunc(x)
-    None
-  }
 
   protected def unexpected(actual: Any, expectedClass: Class[_]): OnIncoming = {
     val expected = expectedClass.getSimpleName
@@ -50,17 +43,15 @@ private[eventstore] object SubscriptionOperation {
     subscribeTo: SubscribeTo,
     pack: PackOut,
     client: ActorRef,
-    inFunc: InFunc,
-    outFunc: Option[OutFunc]): Operation = {
-    Subscribing(subscribeTo, pack, client, inFunc, outFunc, 0)
+    ongoing: Boolean): Operation = {
+    Subscribing(subscribeTo, pack, client, ongoing, 0)
   }
 
   case class Subscribing(
       subscribeTo: SubscribeTo,
       pack: PackOut,
       client: ActorRef,
-      inFunc: InFunc,
-      outFunc: Option[OutFunc],
+      ongoing: Boolean,
       version: Int) extends SubscriptionOperation {
 
     def stream = subscribeTo.stream
@@ -68,11 +59,9 @@ private[eventstore] object SubscriptionOperation {
     def clientTerminated = Some(pack.copy(message = Unsubscribe))
 
     def inspectIn(in: Try[In]) = {
-      def subscribed = outFunc match {
-        case None => Ignore
-        case Some(outFunc) =>
-          Continue(Subscribed(subscribeTo, pack, client, inFunc, outFunc, version + 1), in)
-      }
+      def subscribed =
+        if (!ongoing) Ignore
+        else Continue(Subscribed(subscribeTo, pack, client, ongoing, version + 1), in)
 
       def unexpected(x: Any) = this.unexpected(x, Completed.expected)
 
@@ -95,13 +84,13 @@ private[eventstore] object SubscriptionOperation {
     }
 
     def disconnected = {
-      val operation = outFunc.fold(this) { _ => copy(outFunc = None) }
+      val operation = if (ongoing) copy(ongoing = false) else this
       OnDisconnected.Continue(operation)
     }
 
-    def connected(outFunc: OutFunc) = {
-      outFunc(pack)
-      Some(copy(outFunc = Some(outFunc)))
+    def connected = {
+      val operation = if (ongoing) this else copy(ongoing = true)
+      OnConnected.Retry(operation, pack)
     }
 
     object Completed {
@@ -122,8 +111,7 @@ private[eventstore] object SubscriptionOperation {
       subscribeTo: SubscribeTo,
       pack: PackOut,
       client: ActorRef,
-      inFunc: InFunc,
-      outFunc: OutFunc,
+      ongoing: Boolean,
       version: Int) extends SubscriptionOperation {
 
     def stream = subscribeTo.stream
@@ -145,18 +133,18 @@ private[eventstore] object SubscriptionOperation {
     def inspectOut = {
       case Unsubscribe =>
         val pack = this.pack.copy(message = Unsubscribe)
-        val operation = Unsubscribing(stream, pack, client, inFunc, outFunc, version + 1)
+        val operation = Unsubscribing(stream, pack, client, ongoing, version + 1)
         OnOutgoing.Continue(operation, pack)
     }
 
     def disconnected = {
-      val operation = Subscribing(subscribeTo, pack, client, inFunc, None, version + 1)
+      val operation = Subscribing(subscribeTo, pack, client, ongoing = false, version + 1)
       OnDisconnected.Continue(operation)
     }
 
-    def connected(outFunc: OutFunc) = {
-      outFunc(pack)
-      Some(Subscribing(subscribeTo, pack, client, inFunc, Some(outFunc), version + 1))
+    def connected = {
+      val operation = Subscribing(subscribeTo, pack, client, ongoing = true, version + 1)
+      OnConnected.Retry(operation, pack)
     }
   }
 
@@ -164,8 +152,7 @@ private[eventstore] object SubscriptionOperation {
       stream: EventStream,
       pack: PackOut,
       client: ActorRef,
-      inFunc: InFunc,
-      outFunc: OutFunc,
+      ongoing: Boolean,
       version: Int) extends SubscriptionOperation {
 
     def inspectIn(in: Try[In]) = {
@@ -190,6 +177,6 @@ private[eventstore] object SubscriptionOperation {
 
     def disconnected = OnDisconnected.Stop(Try(Unsubscribed))
 
-    def connected(outFunc: OutFunc) = stop(Success(Unsubscribed))
+    def connected = OnConnected.Stop(Try(Unsubscribed))
   }
 }

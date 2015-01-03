@@ -18,7 +18,7 @@ private[eventstore] trait Operation {
   def disconnected: OnDisconnected
 
   // TODO prevent this from calling when connected
-  def connected(outFunc: OutFunc): Option[Operation]
+  def connected: OnConnected
 
   def clientTerminated: Option[PackOut]
 
@@ -26,9 +26,9 @@ private[eventstore] trait Operation {
 }
 
 private[eventstore] object Operation {
-  def opt(pack: PackOut, client: ActorRef, inFunc: InFunc, outFunc: Option[OutFunc], maxRetries: Int): Option[Operation] = {
-    def retryable(x: Operation) = RetryableOperation(x, maxRetries, outFunc.isDefined)
-    def base(x: Inspection) = retryable(BaseOperation(pack, client, outFunc, x))
+  def opt(pack: PackOut, client: ActorRef, connected: Boolean, maxRetries: Int): Option[Operation] = {
+    def retryable(x: Operation) = RetryableOperation(x, maxRetries, connected)
+    def base(x: Inspection) = retryable(BaseOperation(pack, client, x))
 
     pack.message match {
       case x: WriteEvents       => Some(base(WriteEventsInspection(x)))
@@ -39,7 +39,7 @@ private[eventstore] object Operation {
       case x: ReadEvent         => Some(base(ReadEventInspection(x)))
       case x: ReadStreamEvents  => Some(base(ReadStreamEventsInspection(x)))
       case x: ReadAllEvents     => Some(base(ReadAllEventsInspection(x)))
-      case x: SubscribeTo       => Some(retryable(SubscriptionOperation(x, pack, client, inFunc, outFunc)))
+      case x: SubscribeTo       => Some(retryable(SubscriptionOperation(x, pack, client, connected)))
       case Unsubscribe          => Some(base(UnsubscribeInspection))
       case ScavengeDatabase     => Some(base(ScavengeDatabaseInspection))
       case Authenticate         => Some(base(AuthenticateInspection))

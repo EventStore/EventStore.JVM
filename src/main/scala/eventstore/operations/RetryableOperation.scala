@@ -16,24 +16,30 @@ private[eventstore] case class RetryableOperation(
 
   def client = operation.client
 
-  def connected(outFunc: OutFunc) = {
-    operation.connected(outFunc).map { operation =>
-      copy(operation = operation, ongoing = true)
+  def connected = {
+    import eventstore.operations.OnConnected._
+    operation.connected match {
+      case Retry(x, p) => Retry(copy(operation = x, ongoing = true), p)
+      case x: Stop     => x
     }
   }
 
   def clientTerminated = operation.clientTerminated
 
   def disconnected = {
+    import eventstore.operations.OnDisconnected._
     operation.disconnected match {
-      case x: OnDisconnected.Stop     => x
-      case OnDisconnected.Continue(x) => OnDisconnected.Continue(copy(operation = x, ongoing = false))
+      case Continue(x) => Continue(copy(operation = x, ongoing = false))
+      case x: Stop     => x
     }
   }
 
-  def inspectOut = operation.inspectOut andThen {
-    case OnOutgoing.Continue(x, p) => OnOutgoing.Continue(x, p)
-    case x: OnOutgoing.Stop        => x
+  def inspectOut = {
+    import eventstore.operations.OnOutgoing._
+    operation.inspectOut andThen {
+      case Continue(x, p) => Continue(x, p)
+      case x: Stop        => x
+    }
   }
 
   def inspectIn(in: Try[In]) = operation.inspectIn(in) match {

@@ -5,7 +5,7 @@ import eventstore.NotHandled.{ NotReady, TooBusy }
 import eventstore.tcp.PackOut
 import eventstore.operations.OnIncoming._
 import eventstore.operations.{ SubscriptionOperation => SO }
-import scala.util.{ Try, Success, Failure }
+import scala.util.{ Try, Failure }
 
 class SubscriptionOperationSpec extends OperationSpec {
   val streamId = EventStream.Id("streamId")
@@ -20,38 +20,20 @@ class SubscriptionOperationSpec extends OperationSpec {
 
     "drop OutFunc on disconnected" in foreach(streams) { implicit stream =>
       new SubscribingScope {
-        val expected = operation.copy(outFunc = None)
-        val actual = operation.disconnected mustEqual OnDisconnected.Continue(expected)
-        there were noCallsTo(outFunc, inFunc)
+        val expected = operation.copy(ongoing = false)
+        operation.disconnected mustEqual OnDisconnected.Continue(expected)
       }
     }
 
-    "save new OutFunc on connected and retry" in foreach(streams) { implicit stream =>
+    "retry on connected" in foreach(streams) { implicit stream =>
       new SubscribingScope {
-        val newOutFunc = mock[OutFunc]
-        val actual = operation.copy(outFunc = None).connected(newOutFunc)
-        actual must beSome
-        actual.get.outFunc mustEqual Some(newOutFunc)
-        there were noCallsTo(outFunc, inFunc)
-        there was one(newOutFunc).apply(pack)
-      }
-    }
-
-    "replace OutFunc on connected and retry" in foreach(streams) { implicit stream =>
-      new SubscribingScope {
-        val newOutFunc = mock[OutFunc]
-        val actual = operation.copy(outFunc = None).connected(newOutFunc)
-        actual must beSome
-        actual.get.outFunc mustEqual Some(newOutFunc)
-        there were noCallsTo(outFunc, inFunc)
-        there was one(newOutFunc).apply(pack)
+        operation.copy(ongoing = false).connected mustEqual OnConnected.Retry(operation, pack)
       }
     }
 
     "unsubscribe on clientTerminated" in foreach(streams) { implicit stream =>
       new SubscribingScope {
         operation.clientTerminated must beSome(pack.copy(message = Unsubscribe))
-        there were noCallsTo(inFunc)
       }
     }
 
@@ -75,29 +57,29 @@ class SubscriptionOperationSpec extends OperationSpec {
     "forward new events" in foreach(streams) { implicit stream =>
       new SubscribingScope {
         val event = eventAppeared(streamId)
-        operation.inspectIn(Success(event)) mustEqual Continue(operation, Success(event))
+        operation.inspectIn(Try(event)) mustEqual Continue(operation, Try(event))
       }
     }
 
     "stop on unexpected events" in new SubscribingScope()(streamId) {
       val event = eventAppeared(EventStream.Id("unexpected"))
-      operation.inspectIn(Success(event)) must beLike {
+      operation.inspectIn(Try(event)) must beLike {
         case Stop(Failure(_: CommandNotExpectedException)) => ok
       }
     }
 
     "become subscribed on success" in foreach(streams) { implicit stream =>
       new SubscribingScope {
-        operation.inspectIn(Success(subscribeCompleted)) mustEqual Continue(
-          SubscriptionOperation.Subscribed(subscribeTo, pack, client, inFunc, outFunc, 1),
-          Success(subscribeCompleted))
+        operation.inspectIn(Try(subscribeCompleted)) mustEqual Continue(
+          SubscriptionOperation.Subscribed(subscribeTo, pack, client, true, 1),
+          Try(subscribeCompleted))
       }
     }
 
     "stay on success if disconnected" in foreach(streams) { implicit stream =>
       new SubscribingScope {
-        val disconnected = operation.copy(outFunc = None)
-        disconnected.inspectIn(Success(subscribeCompleted)) mustEqual Ignore
+        val disconnected = operation.copy(ongoing = false)
+        disconnected.inspectIn(Try(subscribeCompleted)) mustEqual Ignore
       }
     }
 
@@ -149,7 +131,7 @@ class SubscriptionOperationSpec extends OperationSpec {
           case _: EventStream.Id => SubscribeToAllCompleted(0)
           case _                 => SubscribeToStreamCompleted(0)
         }
-        operation.inspectIn(Success(unexpected)) must beLike {
+        operation.inspectIn(Try(unexpected)) must beLike {
           case Stop(Failure(_: CommandNotExpectedException)) => ok
         }
       }
@@ -168,8 +150,9 @@ class SubscriptionOperationSpec extends OperationSpec {
         operation.version mustEqual 0
         val o1 = operation.disconnected must beLike {
           case OnDisconnected.Continue(x) if x.version == 0 =>
-            x.connected(outFunc).get.version mustEqual 0
-            ok
+            x.connected must beLike {
+              case OnConnected.Retry(x, _) if x.version == 0 => ok
+            }
         }
       }
     }
@@ -184,29 +167,23 @@ class SubscriptionOperationSpec extends OperationSpec {
 
     "become subscribing on disconnected" in foreach(streams) { implicit stream =>
       new SubscribedScope {
-        val actual = operation.disconnected must beLike {
-          case OnDisconnected.Continue(SubscriptionOperation.Subscribing(_, _, _, _, None, 1)) => ok
+        operation.disconnected must beLike {
+          case OnDisconnected.Continue(x: SubscriptionOperation.Subscribing) if x.version == 1 => ok
         }
-        there were noCallsTo(outFunc, inFunc)
       }
     }
 
     "become subscribing on connected and retry" in foreach(streams) { implicit stream =>
       new SubscribedScope {
-        val newOutFunc = mock[OutFunc]
-        val actual = operation.connected(newOutFunc)
-        actual must beSome
-        actual.get.outFunc mustEqual Some(newOutFunc)
-        actual.get.version mustEqual 1
-        there were noCallsTo(outFunc, inFunc)
-        there was one(newOutFunc).apply(pack)
+        operation.connected must beLike {
+          case OnConnected.Retry(x: SubscriptionOperation.Subscribing, `pack`) if x.version == 1 => ok
+        }
       }
     }
 
     "unsubscribe on clientTerminated" in foreach(streams) { implicit stream =>
       new SubscribedScope {
         operation.clientTerminated must beSome(pack.copy(message = Unsubscribe))
-        there were noCallsTo(inFunc)
       }
     }
 
@@ -233,13 +210,13 @@ class SubscriptionOperationSpec extends OperationSpec {
     "forward new events" in foreach(streams) { implicit stream =>
       new SubscribedScope {
         val event = eventAppeared(streamId)
-        operation.inspectIn(Success(event)) mustEqual Continue(operation, Success(event))
+        operation.inspectIn(Try(event)) mustEqual Continue(operation, Try(event))
       }
     }
 
     "stop on unexpected events" in new SubscribedScope()(streamId) {
       val event = eventAppeared(EventStream.Id("unexpected"))
-      operation.inspectIn(Success(event)) must beLike {
+      operation.inspectIn(Try(event)) must beLike {
         case Stop(Failure(_: CommandNotExpectedException)) => ok
       }
     }
@@ -254,7 +231,7 @@ class SubscriptionOperationSpec extends OperationSpec {
 
     "stop on Unsubscribed" in foreach(streams) { implicit stream =>
       new SubscribedScope {
-        operation.inspectIn(Success(Unsubscribed)) mustEqual Stop(Unsubscribed)
+        operation.inspectIn(Try(Unsubscribed)) mustEqual Stop(Unsubscribed)
       }
     }
 
@@ -300,7 +277,7 @@ class SubscriptionOperationSpec extends OperationSpec {
 
     "stop on unexpected" in foreach(streams) { implicit stream =>
       new SubscribedScope {
-        operation.inspectIn(Success(Pong)) must beLike {
+        operation.inspectIn(Try(Pong)) must beLike {
           case Stop(Failure(_: CommandNotExpectedException)) => ok
         }
       }
@@ -333,15 +310,13 @@ class SubscriptionOperationSpec extends OperationSpec {
 
     "stop on disconnected" in foreach(streams) { implicit stream =>
       new UnsubscribingScope {
-        operation.disconnected mustEqual OnDisconnected.Stop(Success(Unsubscribed))
+        operation.disconnected mustEqual OnDisconnected.Stop(Try(Unsubscribed))
       }
     }
 
     "stop on connected" in foreach(streams) { implicit stream =>
       new UnsubscribingScope {
-        val newOutFunc = mock[OutFunc]
-        operation.connected(newOutFunc) must beNone
-        thereWasStop(Success(Unsubscribed))
+        operation.connected mustEqual OnConnected.Stop(Try(Unsubscribed))
       }
     }
 
@@ -355,13 +330,12 @@ class SubscriptionOperationSpec extends OperationSpec {
       new UnsubscribingScope {
         operation.inspectOut mustEqual PartialFunction.empty
         operation.inspectOut.isDefinedAt(Unsubscribe) must beFalse
-        there were noCallsTo(outFunc, inFunc)
       }
     }
 
     "stop on success" in foreach(streams) { implicit stream =>
       new UnsubscribingScope {
-        operation.inspectIn(Success(Unsubscribed)) mustEqual Stop(Unsubscribed)
+        operation.inspectIn(Try(Unsubscribed)) mustEqual Stop(Unsubscribed)
       }
     }
 
@@ -413,7 +387,7 @@ class SubscriptionOperationSpec extends OperationSpec {
           case x: EventStream.Id => SubscribeToStreamCompleted(0)
           case _                 => SubscribeToAllCompleted(0)
         }
-        operation.inspectIn(Success(unexpected)) must beLike {
+        operation.inspectIn(Try(unexpected)) must beLike {
           case Stop(Failure(_: CommandNotExpectedException)) => ok
         }
       }
@@ -429,13 +403,13 @@ class SubscriptionOperationSpec extends OperationSpec {
 
     "ignore new events" in foreach(streams) { implicit stream =>
       new UnsubscribingScope {
-        operation.inspectIn(Success(eventAppeared(streamId))) mustEqual Ignore
+        operation.inspectIn(Try(eventAppeared(streamId))) mustEqual Ignore
       }
     }
 
     "stop on unexpected events" in new SubscribedScope()(streamId) {
       val event = eventAppeared(EventStream.Id("unexpected"))
-      operation.inspectIn(Success(event)) must beLike {
+      operation.inspectIn(Try(event)) must beLike {
         case Stop(Failure(_: CommandNotExpectedException)) => ok
       }
     }
@@ -466,7 +440,7 @@ class SubscriptionOperationSpec extends OperationSpec {
     val subscribeTo = SubscribeTo(stream)
     val pack = PackOut(subscribeTo)
     val unsubscribe = PackOut(Unsubscribe, pack.correlationId, pack.credentials)
-    val operation = SO.Subscribing(subscribeTo, pack, client, inFunc, Some(outFunc), 0)
+    val operation = SO.Subscribing(subscribeTo, pack, client, ongoing = true, 0)
 
     lazy val subscribeCompleted = stream match {
       case x: EventStream.Id => SubscribeToStreamCompleted(0)
@@ -478,12 +452,12 @@ class SubscriptionOperationSpec extends OperationSpec {
     val subscribeTo = SubscribeTo(stream)
     val pack = PackOut(subscribeTo)
     val unsubscribe = PackOut(Unsubscribe, pack.correlationId, pack.credentials)
-    val operation = SO.Subscribed(subscribeTo, pack, client, inFunc, outFunc, 0)
+    val operation = SO.Subscribed(subscribeTo, pack, client, ongoing = true, 0)
   }
 
   private abstract class UnsubscribingScope(implicit val stream: EventStream) extends SubscriptionScope {
     val subscribeTo = SubscribeTo(stream)
     val pack = PackOut(Unsubscribe)
-    val operation = SO.Unsubscribing(stream, pack, client, inFunc, outFunc, 0)
+    val operation = SO.Unsubscribing(stream, pack, client, ongoing = true, 0)
   }
 }

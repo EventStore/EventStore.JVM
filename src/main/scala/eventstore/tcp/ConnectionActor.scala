@@ -37,13 +37,9 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
   }
 
   def connecting(operations: Operations): Receive = {
-    def onPipeline(pipeline: ActorRef) = {
-      operations.flatMap(_.connected(sendCommand(pipeline, _)))
-    }
-
     rcvIncoming(operations, connecting, None) or
       rcvOutgoing(operations, connecting, None) or
-      rcvConnected(onPipeline) or
+      rcvConnected(operations) or
       rcvConnectFailed(None) or
       rcvTimedOut(operations, connecting, None) or
       rcvTerminated(operations, connecting, None)
@@ -56,7 +52,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
 
     def connected(operations: Operations): Receive = {
 
-      def outFunc(pack: PackOut): Unit = sendCommand(pipeline, pack)
+      def outFunc(pack: PackOut): Unit = toPipeline(pipeline, pack)
 
       def maybeReconnect(reason: String) = {
         val result = operations.flatMap { operation =>
@@ -126,13 +122,9 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
         this.reconnecting(operations, retry)
       }
 
-      def onPipeline(pipeline: ActorRef) = {
-        operations.flatMap(_.connected(sendCommand(pipeline, _)))
-      }
-
       rcvIncoming(operations, reconnecting, None) or
         rcvOutgoing(operations, reconnecting, None) or
-        rcvConnected(onPipeline) or
+        rcvConnected(operations) or
         rcvConnectFailed(reconnect) or
         rcvTimedOut(operations, reconnecting, None) or
         rcvTerminated(operations, reconnecting, None)
@@ -245,7 +237,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
           }
 
         case None =>
-          Operation.opt(pack, sender(), toClient(sender(), _), outFunc, operationMaxRetries) match {
+          Operation.opt(pack, sender(), outFunc.isDefined, operationMaxRetries) match {
             case None => operations
             case Some(operation) =>
               context watch sender()
@@ -289,16 +281,26 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       }
   }
 
-  def rcvConnected(onPipeline: ActorRef => Operations): Receive = {
+  def rcvConnected(operations: Operations): Receive = {
     case Tcp.Connected(`address`, _) =>
       log.info("connected to {}", address)
       val connection = sender()
       val pipeline = newPipeline(connection)
-      val operations = onPipeline(pipeline)
       connection ! Tcp.Register(pipeline)
+
+      val result = operations.flatMap { operation =>
+        operation.connected match {
+          case OnConnected.Retry(o, p) =>
+            toPipeline(pipeline, p)
+            Iterable(o)
+          case OnConnected.Stop(in) =>
+            toClient(operation.client, in)
+            Iterable()
+        }
+      }
       context watch connection
       context watch pipeline
-      context become connected(operations, connection, pipeline, 0)
+      context become connected(result, connection, pipeline, 0)
   }
 
   def toClient(client: ActorRef, in: Try[In]): Unit = {
@@ -309,7 +311,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
     client ! msg
   }
 
-  def sendCommand(pipeline: ActorRef, pack: PackOut): Unit = {
+  def toPipeline(pipeline: ActorRef, pack: PackOut): Unit = {
     log.debug(pack.toString)
     pipeline ! init.Command(pack)
   }

@@ -1,9 +1,9 @@
 package eventstore
 package operations
 
-import OnIncoming._
-import NotHandled.{ NotReady, TooBusy }
-import tcp.PackOut
+import eventstore.operations.OnIncoming._
+import eventstore.NotHandled.{ NotReady, TooBusy }
+import eventstore.tcp.PackOut
 import scala.util.control.NoStackTrace
 import scala.util.{ Success, Failure }
 
@@ -14,28 +14,11 @@ class BaseOperationSpec extends OperationSpec {
     }
 
     "drop OutFunc on disconnected" in new BaseOperationScope {
-      operation.disconnected must beLike {
-        case OnDisconnected.Continue(BaseOperation(`pack`, _, None, _)) => ok
-      }
-      there were noCallsTo(outFunc, inFunc)
+      operation.disconnected mustEqual OnDisconnected.Continue(operation)
     }
 
-    "save new OutFunc on connected and retry" in new BaseOperationScope {
-      val newOutFunc = mock[OutFunc]
-      val actual = operation.copy(outFunc = None).connected(newOutFunc)
-      actual must beSome
-      actual.get.outFunc mustEqual Some(newOutFunc)
-      there were noCallsTo(outFunc, inFunc)
-      there was one(newOutFunc).apply(pack)
-    }
-
-    "replace OutFunc on connected and retry" in new BaseOperationScope {
-      val newOutFunc = mock[OutFunc]
-      val actual = operation.copy(outFunc = None).connected(newOutFunc)
-      actual must beSome
-      actual.get.outFunc mustEqual Some(newOutFunc)
-      there were noCallsTo(outFunc, inFunc)
-      there was one(newOutFunc).apply(pack)
+    "retry on connected" in new BaseOperationScope {
+      operation.connected mustEqual OnConnected.Retry(operation, pack)
     }
 
     "ignore clientTerminated" in new BaseOperationScope {
@@ -45,7 +28,6 @@ class BaseOperationSpec extends OperationSpec {
     "ignore out messages" in new BaseOperationScope {
       operation.inspectOut mustEqual PartialFunction.empty
       operation.inspectOut.isDefinedAt(Ping) must beFalse
-      there were noCallsTo(outFunc, inFunc)
     }
 
     "stop on success" in new BaseOperationScope {
@@ -96,9 +78,10 @@ class BaseOperationSpec extends OperationSpec {
     "always return 0 for version" in new BaseOperationScope {
       operation.version mustEqual 0
       operation.disconnected must beLike {
-        case OnDisconnected.Continue(operation) if operation.version == 0 =>
-          operation.connected(outFunc).get.version mustEqual 0
-          ok
+        case OnDisconnected.Continue(o) if o.version == 0 =>
+          o.connected must beLike {
+            case OnConnected.Retry(o, _) if o.version == 0 => ok
+          }
       }
     }
   }
@@ -113,7 +96,7 @@ class BaseOperationSpec extends OperationSpec {
       }
     }
 
-    val operation = BaseOperation(pack, client, Some(outFunc), inspection)
+    val operation = BaseOperation(pack, client, inspection)
 
     object TestError extends RuntimeException with NoStackTrace
     object TestException extends EsException with NoStackTrace

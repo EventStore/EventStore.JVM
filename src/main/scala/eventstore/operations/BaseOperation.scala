@@ -9,7 +9,6 @@ import scala.util.{ Try, Success, Failure }
 private[eventstore] case class BaseOperation(
     pack: PackOut,
     client: ActorRef,
-    outFunc: Option[OutFunc],
     inspection: Inspection) extends Operation {
 
   def id = pack.correlationId
@@ -51,12 +50,9 @@ private[eventstore] case class BaseOperation(
     pf.applyOrElse(in, fallback)
   }
 
-  def disconnected = OnDisconnected.Continue(copy(outFunc = None))
+  def disconnected = OnDisconnected.Continue(this)
 
-  def connected(outFunc: OutFunc) = {
-    outFunc(pack)
-    Some(copy(outFunc = Some(outFunc)))
-  }
+  def connected = OnConnected.Retry(this, pack)
 
   def clientTerminated = None
 
