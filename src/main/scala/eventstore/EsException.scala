@@ -4,8 +4,12 @@ import eventstore.tcp.PackOut
 
 import scala.util.control.NoStackTrace
 
-abstract class EsException(message: String) extends RuntimeException(message) with NoStackTrace {
-  def this() = this(null)
+abstract class EsException(message: String, cause: Throwable)
+    extends RuntimeException(message, cause) with NoStackTrace {
+
+  def this() = this(null, null)
+
+  def this(message: String) = this(message, null)
 }
 
 case class StreamNotFoundException(streamId: EventStream.Id) extends EsException(s"$streamId not found")

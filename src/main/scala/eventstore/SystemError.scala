@@ -31,8 +31,10 @@ object ReadEventError {
   case object EventNotFound extends ReadEventError
   case object StreamNotFound extends ReadEventError
   case object StreamDeleted extends ReadEventError
-  case class Error(message: Option[String]) extends ReadEventError
   case object AccessDenied extends ReadEventError
+  case class Error(message: Option[String]) extends ReadEventError {
+    override def toString = s"ReadEventError($message)"
+  }
 }
 
 sealed trait ReadStreamEventsError extends ServerError
@@ -40,18 +42,24 @@ sealed trait ReadStreamEventsError extends ServerError
 object ReadStreamEventsError {
   case object StreamNotFound extends ReadStreamEventsError
   case object StreamDeleted extends ReadStreamEventsError
-  case class Error(message: Option[String]) extends ReadStreamEventsError
   case object AccessDenied extends ReadStreamEventsError
+  case class Error(message: Option[String]) extends ReadStreamEventsError {
+    override def toString = s"ReadStreamEventsError($message)"
+  }
 }
 
 sealed trait ReadAllEventsError extends ServerError
 
 object ReadAllEventsError {
-  case class Error(message: Option[String]) extends ReadAllEventsError
   case object AccessDenied extends ReadAllEventsError
+  case class Error(message: Option[String]) extends ReadAllEventsError {
+    override def toString = s"ReadAllEventsError($message)"
+  }
 }
 
-case class NotHandled(reason: NotHandled.Reason) extends ServerError
+case class NotHandled(reason: NotHandled.Reason) extends ServerError {
+  override def toString = s"NotHandled($reason)"
+}
 
 object NotHandled {
   sealed trait Reason

@@ -438,11 +438,14 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
       masterInfo(x.get)
     }
 
-    def fromProto(x: j.NotHandled) = NotHandled(x.getReason match {
-      case NotReady  => NotHandled.NotReady
-      case TooBusy   => NotHandled.TooBusy
-      case NotMaster => NotHandled.NotMaster(masterInfo(x.getAdditionalInfo))
-    })
+    def fromProto(x: j.NotHandled) = {
+      val reason = x.getReason match {
+        case NotReady  => NotHandled.NotReady
+        case TooBusy   => NotHandled.TooBusy
+        case NotMaster => NotHandled.NotMaster(masterInfo(x.getAdditionalInfo))
+      }
+      NotHandled(reason)
+    }
   }
 
   private def expectedVersion(x: ExpectedVersion): Int = {
