@@ -2,6 +2,8 @@ package eventstore
 package j
 
 import java.net.InetSocketAddress
+import eventstore.cluster.{ GossipSeedsOrDns, ClusterSettings }
+
 import scala.concurrent.duration._
 
 class ClusterSettingsBuilder extends Builder[ClusterSettings] with ChainSet[ClusterSettingsBuilder] {

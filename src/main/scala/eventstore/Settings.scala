@@ -1,5 +1,6 @@
 package eventstore
 
+import eventstore.cluster.ClusterSettings
 import scala.concurrent.duration._
 import java.net.InetSocketAddress
 import com.typesafe.config.{ ConfigFactory, Config }
@@ -34,7 +35,8 @@ case class Settings(
     resolveLinkTos: Boolean = false,
     requireMaster: Boolean = true,
     readBatchSize: Int = 500,
-    backpressure: BackpressureSettings = BackpressureSettings()) {
+    backpressure: BackpressureSettings = BackpressureSettings(),
+    cluster: Option[ClusterSettings] = None) {
   require(reconnectionDelayMin > Duration.Zero, "reconnectionDelayMin must be > 0")
   require(reconnectionDelayMax > Duration.Zero, "reconnectionDelayMax must be > 0")
   require(operationTimeout > Duration.Zero, "operationTimeout must be > 0")
@@ -44,6 +46,7 @@ object Settings {
   lazy val Default: Settings = Settings(ConfigFactory.load())
 
   def apply(conf: Config): Settings = {
+    def cluster = ClusterSettings.opt(conf)
     def apply(conf: Config): Settings = {
       def duration(path: String) = FiniteDuration(conf.getDuration(path, MILLISECONDS), MILLISECONDS)
 
@@ -70,9 +73,10 @@ object Settings {
         resolveLinkTos = conf getBoolean "resolve-linkTos",
         requireMaster = conf getBoolean "require-master",
         readBatchSize = conf getInt "read-batch-size",
-        backpressure = BackpressureSettings(conf))
+        backpressure = BackpressureSettings(conf),
+        cluster = cluster)
     }
-    apply(conf.getConfig("eventstore"))
+    apply(conf getConfig "eventstore")
   }
 
   /**
