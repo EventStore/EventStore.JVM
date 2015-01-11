@@ -34,16 +34,16 @@ private[eventstore] class ClusterDiscovererActor(
       context watch client
       context become discovering(attempt, failed, clients + client)
 
-    case Tick               => discover(attempt, clients, failed, Nil)
+    case Tick => discover(attempt, clients, failed, Nil)
 
-    case Terminated(client) => context become discovering(attempt, failed, clients - client)
+    case Terminated(client) if clients contains client =>
+      context become discovering(attempt, failed, clients - client)
   }
 
   def discovered(bestNode: MemberInfo, members: List[MemberInfo], clients: Set[ActorRef]): Receive = {
     case GetAddress(failed) =>
       val client = sender()
       context watch client
-
       failed match {
         case Some(failed) if bestNode.externalTcp == failed => // TODO
           log.info("Cluster best node {} failed, reported by {}", bestNode, client)
@@ -83,7 +83,8 @@ private[eventstore] class ClusterDiscovererActor(
           bestNodeFailed(bestNode, members, clients)
       }
 
-    case Terminated(client) => context become discovered(bestNode, members, clients - client)
+    case Terminated(client) if clients contains client =>
+      context become discovered(bestNode, members, clients - client)
   }
 
   def recovering(failed: MemberInfo, members: List[MemberInfo], clients: Set[ActorRef]): Receive = {
@@ -92,9 +93,10 @@ private[eventstore] class ClusterDiscovererActor(
       context watch client
       context become recovering(failed, members, clients + client)
 
-    case Tick               => bestNodeFailed(failed, members, clients)
+    case Tick => bestNodeFailed(failed, members, clients)
 
-    case Terminated(client) => context become recovering(failed, members, clients - client)
+    case Terminated(client) if clients contains client =>
+      context become recovering(failed, members, clients - client)
   }
 
   def discover(
