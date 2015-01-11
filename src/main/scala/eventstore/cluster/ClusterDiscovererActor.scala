@@ -205,5 +205,8 @@ private[eventstore] object ClusterDiscovererActor {
 class ClusterException(message: String, val cause: Option[Throwable]) extends EsException(message, cause.orNull) {
   def this(message: String) = this(message, None)
 
-  override def toString = s"ClusterException($message, $cause)"
+  override def toString = cause match {
+    case Some(cause) => s"ClusterException($message, $cause)"
+    case None        => s"ClusterException($message)"
+  }
 }
