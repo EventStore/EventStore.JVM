@@ -146,11 +146,17 @@ class ClusterDiscovererActorSpec extends util.ActorSpec with Mockito {
 
     "return best node once" in new TestScope {
       actor ! GetAddress()
-      actor ! GetAddress()
-      actor ! GetAddress()
       expectMsg(address)
       lastSender ! cluster(member(address))
-      expectMsg(Address(address))
+
+      actor ! GetAddress()
+      actor ! GetAddress()
+      expectMsgAllOf(Address(address), Address(address), Address(address))
+
+      expectMsg(address)
+      lastSender ! cluster(member(address2))
+
+      expectMsg(Address(address2))
       expectNoMsg(500.millis)
     }
 
