@@ -2,9 +2,10 @@ package eventstore
 package cluster
 
 class ClusterInfoITest extends util.ActorSpec {
-  "ClusterInfo.future" should {
+  "ClusterInfo.futureFunc" should {
     "return ClusterInfo for address" in new ActorScope {
-      val info = ClusterInfo.future("127.0.0.1" :: 1113).await_
+      val futureFunc = ClusterInfo.futureFunc
+      val info = futureFunc("127.0.0.1" :: 1113).await_ // TODO
       info.members must haveSize(3)
 
       info.members.find(_.state == NodeState.Master) must beSome

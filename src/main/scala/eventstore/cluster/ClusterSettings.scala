@@ -14,10 +14,10 @@ import scala.concurrent.duration._
  * @param gossipTimeout Timeout for cluster gossip.
  */
 case class ClusterSettings(
-    gossipSeedsOrDns: GossipSeedsOrDns,
+    gossipSeedsOrDns: GossipSeedsOrDns = GossipSeedsOrDns.GossipSeeds("127.0.0.1" :: 2113),
     maxDiscoverAttempts: Int = 10,
     gossipTimeout: FiniteDuration = 1.second) {
-  require(maxDiscoverAttempts >= 0, s"maxDiscoverAttempts must be >= 0, but is $maxDiscoverAttempts")
+  require(maxDiscoverAttempts >= 0, s"maxDiscoverAttempts must be >= 1, but is $maxDiscoverAttempts")
 }
 
 object ClusterSettings {
@@ -86,5 +86,9 @@ object GossipSeedsOrDns {
    */
   case class GossipSeeds(gossipSeeds: List[InetSocketAddress]) extends GossipSeedsOrDns {
     require(gossipSeeds.nonEmpty, s"gossipSeeds must be non empty")
+  }
+
+  object GossipSeeds {
+    def apply(gossipSeeds: InetSocketAddress*): GossipSeeds = GossipSeeds(gossipSeeds.toList)
   }
 }

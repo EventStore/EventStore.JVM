@@ -1,8 +1,11 @@
 package eventstore
 package tcp
 
+import java.net.InetSocketAddress
+
 import akka.actor._
 import akka.io.{ Tcp, IO }
+import eventstore.cluster.{ ClusterInfo, ClusterDiscovererActor }
 import scala.concurrent.duration._
 import scala.util.{ Try, Failure, Success }
 import eventstore.pipeline._
@@ -31,8 +34,15 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
 
   val init = EsPipelineInit(log, backpressure)
 
+  lazy val clusterDiscoverer: Option[ActorRef] = settings.cluster.map { settings =>
+    context actorOf ClusterDiscovererActor.props(settings, ClusterInfo.futureFunc)
+  }
+
   def receive = {
-    connect("connecting", Duration.Zero)
+    clusterDiscoverer match {
+      case Some(clusterDiscoverer) => clusterDiscoverer ! ClusterDiscovererActor.GetAddress()
+      case None                    => connect("connecting", Duration.Zero)
+    }
     connecting(Operations.Empty)
   }
 
@@ -45,7 +55,12 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       rcvTerminated(operations, connecting, None)
   }
 
-  def connected(operations: Operations, connection: ActorRef, pipeline: ActorRef, heartbeatId: Long): Receive = {
+  def connected(
+    address: InetSocketAddress,
+    operations: Operations,
+    connection: ActorRef,
+    pipeline: ActorRef,
+    heartbeatId: Long): Receive = {
     val scheduled = CancellableAdapter(
       system.scheduler.scheduleOnce(heartbeatInterval, self, Heartbeat),
       system.scheduler.scheduleOnce(heartbeatInterval + heartbeatTimeout, self, HeartbeatTimeout(heartbeatId)))
@@ -54,7 +69,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
 
       def outFunc(pack: PackOut): Unit = toPipeline(pipeline, pack)
 
-      def maybeReconnect(reason: String) = {
+      def maybeReconnect(reason: String, address: InetSocketAddress = address) = {
         val result = operations.flatMap { operation =>
           operation.disconnected match {
             case OnDisconnected.Continue(operation) => Iterable(operation)
@@ -74,14 +89,14 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
 
           case Some(retry) =>
             log.warning(template, address, reason)
-            connect("reconnecting", retry.delay)
-            context become reconnecting(result, retry)
+            reconnect(address, retry.delay)
+            context become reconnecting(address, result, retry)
         }
       }
 
       def onIn(operations: Operations) = {
         scheduled.cancel()
-        this.connected(operations, connection, pipeline, heartbeatId + 1)
+        this.connected(address, operations, connection, pipeline, heartbeatId + 1)
       }
 
       val receive: Receive = {
@@ -97,12 +112,15 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
           connection ! Tcp.Abort
           maybeReconnect("pipeline actor died")
 
-        case Heartbeat => outFunc(PackOut(HeartbeatRequest))
+        case Heartbeat => heartbeat(pipeline)
 
         case HeartbeatTimeout(id) => if (id == heartbeatId) {
           connection ! Tcp.Close
           maybeReconnect(s"no heartbeat within $heartbeatTimeout")
         }
+
+        case ClusterDiscovererActor.Address(newAddress) =>
+          if (newAddress != address) maybeReconnect("cluster best node changed", address)
       }
 
       receive or
@@ -115,11 +133,11 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
     connected(operations)
   }
 
-  def reconnecting(operations: Operations, retry: DelayedRetry): Receive = {
+  def reconnecting(address: InetSocketAddress, operations: Operations, retry: DelayedRetry): Receive = {
     def reconnecting(operations: Operations): Receive = {
       def reconnect = retry.next.map { retry =>
-        connect("reconnecting", retry.delay)
-        this.reconnecting(operations, retry)
+        this.reconnect(address, retry.delay)
+        this.reconnecting(address, operations, retry)
       }
 
       rcvIncoming(operations, reconnecting, None) or
@@ -269,7 +287,8 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
   }
 
   def rcvConnectFailed(recover: => Option[Receive]): Receive = {
-    case Tcp.CommandFailed(_: Tcp.Connect) =>
+    case Tcp.CommandFailed(x: Tcp.Connect) =>
+      val address = x.remoteAddress
       val template = "connection failed to {}"
       recover match {
         case Some(x) =>
@@ -282,7 +301,10 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
   }
 
   def rcvConnected(operations: Operations): Receive = {
-    case Tcp.Connected(`address`, _) =>
+    case ClusterDiscovererActor.Address(address) =>
+      connect("connecting", Duration.Zero, address) // TODO TEST
+
+    case Tcp.Connected(address, _) =>
       log.info("connected to {}", address)
       val connection = sender()
       val pipeline = newPipeline(connection)
@@ -300,7 +322,12 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       }
       context watch connection
       context watch pipeline
-      context become connected(result, connection, pipeline, 0)
+      heartbeat(pipeline)
+      context become connected(address, result, connection, pipeline, 0)
+  }
+
+  def heartbeat(pipeline: ActorRef): Unit = {
+    toPipeline(pipeline, PackOut(HeartbeatRequest))
   }
 
   def toClient(client: ActorRef, in: Try[In]): Unit = {
@@ -325,7 +352,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
     case _: Out                => defaultCredentials
   }
 
-  def connect(label: String, in: FiniteDuration) {
+  def connect(label: String, in: FiniteDuration, address: InetSocketAddress = settings.address): Unit = {
     val connect = Tcp.Connect(address, timeout = Some(connectionTimeout))
     if (in == Duration.Zero) {
       log.info("{} to {}", label, address)
@@ -333,6 +360,14 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
     } else {
       log.info("{} to {} in {}", label, address, in)
       system.scheduler.scheduleOnce(in, tcp, connect)
+    }
+  }
+
+  def reconnect(address: InetSocketAddress, delay: FiniteDuration): Unit = {
+    // TODO TEST
+    clusterDiscoverer match {
+      case Some(clusterDiscoverer) => clusterDiscoverer ! ClusterDiscovererActor.GetAddress(Some(address))
+      case None                    => connect("reconnecting", delay)
     }
   }
 

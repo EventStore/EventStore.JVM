@@ -4,7 +4,8 @@ import java.net.{ InetSocketAddress, InetAddress }
 
 //sealed trait NodeEndpoints
 
-case class NodeEndpoints(endpoint: InetSocketAddress, secureEndpoint: InetSocketAddress)
+// TODO
+case class NodeEndpoints(endpoint: InetSocketAddress, secureEndpoint: Option[InetSocketAddress] = None /*TODO*/ )
 
 /*
 object NodeEndpoints {

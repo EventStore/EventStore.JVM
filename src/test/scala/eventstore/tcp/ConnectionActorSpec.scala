@@ -610,7 +610,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       client ! init.Event(PackIn(Try(Authenticated), id1))
     }
 
-    "should process messages from different clients in parallel" in new TestScope {
+    "process messages from different clients in parallel" in new TestScope {
       sendConnected()
 
       def tell(msg: Out, probe: TestProbe) = {
@@ -629,6 +629,13 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       //      client ! init.Event(PackIn(Try(Pong), id1)) TODO this should fail, let's test it, ideally this should trigger retry
       client ! init.Event(PackIn(Try(Authenticated), id1))
     }
+
+    "send heartbeat immediately after connected" in new TestScope {
+      sendConnected()
+      pipeline.expectMsgPF(300.millis) { case init.Command(PackOut(HeartbeatRequest, _, _)) => }
+
+      override def heartbeatEnabled = true
+    }
   }
 
   abstract class TcpScope extends ActorScope {
@@ -638,6 +645,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     def connect(settings: Settings = settings): (TestActorRef[ConnectionActor], ActorRef) = {
       val connection = newConnection(settings)
       val tcpConnection = newTcpConnection()
+      expectPack.message mustEqual Success(HeartbeatRequest)
       connection -> tcpConnection
     }
 
@@ -751,13 +759,16 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     val client = TestActorRef(new ConnectionActor(settings) {
       override def tcp = TestScope.this.tcp.ref
       override def newPipeline(connection: ActorRef) = TestScope.this.pipeline.ref
+      override def heartbeat(pipeline: ActorRef) = if (heartbeatEnabled) super.heartbeat(pipeline)
     })
 
     val init = client.underlyingActor.init
 
     expectConnect()
 
-    def settings = Settings()
+    def settings: Settings = Settings()
+
+    def heartbeatEnabled: Boolean = false
 
     def expectConnect() {
       tcp expectMsg connect
