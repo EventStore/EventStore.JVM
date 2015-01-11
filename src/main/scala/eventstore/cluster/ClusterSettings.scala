@@ -17,7 +17,7 @@ case class ClusterSettings(
     gossipSeedsOrDns: GossipSeedsOrDns = GossipSeedsOrDns.GossipSeeds("127.0.0.1" :: 2113),
     maxDiscoverAttempts: Int = 10,
     gossipTimeout: FiniteDuration = 1.second) {
-  require(maxDiscoverAttempts >= 0, s"maxDiscoverAttempts must be >= 1, but is $maxDiscoverAttempts")
+  require(maxDiscoverAttempts >= 1, s"maxDiscoverAttempts must be >= 1, but is $maxDiscoverAttempts")
 }
 
 object ClusterSettings {
