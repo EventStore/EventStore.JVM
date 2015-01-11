@@ -8,6 +8,9 @@ import akka.testkit.{ TestProbe, TestActorRef }
 import akka.util.ByteIterator
 import java.net.InetSocketAddress
 import java.nio.ByteOrder
+import eventstore.cluster.ClusterDiscovererActor.{ Address, GetAddress }
+import eventstore.cluster.{ ClusterException, ClusterSettings }
+import eventstore.cluster.GossipSeedsOrDns.GossipSeeds
 import org.specs2.mock.Mockito
 import scala.concurrent.duration._
 import scala.util.{ Try, Success, Failure }
@@ -57,7 +60,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     }
 
     "not reconnect if never connected before" in new TestScope {
-      client ! CommandFailed(connect)
+      client ! CommandFailed(connect())
       expectNoMsgs()
       expectTerminated()
     }
@@ -636,6 +639,47 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
 
       override def heartbeatEnabled = true
     }
+
+    "ask for address on start" in new ClusterScope {
+      discoverer expectMsg GetAddress()
+      client ! Address(address)
+      tcp expectMsg connect(address)
+    }
+
+    "re-connect to new address when notified by discoverer" in new ClusterScope {
+      discoverer expectMsg GetAddress()
+      client ! Address(address)
+      tcp expectMsg connect(address)
+      sendConnected(address)
+
+      client ! Address(address2)
+      tcp expectMsg connect(address2)
+    }
+
+    "not re-connect to address if it was not changed" in new ClusterScope {
+      discoverer expectMsg GetAddress()
+      client ! Address(address)
+      tcp expectMsg connect(address)
+      sendConnected(address)
+
+      client ! Address(address)
+      tcp.expectNoMsg(1.second)
+    }
+
+    "ask for different address if failed to connect" in new ClusterScope {
+      discoverer expectMsg GetAddress()
+      client ! Address(address)
+      tcp expectMsg connect(address)
+      client ! CommandFailed(connect(address))
+
+      discoverer expectMsg GetAddress(Some(address))
+    }
+
+    "stop when cluster failed" in new ClusterScope {
+      discoverer expectMsg GetAddress()
+      client ! Status.Failure(new ClusterException("test"))
+      expectTerminated()
+    }
   }
 
   abstract class TcpScope extends ActorScope {
@@ -747,55 +791,62 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     override def settings = Settings(maxReconnections = 1, heartbeatInterval = 10.seconds, heartbeatTimeout = 20.seconds)
   }
 
-  trait TestScope extends ActorScope {
-    val duration = 1.second
-    val credentials = settings.defaultCredentials
-    val connect = Connect(settings.address, timeout = Some(settings.connectionTimeout))
-
-    val tcp = TestProbe()
-    val pipeline = TestProbe()
-    val connection = TestProbe()
-
+  trait TestScope extends CommonScope {
     val client = TestActorRef(new ConnectionActor(settings) {
       override def tcp = TestScope.this.tcp.ref
       override def newPipeline(connection: ActorRef) = TestScope.this.pipeline.ref
       override def heartbeat(pipeline: ActorRef) = if (heartbeatEnabled) super.heartbeat(pipeline)
     })
 
-    val init = client.underlyingActor.init
+    lazy val init = client.underlyingActor.init
 
     expectConnect()
+  }
+
+  trait CommonScope extends ActorScope {
+    val duration = 1.second
+    val credentials = settings.defaultCredentials
+
+    val tcp = TestProbe()
+    val pipeline = TestProbe()
+    val connection = TestProbe()
+
+    def connect(address: InetSocketAddress = settings.address) = {
+      Connect(address, timeout = Some(settings.connectionTimeout))
+    }
+
+    def client: TestActorRef[ConnectionActor]
 
     def settings: Settings = Settings()
 
     def heartbeatEnabled: Boolean = false
 
-    def expectConnect() {
-      tcp expectMsg connect
+    def expectConnect(): Unit = {
+      tcp expectMsg connect()
     }
 
-    def sendConnected() {
-      client.tell(Connected(settings.address, new InetSocketAddress(0)), connection.ref)
+    def sendConnected(address: InetSocketAddress = settings.address): Unit = {
+      client.tell(Connected(address, new InetSocketAddress(0)), connection.ref)
       connection expectMsg Register(pipeline.ref)
     }
 
-    def expectNoMsgs() {
+    def expectNoMsgs(): Unit = {
       tcp.expectNoMsg(duration)
       pipeline.expectNoMsg(duration)
       expectNoMsg(duration)
     }
 
-    def expectTerminated() {
+    def expectTerminated(): Unit = {
       val deathWatch = TestProbe()
       deathWatch watch client
       deathWatch.expectMsgPF() {
-        case Terminated(`client`) => true
+        case Terminated(x) if x == client => true
       }
     }
 
     def verifyReconnections(n: Int): Unit = if (n > 0) {
       expectConnect()
-      client ! CommandFailed(connect)
+      client ! CommandFailed(connect())
       verifyReconnections(n - 1)
     }
   }
@@ -823,5 +874,20 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     }
 
     override def settings = super.settings.copy(operationTimeout = 500.millis)
+  }
+
+  trait ClusterScope extends CommonScope {
+    val address = "127.0.0.1" :: 1
+    val address2 = "127.0.0.1" :: 2
+    val discoverer = TestProbe()
+
+    val client = TestActorRef(new ConnectionActor(settings) {
+      override def tcp = ClusterScope.this.tcp.ref
+      override def newPipeline(connection: ActorRef) = ClusterScope.this.pipeline.ref
+      override def heartbeat(pipeline: ActorRef) = {}
+      override def newClusterDiscoverer(settings: ClusterSettings) = discoverer.ref
+    })
+
+    override def settings = super.settings.copy(cluster = Some(ClusterSettings(GossipSeeds(address))))
   }
 }
