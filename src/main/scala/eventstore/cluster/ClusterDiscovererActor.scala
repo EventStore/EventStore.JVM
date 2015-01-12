@@ -26,8 +26,6 @@ private[eventstore] class ClusterDiscovererActor(
 
   override def preStart() = self ! Tick
 
-  override def postRestart(reason: Throwable) = {}
-
   def receive = discovering(1, None)
 
   def discovering(attempt: Int, failed: Option[InetSocketAddress]): Receive = rcvTerminated or {
