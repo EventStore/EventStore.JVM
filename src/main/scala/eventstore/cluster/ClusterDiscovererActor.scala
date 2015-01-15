@@ -1,12 +1,11 @@
 package eventstore
 package cluster
 
-import java.net.{ InetAddress, InetSocketAddress }
+import java.net.InetSocketAddress
 import akka.actor._
 import akka.actor.Status.Failure
 import scala.concurrent.{ Await, Future }
-import scala.concurrent.duration._
-import scala.util.Random
+import scala.util.Random.shuffle
 import scala.util.control.NonFatal
 
 private[eventstore] class ClusterDiscovererActor(
@@ -16,8 +15,6 @@ private[eventstore] class ClusterDiscovererActor(
   import context.dispatcher
   import settings._
 
-  val tickInterval = 1.second
-  val retryInterval = 500.millis
   var clients: Set[ActorRef] = Set()
 
   val rcvTerminated: Receive = {
@@ -33,45 +30,46 @@ private[eventstore] class ClusterDiscovererActor(
     case Tick          => discover(attempt, failed, Nil)
   }
 
-  def discovered(bestNode: MemberInfo, members: List[MemberInfo]): Receive = rcvTerminated or {
-    case GetAddress(failed) =>
-      val client = sender()
-      addClient(client)
-      failed match {
-        case Some(failed) if bestNode.externalTcp == failed => // TODO
-          log.info("Cluster best node {} failed, reported by {}", bestNode, client)
-          context become recovering(bestNode, members)
+  def discovered(bestNode: MemberInfo, members: List[MemberInfo]): Receive = {
+    context.system.scheduler.scheduleOnce(discoveryInterval, self, Tick)
+    rcvTerminated or {
+      case GetAddress(failed) =>
+        val client = sender()
+        addClient(client)
+        failed match {
+          case Some(failed) if bestNode.externalTcp == failed =>
+            log.info("Cluster best node {} failed, reported by {}", bestNode, client)
+            context become recovering(bestNode, members)
 
-        case _ => client ! address(bestNode)
-      }
-
-    case Tick =>
-      try {
-        val future = this.clusterInfo(bestNode.externalHttp)
-        val clusterInfo = Await.result(future, gossipTimeout)
-        clusterInfo.bestNode match {
-          case Some(newBestNode) =>
-            if (newBestNode like bestNode) {
-              val state = bestNode.state
-              val newState = newBestNode.state
-              if (state != newState) log.info("Cluster best node state changed from {} to {}", state, newState)
-            } else {
-              log.info("Cluster best node changed from {} to {}", bestNode, newBestNode)
-              broadcast(address(newBestNode))
-            }
-            context.system.scheduler.scheduleOnce(tickInterval, self, Tick)
-            context become discovered(newBestNode, clusterInfo.members)
-
-          case None =>
-            log.info("Cluster best node {} failed", bestNode)
-            bestNodeFailed(bestNode, members)
+          case _ => client ! Address(bestNode)
         }
 
-      } catch {
-        case NonFatal(e) =>
-          log.info("Failed to reach cluster best node {} with error: {}", bestNode, e)
-          bestNodeFailed(bestNode, members)
-      }
+      case Tick =>
+        try {
+          val future = this.clusterInfo(bestNode.externalHttp)
+          val clusterInfo = Await.result(future, gossipTimeout)
+          clusterInfo.bestNode match {
+            case Some(newBestNode) =>
+              if (newBestNode like bestNode) {
+                val state = bestNode.state
+                val newState = newBestNode.state
+                if (state != newState) log.info("Cluster best node state changed from {} to {}", state, newState)
+              } else {
+                log.info("Cluster best node changed from {} to {}", bestNode, newBestNode)
+                broadcast(Address(newBestNode))
+              }
+              context become discovered(newBestNode, clusterInfo.members)
+
+            case None =>
+              log.info("Cluster best node {} failed", bestNode)
+              bestNodeFailed(bestNode, members)
+          }
+        } catch {
+          case NonFatal(e) =>
+            log.info("Failed to reach cluster best node {} with error: {}", bestNode, e)
+            bestNodeFailed(bestNode, members)
+        }
+    }
   }
 
   def recovering(failed: MemberInfo, members: List[MemberInfo]): Receive = rcvTerminated or {
@@ -79,10 +77,14 @@ private[eventstore] class ClusterDiscovererActor(
     case Tick          => bestNodeFailed(failed, members)
   }
 
-  def discover(attempt: Int, failed: Option[InetSocketAddress], seeds: List[InetSocketAddress]): Unit = {
-    def attemptFailed(e: Option[Throwable] = None): Unit = {
+  def discover(attempt: Int, failed: Option[InetSocketAddress], seeds: List[InetSocketAddress]) = {
+    def attemptFailed(e: Option[Throwable] = None) = {
       if (attempt < maxDiscoverAttempts) {
-        context.system.scheduler.scheduleOnce(retryInterval, self, Tick)
+        e match {
+          case Some(e) => log.info("Discovering cluster: attempt {}/{} failed with error: {}", attempt, maxDiscoverAttempts, e)
+          case None    => log.info("Discovering cluster: attempt {}/{} failed: no candidate found", attempt, maxDiscoverAttempts)
+        }
+        context.system.scheduler.scheduleOnce(discoverAttemptInterval, self, Tick)
         context become discovering(attempt + 1, failed)
       } else {
         val msg = e match {
@@ -106,83 +108,59 @@ private[eventstore] class ClusterDiscovererActor(
           }
         }
       }
-      // TODO method `find` doesn't pass exception
-      val future = Future.find(gossipSeeds.map(clusterInfo))(_.bestNode.isDefined)
 
-      // TODO
-      Await.result(future, gossipTimeout /*TODO increase on retry*/ ) match {
+      val future = Future.find(gossipSeeds map clusterInfo)(_.bestNode.isDefined)
+      Await.result(future, gossipTimeout) match {
+        case None => attemptFailed(None)
         case Some(clusterInfo) =>
           val bestNode = clusterInfo.bestNode.get
           log.info("Discovering cluster: attempt {}/{} successful: best candidate is {}", attempt, maxDiscoverAttempts, bestNode)
-          broadcast(address(bestNode))
-          context.system.scheduler.scheduleOnce(tickInterval, self, Tick)
+          broadcast(Address(bestNode))
           context become discovered(bestNode, clusterInfo.members)
-
-        case None =>
-          log.info("Discovering cluster: attempt {}/{} failed: no candidate found", attempt, maxDiscoverAttempts)
-          attemptFailed(None)
       }
-    } catch {
-      case NonFatal(e) =>
-        log.info("Discovering cluster: attempt {}/{} failed with error: {}", attempt, maxDiscoverAttempts, e)
-        attemptFailed(Some(e))
-    }
+    } catch { case NonFatal(e) => attemptFailed(Some(e)) }
   }
 
-  def addClient(client: ActorRef): Unit = {
-    context watch client
-    clients = clients + client
-  }
+  def addClient(client: ActorRef) = clients = clients + context.watch(client)
 
-  def broadcast(x: AnyRef): Unit = clients.foreach { client => client ! x }
+  def broadcast(x: AnyRef) = clients.foreach { client => client ! x }
 
-  def bestNodeFailed(bestNode: MemberInfo, members: List[MemberInfo]): Unit = {
-    // TODO move out to cluster
-    // TODO optimise
-    // TODO TEST
+  def bestNodeFailed(bestNode: MemberInfo, members: List[MemberInfo]) = {
     val seeds = GossipCandidates(members.filterNot(_ like bestNode))
     discover(1, Some(bestNode.externalHttp), seeds)
   }
 
-  def address(x: MemberInfo) = Address(x.externalTcp)
-
-  private case object Tick
-}
-
-private[eventstore] object ClusterDiscovererActor {
-
-  def props(settings: ClusterSettings, clusterInfo: ClusterInfo.FutureFunc): Props = {
-    Props(classOf[ClusterDiscovererActor], settings, clusterInfo)
-  }
-
-  // TODO might block // TODO TEST
-  def resolveDns(dns: String): List[InetAddress] = {
-    val result = try InetAddress.getAllByName(dns).toList catch {
-      case NonFatal(e) =>
-        throw new ClusterException(s"Error while resolving DNS entry $dns", Some(e))
-    }
-    if (result.isEmpty) throw new ClusterException(s"DNS entry '$dns' resolved into empty list")
-    else result
-  }
+  case object Tick
 
   object GossipCandidates {
     def apply(settings: ClusterSettings): List[InetSocketAddress] = {
       import GossipSeedsOrDns._
       val gossipSeeds = settings.gossipSeedsOrDns match {
         case GossipSeeds(x)        => x
-        case ClusterDns(dns, port) => resolveDns(dns).map(x => x :: port)
+        case ClusterDns(dns, port) => ResolveDns(dns, dnsLookupTimeout).map(x => x :: port)
       }
-      Random.shuffle(gossipSeeds)
+      shuffle(gossipSeeds)
     }
 
     def apply(members: List[MemberInfo]): List[InetSocketAddress] = {
       val (nodes, managers) = members.filter(_.isAlive).partition(_.state != NodeState.Manager)
-      (Random.shuffle(nodes) ::: Random.shuffle(managers)).map(_.externalHttp)
+      (shuffle(nodes) ::: shuffle(managers)).map(_.externalHttp)
     }
+  }
+}
+
+private[eventstore] object ClusterDiscovererActor {
+  def props(settings: ClusterSettings, clusterInfo: ClusterInfo.FutureFunc): Props = {
+    Props(classOf[ClusterDiscovererActor], settings, clusterInfo)
   }
 
   case class GetAddress(failed: Option[InetSocketAddress] = None)
+
   case class Address(value: InetSocketAddress)
+
+  object Address {
+    def apply(x: MemberInfo): Address = Address(x.externalTcp)
+  }
 }
 
 class ClusterException(message: String, val cause: Option[Throwable]) extends EsException(message, cause.orNull) {

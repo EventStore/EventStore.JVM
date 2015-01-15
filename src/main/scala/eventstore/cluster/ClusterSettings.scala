@@ -10,30 +10,36 @@ import scala.concurrent.duration._
  * Contains settings relating to a connection to a cluster.
  *
  * @param gossipSeedsOrDns Gossip seeds or DNS settings
- * @param maxDiscoverAttempts The maximum number of attempts for discovering endpoints.
+ * @param dnsLookupTimeout The time given to resolve dns
+ * @param maxDiscoverAttempts Maximum number of attempts for discovering endpoints
+ * @param discoverAttemptInterval The interval between cluster discovery attempts
+ * @param discoveryInterval The interval at which to keep discovering cluster
  * @param gossipTimeout Timeout for cluster gossip.
  */
 case class ClusterSettings(
     gossipSeedsOrDns: GossipSeedsOrDns = GossipSeedsOrDns.GossipSeeds("127.0.0.1" :: 2113),
+    dnsLookupTimeout: FiniteDuration = 2.seconds,
     maxDiscoverAttempts: Int = 10,
+    discoverAttemptInterval: FiniteDuration = 500.millis,
+    discoveryInterval: FiniteDuration = 1.second,
     gossipTimeout: FiniteDuration = 1.second) {
   require(maxDiscoverAttempts >= 1, s"maxDiscoverAttempts must be >= 1, but is $maxDiscoverAttempts")
 }
 
 object ClusterSettings {
-  def opt(config: Config): Option[ClusterSettings] = {
-    def opt(config: Config) = {
+  def opt(conf: Config): Option[ClusterSettings] = {
+    def opt(conf: Config) = {
       def option[T](path: String, f: String => T): Option[T] = {
-        if (config hasPath path) Option(f(path)) else None
+        if (conf hasPath path) Option(f(path)) else None
       }
 
-      def clusterDns = option("dns", config.getString).map { dns =>
+      def clusterDns = option("dns", conf.getString).map { dns =>
         GossipSeedsOrDns(
           clusterDns = dns,
-          externalGossipPort = config getInt "external-gossip-port")
+          externalGossipPort = conf getInt "external-gossip-port")
       }
 
-      def gossipSeeds = option("gossip-seeds", config.getStringList).flatMap { ss =>
+      def gossipSeeds = option("gossip-seeds", conf.getStringList).flatMap { ss =>
         if (ss.isEmpty) None
         else {
           val seeds = ss.asScala.map { s =>
@@ -46,14 +52,19 @@ object ClusterSettings {
         }
       }
 
+      def duration(path: String) = FiniteDuration(conf.getDuration(path, MILLISECONDS), MILLISECONDS)
+
       (clusterDns orElse gossipSeeds).map { gossipSeedsOrDns =>
         ClusterSettings(
           gossipSeedsOrDns = gossipSeedsOrDns,
-          maxDiscoverAttempts = config getInt "max-discover-attempts",
-          gossipTimeout = FiniteDuration(config.getDuration("gossip-timeout", MILLISECONDS), MILLISECONDS))
+          dnsLookupTimeout = duration("dns-lookup-timeout"),
+          maxDiscoverAttempts = conf getInt "max-discover-attempts",
+          discoverAttemptInterval = duration("discover-attempt-interval"),
+          discoveryInterval = duration("discovery-interval"),
+          gossipTimeout = duration("gossip-timeout"))
       }
     }
-    opt(config getConfig "eventstore.cluster")
+    opt(conf getConfig "eventstore.cluster")
   }
 }
 

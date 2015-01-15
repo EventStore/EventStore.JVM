@@ -1,5 +1,7 @@
 package eventstore.cluster
 
+import scala.collection.immutable.SortedSet
+
 sealed trait NodeState extends Ordered[NodeState] {
   def id: Int
   def isReplica: Boolean
@@ -8,8 +10,7 @@ sealed trait NodeState extends Ordered[NodeState] {
 }
 
 object NodeState {
-
-  private val map: Map[String, NodeState] = Set(
+  val values: SortedSet[NodeState] = SortedSet(
     Initializing,
     Unknown,
     PreReplica,
@@ -20,7 +21,9 @@ object NodeState {
     Master,
     Manager,
     ShuttingDown,
-    Shutdown).map(x => x.toString -> x).toMap
+    Shutdown)
+
+  private val map: Map[String, NodeState] = values.toSet[NodeState].map(x => x.toString -> x).toMap
 
   def apply(x: String): NodeState = map.getOrElse(x, sys.error(s"No NodeState found for $x"))
 

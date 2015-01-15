@@ -33,7 +33,9 @@ class ClusterDiscovererActorSpec extends util.ActorSpec with Mockito {
 
       expectFailure
 
-      override def settings = super.settings.copy(gossipSeedsOrDns = ClusterDns("test"))
+      override def settings = super.settings.copy(
+        gossipSeedsOrDns = ClusterDns("test"),
+        dnsLookupTimeout = 300.millis)
     }
 
     "re-discover cluster each second" in new TestScope {
@@ -131,7 +133,6 @@ class ClusterDiscovererActorSpec extends util.ActorSpec with Mockito {
       lastSender ! failure
 
       expectFailure
-      //      expectFailure.cause must beSome(TestException) TODO replace Future.find
     }
 
     "return best node if exists" in new TestScope {
@@ -157,7 +158,7 @@ class ClusterDiscovererActorSpec extends util.ActorSpec with Mockito {
       lastSender ! cluster(member(address2))
 
       expectMsg(Address(address2))
-      expectNoMsg(500.millis)
+      expectNoMsg(100.millis)
     }
 
     "return best node to all clients" in new TestScope {
@@ -326,7 +327,7 @@ class ClusterDiscovererActorSpec extends util.ActorSpec with Mockito {
       expectMsg(Address(address))
 
       expectMsg(address)
-      lastSender ! cluster(member(address), member(address2, Clone), member(address3, Manager)) // TODO Manager is last to connect
+      lastSender ! cluster(member(address), member(address2, Clone), member(address3, Manager))
 
       expectMsg(address)
       lastSender ! failure
@@ -444,7 +445,11 @@ class ClusterDiscovererActorSpec extends util.ActorSpec with Mockito {
       expectMsgPF() { case Failure(e: ClusterException) => e }
     }
 
-    def settings = ClusterSettings(GossipSeedsOrDns.GossipSeeds(address), maxDiscoverAttempts = 3)
+    def settings = ClusterSettings(
+      GossipSeedsOrDns.GossipSeeds(address),
+      maxDiscoverAttempts = 3,
+      discoverAttemptInterval = 100.millis,
+      discoveryInterval = 300.millis)
 
     def cluster(members: MemberInfo*): ClusterInfo = ClusterInfo(address, members.toList)
 
