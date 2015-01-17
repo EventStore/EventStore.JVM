@@ -71,7 +71,7 @@ object OneToMany {
     }
   }
 
-  private[eventstore] implicit class RichMap[M, S](self: Map[M, Set[S]]) extends AnyRef {
+  private[eventstore] implicit class RichMap[M, S](val self: Map[M, Set[S]]) extends AnyVal {
     def getOrEmpty(m: M): Set[S] = self.getOrElse(m, Set.empty)
 
     def updatedSet(m: M, f: Set[S] => Set[S]): Map[M, Set[S]] = {
