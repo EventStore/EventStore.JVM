@@ -35,7 +35,7 @@ class SettingsBuilder extends Builder[Settings]
 
   def connectionTimeout(length: Long, unit: TimeUnit): SettingsBuilder = connectionTimeout(FiniteDuration(length, unit))
 
-  def connectionTimeout(length: Long): SettingsBuilder = connectionTimeout(length, SECONDS)
+  def connectionTimeout(seconds: Long): SettingsBuilder = connectionTimeout(seconds, SECONDS)
 
   def maxReconnections(x: Int): SettingsBuilder = set {
     _maxReconnections = x
@@ -47,7 +47,7 @@ class SettingsBuilder extends Builder[Settings]
 
   def reconnectionDelayMin(length: Long, unit: TimeUnit): SettingsBuilder = reconnectionDelayMin(FiniteDuration(length, unit))
 
-  def reconnectionDelayMin(length: Long): SettingsBuilder = reconnectionDelayMin(length, SECONDS)
+  def reconnectionDelayMin(seconds: Long): SettingsBuilder = reconnectionDelayMin(seconds, SECONDS)
 
   def reconnectionDelayMax(x: FiniteDuration): SettingsBuilder = set {
     _reconnectionDelayMax = x
@@ -55,7 +55,7 @@ class SettingsBuilder extends Builder[Settings]
 
   def reconnectionDelayMax(length: Long, unit: TimeUnit): SettingsBuilder = reconnectionDelayMax(FiniteDuration(length, unit))
 
-  def reconnectionDelayMax(length: Long): SettingsBuilder = reconnectionDelayMax(length, SECONDS)
+  def reconnectionDelayMax(seconds: Long): SettingsBuilder = reconnectionDelayMax(seconds, SECONDS)
 
   def defaultCredentials(x: Option[UserCredentials]): SettingsBuilder = set {
     _defaultCredentials = x
@@ -74,7 +74,7 @@ class SettingsBuilder extends Builder[Settings]
 
   def heartbeatInterval(length: Long, unit: TimeUnit): SettingsBuilder = heartbeatInterval(FiniteDuration(length, unit))
 
-  def heartbeatInterval(length: Long): SettingsBuilder = heartbeatInterval(length, SECONDS)
+  def heartbeatInterval(seconds: Long): SettingsBuilder = heartbeatInterval(seconds, SECONDS)
 
   def heartbeatTimeout(x: FiniteDuration): SettingsBuilder = set {
     _heartbeatTimeout = x
@@ -82,7 +82,7 @@ class SettingsBuilder extends Builder[Settings]
 
   def heartbeatTimeout(length: Long, unit: TimeUnit): SettingsBuilder = heartbeatTimeout(FiniteDuration(length, unit))
 
-  def heartbeatTimeout(length: Long): SettingsBuilder = heartbeatTimeout(length, SECONDS)
+  def heartbeatTimeout(seconds: Long): SettingsBuilder = heartbeatTimeout(seconds, SECONDS)
 
   def operationTimeout(x: FiniteDuration): SettingsBuilder = set {
     _operationTimeout = x
@@ -108,7 +108,7 @@ class SettingsBuilder extends Builder[Settings]
 
   def operationTimeout(length: Long, unit: TimeUnit): SettingsBuilder = operationTimeout(FiniteDuration(length, unit))
 
-  def operationTimeout(length: Long): SettingsBuilder = operationTimeout(length, SECONDS)
+  def operationTimeout(seconds: Long): SettingsBuilder = operationTimeout(seconds, SECONDS)
 
   override def resolveLinkTos(x: Boolean) = super.resolveLinkTos(x)
 
