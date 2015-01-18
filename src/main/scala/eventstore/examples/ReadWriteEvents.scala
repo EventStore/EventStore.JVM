@@ -2,7 +2,7 @@ package eventstore
 package examples
 
 import akka.actor.Status.Failure
-import akka.actor.{ActorLogging, Props, Actor, ActorSystem}
+import akka.actor.{ ActorLogging, Props, Actor, ActorSystem }
 import scala.util.Random
 import scala.concurrent.duration._
 
@@ -23,7 +23,7 @@ class ReadWriteEventsActor extends Actor with ActorLogging {
     case Failure(_: StreamNotFoundException) =>
       val events = write(ExpectedVersion.NoStream)
       context become rcvWriteCompleted(events)
-    case x                                   =>
+    case x =>
       log.error(s"Received unexpected $x")
       shutdown()
   }
@@ -36,7 +36,7 @@ class ReadWriteEventsActor extends Actor with ActorLogging {
     case WriteEventsCompleted(Some(range), _) =>
       read(range.start)
       context become rcvReadCompleted(events)
-    case x                                    =>
+    case x =>
       log.error(s"Received unexpected $x")
       shutdown()
   }
@@ -53,7 +53,7 @@ class ReadWriteEventsActor extends Actor with ActorLogging {
         val events = write(ExpectedVersion.Exact(x.lastEventNumber))
         context become rcvWriteCompleted(events)
       }
-    case x                            =>
+    case x =>
       log.error(s"Received unexpected {}", x)
       shutdown()
   }
