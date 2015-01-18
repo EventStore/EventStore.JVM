@@ -4,6 +4,7 @@ package tcp
 import java.net.InetSocketAddress
 import akka.actor._
 import akka.io.{ Tcp, IO }
+import eventstore.NotHandled.NotMaster
 import eventstore.cluster.ClusterDiscovererActor.GetAddress
 import eventstore.cluster.{ ClusterException, ClusterSettings, ClusterInfo, ClusterDiscovererActor }
 import scala.concurrent.duration._
@@ -69,10 +70,10 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
 
       def outFunc(pack: PackOut): Unit = toPipeline(pipeline, pack)
 
-      def maybeReconnect(reason: String, address: InetSocketAddress = address) = {
+      def maybeReconnect(reason: String, newAddress: InetSocketAddress = address) = {
         if (!scheduled.isCancelled) scheduled.cancel()
         val template = "Connection lost to {}: {}"
-        reconnect(delayedRetry, address, operations) match {
+        reconnect(delayedRetry, newAddress, operations) match {
           case Some(rcv) =>
             log.warning(template, address, reason)
             context become rcv
@@ -149,9 +150,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       val correlationId = in.correlationId
       val msg = in.message
 
-      def reply(out: PackOut) = {
-        outFunc.foreach(_.apply(out))
-      }
+      def reply(out: PackOut) = outFunc.foreach(_.apply(out))
 
       def forward: Operations = {
         operations.single(correlationId) match {
@@ -191,9 +190,10 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
 
       log.debug(in.toString)
       msg match {
-        case Success(HeartbeatRequest) => reply(PackOut(HeartbeatResponse, correlationId))
-        case Success(Ping)             => reply(PackOut(Pong, correlationId))
-        case _                         => context become receive(forward)
+        case Success(HeartbeatRequest)         => reply(PackOut(HeartbeatResponse, correlationId))
+        case Success(Ping)                     => reply(PackOut(Pong, correlationId))
+        case Failure(NotHandled(_: NotMaster)) => // TODO implement special case of reconnection
+        case _                                 => context become receive(forward)
       }
   }
 
