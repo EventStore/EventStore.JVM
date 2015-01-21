@@ -408,20 +408,26 @@ Using `application.conf` for configuration is more preferable option.
 
 ## Setup
 
+* Sbt
+```scala
+    libraryDependencies += "com.geteventstore" %% "eventstore-client" % "2.0.0"
+```
+
 * Maven:
 ```xml
     <dependency>
         <groupId>com.geteventstore</groupId>
         <artifactId>eventstore-client_2.11</artifactId>
-        <version>1.0.1</version>
+        <version>2.0.0</version>
     </dependency>
 ```
 
-* Sbt
-```scala
-    libraryDependencies += "com.geteventstore" %% "eventstore-client" % "1.0.1"
+or
+
+```xml
+    <dependency>
+        <groupId>com.geteventstore</groupId>
+        <artifactId>eventstore-client_2.10</artifactId>
+        <version>2.0.0</version>
+    </dependency>
 ```
-
-### Roadmap
-
-* Add support of EventStore cluster
