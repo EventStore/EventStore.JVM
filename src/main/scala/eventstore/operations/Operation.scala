@@ -26,24 +26,24 @@ private[eventstore] trait Operation {
 private[eventstore] object Operation {
   def opt(pack: PackOut, client: ActorRef, connected: Boolean, maxRetries: Int): Option[Operation] = {
     def retryable(x: Operation) = RetryableOperation(x, maxRetries, connected)
-    def base(x: Inspection) = retryable(BaseOperation(pack, client, x))
+    def simple(x: Inspection) = retryable(SimpleOperation(pack, client, x))
 
     pack.message match {
-      case x: WriteEvents       => Some(base(WriteEventsInspection(x)))
-      case x: DeleteStream      => Some(base(DeleteStreamInspection(x)))
-      case x: TransactionStart  => Some(base(TransactionStartInspection(x)))
-      case x: TransactionWrite  => Some(base(TransactionWriteInspection(x)))
-      case x: TransactionCommit => Some(base(TransactionCommitInspection(x)))
-      case x: ReadEvent         => Some(base(ReadEventInspection(x)))
-      case x: ReadStreamEvents  => Some(base(ReadStreamEventsInspection(x)))
-      case x: ReadAllEvents     => Some(base(ReadAllEventsInspection(x)))
+      case x: WriteEvents       => Some(simple(WriteEventsInspection(x)))
+      case x: DeleteStream      => Some(simple(DeleteStreamInspection(x)))
+      case x: TransactionStart  => Some(simple(TransactionStartInspection(x)))
+      case x: TransactionWrite  => Some(simple(TransactionWriteInspection(x)))
+      case x: TransactionCommit => Some(simple(TransactionCommitInspection(x)))
+      case x: ReadEvent         => Some(simple(ReadEventInspection(x)))
+      case x: ReadStreamEvents  => Some(simple(ReadStreamEventsInspection(x)))
+      case x: ReadAllEvents     => Some(simple(ReadAllEventsInspection(x)))
       case x: SubscribeTo       => Some(retryable(SubscriptionOperation(x, pack, client, connected)))
-      case Unsubscribe          => Some(base(UnsubscribeInspection))
-      case ScavengeDatabase     => Some(base(ScavengeDatabaseInspection))
-      case Authenticate         => Some(base(AuthenticateInspection))
-      case Ping                 => Some(base(PingInspection))
+      case Unsubscribe          => Some(simple(UnsubscribeInspection))
+      case ScavengeDatabase     => Some(simple(ScavengeDatabaseInspection))
+      case Authenticate         => Some(simple(AuthenticateInspection))
+      case Ping                 => Some(simple(PingInspection))
       case Pong                 => None
-      case HeartbeatRequest     => Some(base(HeartbeatRequestInspection))
+      case HeartbeatRequest     => Some(simple(HeartbeatRequestInspection))
       case HeartbeatResponse    => None
     }
   }

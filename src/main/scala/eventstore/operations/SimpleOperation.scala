@@ -6,7 +6,7 @@ import NotHandled.{ TooBusy, NotReady }
 import eventstore.tcp.PackOut
 import scala.util.{ Try, Success, Failure }
 
-private[eventstore] case class BaseOperation(
+private[eventstore] case class SimpleOperation(
     pack: PackOut,
     client: ActorRef,
     inspection: Inspection) extends Operation {
