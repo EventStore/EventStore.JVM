@@ -394,6 +394,18 @@ EventStoreExtension(system).actor ! ReadEvent(EventStream.Id("stream"))
 EventStoreExtension(system).connection.future(ReadEvent(EventStream.Id("stream")))
 ```
 
+### Configuration
+
+Default client settings defined in [`reference.conf`](src/main/resources/reference.conf).
+You can override them via own `application.conf` put in the `src/main/resources`, the same way you might already do for akka.
+We are using the same approach - [config](https://github.com/typesafehub/config).
+
+### Cluster
+
+It is possible to use client against cluster of Event Store.
+For this you need to configure client via `eventstore.cluster` section in [`reference.conf`](src/main/resources/reference.conf) or [`ClusterSettings`](src/main/scala/eventstore/cluster/ClusterSettings.scala).
+Using `application.conf` for configuration is more preferable option.
+
 ## Setup
 
 * Maven:
@@ -412,4 +424,4 @@ EventStoreExtension(system).connection.future(ReadEvent(EventStream.Id("stream")
 
 ### Roadmap
 
-* Add support of EventStore cluster 
+* Add support of EventStore cluster
