@@ -41,25 +41,35 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
   lazy val delayedRetry = DelayedRetry.opt(maxReconnections, reconnectionDelayMin, reconnectionDelayMax)
 
   def receive = {
-    clusterDiscoverer match {
-      case Some(clusterDiscoverer) => clusterDiscoverer ! ClusterDiscovererActor.GetAddress()
-      case None                    => connect("Connecting", Duration.Zero)
+    val address = clusterDiscoverer match {
+      case Some(clusterDiscoverer) =>
+        clusterDiscoverer ! ClusterDiscovererActor.GetAddress()
+        None
+      case None =>
+        connect("Connecting", Duration.Zero)
+        Some(settings.address)
     }
-    connecting(Operations.Empty, reconnect(None, _, _))
+    connecting(address, Operations.Empty, reconnect(None, _, _))
   }
 
-  def connecting(operations: Operations, recover: Reconnect): Receive = {
-    def connecting(operations: Operations) = this.connecting(operations, recover)
-    rcvIncoming(operations, connecting, None) or
-      rcvOutgoing(operations, connecting, None) or
-      rcvConnected(operations, recover) or
-      rcvTimedOut(operations, connecting, None) or
-      rcvTerminated(operations, connecting, None)
+  def connecting(address: Option[InetSocketAddress], os: Operations, recover: Reconnect): Receive = {
+    def connecting(os: Operations) = this.connecting(address, os, recover)
+
+    val rcvAddressOrConnected: Receive = address match {
+      case Some(address) => rcvConnected(address, os, recover)
+      case None          => rcvAddress { address => this.connecting(Some(address), os, recover) }
+    }
+
+    rcvIncoming(os, connecting, None) or
+      rcvOutgoing(os, connecting, None) or
+      rcvAddressOrConnected or
+      rcvTimedOut(os, connecting, None) or
+      rcvTerminated(os, connecting, None)
   }
 
   def connected(
     address: InetSocketAddress,
-    operations: Operations,
+    os: Operations,
     connection: ActorRef,
     pipeline: ActorRef,
     heartbeatId: Long): Receive = {
@@ -67,14 +77,14 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       system.scheduler.scheduleOnce(heartbeatInterval, self, Heartbeat),
       system.scheduler.scheduleOnce(heartbeatInterval + heartbeatTimeout, self, HeartbeatTimeout(heartbeatId)))
 
-    def connected(operations: Operations): Receive = {
+    def connected(os: Operations): Receive = {
 
       def outFunc(pack: PackOut): Unit = toPipeline(pipeline, pack)
 
       def maybeReconnect(reason: String, newAddress: InetSocketAddress = address) = {
         if (!scheduled.isCancelled) scheduled.cancel()
         val template = "Connection lost to {}: {}"
-        reconnect(delayedRetry, newAddress, operations) match {
+        reconnect(delayedRetry, newAddress, os) match {
           case Some(rcv) =>
             log.warning(template, address, reason)
             context become rcv
@@ -84,9 +94,9 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
         }
       }
 
-      def onIn(operations: Operations) = {
+      def onIn(os: Operations) = {
         scheduled.cancel()
-        this.connected(address, operations, connection, pipeline, heartbeatId + 1)
+        this.connected(address, os, connection, pipeline, heartbeatId + 1)
       }
 
       val receive: Receive = {
@@ -113,7 +123,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
           if (newAddress != address) {
             log.info("Address changed from {} to {}")
             connection ! Tcp.Close
-            reconnect(None, newAddress, operations).foreach { rcv =>
+            reconnect(None, newAddress, os).foreach { rcv =>
               connect("Connecting", Duration.Zero, newAddress)
               context become rcv
             }
@@ -125,16 +135,16 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       }
 
       receive or
-        rcvIncoming(operations, onIn, Some(outFunc)) or
-        rcvOutgoing(operations, connected, Some(outFunc)) or
-        rcvTimedOut(operations, connected, Some(outFunc)) or
-        rcvTerminated(operations, connected, Some(outFunc))
+        rcvIncoming(os, onIn, Some(outFunc)) or
+        rcvOutgoing(os, connected, Some(outFunc)) or
+        rcvTimedOut(os, connected, Some(outFunc)) or
+        rcvTerminated(os, connected, Some(outFunc))
     }
 
-    connected(operations)
+    connected(os)
   }
 
-  def rcvIncoming(operations: Operations, receive: Operations => Receive, outFunc: Option[PackOut => Unit]): Receive = {
+  def rcvIncoming(os: Operations, rcv: Operations => Receive, outFunc: Option[PackOut => Unit]): Receive = {
     case init.Event(in) =>
       val correlationId = in.correlationId
       val msg = in.message
@@ -142,23 +152,22 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       def reply(out: PackOut) = outFunc.foreach(_.apply(out))
 
       def forward: Operations = {
-        operations.single(correlationId) match {
+        os.single(correlationId) match {
           case Some(operation) =>
             operation.inspectIn(msg) match {
-              case OnIncoming.Ignore =>
-                operations
+              case OnIncoming.Ignore => os
 
               case OnIncoming.Stop(in) =>
                 toClient(operation.client, in)
-                operations - operation
+                os - operation
 
               case OnIncoming.Retry(operation, pack) =>
                 outFunc.foreach { outFunc => outFunc(pack) }
-                operations + operation
+                os + operation
 
               case OnIncoming.Continue(operation, in) =>
                 toClient(operation.client, in)
-                operations + operation
+                os + operation
             }
 
           case None =>
@@ -173,7 +182,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
                 case _ => log.warning("Cannot deliver {}, client not found for correlationId: {}", msg, correlationId)
               }
             }
-            operations
+            os
         }
       }
 
@@ -182,45 +191,44 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
         case Success(HeartbeatRequest)         => reply(PackOut(HeartbeatResponse, correlationId))
         case Success(Ping)                     => reply(PackOut(Pong, correlationId))
         case Failure(NotHandled(_: NotMaster)) => // TODO implement special case of reconnection
-        case _                                 => context become receive(forward)
+        case _                                 => context become rcv(forward)
       }
   }
 
-  def rcvTimedOut(operations: Operations, receive: Operations => Receive, outFunc: Option[PackOut => Unit]): Receive = {
+  def rcvTimedOut(os: Operations, rcv: Operations => Receive, outFunc: Option[PackOut => Unit]): Receive = {
     case TimedOut(id, version) =>
-      val operation = operations.single(id)
+      val operation = os.single(id)
       operation.foreach { operation =>
         if (operation.version == version) {
           val result = operation.inspectIn(Failure(OperationTimedOut)) match {
-            case OnIncoming.Ignore =>
-              operations
+            case OnIncoming.Ignore => os
 
             case OnIncoming.Stop(in) =>
               toClient(operation.client, in)
-              operations - operation
+              os - operation
 
             case OnIncoming.Retry(operation, pack) =>
               outFunc.foreach { outFunc => outFunc(pack) }
-              operations + operation
+              os + operation
 
             case OnIncoming.Continue(operation, in) =>
               toClient(operation.client, in)
-              operations + operation
+              os + operation
           }
-          context become receive(result)
+          context become rcv(result)
         }
       }
   }
 
-  def rcvOutgoing(operations: Operations, receive: Operations => Receive, outFunc: Option[PackOut => Unit]): Receive = {
+  def rcvOutgoing(os: Operations, rcv: Operations => Receive, outFunc: Option[PackOut => Unit]): Receive = {
 
     def rcvPack(pack: PackOut): Unit = {
       val msg = pack.message
       val id = pack.correlationId
 
       def isDefined(x: Iterable[Operation]) = x.find(_.inspectOut.isDefinedAt(msg))
-      def forId = isDefined(operations.single(id))
-      def forMsg = isDefined(operations.many(sender()))
+      def forId = isDefined(os.single(id))
+      def forMsg = isDefined(os.many(sender()))
 
       // TODO current requirement is the only one subscription per actor allowed
       val result = forId orElse forMsg match {
@@ -229,24 +237,24 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
             case OnOutgoing.Stop(out, in) =>
               outFunc.foreach { outFunc => outFunc(out) }
               toClient(operation.client, in)
-              operations - operation
+              os - operation
             case OnOutgoing.Continue(operation, out) =>
               outFunc.foreach { outFunc => outFunc(out) }
               system.scheduler.scheduleOnce(operationTimeout, self, TimedOut(id, operation.version))
-              operations + operation
+              os + operation
           }
 
         case None =>
           Operation.opt(pack, sender(), outFunc.isDefined, operationMaxRetries) match {
-            case None => operations
+            case None => os
             case Some(operation) =>
               context watch sender()
               outFunc.foreach(_.apply(pack))
               system.scheduler.scheduleOnce(operationTimeout, self, TimedOut(id, operation.version))
-              operations + operation
+              os + operation
           }
       }
-      context become receive(result)
+      context become rcv(result)
     }
 
     {
@@ -255,34 +263,37 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
     }
   }
 
-  def rcvTerminated(operations: Operations, receive: Operations => Receive, outFunc: Option[PackOut => Unit]): Receive = {
+  def rcvTerminated(os: Operations, rcv: Operations => Receive, outFunc: Option[PackOut => Unit]): Receive = {
     case Terminated(client) =>
-      val os = operations.many(client)
-      if (os.nonEmpty) {
+      val terminated = os.many(client)
+      if (terminated.nonEmpty) {
         for {
           f <- outFunc.toList
-          o <- os
+          o <- terminated
           p <- o.clientTerminated
         } f(p)
-        context become receive(operations -- os)
+        context become rcv(os -- terminated)
       }
   }
 
-  def rcvConnected(operations: Operations, reconnect: Reconnect): Receive = {
+  def rcvAddress(rcv: InetSocketAddress => Receive): Receive = {
     case ClusterDiscovererActor.Address(address) =>
       connect("Connecting", Duration.Zero, address) // TODO TEST
+      context become rcv(address)
 
     case Status.Failure(e: ClusterException) =>
       log.error("Cluster failed with error: {}", e)
       context stop self
+  }
 
-    case Tcp.Connected(address, _) =>
+  def rcvConnected(address: InetSocketAddress, os: Operations, reconnect: Reconnect): Receive = {
+    case Tcp.Connected(`address`, _) =>
       log.info("Connected to {}", address)
       val connection = sender()
       val pipeline = newPipeline(connection)
       connection ! Tcp.Register(pipeline)
 
-      val result = operations.flatMap { operation =>
+      val result = os.flatMap { operation =>
         operation.connected match {
           case OnConnected.Retry(o, p) =>
             toPipeline(pipeline, p)
@@ -297,25 +308,21 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       heartbeat(pipeline)
       context become connected(address, result, connection, pipeline, 0)
 
-    case Tcp.CommandFailed(connect: Tcp.Connect) =>
+    case Tcp.CommandFailed(connect: Tcp.Connect) if connect.remoteAddress == address =>
       val address = connect.remoteAddress
       val template = "Connection failed to {}"
-      reconnect(address, operations) match {
-        case Some(receive) =>
+      reconnect(address, os) match {
+        case Some(rcv) =>
           log.warning(template, address)
-          context become receive
+          context become rcv
         case None =>
           log.error(template, address)
           context stop self
       }
   }
 
-  def reconnect(
-    retry: Option[DelayedRetry],
-    address: InetSocketAddress,
-    operations: Operations): Option[Receive] = {
-
-    val result = operations.flatMap { operation =>
+  def reconnect(retry: Option[DelayedRetry], address: InetSocketAddress, os: Operations): Option[Receive] = {
+    val result = os.flatMap { operation =>
       operation.disconnected match {
         case OnDisconnected.Continue(operation) => Iterable(operation)
         case OnDisconnected.Stop(in) =>
@@ -326,16 +333,16 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
 
     clusterDiscoverer match {
       case Some(clusterDiscoverer) =>
-        def reconnect(address: InetSocketAddress, operations: Operations): Option[Receive] = {
+        def reconnect(address: InetSocketAddress, os: Operations): Option[Receive] = {
           clusterDiscoverer ! GetAddress(Some(address))
-          Some(connecting(operations, reconnect))
+          Some(connecting(None, os, reconnect))
         }
         reconnect(address, result)
       case None =>
-        def reconnect(retry: Option[DelayedRetry], address: InetSocketAddress, operations: Operations): Option[Receive] = {
+        def reconnect(retry: Option[DelayedRetry], address: InetSocketAddress, os: Operations): Option[Receive] = {
           retry.map { retry =>
             connect("Reconnecting", retry.delay)
-            connecting(operations, reconnect(retry.next, _, _))
+            connecting(Some(address), os, reconnect(retry.next, _, _))
           }
         }
         reconnect(retry, address, result)
