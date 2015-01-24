@@ -6,7 +6,7 @@ import GossipSeedsOrDns.GossipSeeds
 import eventstore.util.ActorSpec
 import scala.concurrent.duration._
 
-class ClusterDiscovererActorITest extends ActorSpec {
+class ClusterDiscovererActorCTest extends ActorSpec {
   "ClusterDiscovererActor" should {
     "discover cluster" in new TestScope {
       actor ! GetAddress()

@@ -45,19 +45,20 @@ object Build extends Build {
   val protobuf       = "com.google.protobuf" % "protobuf-java" % "2.5.0"
   val mockito        = "org.mockito" % "mockito-all" % "1.9.5" % "test"
 
-  def itFilter(name: String): Boolean = name endsWith "ITest"
-  def specFilter(name: String): Boolean = name endsWith "Spec"
-
   lazy val IntegrationTest = config("it") extend Test
+  lazy val ClusterTest = config("c") extend Test
 
   lazy val root = Project(
     "eventstore-client",
     file("."),
     settings = basicSettings ++ Defaults.coreDefaultSettings ++ releaseSettings ++ protobufSettings ++ Scalariform.settings ++ Publish.settings)
-    .configs(IntegrationTest)
+    .configs(IntegrationTest, ClusterTest)
     .settings(inConfig(IntegrationTest)(Defaults.testTasks): _*)
+    .settings(inConfig(ClusterTest)(Defaults.testTasks): _*)
     .settings(
-    testOptions       in Test            := Seq(Tests.Filter(specFilter)),
-    testOptions       in IntegrationTest := Seq(Tests.Filter(itFilter)),
-    parallelExecution in IntegrationTest := false)
+      testOptions in Test := Seq(Tests.Filter(_ endsWith "Spec")),
+      testOptions in IntegrationTest := Seq(Tests.Filter(_ endsWith "ITest")),
+      testOptions in ClusterTest := Seq(Tests.Filter(_ endsWith "CTest")),
+      parallelExecution in IntegrationTest := false,
+      parallelExecution in ClusterTest := false)
 }

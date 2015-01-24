@@ -1,7 +1,7 @@
 package eventstore
 package cluster
 
-class ClusterInfoITest extends util.ActorSpec {
+class ClusterInfoCTest extends util.ActorSpec {
   "ClusterInfo.futureFunc" should {
     "return ClusterInfo for address" in new ActorScope {
       val futureFunc = ClusterInfo.futureFunc
