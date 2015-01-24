@@ -419,10 +419,9 @@ class ClusterDiscovererActorSpec extends util.ActorSpec with Mockito {
       lastSender ! cluster(member(address))
 
       probe.expectMsg(Address(address))
-      system.stop(probe.ref)
+      system stop probe.ref
 
       expectMsg(address)
-      expectNoMsg(1.seconds)
     }
   }
 
