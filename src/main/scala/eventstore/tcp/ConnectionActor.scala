@@ -146,10 +146,10 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
 
   def rcvIncoming(os: Operations, rcv: Operations => Receive, outFunc: Option[PackOut => Unit]): Receive = {
     case init.Event(in) =>
+      def reply(out: PackOut) = outFunc.foreach(_.apply(out))
+
       val correlationId = in.correlationId
       val msg = in.message
-
-      def reply(out: PackOut) = outFunc.foreach(_.apply(out))
 
       def forward: Operations = {
         os.single(correlationId) match {
@@ -186,7 +186,8 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
         }
       }
 
-      log.debug(in.toString)
+      logDebug(in)
+
       msg match {
         case Success(HeartbeatRequest)         => reply(PackOut(HeartbeatResponse, correlationId))
         case Success(Ping)                     => reply(PackOut(Pong, correlationId))
@@ -364,7 +365,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
   }
 
   def toPipeline(pipeline: ActorRef, pack: PackOut): Unit = {
-    log.debug(pack.toString)
+    logDebug(pack)
     pipeline ! init.Command(pack)
   }
 
@@ -393,6 +394,16 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
   }
 
   def tcp = IO(Tcp)
+
+  def logDebug(x: PackIn) = if (log.isDebugEnabled) x.message match {
+    case Success(HeartbeatRequest) =>
+    case _                         => log.debug(x.toString)
+  }
+
+  def logDebug(x: PackOut) = if (log.isDebugEnabled) x.message match {
+    case HeartbeatResponse =>
+    case _                 => log.debug(x.toString)
+  }
 
   case class HeartbeatTimeout(id: Long)
   case object Heartbeat
