@@ -7,11 +7,11 @@ import akka.io.{ Tcp, IO }
 import eventstore.NotHandled.NotMaster
 import eventstore.cluster.ClusterDiscovererActor.GetAddress
 import eventstore.cluster.{ ClusterException, ClusterSettings, ClusterInfo, ClusterDiscovererActor }
-import scala.concurrent.duration._
-import scala.util.{ Try, Failure, Success }
 import eventstore.pipeline._
 import eventstore.operations._
 import eventstore.util.{ CancellableAdapter, DelayedRetry }
+import scala.concurrent.duration._
+import scala.util.{ Try, Failure, Success }
 
 object ConnectionActor {
   def props(settings: Settings = Settings.Default): Props = Props(classOf[ConnectionActor], settings)
@@ -45,13 +45,14 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       case Some(clusterDiscoverer) => clusterDiscoverer ! ClusterDiscovererActor.GetAddress()
       case None                    => connect("Connecting", Duration.Zero)
     }
-    connecting(Operations.Empty)
+    connecting(Operations.Empty, reconnect(None, _, _))
   }
 
-  def connecting(operations: Operations): Receive = {
+  def connecting(operations: Operations, recover: Reconnect): Receive = {
+    def connecting(operations: Operations) = this.connecting(operations, recover)
     rcvIncoming(operations, connecting, None) or
       rcvOutgoing(operations, connecting, None) or
-      rcvConnected(operations, reconnect(None, _, _)) or
+      rcvConnected(operations, recover) or
       rcvTimedOut(operations, connecting, None) or
       rcvTerminated(operations, connecting, None)
   }
@@ -131,18 +132,6 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
     }
 
     connected(operations)
-  }
-
-  def reconnecting(operations: Operations, recover: Reconnect): Receive = {
-    def reconnecting(operations: Operations): Receive = {
-      rcvIncoming(operations, reconnecting, None) or
-        rcvOutgoing(operations, reconnecting, None) or
-        rcvConnected(operations, recover) or
-        rcvTimedOut(operations, reconnecting, None) or
-        rcvTerminated(operations, reconnecting, None)
-    }
-
-    reconnecting(operations)
   }
 
   def rcvIncoming(operations: Operations, receive: Operations => Receive, outFunc: Option[PackOut => Unit]): Receive = {
@@ -339,14 +328,14 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       case Some(clusterDiscoverer) =>
         def reconnect(address: InetSocketAddress, operations: Operations): Option[Receive] = {
           clusterDiscoverer ! GetAddress(Some(address))
-          Some(reconnecting(operations, reconnect))
+          Some(connecting(operations, reconnect))
         }
         reconnect(address, result)
       case None =>
         def reconnect(retry: Option[DelayedRetry], address: InetSocketAddress, operations: Operations): Option[Receive] = {
           retry.map { retry =>
             connect("Reconnecting", retry.delay)
-            reconnecting(operations, reconnect(retry.next, _, _))
+            connecting(operations, reconnect(retry.next, _, _))
           }
         }
         reconnect(retry, address, result)
