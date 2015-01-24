@@ -680,6 +680,11 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       client ! Status.Failure(new ClusterException("test"))
       expectTerminated()
     }
+
+    "abort wrong connection" in new TestScope {
+      client ! Connected(new InetSocketAddress(0), new InetSocketAddress(0))
+      expectMsg(Tcp.Abort)
+    }
   }
 
   abstract class TcpScope extends ActorScope {
