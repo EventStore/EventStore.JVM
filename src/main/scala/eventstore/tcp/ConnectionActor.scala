@@ -49,7 +49,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
         connect("Connecting", Duration.Zero)
         Some(settings.address)
     }
-    connecting(address, Operations.Empty, reconnect(None, _, _))
+    connecting(address, Operations.Empty, reconnect(_, _, None))
   }
 
   def connecting(address: Option[InetSocketAddress], os: Operations, recover: Reconnect): Receive = {
@@ -81,10 +81,10 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
 
       def outFunc(pack: PackOut): Unit = toPipeline(pipeline, pack)
 
-      def maybeReconnect(reason: String, newAddress: InetSocketAddress = address) = {
+      def reconnect(reason: String, newAddress: InetSocketAddress = address) = {
         if (!scheduled.isCancelled) scheduled.cancel()
         val template = "Connection lost to {}: {}"
-        reconnect(delayedRetry, newAddress, os) match {
+        this.reconnect(newAddress, os) match {
           case Some(rcv) =>
             log.warning(template, address, reason)
             context become rcv
@@ -99,42 +99,69 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
         this.connected(address, os, connection, pipeline, heartbeatId + 1)
       }
 
+      val rcvAddress: Receive = clusterDiscoverer match {
+        case None => PartialFunction.empty
+        case Some(clusterDiscoverer) =>
+          def reconnect(newAddress: InetSocketAddress, reason: String): Unit = if (newAddress != address) {
+            log.info("Address changed from {} to {}: {}", address, newAddress, reason)
+            connection ! Tcp.Abort
+
+            val result = os.flatMap { operation =>
+              operation.disconnected match {
+                case OnDisconnected.Continue(operation) => Iterable(operation)
+                case OnDisconnected.Stop(in) =>
+                  toClient(operation.client, in)
+                  Iterable()
+              }
+            }
+
+            def renewAddress(address: InetSocketAddress, os: Operations): Option[Receive] = {
+              clusterDiscoverer ! GetAddress()
+              Some(connecting(None, os, renewAddress))
+            }
+
+            if (!scheduled.isCancelled) scheduled.cancel()
+            connect("Connecting", Duration.Zero, newAddress)
+            context become connecting(Some(newAddress), result, renewAddress)
+          }
+
+          {
+            case ClusterDiscovererActor.Address(x) =>
+              reconnect(x, "discovered better node")
+
+            case init.Event(PackIn(Failure(NotHandled(NotMaster(x))), _)) =>
+              log.info(x.toString)
+              reconnect(x.tcpAddress, "NotMaster failure received")
+
+            case Status.Failure(e: ClusterException) =>
+              log.error("Cluster failed with error: {}", e)
+              context stop self
+          }
+      }
+
       val receive: Receive = {
         case x: Tcp.ConnectionClosed => x match {
-          case Tcp.PeerClosed         => maybeReconnect("peer closed")
-          case Tcp.ErrorClosed(error) => maybeReconnect(error.toString)
+          case Tcp.PeerClosed         => reconnect("peer closed")
+          case Tcp.ErrorClosed(error) => reconnect(error.toString)
           case _                      => log.info("closing connection to {}", address)
         }
 
-        case Terminated(`connection`) => maybeReconnect("connection actor died")
+        case Terminated(`connection`) => reconnect("connection actor died")
 
         case Terminated(`pipeline`) =>
           connection ! Tcp.Abort
-          maybeReconnect("pipeline actor died")
+          reconnect("pipeline actor died")
 
         case Heartbeat => heartbeat(pipeline)
 
         case HeartbeatTimeout(id) => if (id == heartbeatId) {
           connection ! Tcp.Close
-          maybeReconnect(s"no heartbeat within $heartbeatTimeout")
+          reconnect(s"no heartbeat within $heartbeatTimeout")
         }
-
-        case ClusterDiscovererActor.Address(newAddress) =>
-          if (newAddress != address) {
-            log.info("Address changed from {} to {}")
-            connection ! Tcp.Close
-            reconnect(None, newAddress, os).foreach { rcv =>
-              connect("Connecting", Duration.Zero, newAddress)
-              context become rcv
-            }
-          }
-
-        case Status.Failure(e: ClusterException) =>
-          log.error("Cluster failed with error: {}", e)
-          context stop self
       }
 
       receive or
+        rcvAddress or
         rcvIncoming(os, onIn, Some(outFunc)) or
         rcvOutgoing(os, connected, Some(outFunc)) or
         rcvTimedOut(os, connected, Some(outFunc)) or
@@ -189,10 +216,9 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       logDebug(in)
 
       msg match {
-        case Success(HeartbeatRequest)         => reply(PackOut(HeartbeatResponse, correlationId))
-        case Success(Ping)                     => reply(PackOut(Pong, correlationId))
-        case Failure(NotHandled(_: NotMaster)) => // TODO implement special case of reconnection
-        case _                                 => context become rcv(forward)
+        case Success(HeartbeatRequest) => reply(PackOut(HeartbeatResponse, correlationId))
+        case Success(Ping)             => reply(PackOut(Pong, correlationId))
+        case _                         => context become rcv(forward)
       }
   }
 
@@ -324,7 +350,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       }
   }
 
-  def reconnect(retry: Option[DelayedRetry], address: InetSocketAddress, os: Operations): Option[Receive] = {
+  def reconnect(address: InetSocketAddress, os: Operations, retry: Option[DelayedRetry] = delayedRetry): Option[Receive] = {
     val result = os.flatMap { operation =>
       operation.disconnected match {
         case OnDisconnected.Continue(operation) => Iterable(operation)
@@ -341,6 +367,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
           Some(connecting(None, os, reconnect))
         }
         reconnect(address, result)
+
       case None =>
         def reconnect(retry: Option[DelayedRetry], address: InetSocketAddress, os: Operations): Option[Receive] = {
           retry.map { retry =>

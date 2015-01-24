@@ -8,6 +8,7 @@ import akka.testkit.{ TestProbe, TestActorRef }
 import akka.util.ByteIterator
 import java.net.InetSocketAddress
 import java.nio.ByteOrder
+import eventstore.NotHandled.{ MasterInfo, NotMaster }
 import eventstore.cluster.ClusterDiscovererActor.{ Address, GetAddress }
 import eventstore.cluster.{ ClusterException, ClusterSettings }
 import eventstore.cluster.GossipSeedsOrDns.GossipSeeds
@@ -653,7 +654,22 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       sendConnected(address)
 
       client ! Address(address2)
+      connection expectMsg Tcp.Abort
       tcp expectMsg connect(address2)
+      sendConnected(address2)
+    }
+
+    "re-connect to new master on NotMaster failure" in new ClusterScope {
+      discoverer expectMsg GetAddress()
+      client ! Address(address)
+      tcp expectMsg connect(address)
+      sendConnected(address)
+
+      val notMaster = NotHandled(NotMaster(MasterInfo(address2, new InetSocketAddress(0))))
+      client ! init.Event(PackIn(Failure(notMaster)))
+      connection expectMsg Tcp.Abort
+      tcp expectMsg connect(address2)
+      sendConnected(address2)
     }
 
     "not re-connect to address if it was not changed" in new ClusterScope {
@@ -663,7 +679,18 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       sendConnected(address)
 
       client ! Address(address)
-      tcp.expectNoMsg(1.second)
+      expectNoMsgs()
+    }
+
+    "not re-connect on bad NotMaster failure" in new ClusterScope {
+      discoverer expectMsg GetAddress()
+      client ! Address(address)
+      tcp expectMsg connect(address)
+      sendConnected(address)
+
+      val notMaster = NotHandled(NotMaster(MasterInfo(address, new InetSocketAddress(0))))
+      client ! init.Event(PackIn(Failure(notMaster)))
+      expectNoMsgs()
     }
 
     "ask for different address if failed to connect" in new ClusterScope {
@@ -803,8 +830,6 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       override def heartbeat(pipeline: ActorRef) = if (heartbeatEnabled) super.heartbeat(pipeline)
     })
 
-    lazy val init = client.underlyingActor.init
-
     expectConnect()
   }
 
@@ -815,6 +840,8 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     val tcp = TestProbe()
     val pipeline = TestProbe()
     val connection = TestProbe()
+
+    lazy val init = client.underlyingActor.init
 
     def connect(address: InetSocketAddress = settings.address) = {
       Connect(address, timeout = Some(settings.connectionTimeout))
