@@ -32,12 +32,12 @@ object Build extends Build {
     val core = apply("core")
     val mock = apply("mock")
 
-    private def apply(x: String) = "org.specs2" %% s"specs2-$x" % "2.4.11" % "test"
+    private def apply(x: String) = "org.specs2" %% s"specs2-$x" % "2.4.15" % "test"
   }
 
   object Spray {
-    val client    = "io.spray" %% "spray-client" % "1.3.1"
-    val json      = "io.spray" %% "spray-json" % "1.2.6"
+    val client = "io.spray" %% "spray-client" % "1.3.2"
+    val json   = "io.spray" %% "spray-json" % "1.3.1"
   }
 
   val typesafeConfig = "com.typesafe" % "config" % "1.2.1"
