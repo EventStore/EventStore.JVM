@@ -1,9 +1,12 @@
 language: scala
 scala:
-  - "2.10.4"
   - "2.11.5"
 script:
-  - sbt -jvm-opts ... +test
+  - sbt -jvm-opts ... +clean +coverage +test
+after_success: "sbt +coveralls"
+jdk:
+  - oraclejdk7
+  - openjdk7
 install:
   - sudo apt-get install build-essential
   - mkdir tmp

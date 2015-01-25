@@ -2,6 +2,7 @@ import sbt._
 import Keys._
 import sbtrelease.ReleasePlugin._
 import sbtprotobuf.ProtobufPlugin.protobufSettings
+import scoverage.ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages
 
 object Build extends Build {
   lazy val basicSettings = Seq(
@@ -56,6 +57,7 @@ object Build extends Build {
     .settings(inConfig(IntegrationTest)(Defaults.testTasks): _*)
     .settings(inConfig(ClusterTest)(Defaults.testTasks): _*)
     .settings(
+      coverageExcludedPackages := "eventstore.examples;eventstore.j;eventstore.proto;eventstore.pipeline",
       testOptions in Test := Seq(Tests.Filter(_ endsWith "Spec")),
       testOptions in IntegrationTest := Seq(Tests.Filter(_ endsWith "ITest")),
       testOptions in ClusterTest := Seq(Tests.Filter(_ endsWith "CTest")),
