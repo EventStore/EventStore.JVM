@@ -2,6 +2,7 @@ package eventstore
 package tcp
 
 import ReadDirection.{ Backward, Forward }
+import org.joda.time.DateTime
 import proto.{ EventStoreMessages => j, _ }
 import util.DefaultFormats
 import scala.language.reflectiveCalls
@@ -9,7 +10,6 @@ import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
 import scala.collection.JavaConverters._
 import java.util.concurrent.TimeUnit
-import java.util.Date
 
 object EventStoreProtoFormats extends EventStoreProtoFormats
 
@@ -109,7 +109,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
           eventId = uuid(x.getEventId),
           data = Content(byteString(x.getData), ContentType(x.getDataContentType)),
           metadata = Content(byteString(x.getMetadata), ContentType(x.getMetadataContentType))),
-        created = option(x.hasCreatedEpoch, new Date(x.getCreatedEpoch)))
+        created = option(x.hasCreatedEpoch, new DateTime(x.getCreatedEpoch)))
     }
   }
 

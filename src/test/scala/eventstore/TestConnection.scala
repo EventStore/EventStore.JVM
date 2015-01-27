@@ -1,9 +1,9 @@
 package eventstore
 
-import java.util.Date
 import ReadDirection._
 import akka.actor.Status.Failure
 import akka.testkit._
+import org.joda.time.DateTime
 import scala.concurrent.duration._
 import tcp.ConnectionActor
 
@@ -11,7 +11,7 @@ abstract class TestConnection extends util.ActorSpec {
 
   abstract class TestConnectionScope extends ActorScope {
     val streamId = newStreamId
-    val date = new Date()
+    val date = DateTime.now
 
     val streamMetadata = ByteString(getClass.getEnclosingClass.getSimpleName)
     val actor = TestActorRef(ConnectionActor.props())

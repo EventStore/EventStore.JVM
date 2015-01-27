@@ -1,7 +1,7 @@
 package eventstore
 
-import java.util.Date
 import eventstore.util.ByteStringToString
+import org.joda.time.DateTime
 import scala.PartialFunction.{ condOpt, cond }
 
 sealed trait Event extends Ordered[Event] {
@@ -9,7 +9,7 @@ sealed trait Event extends Ordered[Event] {
   def number: EventNumber.Exact
   def data: EventData
   def record: EventRecord
-  def created: Option[Date]
+  def created: Option[DateTime]
 
   def compare(that: Event) = this.number.value compare that.number.value
 
@@ -38,7 +38,7 @@ case class EventRecord(
     streamId: EventStream.Id,
     number: EventNumber.Exact,
     data: EventData,
-    created: Option[Date] = None) extends Event {
+    created: Option[DateTime] = None) extends Event {
   def record = this
 }
 
