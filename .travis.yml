@@ -1,12 +1,14 @@
 language: scala
 scala:
   - "2.11.5"
+  - "2.10.4"
 script:
-  - sbt -jvm-opts ... +clean +coverage +test
-after_success: "sbt +coveralls"
+  - sbt clean coverage test
+after_success: "sbt coverageReport coveralls"
 jdk:
   - oraclejdk7
   - openjdk7
+  - oraclejdk8
 install:
   - sudo apt-get install build-essential
   - mkdir tmp
