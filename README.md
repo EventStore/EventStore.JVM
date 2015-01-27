@@ -1,4 +1,4 @@
-# Event Store JVM Client [![Build Status](https://travis-ci.org/EventStore/EventStore.JVM.png?branch=master)](https://travis-ci.org/EventStore/EventStore.JVM) [![Coverage Status](https://coveralls.io/repos/EventStore/EventStore.JVM/badge.svg)](https://coveralls.io/r/EventStore/EventStore.JVM)
+# Event Store JVM Client [![Build Status](https://api.travis-ci.org/EventStore/EventStore.JVM.svg)](https://travis-ci.org/EventStore/EventStore.JVM) [![Coverage Status](https://coveralls.io/repos/EventStore/EventStore.JVM/badge.svg)](https://coveralls.io/r/EventStore/EventStore.JVM)
 
 **JVM Client works nicely with EventStore 3.0.1**
 
