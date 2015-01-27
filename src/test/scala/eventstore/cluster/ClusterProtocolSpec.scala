@@ -1,23 +1,33 @@
 package eventstore
 package cluster
 
-import java.util.Date
+import org.joda.time.{ DateTimeZone, DateTime }
 import org.specs2.mutable.Specification
+import org.specs2.specification.Scope
 import spray.json._
 import scala.io.Source
 import NodeState.{ Slave, Master }
+import eventstore.cluster.ClusterProtocol.ClusterInfoFormat
 
 class ClusterProtocolSpec extends Specification {
   "ClusterProtocol" should {
-    "parse gossip.json" in {
+    "parse gossip.json" in new TestScope {
       val is = getClass.getResourceAsStream("gossip.json")
       val json = Source.fromInputStream(is, "UTF-8").getLines().mkString("\n").parseJson
-      val clusterInfo = ClusterProtocol.ClusterInfoFormat.read(json)
+      val actual = ClusterInfoFormat.read(json)
+      actual mustEqual clusterInfo
+    }
 
-      clusterInfo mustEqual ClusterInfo("127.0.0.1" :: 2113, List(
+    "read & write cluster info" in new TestScope {
+      val json = ClusterInfoFormat.write(clusterInfo)
+      ClusterInfoFormat.read(json) mustEqual clusterInfo
+    }
+
+    trait TestScope extends Scope {
+      val clusterInfo = ClusterInfo("127.0.0.1" :: 2113, List(
         MemberInfo(
           instanceId = "4534f211-10af-45f1-87c0-8398215328be".uuid,
-          timestamp = "2014-09-24T19:53:18.59055Z".date,
+          timestamp = new DateTime(2014, 9, 24, 19, 53, 18, 590, DateTimeZone.UTC),
           state = Slave,
           isAlive = false,
           internalTcp = "127.0.0.1" :: 3111,
@@ -35,7 +45,7 @@ class ClusterProtocolSpec extends Specification {
           nodePriority = 0),
         MemberInfo(
           instanceId = "8f680215-3abe-4aed-9d06-c5725776303d".uuid,
-          timestamp = "2014-09-24T19:53:20.035753Z".date,
+          timestamp = new DateTime(2014, 9, 24, 19, 53, 20, 35, DateTimeZone.UTC),
           state = Master,
           isAlive = true,
           internalTcp = "127.0.0.1" :: 2111,
@@ -53,7 +63,7 @@ class ClusterProtocolSpec extends Specification {
           nodePriority = 0),
         MemberInfo(
           instanceId = "44baf256-55a4-4ccc-b6ef-7bd383c88991".uuid,
-          timestamp = "2014-09-24T19:53:19.086667Z".date,
+          timestamp = new DateTime(2015, 1, 26, 19, 52, 40, DateTimeZone.UTC),
           state = Slave,
           isAlive = true,
           internalTcp = "127.0.0.1" :: 1111,
@@ -70,9 +80,5 @@ class ClusterProtocolSpec extends Specification {
           epochId = "b5c64b95-9c8f-4e1c-82f4-f619118edb73".uuid,
           nodePriority = 0)))
     }
-  }
-
-  implicit class RichString(self: String) {
-    def date: Date = ClusterProtocol.DateFormat.format.parse(self)
   }
 }

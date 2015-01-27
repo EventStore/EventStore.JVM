@@ -1,8 +1,10 @@
 package eventstore
 package cluster
 
-import java.util.Date
+import org.joda.time.{ DateTimeZone, DateTime }
+import org.joda.time.format.{ DateTimeFormat => JodaFormat, DateTimeFormatter }
 import spray.json._
+import scala.util.{ Failure, Try, Success }
 
 object ClusterProtocol extends DefaultJsonProtocol {
   implicit object UuidFormat extends JsonFormat[Uuid] {
@@ -14,14 +16,22 @@ object ClusterProtocol extends DefaultJsonProtocol {
     }
   }
 
-  implicit object DateFormat extends JsonFormat[Date] {
-    val format = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'")
+  implicit object DateTimeFormat extends JsonFormat[DateTime] {
+    val formats = List(
+      JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'"),
+      JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss'Z'"))
 
-    def write(obj: Date) = JsString(format.format(obj))
+    def write(x: DateTime) = JsString(x.toString(formats.head))
 
     def read(json: JsValue) = json match {
-      case JsString(x) => DateFormat.format.parse(x)
-      case _           => deserializationError("Date expected")
+      case JsString(x) =>
+        def loop(h: DateTimeFormatter, t: List[DateTimeFormatter]): DateTime = Try(h.parseDateTime(x)) match {
+          case Success(x) => x.withZoneRetainFields(DateTimeZone.UTC)
+          case Failure(x) => if (t.nonEmpty) loop(t.head, t.tail) else throw x
+        }
+        loop(formats.head, formats.tail)
+
+      case _ => deserializationError("Date expected")
     }
   }
 
@@ -88,7 +98,7 @@ object ClusterProtocol extends DefaultJsonProtocol {
 
     case class Mapping(
       instanceId: Uuid,
-      timeStamp: Date,
+      timeStamp: DateTime,
       state: NodeState,
       isAlive: Boolean,
       internalTcpIp: String,

@@ -18,8 +18,8 @@ object Build extends Build {
     scalacOptions        := Seq("-encoding", "UTF-8", "-unchecked", "-deprecation", "-feature", "-Xlint"),
     resolvers += "spray" at "http://repo.spray.io/",
     libraryDependencies ++= Seq(
-      Akka.actor, Akka.testkit, protobuf, typesafeConfig, codec,
-      Specs2.core, Specs2.mock, mockito, Spray.json, Spray.client, codec)
+      Akka.actor, Akka.testkit, protobuf, typesafeConfig, codec, Joda.time, Joda.convert,
+      Specs2.core, Specs2.mock, mockito, Spray.json, Spray.client)
   )
 
   object Akka {
@@ -44,7 +44,13 @@ object Build extends Build {
   val typesafeConfig = "com.typesafe" % "config" % "1.2.1"
   val codec          = "org.apache.directory.studio" % "org.apache.commons.codec" % "1.8"
   val protobuf       = "com.google.protobuf" % "protobuf-java" % "2.5.0"
+  val jodaTime       = "joda-time" % "joda-time" % "2.7"
   val mockito        = "org.mockito" % "mockito-all" % "1.9.5" % "test"
+
+  object Joda {
+    val time    = "joda-time" % "joda-time" % "2.7"
+    val convert = "org.joda" % "joda-convert" % "1.7"
+  }
 
   lazy val IntegrationTest = config("it") extend Test
   lazy val ClusterTest = config("c") extend Test

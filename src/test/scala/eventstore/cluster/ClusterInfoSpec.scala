@@ -1,7 +1,7 @@
 package eventstore
 package cluster
 
-import java.util.Date
+import org.joda.time.DateTime
 import org.specs2.mutable.Specification
 import org.specs2.specification.Scope
 import eventstore.cluster.NodeState._
@@ -37,7 +37,7 @@ class ClusterInfoSpec extends Specification {
 
     def member(state: NodeState = NodeState.Master, isAlive: Boolean = true) = MemberInfo(
       instanceId = randomUuid,
-      timestamp = new Date,
+      timestamp = DateTime.now,
       state = state,
       isAlive = isAlive,
       internalTcp = address,

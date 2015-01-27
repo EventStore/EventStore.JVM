@@ -2,8 +2,8 @@ package eventstore
 package cluster
 
 import java.net.InetSocketAddress
-import java.util.Date
 import akka.actor.ActorSystem
+import org.joda.time.DateTime
 import scala.concurrent._
 
 case class ClusterInfo(serverAddress: InetSocketAddress, members: List[MemberInfo]) {
@@ -37,7 +37,7 @@ object ClusterInfo {
 
 case class MemberInfo(
     instanceId: Uuid,
-    timestamp: Date,
+    timestamp: DateTime,
     state: NodeState,
     isAlive: Boolean,
     internalTcp: InetSocketAddress,
