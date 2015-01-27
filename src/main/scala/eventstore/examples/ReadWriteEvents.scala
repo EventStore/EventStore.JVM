@@ -15,6 +15,7 @@ class ReadWriteEventsActor extends Actor with ActorLogging {
   import context.dispatcher
 
   val maxCount = 10
+  val maxAttempts = 3
 
   val connection = EventStoreExtension(context.system).actor
   val streamId = EventStream.Id(randomUuid.toString)
@@ -34,18 +35,25 @@ class ReadWriteEventsActor extends Actor with ActorLogging {
 
   def rcvWriteCompleted(events: List[EventData]): Receive = {
     case WriteEventsCompleted(Some(range), _) =>
-      read(range.start)
-      context become rcvReadCompleted(events)
+      val number = range.start
+      read(number)
+      context become rcvReadCompleted(events, number, 1)
     case x =>
       log.error(s"Received unexpected $x")
       shutdown()
   }
 
-  def rcvReadCompleted(events: List[EventData]): Receive = {
+  def rcvReadCompleted(events: List[EventData], number: EventNumber, attempt: Int): Receive = {
     case x: ReadStreamEventsCompleted =>
       if (x.events.map(_.data) != events) {
-        log.error("write.events must equal read.events {}", x)
-        shutdown()
+        if (attempt < maxAttempts) {
+          log.warning("write.events is not equal to read.events, attempt {}/{} {}", attempt, maxAttempts, x)
+          read(number)
+          context become rcvReadCompleted(events, number, attempt + 1)
+        } else {
+          log.error("write.events must equal read.events {}", x)
+          shutdown()
+        }
       } else if (!x.endOfStream) {
         log.error("endOfStream must be true {}", x)
         shutdown()
