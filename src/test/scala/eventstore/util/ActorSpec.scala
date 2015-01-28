@@ -9,7 +9,7 @@ import scala.concurrent.{ Awaitable, Await }
 import scala.concurrent.duration._
 
 abstract class ActorSpec extends Specification with NoConversions {
-  implicit val system = ActorSystem("test", config)
+  implicit lazy val system = ActorSystem("test", config)
 
   def config: Config = ConfigFactory.load
 

@@ -12,6 +12,8 @@ abstract class EsException(message: String, cause: Throwable)
   def this(message: String) = this(message, null)
 }
 
+class CannotEstablishConnectionException(message: String) extends EsException
+
 case class StreamNotFoundException(streamId: EventStream.Id) extends EsException(s"$streamId not found")
 
 class StreamDeletedException(message: String) extends EsException(message)

@@ -57,7 +57,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
 
     val rcvAddressOrConnected: Receive = address match {
       case Some(address) => rcvConnected(address, os, recover)
-      case None          => rcvAddress { address => this.connecting(Some(address), os, recover) }
+      case None          => rcvAddress(os, address => this.connecting(Some(address), os, recover))
     }
 
     rcvIncoming(os, connecting, None) or
@@ -83,14 +83,12 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
 
       def reconnect(reason: String, newAddress: InetSocketAddress = address) = {
         if (!scheduled.isCancelled) scheduled.cancel()
-        val template = "Connection lost to {}: {}"
+        val msg = s"Connection lost to $address: $reason"
         this.reconnect(newAddress, os) match {
+          case None => connectionFailed(msg, os)
           case Some(rcv) =>
-            log.warning(template, address, reason)
+            log.warning(msg)
             context become rcv
-          case None =>
-            log.error(template, address, reason)
-            context stop self
         }
       }
 
@@ -303,14 +301,12 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       }
   }
 
-  def rcvAddress(rcv: InetSocketAddress => Receive): Receive = {
+  def rcvAddress(os: Operations, rcv: InetSocketAddress => Receive): Receive = {
     case ClusterDiscovererActor.Address(address) =>
       connect("Connecting", Duration.Zero, address) // TODO TEST
       context become rcv(address)
 
-    case Status.Failure(e: ClusterException) =>
-      log.error("Cluster failed with error: {}", e)
-      context stop self
+    case Status.Failure(e: ClusterException) => connectionFailed(s"Cluster failed with error: $e", e, os)
   }
 
   def rcvConnected(address: InetSocketAddress, os: Operations, reconnect: Reconnect): Receive = {
@@ -339,14 +335,12 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
 
     case Tcp.CommandFailed(connect: Tcp.Connect) if connect.remoteAddress == address =>
       val address = connect.remoteAddress
-      val template = "Connection failed to {}"
+      val msg = s"Connection failed to $address"
       reconnect(address, os) match {
+        case None => connectionFailed(msg, os)
         case Some(rcv) =>
-          log.warning(template, address)
+          log.warning(msg)
           context become rcv
-        case None =>
-          log.error(template, address)
-          context stop self
       }
   }
 
@@ -421,6 +415,17 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
   }
 
   def tcp = IO(Tcp)
+
+  def connectionFailed(msg: String, e: EsException, os: Operations): Unit = {
+    log.error(msg)
+    val failure = Status.Failure(e)
+    os.manySet.foreach { client => client ! failure }
+    context stop self
+  }
+
+  def connectionFailed(msg: String, os: Operations): Unit = {
+    connectionFailed(msg, new CannotEstablishConnectionException(msg), os)
+  }
 
   def logDebug(x: PackIn) = if (log.isDebugEnabled) x.message match {
     case Success(HeartbeatRequest) =>
