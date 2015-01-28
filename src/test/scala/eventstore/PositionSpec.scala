@@ -49,6 +49,30 @@ class PositionSpec extends Specification {
         })
       }
     }
+
+    "return First for Forward" in {
+      Position(ReadDirection.Forward) mustEqual Position.First
+    }
+
+    "return Last for Backward" in {
+      Position(ReadDirection.Backward) mustEqual Position.Last
+    }
+
+    "have readable toString" in {
+      Position.Last.toString mustEqual "Position.Last"
+      Position.First.toString mustEqual "Position(0)"
+      Position(1, 0).toString mustEqual "Position(1,0)"
+    }
+  }
+
+  "Position.Exact" should {
+    "throw exception if commitPosition < 0" in {
+      Position.Exact(-1) must throwAn[IllegalArgumentException]
+    }
+
+    "throw exception if preparePosition < 0" in {
+      Position.Exact(1, -1) must throwAn[IllegalArgumentException]
+    }
   }
 
   private trait PositionScope extends Scope {

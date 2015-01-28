@@ -186,7 +186,7 @@ abstract class TestConnection extends util.ActorSpec {
         if (events.isEmpty) Stream()
         else events.toStream #::: loop(result.nextPosition)
       }
-      loop(Position.start(direction))
+      loop(Position(direction))
     }
 
     def allStreamsEventsData(maxCount: Int = Settings.Default.readBatchSize)(implicit direction: ReadDirection) =
