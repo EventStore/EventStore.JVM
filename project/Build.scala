@@ -63,7 +63,11 @@ object Build extends Build {
     .settings(inConfig(IntegrationTest)(Defaults.testTasks): _*)
     .settings(inConfig(ClusterTest)(Defaults.testTasks): _*)
     .settings(
-      coverageExcludedPackages := "eventstore.examples;eventstore.j;eventstore.proto;eventstore.pipeline",
+      coverageExcludedPackages :=
+        "eventstore.examples;eventstore.j;" +
+        "eventstore.proto;eventstore.pipeline;" +
+        "eventstore.tcp.EventStoreProtoFormats;" +
+        "eventstore.tcp.MarkerByte",
       testOptions in Test := Seq(Tests.Filter(_ endsWith "Spec")),
       testOptions in IntegrationTest := Seq(Tests.Filter(_ endsWith "ITest")),
       testOptions in ClusterTest := Seq(Tests.Filter(_ endsWith "CTest")),
