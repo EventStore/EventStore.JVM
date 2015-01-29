@@ -54,10 +54,6 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
   trait ProtoTryReader[T, P <: Message] extends ProtoReader[Try[T], P] {
     import scala.util.Failure
 
-    // TODO
-    //    def failure(reason: Option[EsError], errMsg: Option[String]): Failure[T] =
-    //      failure(EsException(reason getOrElse E.Error, message(errMsg)))
-
     def failure(e: Throwable): Failure[T] = Failure(e)
   }
 
@@ -65,8 +61,6 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
     def fromProto(x: P): Try[T] = {
       import j.OperationResult._
       import eventstore.{ OperationError => E }
-
-      def failure(x: OperationError) = this.failure(x) // TODO add somehow generic?
 
       x.getResult() match {
         case Success              => Try(success(x))

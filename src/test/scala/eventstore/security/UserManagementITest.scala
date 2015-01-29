@@ -11,7 +11,7 @@ class UserManagementITest extends ActorSpec {
 
   "admin" should {
     "be authenticated" in new UserScope {
-      actor ! Authenticate.withCredentials(UserCredentials.defaultAdmin)
+      actor ! Authenticate.withCredentials(UserCredentials.DefaultAdmin)
       expectMsg(Authenticated)
 
       actor ! Authenticate

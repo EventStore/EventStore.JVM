@@ -10,5 +10,5 @@ case class UserCredentials(login: String, password: String) {
 }
 
 object UserCredentials {
-  val defaultAdmin = UserCredentials("admin", "changeit")
+  val DefaultAdmin: UserCredentials = UserCredentials("admin", "changeit")
 }

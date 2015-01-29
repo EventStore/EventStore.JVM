@@ -39,5 +39,43 @@ class ClusterSettingsSpec extends Specification with util.NoConversions {
         .withFallback(config)
       ClusterSettings.opt(conf) must beSome(ClusterSettings(ClusterDns("localhost")))
     }
+
+    "throw an exception if maxDiscoverAttempts < 1" in {
+      ClusterSettings(maxDiscoverAttempts = -1) must throwAn[IllegalArgumentException]
+    }
+
+    "throw if gossip-seeds are not parseable" in {
+      val conf = ConfigFactory
+        .parseString("""eventstore.cluster.gossip-seeds = ["127.0.0.1", "127.0.0.2:2"] """)
+        .withFallback(config)
+      ClusterSettings.opt(conf) must throwAn[RuntimeException]
+    }
+  }
+
+  "GossipSeedsOrDns" should {
+    "return ClusterDns" in {
+      GossipSeedsOrDns("localhost") mustEqual ClusterDns("localhost")
+    }
+
+    "return GossipSeeds" in {
+      GossipSeedsOrDns("localhost" :: 1) mustEqual GossipSeeds(List("localhost" :: 1))
+    }
+  }
+
+  "ClusterDns" should {
+    "throw an exception if clusterDns is not valid" in {
+      ClusterDns(clusterDns = null) must throwAn[IllegalArgumentException]
+      ClusterDns(clusterDns = "") must throwAn[IllegalArgumentException]
+    }
+
+    "throw an exception if externalGossipPort is not valid" in {
+      ClusterDns(externalGossipPort = 0) must throwAn[IllegalArgumentException]
+    }
+  }
+
+  "GossipSeeds" should {
+    "throw an exception gossipSeeds is empty" in {
+      GossipSeeds(Nil) must throwAn[IllegalArgumentException]
+    }
   }
 }

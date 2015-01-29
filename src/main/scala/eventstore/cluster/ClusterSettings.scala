@@ -2,7 +2,7 @@ package eventstore
 package cluster
 
 import java.net.InetSocketAddress
-import com.typesafe.config.Config
+import com.typesafe.config.{ ConfigException, Config }
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 
@@ -84,8 +84,9 @@ object GossipSeedsOrDns {
    * @param externalGossipPort The well-known endpoint on which cluster managers are running.
    */
   case class ClusterDns(
-      clusterDns: String,
+      clusterDns: String = "localhost",
       externalGossipPort: Int = 30778) extends GossipSeedsOrDns {
+    require(0 < externalGossipPort && externalGossipPort < 65536, s"externalGossipPort is not valid :$externalGossipPort")
     require(clusterDns != null, "clusterDns must be not null")
     require(clusterDns.nonEmpty, "clusterDns must be not empty")
   }

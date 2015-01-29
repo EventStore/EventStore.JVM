@@ -1,9 +1,22 @@
 package eventstore
 
+import eventstore.EventStream.All
 import org.specs2.mutable.Specification
 
 class EventStreamSpec extends Specification {
   "EventStream" should {
+
+    "return All if value is empty" in {
+      EventStream("") mustEqual All
+    }
+
+    "return All if value is null" in {
+      EventStream(null: String) mustEqual All
+    }
+
+    "return Id for credentials" in {
+      EventStream(UserCredentials.DefaultAdmin) mustEqual EventStream.Id(UserCredentials.DefaultAdmin)
+    }
 
     "return Metadata if value starts with $$" in {
       EventStream("$$metadata") mustEqual EventStream.Metadata("metadata")
@@ -23,6 +36,16 @@ class EventStreamSpec extends Specification {
     }
   }
 
+  "EventStream.Id" should {
+    "throw exception if value is null" in {
+      EventStream.Id(null: String) must throwA[IllegalArgumentException]
+    }
+
+    "throw exception if value is empty" in {
+      EventStream.Id("") must throwA[IllegalArgumentException]
+    }
+  }
+
   "EventStream.HasMetadata" should {
     "return System if value starts with $" in {
       EventStream.HasMetadata("$system") mustEqual EventStream.System("system")
@@ -34,6 +57,14 @@ class EventStreamSpec extends Specification {
 
     "throw exception if starts with $$" in {
       EventStream.HasMetadata("$$stream") must throwA[IllegalArgumentException]
+    }
+
+    "throw exception if value is null" in {
+      EventStream.HasMetadata(null) must throwA[IllegalArgumentException]
+    }
+
+    "throw exception if value is empty" in {
+      EventStream.HasMetadata("") must throwA[IllegalArgumentException]
     }
   }
 
@@ -75,6 +106,14 @@ class EventStreamSpec extends Specification {
     "throw exception if starts with $" in {
       EventStream.Plain("$stream") must throwA[IllegalArgumentException]
     }
+
+    "throw exception if value is null" in {
+      EventStream.Plain(null) must throwA[IllegalArgumentException]
+    }
+
+    "throw exception if value is empty" in {
+      EventStream.Plain("") must throwA[IllegalArgumentException]
+    }
   }
 
   "EventStream.System" should {
@@ -104,6 +143,14 @@ class EventStreamSpec extends Specification {
     "throw exception if starts with $" in {
       EventStream.System("$stream") must throwA[IllegalArgumentException]
     }
+
+    "throw exception if value is null" in {
+      EventStream.System(null: String) must throwA[IllegalArgumentException]
+    }
+
+    "throw exception if value is empty" in {
+      EventStream.System("") must throwA[IllegalArgumentException]
+    }
   }
 
   "EventStream.Metadata" should {
@@ -131,7 +178,15 @@ class EventStreamSpec extends Specification {
     }
 
     "throw exception if starts with $$" in {
-      EventStream.System("$$stream") must throwA[IllegalArgumentException]
+      EventStream.Metadata("$$stream") must throwA[IllegalArgumentException]
+    }
+
+    "throw exception if value is null" in {
+      EventStream.Metadata(null) must throwA[IllegalArgumentException]
+    }
+
+    "throw exception if value is empty" in {
+      EventStream.Metadata("") must throwA[IllegalArgumentException]
     }
   }
 }

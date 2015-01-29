@@ -5,7 +5,7 @@ sealed trait EventNumber extends Ordered[EventNumber]
 object EventNumber {
   val First: Exact = Exact(0)
 
-  def start(direction: ReadDirection): EventNumber = direction match {
+  def apply(direction: ReadDirection): EventNumber = direction match {
     case ReadDirection.Forward  => First
     case ReadDirection.Backward => Last
   }
@@ -50,6 +50,10 @@ object EventNumber {
 
   object Range {
     def apply(number: Exact): Range = Range(number, number)
+
+    def apply(start: Int, end: Int): Range = Range(Exact(start), Exact(end))
+
+    def apply(start: Int): Range = Range(Exact(start))
 
     def opt(first: Int, last: Int): Option[Range] = {
       if (first > last) None

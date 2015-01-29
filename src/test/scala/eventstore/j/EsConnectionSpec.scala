@@ -25,7 +25,7 @@ class EsConnectionSpec extends util.ActorSpec {
     metadata <- contents
   } yield EventData("event-type", data = data, metadata = metadata)).asJavaCollection
 
-  val userCredentials = List(UserCredentials.defaultAdmin, UserCredentials("login", "password"), null)
+  val userCredentials = List(UserCredentials.DefaultAdmin, UserCredentials("login", "password"), null)
 
   "EsConnection" should {
     "write events" in new TestScope {

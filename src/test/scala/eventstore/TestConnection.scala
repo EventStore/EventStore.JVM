@@ -119,7 +119,7 @@ abstract class TestConnection extends util.ActorSpec {
     }
 
     def readStreamEventsFailed(implicit direction: ReadDirection): Unit = {
-      readStreamEventsFailed(EventNumber.start(direction), Settings.Default.readBatchSize)
+      readStreamEventsFailed(EventNumber(direction), Settings.Default.readBatchSize)
     }
 
     def streamEvents(implicit direction: ReadDirection = Forward): Stream[EventData] =
@@ -132,7 +132,7 @@ abstract class TestConnection extends util.ActorSpec {
         if (resolvedIndexedEvents.isEmpty || result.endOfStream) resolvedIndexedEvents.toStream
         else resolvedIndexedEvents.toStream #::: loop(result.nextEventNumber)
       }
-      loop(EventNumber.start(direction))
+      loop(EventNumber(direction))
     }
 
     def expectStreamEventAppeared(testKit: TestKitBase = this) = {

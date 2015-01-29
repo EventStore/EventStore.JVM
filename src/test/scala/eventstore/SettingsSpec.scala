@@ -20,5 +20,17 @@ class SettingsSpec extends Specification with util.NoConversions {
         """.stripMargin).withFallback(ConfigFactory.load())
       Settings(config).operationTimeout mustEqual 1.minute
     }
+
+    "throw exception if reconnectionDelayMin <= Zero" in {
+      Settings(reconnectionDelayMin = Duration.Zero) must throwAn[IllegalArgumentException]
+    }
+
+    "throw exception if reconnectionDelayMax <= Zero" in {
+      Settings(reconnectionDelayMax = Duration.Zero) must throwAn[IllegalArgumentException]
+    }
+
+    "throw exception if operationTimeout <= Zero" in {
+      Settings(operationTimeout = Duration.Zero) must throwAn[IllegalArgumentException]
+    }
   }
 }

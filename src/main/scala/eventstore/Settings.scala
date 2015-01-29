@@ -27,7 +27,7 @@ case class Settings(
     maxReconnections: Int = 100,
     reconnectionDelayMin: FiniteDuration = 250.millis,
     reconnectionDelayMax: FiniteDuration = 10.seconds,
-    defaultCredentials: Option[UserCredentials] = Some(UserCredentials.defaultAdmin),
+    defaultCredentials: Option[UserCredentials] = Some(UserCredentials.DefaultAdmin),
     heartbeatInterval: FiniteDuration = 500.millis,
     heartbeatTimeout: FiniteDuration = 2.seconds,
     operationMaxRetries: Int = 10,

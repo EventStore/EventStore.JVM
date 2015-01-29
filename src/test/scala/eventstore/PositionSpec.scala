@@ -58,10 +58,13 @@ class PositionSpec extends Specification {
       Position(ReadDirection.Backward) mustEqual Position.Last
     }
 
-    "have readable toString" in {
-      Position.Last.toString mustEqual "Position.Last"
-      Position.First.toString mustEqual "Position(0)"
-      Position(1, 0).toString mustEqual "Position(1,0)"
+    "return Last for position < 0" in {
+      Position(-1) mustEqual Position.Last
+      Position(0, -1) mustEqual Position.Last
+    }
+
+    "return position with commit equal to prepare" in {
+      Position(1) mustEqual Position(1, 1)
     }
   }
 
@@ -72,6 +75,25 @@ class PositionSpec extends Specification {
 
     "throw exception if preparePosition < 0" in {
       Position.Exact(1, -1) must throwAn[IllegalArgumentException]
+    }
+
+    "throw exception if commitPosition < preparePosition" in {
+      Position.Exact(0, 1) must throwAn[IllegalArgumentException]
+    }
+
+    "return position with commit equal to prepare" in {
+      Position.Exact(1) mustEqual Position.Exact(1, 1)
+    }
+
+    "have readable toString" in {
+      Position.First.toString mustEqual "Position(0)"
+      Position(1, 0).toString mustEqual "Position(1,0)"
+    }
+  }
+
+  "Position.Last" should {
+    "have readable toString" in {
+      Position.Last.toString mustEqual "Position.Last"
     }
   }
 

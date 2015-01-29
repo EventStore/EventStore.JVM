@@ -25,7 +25,7 @@ object NodeState {
 
   private val map: Map[String, NodeState] = values.toSet[NodeState].map(x => x.toString -> x).toMap
 
-  def apply(x: String): NodeState = map.getOrElse(x, sys.error(s"No NodeState found for $x"))
+  def apply(x: String): NodeState = map.getOrElse(x, throw new IllegalArgumentException(s"No NodeState found for $x"))
 
   case object Initializing extends NodeState {
     def id = 0

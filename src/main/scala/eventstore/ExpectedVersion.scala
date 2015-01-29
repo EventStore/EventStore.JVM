@@ -5,7 +5,11 @@ sealed trait ExpectedVersion
 object ExpectedVersion {
   val First: Exact = Exact(0)
 
-  def apply(expectedVersion: Int): ExpectedVersion = Exact(expectedVersion)
+  def apply(expectedVersion: Int): ExpectedVersion = expectedVersion match {
+    case -1 => ExpectedVersion.NoStream
+    case -2 => ExpectedVersion.Any
+    case _  => ExpectedVersion.Exact(expectedVersion)
+  }
 
   //The stream being written to should not yet exist. If it does exist treat that as a concurrency problem.
   case object NoStream extends ExpectedVersion {
