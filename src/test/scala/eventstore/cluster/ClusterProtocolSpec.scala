@@ -45,7 +45,7 @@ class ClusterProtocolSpec extends Specification {
           nodePriority = 0),
         MemberInfo(
           instanceId = "8f680215-3abe-4aed-9d06-c5725776303d".uuid,
-          timestamp = new DateTime(2014, 9, 24, 19, 53, 20, 35, DateTimeZone.UTC),
+          timestamp = new DateTime(2015, 1, 29, 10, 23, 9, 41, DateTimeZone.UTC),
           state = Master,
           isAlive = true,
           internalTcp = "127.0.0.1" :: 2111,

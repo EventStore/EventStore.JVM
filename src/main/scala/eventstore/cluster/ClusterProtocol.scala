@@ -19,7 +19,13 @@ object ClusterProtocol extends DefaultJsonProtocol {
   implicit object DateTimeFormat extends JsonFormat[DateTime] {
     val formats = List(
       JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'"),
-      JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss'Z'"))
+      JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSSS'Z'"),
+      JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss'Z'"),
+      JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSS'Z'"),
+      JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSS'Z'"),
+      JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"),
+      JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SS'Z'"),
+      JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.S'Z'"))
 
     def write(x: DateTime) = JsString(x.toString(formats.head))
 
