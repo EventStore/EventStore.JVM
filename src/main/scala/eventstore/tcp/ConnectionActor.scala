@@ -331,7 +331,9 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       heartbeat(pipeline)
       context become connected(address, result, connection, pipeline, 0)
 
-    case _: Tcp.Connected => sender() ! Tcp.Abort
+    case x: Tcp.Connected =>
+      log.debug("Received unexpected {}", x)
+      sender() ! Tcp.Abort
 
     case Tcp.CommandFailed(connect: Tcp.Connect) if connect.remoteAddress == address =>
       val address = connect.remoteAddress
