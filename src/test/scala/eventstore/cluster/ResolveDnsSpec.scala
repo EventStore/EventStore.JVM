@@ -5,7 +5,7 @@ import org.specs2.mutable.Specification
 import scala.concurrent.duration._
 
 class ResolveDnsSpec extends Specification with NoConversions {
-  val timeout = 500.millis
+  val timeout = 2.seconds
 
   "ResolveDns" should {
     "resolve yahoo.com" in {
