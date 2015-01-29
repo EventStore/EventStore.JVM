@@ -67,7 +67,8 @@ object Build extends Build {
         "eventstore.examples;eventstore.j;" +
         "eventstore.proto;eventstore.pipeline;" +
         "eventstore.tcp.EventStoreProtoFormats;" +
-        "eventstore.tcp.MarkerByte",
+        "eventstore.tcp.MarkerByte;" +
+        "eventstore.util.ToCoarsest",
       testOptions in Test := Seq(Tests.Filter(_ endsWith "Spec")),
       testOptions in IntegrationTest := Seq(Tests.Filter(_ endsWith "ITest")),
       testOptions in ClusterTest := Seq(Tests.Filter(_ endsWith "CTest")),

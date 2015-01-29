@@ -2,7 +2,8 @@ package eventstore
 package cluster
 
 import java.net.InetSocketAddress
-import com.typesafe.config.{ ConfigException, Config }
+import com.typesafe.config.Config
+import eventstore.util.ToCoarsest
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 
@@ -52,7 +53,7 @@ object ClusterSettings {
         }
       }
 
-      def duration(path: String) = FiniteDuration(conf.getDuration(path, MILLISECONDS), MILLISECONDS)
+      def duration(path: String) = ToCoarsest(FiniteDuration(conf.getDuration(path, MILLISECONDS), MILLISECONDS))
 
       (clusterDns orElse gossipSeeds).map { gossipSeedsOrDns =>
         ClusterSettings(

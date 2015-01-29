@@ -1,6 +1,7 @@
 package eventstore
 
 import eventstore.cluster.ClusterSettings
+import eventstore.util.ToCoarsest
 import scala.concurrent.duration._
 import java.net.InetSocketAddress
 import com.typesafe.config.{ ConfigFactory, Config }
@@ -48,7 +49,7 @@ object Settings {
   def apply(conf: Config): Settings = {
     def cluster = ClusterSettings.opt(conf)
     def apply(conf: Config): Settings = {
-      def duration(path: String) = FiniteDuration(conf.getDuration(path, MILLISECONDS), MILLISECONDS)
+      def duration(path: String) = ToCoarsest(FiniteDuration(conf.getDuration(path, MILLISECONDS), MILLISECONDS))
 
       def operationTimeout = {
         val deprecated = "operation-timeout"

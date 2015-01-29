@@ -4,7 +4,7 @@ package tcp
 import ReadDirection.{ Backward, Forward }
 import org.joda.time.DateTime
 import proto.{ EventStoreMessages => j, _ }
-import util.DefaultFormats
+import eventstore.util.{ ToCoarsest, DefaultFormats }
 import scala.language.reflectiveCalls
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
@@ -400,7 +400,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
       import eventstore.{ ScavengeError => E }
 
       def scavengeDatabaseCompleted = ScavengeDatabaseCompleted(
-        totalTime = FiniteDuration(x.getTotalTimeMs, TimeUnit.MILLISECONDS),
+        totalTime = ToCoarsest(FiniteDuration(x.getTotalTimeMs, TimeUnit.MILLISECONDS)),
         totalSpaceSaved = x.getTotalSpaceSaved)
 
       def failure(x: ScavengeError) = this.failure(x)
