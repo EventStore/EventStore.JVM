@@ -57,6 +57,4 @@ case class MemberInfo(
   def compare(that: MemberInfo) = this.state compare that.state
 
   def like(other: MemberInfo): Boolean = this.instanceId == other.instanceId
-
-  override def toString = s"MemberInfo($instanceId, $state)"
 }
