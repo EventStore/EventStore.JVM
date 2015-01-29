@@ -109,7 +109,15 @@ private[eventstore] class ClusterDiscovererActor(
         }
       }
 
-      val future = Future.find(gossipSeeds map clusterInfo)(_.bestNode.isDefined)
+      val futures = gossipSeeds.map { gossipSeed =>
+        val future = clusterInfo(gossipSeed)
+        future.onFailure {
+          case x => log.debug("Failed to get cluster info from {}: {}", gossipSeed, x)
+        }
+        future
+      }
+
+      val future = Future.find(futures)(_.bestNode.isDefined)
       Await.result(future, gossipTimeout) match {
         case None => attemptFailed(None)
         case Some(clusterInfo) =>
