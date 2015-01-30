@@ -102,7 +102,7 @@ abstract class AbstractPipePair[CmdAbove, CmdBelow, EvtAbove, EvtBelow] {
    * Throwing exceptions within this method will abort processing of the whole
    * pipeline which this pipe pair is part of.
    *
-   * @param cmd the incoming command
+   * @param event the incoming event
    * @return an Iterable of elements which are either events or commands
    *
    * @see [[#makeCommand]]

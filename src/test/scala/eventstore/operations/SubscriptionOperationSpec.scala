@@ -71,7 +71,7 @@ class SubscriptionOperationSpec extends OperationSpec {
     "become subscribed on success" in foreach(streams) { implicit stream =>
       new SubscribingScope {
         operation.inspectIn(Try(subscribeCompleted)) mustEqual Continue(
-          SubscriptionOperation.Subscribed(subscribeTo, pack, client, true, 1),
+          SubscriptionOperation.Subscribed(subscribeTo, pack, client, ongoing = true, 1),
           Try(subscribeCompleted))
       }
     }
