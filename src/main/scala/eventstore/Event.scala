@@ -47,7 +47,7 @@ case class ResolvedEvent(linkedEvent: EventRecord, linkEvent: EventRecord) exten
   def number = linkedEvent.number
   def data = linkedEvent.data
   def record = linkEvent
-  def created = linkEvent.created
+  def created = linkedEvent.created
 }
 
 case class Content(value: ByteString = ByteString.empty, contentType: ContentType = ContentType.Binary) {
