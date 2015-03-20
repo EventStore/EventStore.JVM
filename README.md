@@ -410,7 +410,7 @@ Using `application.conf` for configuration is more preferable option.
 
 * Sbt
 ```scala
-    libraryDependencies += "com.geteventstore" %% "eventstore-client" % "2.0.0"
+    libraryDependencies += "com.geteventstore" %% "eventstore-client" % "2.0.1"
 ```
 
 * Maven:
@@ -418,7 +418,7 @@ Using `application.conf` for configuration is more preferable option.
     <dependency>
         <groupId>com.geteventstore</groupId>
         <artifactId>eventstore-client_2.11</artifactId>
-        <version>2.0.0</version>
+        <version>2.0.1</version>
     </dependency>
 ```
 
@@ -428,6 +428,6 @@ or
     <dependency>
         <groupId>com.geteventstore</groupId>
         <artifactId>eventstore-client_2.10</artifactId>
-        <version>2.0.0</version>
+        <version>2.0.1</version>
     </dependency>
 ```
