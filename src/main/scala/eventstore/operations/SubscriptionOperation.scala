@@ -24,17 +24,6 @@ private[eventstore] sealed trait SubscriptionOperation extends Operation {
   protected def retry: OnIncoming = Retry(this, pack)
 
   protected def accessDenied(msg: String): OnIncoming = Stop(new AccessDeniedException(msg))
-
-  object EventAppeared {
-    def unapply(x: StreamEventAppeared): Boolean = {
-      val streamId = x.event.event.streamId
-      stream match {
-        case EventStream.All => true
-        case `streamId`      => true
-        case _               => false
-      }
-    }
-  }
 }
 
 private[eventstore] object SubscriptionOperation {
@@ -66,16 +55,16 @@ private[eventstore] object SubscriptionOperation {
       def unexpected(x: Any) = this.unexpected(x, Completed.expected)
 
       in match {
-        case Success(Completed())          => subscribed
-        case Success(EventAppeared())      => Continue(this, in)
-        case Success(x)                    => unexpected(x)
-        case Failure(AccessDenied)         => accessDenied(s"Subscription to $stream failed due to access denied")
-        case Failure(OperationTimedOut)    => Stop(OperationTimeoutException(pack))
-        case Failure(NotHandled(NotReady)) => retry
-        case Failure(NotHandled(TooBusy))  => retry
-        case Failure(BadRequest)           => Stop(new ServerErrorException(s"Bad request: $pack"))
-        case Failure(NotAuthenticated)     => Stop(NotAuthenticatedException(pack))
-        case Failure(x)                    => unexpected(x)
+        case Success(Completed())            => subscribed
+        case Success(_: StreamEventAppeared) => Continue(this, in)
+        case Success(x)                      => unexpected(x)
+        case Failure(AccessDenied)           => accessDenied(s"Subscription to $stream failed due to access denied")
+        case Failure(OperationTimedOut)      => Stop(OperationTimeoutException(pack))
+        case Failure(NotHandled(NotReady))   => retry
+        case Failure(NotHandled(TooBusy))    => retry
+        case Failure(BadRequest)             => Stop(new ServerErrorException(s"Bad request: $pack"))
+        case Failure(NotAuthenticated)       => Stop(NotAuthenticatedException(pack))
+        case Failure(x)                      => unexpected(x)
       }
     }
 
@@ -120,11 +109,11 @@ private[eventstore] object SubscriptionOperation {
       def unexpected(x: Any) = this.unexpected(x, classOf[StreamEventAppeared])
 
       in match {
-        case Success(EventAppeared()) => Continue(this, in)
-        case Success(Unsubscribed)    => Stop(in)
-        case Success(x)               => unexpected(x)
-        case Failure(AccessDenied)    => accessDenied(s"Subscription on $stream dropped due to access denied")
-        case Failure(x)               => unexpected(x)
+        case Success(_: StreamEventAppeared) => Continue(this, in)
+        case Success(Unsubscribed)           => Stop(in)
+        case Success(x)                      => unexpected(x)
+        case Failure(AccessDenied)           => accessDenied(s"Subscription on $stream dropped due to access denied")
+        case Failure(x)                      => unexpected(x)
       }
     }
 
@@ -159,15 +148,15 @@ private[eventstore] object SubscriptionOperation {
       def unexpected(x: Any) = this.unexpected(x, Unsubscribed.getClass)
 
       in match {
-        case Success(Unsubscribed)         => Stop(Unsubscribed)
-        case Success(EventAppeared())      => Ignore
-        case Success(x)                    => unexpected(x)
-        case Failure(AccessDenied)         => accessDenied(s"Unsubscribed from $stream due to access denied")
-        case Failure(OperationTimedOut)    => Stop(OperationTimeoutException(pack))
-        case Failure(NotHandled(NotReady)) => retry
-        case Failure(NotHandled(TooBusy))  => retry
-        case Failure(BadRequest)           => Stop(new ServerErrorException(s"Bad request: $pack"))
-        case Failure(x)                    => unexpected(x)
+        case Success(Unsubscribed)           => Stop(Unsubscribed)
+        case Success(_: StreamEventAppeared) => Ignore
+        case Success(x)                      => unexpected(x)
+        case Failure(AccessDenied)           => accessDenied(s"Unsubscribed from $stream due to access denied")
+        case Failure(OperationTimedOut)      => Stop(OperationTimeoutException(pack))
+        case Failure(NotHandled(NotReady))   => retry
+        case Failure(NotHandled(TooBusy))    => retry
+        case Failure(BadRequest)             => Stop(new ServerErrorException(s"Bad request: $pack"))
+        case Failure(x)                      => unexpected(x)
       }
     }
 

@@ -58,13 +58,9 @@ class SubscriptionOperationSpec extends OperationSpec {
       new SubscribingScope {
         val event = eventAppeared(streamId)
         operation.inspectIn(Try(event)) mustEqual Continue(operation, Try(event))
-      }
-    }
 
-    "stop on unexpected events" in new SubscribingScope()(streamId) {
-      val event = eventAppeared(EventStream.Id("unexpected"))
-      operation.inspectIn(Try(event)) must beLike {
-        case Stop(Failure(_: CommandNotExpectedException)) => ok
+        val resolved = eventAppeared(resolvedEvent(streamId))
+        operation.inspectIn(Try(resolved)) mustEqual Continue(operation, Try(resolved))
       }
     }
 
@@ -211,13 +207,9 @@ class SubscriptionOperationSpec extends OperationSpec {
       new SubscribedScope {
         val event = eventAppeared(streamId)
         operation.inspectIn(Try(event)) mustEqual Continue(operation, Try(event))
-      }
-    }
 
-    "stop on unexpected events" in new SubscribedScope()(streamId) {
-      val event = eventAppeared(EventStream.Id("unexpected"))
-      operation.inspectIn(Try(event)) must beLike {
-        case Stop(Failure(_: CommandNotExpectedException)) => ok
+        val resolved = eventAppeared(resolvedEvent(streamId))
+        operation.inspectIn(Try(resolved)) mustEqual Continue(operation, Try(resolved))
       }
     }
 
@@ -407,13 +399,6 @@ class SubscriptionOperationSpec extends OperationSpec {
       }
     }
 
-    "stop on unexpected events" in new SubscribedScope()(streamId) {
-      val event = eventAppeared(EventStream.Id("unexpected"))
-      operation.inspectIn(Try(event)) must beLike {
-        case Stop(Failure(_: CommandNotExpectedException)) => ok
-      }
-    }
-
     "return 0 for version" in foreach(streams) { implicit stream =>
       new UnsubscribingScope {
         operation.version mustEqual 0
@@ -422,8 +407,18 @@ class SubscriptionOperationSpec extends OperationSpec {
   }
 
   private trait SubscriptionScope extends OperationScope {
-    def eventAppeared(streamId: EventStream.Id) = {
+
+    def resolvedEvent(streamId: EventStream.Id) = {
+      val event = EventRecord(EventStream.Id(randomUuid.toString), EventNumber.Exact(10), EventData("test"))
+      ResolvedEvent(event, EventRecord(streamId, EventNumber.First, event.link()))
+    }
+
+    def eventAppeared(streamId: EventStream.Id): StreamEventAppeared = {
       val event = EventRecord(streamId, EventNumber.First, EventData("test"))
+      eventAppeared(event)
+    }
+
+    def eventAppeared(event: Event): StreamEventAppeared = {
       val indexedEvent = IndexedEvent(event, Position.First)
       StreamEventAppeared(indexedEvent)
     }
