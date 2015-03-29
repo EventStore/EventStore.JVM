@@ -5,7 +5,7 @@
 <table border="0">
   <tr>
     <td><a href="http://www.scala-lang.org">Scala</a> </td>
-    <td>2.10.4/2.11.5</td>
+    <td>2.10.5/2.11.6</td>
   </tr>
   <tr>
     <td><a href="http://akka.io">Akka</a> </td>
