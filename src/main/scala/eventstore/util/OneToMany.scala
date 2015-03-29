@@ -15,6 +15,8 @@ trait OneToMany[T, S, M] {
 
   def many(m: M): Set[T]
 
+  def contains(m: M): Boolean
+
   def manySet: Set[M]
 
   def values: Set[T]
@@ -57,9 +59,11 @@ object OneToMany {
 
     def single(s: S) = ss get s
 
+    def singleSet = ss.keySet
+
     def many(m: M) = ms.getOrElse(m, Set.empty).flatMap(single)
 
-    def singleSet = ss.keySet
+    def contains(m: M) = ms contains m
 
     def manySet = ms.keySet
 

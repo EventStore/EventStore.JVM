@@ -28,6 +28,9 @@ class OneToManySpec extends Specification {
       result1.singleSet mustEqual Set(1, 2, 3, 4)
       result1.manySet mustEqual Set("1", "2", "4")
 
+      result1.contains("1") must beTrue
+      result1.contains("3") must beFalse
+
       (result1 - Entry(1, "3")) mustEqual result1
       (result1 -- Set(Entry(1, "3"), Entry(5, "5"), Entry(2, "2"))) mustEqual result1
 
@@ -39,6 +42,9 @@ class OneToManySpec extends Specification {
       result2.values mustEqual Set(Entry(3, "2"), Entry(4, "4"))
       result2.singleSet mustEqual Set(3, 4)
       result2.manySet mustEqual Set("2", "4")
+
+      result2.contains("1") must beFalse
+      result2.contains("2") must beTrue
     }
   }
 

@@ -3,15 +3,15 @@ package tcp
 
 import java.net.InetSocketAddress
 import akka.actor._
-import akka.io.{ Tcp, IO }
+import akka.io.{ IO, Tcp }
 import eventstore.NotHandled.NotMaster
 import eventstore.cluster.ClusterDiscovererActor.GetAddress
-import eventstore.cluster.{ ClusterException, ClusterSettings, ClusterInfo, ClusterDiscovererActor }
-import eventstore.pipeline._
+import eventstore.cluster.{ ClusterDiscovererActor, ClusterException, ClusterInfo, ClusterSettings }
 import eventstore.operations._
+import eventstore.pipeline._
 import eventstore.util.{ CancellableAdapter, DelayedRetry }
 import scala.concurrent.duration._
-import scala.util.{ Try, Failure, Success }
+import scala.util.{ Failure, Success, Try }
 
 object ConnectionActor {
   def props(settings: Settings = Settings.Default): Props = Props(classOf[ConnectionActor], settings)
@@ -29,8 +29,7 @@ object ConnectionActor {
 
 private[eventstore] class ConnectionActor(settings: Settings) extends Actor with ActorLogging {
 
-  import context.dispatcher
-  import context.system
+  import context.{ dispatcher, system }
   import settings._
 
   type Reconnect = (InetSocketAddress, Operations) => Option[Receive]
@@ -144,9 +143,12 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
           case _                      => log.info("closing connection to {}", address)
         }
 
-        case Terminated(`connection`) => reconnect("connection actor died")
+        case Terminated(`connection`) =>
+          context unwatch connection
+          reconnect("connection actor died")
 
         case Terminated(`pipeline`) =>
+          context unwatch pipeline
           connection ! Tcp.Abort
           reconnect("pipeline actor died")
 
@@ -180,11 +182,9 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
         os.single(correlationId) match {
           case Some(operation) =>
             operation.inspectIn(msg) match {
-              case OnIncoming.Ignore => os
+              case OnIncoming.Ignore   => os
 
-              case OnIncoming.Stop(in) =>
-                toClient(operation.client, in)
-                os - operation
+              case OnIncoming.Stop(in) => stopOperation(operation, os, in)
 
               case OnIncoming.Retry(operation, pack) =>
                 outFunc.foreach { outFunc => outFunc(pack) }
@@ -226,11 +226,9 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       operation.foreach { operation =>
         if (operation.version == version) {
           val result = operation.inspectIn(Failure(OperationTimedOut)) match {
-            case OnIncoming.Ignore => os
+            case OnIncoming.Ignore   => os
 
-            case OnIncoming.Stop(in) =>
-              toClient(operation.client, in)
-              os - operation
+            case OnIncoming.Stop(in) => stopOperation(operation, os, in)
 
             case OnIncoming.Retry(operation, pack) =>
               outFunc.foreach { outFunc => outFunc(pack) }
@@ -250,10 +248,11 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
     def rcvPack(pack: PackOut): Unit = {
       val msg = pack.message
       val id = pack.correlationId
+      val client = sender()
 
       def isDefined(x: Iterable[Operation]) = x.find(_.inspectOut.isDefinedAt(msg))
       def forId = isDefined(os.single(id))
-      def forMsg = isDefined(os.many(sender()))
+      def forMsg = isDefined(os.many(client))
 
       // TODO current requirement is the only one subscription per actor allowed
       val result = forId orElse forMsg match {
@@ -261,8 +260,8 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
           operation.inspectOut(msg) match {
             case OnOutgoing.Stop(out, in) =>
               outFunc.foreach { outFunc => outFunc(out) }
-              toClient(operation.client, in)
-              os - operation
+              stopOperation(operation, os, in)
+
             case OnOutgoing.Continue(operation, out) =>
               outFunc.foreach { outFunc => outFunc(out) }
               system.scheduler.scheduleOnce(operationTimeout, self, TimedOut(id, operation.version))
@@ -270,10 +269,9 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
           }
 
         case None =>
-          Operation.opt(pack, sender(), outFunc.isDefined, operationMaxRetries) match {
-            case None => os
-            case Some(operation) =>
-              context watch sender()
+          Operation.opt(pack, client, outFunc.isDefined, operationMaxRetries).fold(os) {
+            operation =>
+              context watch client
               outFunc.foreach(_.apply(pack))
               system.scheduler.scheduleOnce(operationTimeout, self, TimedOut(id, operation.version))
               os + operation
@@ -290,6 +288,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
 
   def rcvTerminated(os: Operations, rcv: Operations => Receive, outFunc: Option[PackOut => Unit]): Receive = {
     case Terminated(client) =>
+      context unwatch client
       val terminated = os.many(client)
       if (terminated.nonEmpty) {
         for {
@@ -427,6 +426,14 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
 
   def connectionFailed(msg: String, os: Operations): Unit = {
     connectionFailed(msg, new CannotEstablishConnectionException(msg), os)
+  }
+
+  def stopOperation(operation: Operation, os: Operations, in: Try[In]): Operations = {
+    val client = operation.client
+    toClient(client, in)
+    val result = os - operation
+    if (!(result contains client)) context unwatch client
+    result
   }
 
   def logDebug(x: PackIn) = if (log.isDebugEnabled) x.message match {
