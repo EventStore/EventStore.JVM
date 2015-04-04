@@ -4,6 +4,7 @@ sealed trait EventNumber extends Ordered[EventNumber]
 
 object EventNumber {
   val First: Exact = Exact(0)
+  val Current: Last.type = Last
 
   def apply(direction: ReadDirection): EventNumber = direction match {
     case ReadDirection.Forward  => First
@@ -12,7 +13,7 @@ object EventNumber {
 
   def apply(eventNumber: Int): EventNumber = if (eventNumber < 0) Last else Exact(eventNumber)
 
-  case object Last extends EventNumber {
+  @SerialVersionUID(1L) case object Last extends EventNumber {
     def compare(that: EventNumber) = that match {
       case Last => 0
       case _    => 1
@@ -21,7 +22,7 @@ object EventNumber {
     override def toString = "EventNumber.Last"
   }
 
-  case class Exact(value: Int) extends EventNumber {
+  @SerialVersionUID(1L) case class Exact(value: Int) extends EventNumber {
     require(value >= 0, s"event number must be >= 0, but is $value")
 
     def compare(that: EventNumber) = that match {
@@ -42,7 +43,7 @@ object EventNumber {
     def opt(proto: Int): Option[EventNumber.Exact] = if (proto >= 0) Some(Exact(proto)) else None
   }
 
-  case class Range(start: Exact, end: Exact) {
+  @SerialVersionUID(1L) case class Range(start: Exact, end: Exact) {
     require(start <= end, s"start must be <= end, but $start > $end")
 
     override def toString = s"EventNumber.Range(${start.value} to ${end.value})"

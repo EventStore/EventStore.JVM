@@ -38,7 +38,7 @@ object Event {
   }
 }
 
-case class EventRecord(
+@SerialVersionUID(1L) case class EventRecord(
     streamId: EventStream.Id,
     number:   EventNumber.Exact,
     data:     EventData,
@@ -55,7 +55,7 @@ object EventRecord {
   )
 }
 
-case class ResolvedEvent(linkedEvent: EventRecord, linkEvent: EventRecord) extends Event {
+@SerialVersionUID(1L) case class ResolvedEvent(linkedEvent: EventRecord, linkEvent: EventRecord) extends Event {
   def streamId = linkedEvent.streamId
   def number = linkedEvent.number
   def data = linkedEvent.data
@@ -63,7 +63,11 @@ case class ResolvedEvent(linkedEvent: EventRecord, linkEvent: EventRecord) exten
   def created = linkedEvent.created
 }
 
-case class Content(value: ByteString = ByteString.empty, contentType: ContentType = ContentType.Binary) {
+@SerialVersionUID(1L) case class Content(
+  value:       ByteString  = ByteString.empty,
+  contentType: ContentType = ContentType.Binary
+) {
+
   override lazy val toString = {
     val data = contentType match {
       case ContentType.Json if value.nonEmpty => value.utf8String
@@ -89,7 +93,7 @@ object Content {
   }
 }
 
-case class EventData(
+@SerialVersionUID(1L) case class EventData(
     eventType: String,
     eventId:   Uuid    = randomUuid,
     data:      Content = Content.Empty,
@@ -127,6 +131,6 @@ object EventData {
   }
 }
 
-case class IndexedEvent(event: Event, position: Position.Exact) extends Ordered[IndexedEvent] {
+@SerialVersionUID(1L) case class IndexedEvent(event: Event, position: Position.Exact) extends Ordered[IndexedEvent] {
   def compare(that: IndexedEvent) = this.position compare that.position
 }

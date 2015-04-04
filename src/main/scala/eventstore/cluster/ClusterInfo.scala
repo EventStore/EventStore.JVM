@@ -16,6 +16,7 @@ import scala.collection.concurrent.TrieMap
 import scala.concurrent._
 import scala.util.Try
 
+@SerialVersionUID(1L)
 case class ClusterInfo(serverAddress: InetSocketAddress, members: List[MemberInfo]) {
   lazy val bestNode: Option[MemberInfo] = {
     val xs = members.filter { x => x.isAlive && x.state.isAllowedToConnect }
@@ -56,6 +57,7 @@ object ClusterInfo {
   }
 }
 
+@SerialVersionUID(1L)
 case class MemberInfo(
     instanceId:         Uuid,
     timestamp:          DateTime,

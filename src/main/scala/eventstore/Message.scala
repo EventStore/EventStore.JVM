@@ -7,7 +7,7 @@ sealed trait OutLike {
   def out: Out
 }
 
-case class WithCredentials(out: Out, credentials: UserCredentials) extends OutLike
+@SerialVersionUID(1L) case class WithCredentials(out: Out, credentials: UserCredentials) extends OutLike
 
 sealed trait Message
 sealed trait In extends Message
@@ -23,24 +23,13 @@ sealed trait Out extends Message with OutLike {
 
 sealed trait InOut extends In with Out
 
-private[eventstore] case object HeartbeatRequest extends InOut
-private[eventstore] case object HeartbeatResponse extends InOut
+@SerialVersionUID(1L) private[eventstore] case object HeartbeatRequest extends InOut
+@SerialVersionUID(1L) private[eventstore] case object HeartbeatResponse extends InOut
 
-case object Ping extends InOut
-case object Pong extends InOut
+@SerialVersionUID(1L) case object Ping extends InOut
+@SerialVersionUID(1L) case object Pong extends InOut
 
-//case object PrepareAck extends Message
-//case object CommitAck extends Message
-
-//case object SlaveAssignment extends Message
-//case object CloneAssignment extends Message
-
-//case object SubscribeReplica extends Message
-//case object CreateChunk extends Message
-//case object PhysicalChunkBulk extends Message
-//case object LogicalChunkBulk extends Message
-
-case class WriteEvents(
+@SerialVersionUID(1L) case class WriteEvents(
   streamId:        EventStream.Id,
   events:          List[EventData],
   expectedVersion: ExpectedVersion = ExpectedVersion.Any,
@@ -64,31 +53,31 @@ object WriteEvents {
   }
 }
 
-case class WriteEventsCompleted(
+@SerialVersionUID(1L) case class WriteEventsCompleted(
   numbersRange: Option[EventNumber.Range] = None,
   position:     Option[Position.Exact]    = None
 ) extends In
 
-case class DeleteStream(
+@SerialVersionUID(1L) case class DeleteStream(
   streamId:        EventStream.Id,
   expectedVersion: ExpectedVersion.Existing = ExpectedVersion.Any,
   hard:            Boolean                  = false,
   requireMaster:   Boolean                  = Settings.Default.requireMaster
 ) extends Out
 
-case class DeleteStreamCompleted(position: Option[Position.Exact] = None) extends In
+@SerialVersionUID(1L) case class DeleteStreamCompleted(position: Option[Position.Exact] = None) extends In
 
-case class TransactionStart(
+@SerialVersionUID(1L) case class TransactionStart(
   streamId:        EventStream.Id,
   expectedVersion: ExpectedVersion = ExpectedVersion.Any,
   requireMaster:   Boolean         = Settings.Default.requireMaster
 ) extends Out
 
-case class TransactionStartCompleted(transactionId: Long) extends In {
+@SerialVersionUID(1L) case class TransactionStartCompleted(transactionId: Long) extends In {
   require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
 }
 
-case class TransactionWrite(
+@SerialVersionUID(1L) case class TransactionWrite(
     transactionId: Long,
     events:        List[EventData],
     requireMaster: Boolean         = Settings.Default.requireMaster
@@ -96,18 +85,18 @@ case class TransactionWrite(
   require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
 }
 
-case class TransactionWriteCompleted(transactionId: Long) extends In {
+@SerialVersionUID(1L) case class TransactionWriteCompleted(transactionId: Long) extends In {
   require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
 }
 
-case class TransactionCommit(
+@SerialVersionUID(1L) case class TransactionCommit(
     transactionId: Long,
     requireMaster: Boolean = Settings.Default.requireMaster
 ) extends Out {
   require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
 }
 
-case class TransactionCommitCompleted(
+@SerialVersionUID(1L) case class TransactionCommitCompleted(
     transactionId: Long,
     numbersRange:  Option[EventNumber.Range] = None,
     position:      Option[Position.Exact]    = None
@@ -115,7 +104,7 @@ case class TransactionCommitCompleted(
   require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
 }
 
-case class ReadEvent(
+@SerialVersionUID(1L) case class ReadEvent(
   streamId:       EventStream.Id,
   eventNumber:    EventNumber    = EventNumber.First,
   resolveLinkTos: Boolean        = Settings.Default.resolveLinkTos,
@@ -134,9 +123,9 @@ object ReadEvent {
   }
 }
 
-case class ReadEventCompleted(event: Event) extends In
+@SerialVersionUID(1L) case class ReadEventCompleted(event: Event) extends In
 
-case class ReadStreamEvents(
+@SerialVersionUID(1L) case class ReadStreamEvents(
     streamId:       EventStream.Id,
     fromNumber:     EventNumber    = EventNumber.First,
     maxCount:       Int            = Settings.Default.readBatchSize,
@@ -152,7 +141,7 @@ case class ReadStreamEvents(
   )
 }
 
-case class ReadStreamEventsCompleted(
+@SerialVersionUID(1L) case class ReadStreamEventsCompleted(
     events:             List[Event],
     nextEventNumber:    EventNumber,
     lastEventNumber:    EventNumber.Exact,
@@ -169,7 +158,7 @@ case class ReadStreamEventsCompleted(
   def eventsJava: java.util.List[Event] = events.asJava
 }
 
-case class ReadAllEvents(
+@SerialVersionUID(1L) case class ReadAllEvents(
     fromPosition:   Position      = Position.First,
     maxCount:       Int           = Settings.Default.readBatchSize,
     direction:      ReadDirection = ReadDirection.Forward,
@@ -180,7 +169,7 @@ case class ReadAllEvents(
   require(maxCount <= MaxBatchSize, s"maxCount must be <= $MaxBatchSize, but is $maxCount")
 }
 
-case class ReadAllEventsCompleted(
+@SerialVersionUID(1L) case class ReadAllEventsCompleted(
     events:       List[IndexedEvent],
     position:     Position.Exact,
     nextPosition: Position.Exact,
@@ -191,52 +180,158 @@ case class ReadAllEventsCompleted(
   def eventsJava: java.util.List[IndexedEvent] = events.asJava
 }
 
-case class SubscribeTo(stream: EventStream, resolveLinkTos: Boolean = Settings.Default.resolveLinkTos) extends Out
+object PersistentSubscription {
+
+  /**
+   * Java API
+   */
+  def create(streamId: EventStream.Id, groupName: String, settings: PersistentSubscriptionSettings): Create = {
+    Create(streamId, groupName, settings)
+  }
+
+  /**
+   * Java API
+   */
+  def update(streamId: EventStream.Id, groupName: String, settings: PersistentSubscriptionSettings): Update = {
+    Update(streamId, groupName, settings)
+  }
+
+  /**
+   * Java API
+   */
+  def delete(streamId: EventStream.Id, groupName: String): Delete = {
+    Delete(streamId, groupName)
+  }
+
+  @SerialVersionUID(1L)
+  case class Create(
+      streamId: EventStream.Id, groupName: String,
+      settings: PersistentSubscriptionSettings = PersistentSubscriptionSettings.Default
+  ) extends Out {
+
+    require(groupName != null, "groupName must not be null")
+    require(groupName.nonEmpty, "groupName must not be empty")
+  }
+
+  @SerialVersionUID(1L)
+  case object CreateCompleted extends In
+
+  @SerialVersionUID(1L)
+  case class Update(
+      streamId:  EventStream.Id,
+      groupName: String,
+      settings:  PersistentSubscriptionSettings = PersistentSubscriptionSettings.Default
+  ) extends Out {
+
+    require(groupName != null, "groupName must not be null")
+    require(groupName.nonEmpty, "groupName must not be empty")
+  }
+
+  @SerialVersionUID(1L)
+  case object UpdateCompleted extends In
+
+  @SerialVersionUID(1L)
+  case class Delete(streamId: EventStream.Id, groupName: String) extends Out {
+    require(groupName != null, "groupName must not be null")
+    require(groupName.nonEmpty, "groupName must not be empty")
+  }
+
+  @SerialVersionUID(1L)
+  case object DeleteCompleted extends In
+
+  @SerialVersionUID(1L)
+  case class Ack(subscriptionId: String, eventIds: List[Uuid]) extends Out {
+    require(subscriptionId != null, "subscriptionId must not be null")
+    require(subscriptionId.nonEmpty, "subscriptionId must not be empty")
+    require(eventIds.nonEmpty, "eventIds must not be empty")
+  }
+
+  @SerialVersionUID(1L)
+  case class Nak(
+      subscriptionId: String,
+      eventIds:       List[Uuid],
+      action:         Nak.Action,
+      message:        Option[String] = None
+  ) extends Out {
+
+    require(subscriptionId != null, "subscriptionId must not be null")
+    require(subscriptionId.nonEmpty, "subscriptionId must not be empty")
+    require(eventIds.nonEmpty, "eventIds must not be empty")
+  }
+
+  object Nak {
+    sealed trait Action
+    object Action {
+      @SerialVersionUID(1L) case object Unknown extends Action
+      @SerialVersionUID(1L) case object Park extends Action
+      @SerialVersionUID(1L) case object Retry extends Action
+      @SerialVersionUID(1L) case object Skip extends Action
+      @SerialVersionUID(1L) case object Stop extends Action
+    }
+  }
+
+  @SerialVersionUID(1L) case class Connect(
+    streamId:   EventStream.Id,
+    groupName:  String,
+    bufferSize: Int            = 10
+  ) extends Out
+
+  @SerialVersionUID(1L) case class Connected(
+    subscriptionId:  String,
+    lastCommit:      Long,
+    lastEventNumber: Option[EventNumber.Exact]
+  ) extends In
+
+  @SerialVersionUID(1L) case class EventAppeared(event: Event) extends In
+}
+
+@SerialVersionUID(1L) case class SubscribeTo(stream: EventStream, resolveLinkTos: Boolean = Settings.Default.resolveLinkTos) extends Out
 
 sealed trait SubscribeCompleted extends In
 
-case class SubscribeToAllCompleted(lastCommit: Long) extends SubscribeCompleted {
+@SerialVersionUID(1L) case class SubscribeToAllCompleted(lastCommit: Long) extends SubscribeCompleted {
   require(lastCommit >= 0, s"lastCommit must be >= 0, but is $lastCommit")
 }
 
-case class SubscribeToStreamCompleted(
+@SerialVersionUID(1L) case class SubscribeToStreamCompleted(
     lastCommit:      Long,
     lastEventNumber: Option[EventNumber.Exact] = None
 ) extends SubscribeCompleted {
   require(lastCommit >= 0, s"lastCommit must be >= 0, but is $lastCommit")
 }
 
-case class StreamEventAppeared(event: IndexedEvent) extends In
+@SerialVersionUID(1L) case class StreamEventAppeared(event: IndexedEvent) extends In
 
-case object Unsubscribe extends Out {
+@SerialVersionUID(1L) case object Unsubscribe extends Out {
   /**
    * Java API
    */
   def getInstance = this
 }
-case object Unsubscribed extends In {
-  /**
-   * Java API
-   */
-  def getInstance = this
-}
-
-case object ScavengeDatabase extends Out {
+@SerialVersionUID(1L) case object Unsubscribed extends In {
   /**
    * Java API
    */
   def getInstance = this
 }
 
-case class ScavengeDatabaseCompleted(totalTime: FiniteDuration, totalSpaceSaved: Long) extends In
-
-case object Authenticate extends Out {
+@SerialVersionUID(1L) case object ScavengeDatabase extends Out {
   /**
    * Java API
    */
   def getInstance = this
 }
-case object Authenticated extends In {
+
+@SerialVersionUID(1L) case class ScavengeDatabaseCompleted(totalTime: FiniteDuration, totalSpaceSaved: Long) extends In
+
+@SerialVersionUID(1L) case object Authenticate extends Out {
+  /**
+   * Java API
+   */
+  def getInstance = this
+}
+
+@SerialVersionUID(1L) case object Authenticated extends In {
   /**
    * Java API
    */
