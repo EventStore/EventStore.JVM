@@ -48,7 +48,7 @@ object EventStream {
     def apply(streamId: String): HasMetadata = {
       require(streamId != null, "streamId must not be null")
       require(streamId.nonEmpty, "streamId must not be empty")
-      require(!(streamId startsWith "$$"), "streamId must not start with $$")
+      require(!(streamId startsWith "$$"), s"streamId must not start with $$$$, but is $streamId")
       if (streamId startsWith "$") System(streamId substring 1) else Plain(streamId)
     }
   }
@@ -56,7 +56,7 @@ object EventStream {
   case class Plain(value: String) extends HasMetadata {
     require(value != null, "value must not be null")
     require(value.nonEmpty, "value must not be empty")
-    require(!(value startsWith "$"), "value must not start with $")
+    require(!(value startsWith "$"), s"value must not start with $$, but is $value")
 
     def prefix = ""
     def isSystem = false
@@ -68,7 +68,7 @@ object EventStream {
   case class System(value: String) extends HasMetadata {
     require(value != null, "value must not be null")
     require(value.nonEmpty, "value must not be empty")
-    require(!(value startsWith "$"), "value must not start with $")
+    require(!(value startsWith "$"), s"value must not start with $$, but is $value")
 
     def prefix = "$"
     def isSystem = true
@@ -84,7 +84,7 @@ object EventStream {
   case class Metadata(value: String) extends Id {
     require(value != null, "value must not be null")
     require(value.nonEmpty, "value must not be empty")
-    require(!(value startsWith "$$"), "value must not start with $$")
+    require(!(value startsWith "$$"), s"value must not start with $$$$, but is $value")
 
     def prefix = "$$"
     def isSystem = false
