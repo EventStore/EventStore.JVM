@@ -1,11 +1,11 @@
 package eventstore
 
-import ReadDirection._
 import akka.actor.Status.Failure
 import akka.testkit._
+import eventstore.ReadDirection._
+import eventstore.tcp.ConnectionActor
 import org.joda.time.DateTime
 import scala.concurrent.duration._
-import tcp.ConnectionActor
 
 abstract class TestConnection extends util.ActorSpec {
 
@@ -13,7 +13,7 @@ abstract class TestConnection extends util.ActorSpec {
     val streamId = newStreamId
     val date = DateTime.now
 
-    val streamMetadata = ByteString(getClass.getEnclosingClass.getSimpleName)
+    val streamMetadata = ByteString(TestConnection.this.getClass.getSimpleName)
     val actor = TestActorRef(ConnectionActor.props())
 
     def deleteStream(expVer: ExpectedVersion.Existing = ExpectedVersion.Any, hard: Boolean = true): Unit = {
@@ -192,7 +192,7 @@ abstract class TestConnection extends util.ActorSpec {
     def allStreamsEventsData(maxCount: Int = Settings.Default.readBatchSize)(implicit direction: ReadDirection) =
       allStreamsEvents(maxCount).map(_.event.data)
 
-    def newStreamId: EventStream.Plain = EventStream.Plain(getClass.getEnclosingClass.getSimpleName + "-" + randomUuid.toString)
+    def newStreamId: EventStream.Plain = EventStream.Plain(TestConnection.this.getClass.getSimpleName + "-" + randomUuid.toString)
 
     implicit class RichEventRecord(self: EventRecord) {
       def fixDate: EventRecord = self.copy(created = Some(date))
