@@ -1,4 +1,4 @@
-# Event Store JVM Client [![Build Status](https://api.travis-ci.org/EventStore/EventStore.JVM.svg)](https://travis-ci.org/EventStore/EventStore.JVM) [![Coverage Status](https://coveralls.io/repos/EventStore/EventStore.JVM/badge.svg)](https://coveralls.io/r/EventStore/EventStore.JVM)
+# Event Store JVM Client [![Build Status](https://api.travis-ci.org/EventStore/EventStore.JVM.svg)](https://travis-ci.org/EventStore/EventStore.JVM) [![Coverage Status](https://coveralls.io/repos/EventStore/EventStore.JVM/badge.svg)](https://coveralls.io/r/EventStore/EventStore.JVM) [![Version](https://img.shields.io/maven-central/v/com.geteventstore/eventstore-client_2.11.svg?label=version)](http://search.maven.org/#search%7Cga%7C1%7Cg%3Acom.geteventstore%20AND%20eventstore-client)
 
 **JVM Client works nicely with EventStore 3.0.1**
 
@@ -405,29 +405,3 @@ We are using the same approach - [config](https://github.com/typesafehub/config)
 It is possible to use client against cluster of Event Store.
 For this you need to configure client via `eventstore.cluster` section in [`reference.conf`](src/main/resources/reference.conf) or [`ClusterSettings`](src/main/scala/eventstore/cluster/ClusterSettings.scala).
 Using `application.conf` for configuration is more preferable option.
-
-## Setup
-
-* Sbt
-```scala
-    libraryDependencies += "com.geteventstore" %% "eventstore-client" % "2.0.2"
-```
-
-* Maven:
-```xml
-    <dependency>
-        <groupId>com.geteventstore</groupId>
-        <artifactId>eventstore-client_2.11</artifactId>
-        <version>2.0.2</version>
-    </dependency>
-```
-
-or
-
-```xml
-    <dependency>
-        <groupId>com.geteventstore</groupId>
-        <artifactId>eventstore-client_2.10</artifactId>
-        <version>2.0.2</version>
-    </dependency>
-```
