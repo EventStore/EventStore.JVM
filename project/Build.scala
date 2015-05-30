@@ -9,7 +9,6 @@ object Build extends Build {
     name                 := "eventstore-client",
     organization         := "com.geteventstore",
     scalaVersion         := "2.11.6",
-    crossScalaVersions   := Seq("2.10.5", "2.11.6"),
     licenses             := Seq("BSD 3-Clause" -> url("http://raw.github.com/EventStore/EventStore.JVM/master/LICENSE")),
     homepage             := Some(new URL("http://github.com/EventStore/EventStore.JVM")),
     organizationHomepage := Some(new URL("http://geteventstore.com")),
@@ -23,7 +22,7 @@ object Build extends Build {
       Joda.time, Joda.convert,
       Specs2.core, Specs2.mock,
       Spray.json, Spray.client,
-      AkkaStream.stream, AkkaStream.tck, AkkaStream.testkit,
+      AkkaStream.stream, /*AkkaStream.http,*/ AkkaStream.tck, AkkaStream.testkit,
       ReactiveStreams.streams, ReactiveStreams.tck).map(_.withSources())
   )
 
@@ -38,11 +37,12 @@ object Build extends Build {
     val actor   = apply("akka-actor")
     val testkit = apply("akka-testkit") % "test"
 
-    private def apply(x: String) = "com.typesafe.akka" %% x % "2.3.12"
+    private def apply(x: String) = "com.typesafe.akka" %% x % "2.4.0"
   }
 
   object AkkaStream {
     val stream  = apply("akka-stream-experimental")
+//    val http    = apply("akka-http-experimental")
     val tck     = apply("akka-stream-tck-experimental") % "test"
     val testkit = apply("akka-stream-testkit-experimental") % "test"
 
@@ -57,19 +57,21 @@ object Build extends Build {
   }
 
   object Spray {
-    val client = "io.spray" %% "spray-client" % "1.3.2"
-    val json   = "io.spray" %% "spray-json" % "1.3.1"
+    val client = apply("spray-client")
+    val json   = apply("spray-json")
+
+    private def apply(x: String) = "io.spray" %% x % "1.3.2"
   }
 
-  val typesafeConfig = "com.typesafe" % "config" % "1.2.1"
+  val typesafeConfig = "com.typesafe" % "config" % "1.3.0"
   val codec          = "org.apache.directory.studio" % "org.apache.commons.codec" % "1.8"
   val protobuf       = "com.google.protobuf" % "protobuf-java" % "2.5.0"
   val jodaTime       = "joda-time" % "joda-time" % "2.7"
   val mockito        = "org.mockito" % "mockito-all" % "1.9.5" % "test"
 
   object Joda {
-    val time    = "joda-time" % "joda-time" % "2.7"
-    val convert = "org.joda" % "joda-convert" % "1.7"
+    val time    = "joda-time" % "joda-time" % "2.8.2"
+    val convert = "org.joda" % "joda-convert" % "1.8"
   }
 
   lazy val IntegrationTest = config("it") extend Test

@@ -23,11 +23,11 @@ object ReadEventExample extends App {
     def receive = {
       case ReadEventCompleted(event) =>
         log.info("event: {}", event)
-        context.system.shutdown()
+        context.system.terminate()
 
       case Failure(e: EsException) =>
         log.error(e.toString)
-        context.system.shutdown()
+        context.system.terminate()
     }
   }
 }

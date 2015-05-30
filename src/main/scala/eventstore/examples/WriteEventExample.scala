@@ -18,11 +18,11 @@ object WriteEventExample extends App {
     def receive = {
       case WriteEventsCompleted(range, position) =>
         log.info("range: {}, position: {}", range, position)
-        context.system.shutdown()
+        context.system.terminate()
 
       case Failure(e: EsException) =>
         log.error(e.toString)
-        context.system.shutdown()
+        context.system.terminate()
     }
   }
 }

@@ -1,15 +1,15 @@
 # Event Store JVM Client [![Build Status](https://api.travis-ci.org/EventStore/EventStore.JVM.svg)](https://travis-ci.org/EventStore/EventStore.JVM) [![Coverage Status](https://coveralls.io/repos/EventStore/EventStore.JVM/badge.svg)](https://coveralls.io/r/EventStore/EventStore.JVM) [![Version](https://img.shields.io/maven-central/v/com.geteventstore/eventstore-client_2.11.svg?label=version)](http://search.maven.org/#search%7Cga%7C1%7Cg%3Acom.geteventstore%20AND%20eventstore-client)
 
-**JVM Client works nicely with EventStore 3.0.1**
+**JVM Client works nicely with EventStore 3.1.0**
 
 <table border="0">
   <tr>
     <td><a href="http://www.scala-lang.org">Scala</a> </td>
-    <td>2.10.5/2.11.6</td>
+    <td>2.11.6</td>
   </tr>
   <tr>
     <td><a href="http://akka.io">Akka</a> </td>
-    <td>2.3.9</td>
+    <td>2.4.0</td>
   </tr>
 </table>
 
@@ -20,7 +20,7 @@ We have two APIs available:
 
 We are using [`scala.concurrent.Future`](http://docs.scala-lang.org/overviews/core/futures.html) for asynchronous calls, however it is not friendly enough for Java users.
 In order to make Java devs happy and not reinvent a wheel, we propose to use tools invented by Akka team.
-[Check it out](http://doc.akka.io/docs/akka/2.3.9/java/futures.html)
+[Check it out](http://doc.akka.io/docs/akka/2.4.0/java/futures.html)
 
 ```java
 final EsConnection connection = EsConnectionFactory.create(system);
@@ -250,11 +250,11 @@ object ReadEventExample extends App {
     def receive = {
       case ReadEventCompleted(event) =>
         log.info("event: {}", event)
-        context.system.shutdown()
+        context.system.terminate()
 
       case Failure(e: EsException) =>
         log.error(e.toString)
-        context.system.shutdown()
+        context.system.terminate()
     }
   }
 }
@@ -281,11 +281,11 @@ object WriteEventExample extends App {
     def receive = {
       case WriteEventsCompleted(range, position) =>
         log.info("range: {}, position: {}", range, position)
-        context.system.shutdown()
+        context.system.terminate()
 
       case Failure(e: EsException) =>
         log.error(e.toString)
-        context.system.shutdown()
+        context.system.terminate()
     }
   }
 }

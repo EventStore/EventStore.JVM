@@ -80,5 +80,5 @@ class ReadWriteEventsActor extends Actor with ActorLogging {
     context.system.scheduler.scheduleOnce(100.millis, connection, msg)
   }
 
-  def shutdown() = context.system.shutdown()
+  def shutdown() = context.system.terminate()
 }

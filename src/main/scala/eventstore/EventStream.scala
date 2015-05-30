@@ -78,6 +78,8 @@ object EventStream {
   }
 
   object System {
+    val `$streams`: System = System("streams")
+
     def apply(x: UserCredentials): System = System(s"user-${x.login}")
   }
 
