@@ -394,6 +394,33 @@ EventStoreExtension(system).actor ! ReadEvent(EventStream.Id("stream"))
 EventStoreExtension(system).connection.future(ReadEvent(EventStream.Id("stream")))
 ```
 
+### Reactive Streams
+
+Client provides ability to use generic [Reactive Streams](http://www.reactive-streams.org) `Publisher` interface for EventStore subscriptions.
+You can find two methods `allStreamsPublisher` and `streamPublisher` available in Java and Scala APIs.
+Here is a short example on how to use it:
+
+```scala
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl._
+import eventstore.EventStoreExtension
+
+import scala.concurrent.duration._
+
+object MessagesPerSecond extends App {
+  implicit val system = ActorSystem()
+  implicit val materializer = ActorMaterializer()
+  val connection = EventStoreExtension(system).connection
+  val publisher = connection.allStreamsPublisher()
+
+  Source(publisher)
+    .groupedWithin(Int.MaxValue, 1.second)
+    .runForeach { xs => println(f"${xs.size.toDouble / 1000}%2.1fk m/s") }
+}
+
+```
+
 ### Configuration
 
 Default client settings defined in [`reference.conf`](src/main/resources/reference.conf).

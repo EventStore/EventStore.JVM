@@ -1,9 +1,13 @@
 package eventstore
 
-import akka.testkit.{ TestActorRef, TestProbe }
+import akka.actor.Status.Failure
+import akka.stream.actor.ActorPublisherMessage.{ Cancel, Request }
+import akka.stream.actor.ActorSubscriberMessage.{ OnError, OnComplete, OnNext }
+import akka.stream.actor.{ ActorPublisher, ActorSubscriber }
 import eventstore.ReadDirection.Forward
+import scala.concurrent.duration._
 
-class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
+class AllStreamsPublisherSpec extends AbstractSubscriptionActorSpec {
   "catch up subscription actor" should {
 
     "read events from given position" in new SubscriptionScope {
@@ -23,7 +27,6 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       actor ! StreamEventAppeared(event1)
       actor ! StreamEventAppeared(event0)
       actor ! StreamEventAppeared(event2)
-      expectMsg(LiveProcessingStarted)
       expectEvent(event1)
       expectEvent(event2)
 
@@ -87,13 +90,12 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
 
       connection expectMsg readEvents(0)
       actor ! readCompleted(0, 0)
-
-      expectMsg(LiveProcessingStarted)
     }
 
     "stop reading events as soon as stop received" in new SubscriptionScope {
       connection expectMsg readEvents(0)
       system stop actor
+      expectMsg(OnComplete)
       expectTerminated(actor)
     }
 
@@ -133,7 +135,6 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
 
       expectEvent(event3)
       expectEvent(event4)
-      expectMsg(LiveProcessingStarted)
       expectEvent(event5)
       expectEvent(event6)
 
@@ -149,6 +150,7 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
 
       connection.expectMsg(subscribeTo)
       system stop actor
+      expectMsg(OnComplete)
       expectTerminated(actor)
     }
 
@@ -157,6 +159,7 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       actor ! readCompleted(0, 0)
       connection.expectMsg(subscribeTo)
       system stop actor
+      expectMsg(OnComplete)
       expectTerminated(actor)
     }
 
@@ -183,6 +186,7 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       actor ! StreamEventAppeared(event4)
 
       system stop actor
+      expectMsg(OnComplete)
       expectTerminated(actor)
     }
 
@@ -198,8 +202,6 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       connection expectMsg readEvents(0)
       actor ! readCompleted(0, 0)
 
-      expectMsg(LiveProcessingStarted)
-
       expectNoActivity()
     }
 
@@ -213,8 +215,6 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
         expectNoMsg(duration)
 
         actor ! subscribeCompleted(1)
-
-        expectMsg(LiveProcessingStarted)
 
         expectNoActivity()
 
@@ -232,8 +232,6 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
 
       connection expectMsg readEvents(0)
       actor ! readCompleted(0, 0)
-
-      expectMsg(LiveProcessingStarted)
 
       actor ! StreamEventAppeared(event1)
       expectEvent(event1)
@@ -255,8 +253,6 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
 
       connection expectMsg readEvents(1)
       actor ! readCompleted(1, 1)
-
-      expectMsg(LiveProcessingStarted)
 
       actor ! StreamEventAppeared(event0)
       actor ! StreamEventAppeared(event1)
@@ -282,12 +278,12 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
 
       connection.expectMsg(subscribeTo)
       actor ! subscribeCompleted(1)
-      expectMsg(LiveProcessingStarted)
 
       actor ! StreamEventAppeared(event2)
       expectEvent(event2)
 
       system stop actor
+      expectMsg(OnComplete)
       expectTerminated(actor)
 
       override def position = Some(Position(1))
@@ -296,21 +292,15 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
     "stop actor if connection stopped" in new SubscriptionScope {
       connection expectMsg readEvents(0)
       system stop connection.ref
+      expectMsg(OnComplete)
       expectTerminated(actor)
     }
 
     "not stop subscription if actor stopped and not yet subscribed" in new SubscriptionScope {
       connection expectMsg readEvents(0)
       system stop actor
+      expectMsg(OnComplete)
       expectTerminated(actor)
-    }
-
-    "stop actor if client stopped" in new SubscriptionScope {
-      connection expectMsg readEvents(0)
-      val probe = TestProbe()
-      probe watch actor
-      system stop testActor
-      probe.expectTerminated(actor)
     }
 
     "stop actor if error while reading" in new SubscriptionScope {
@@ -344,7 +334,6 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       connection expectMsg subscribeTo
       actor ! subscribeCompleted(0)
 
-      expectMsg(LiveProcessingStarted)
       expectTerminatedOnFailure()
 
       override def position = Some(Position(0))
@@ -355,7 +344,6 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       actor ! readCompleted(0, 0)
       connection expectMsg subscribeTo
       actor ! subscribeCompleted(0)
-      expectMsg(LiveProcessingStarted)
       actor ! subscribeCompleted(0)
       expectNoActivity()
 
@@ -366,15 +354,12 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       connection expectMsg readEvents(0)
       actor ! readCompleted(0, 0)
       connection expectMsg subscribeTo
-      actor ! subscribeCompleted(0)
-      expectMsg(LiveProcessingStarted)
       actor ! subscribeCompleted(1)
       connection expectMsg readEvents(0)
       actor ! StreamEventAppeared(event1)
       actor ! StreamEventAppeared(event2)
       actor ! readCompleted(0, 3, event0, event1, event2)
       expectEvent(event1)
-      expectMsg(LiveProcessingStarted)
       expectEvent(event2)
 
       override def position = Some(Position(0))
@@ -397,7 +382,6 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
 
       expectEvent(event0)
       expectEvent(event1)
-      expectMsg(LiveProcessingStarted)
       expectEvent(event2)
     }
 
@@ -408,18 +392,56 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
 
       override def credentials = Some(UserCredentials("login", "password"))
     }
+
+    "cancel while reading" in new SubscriptionScope {
+      connection expectMsg readEvents(0)
+      actor ! Cancel
+      expectTerminated(actor)
+    }
+
+    "cancel while subscribing" in new SubscriptionScope {
+      connection expectMsg readEvents(0)
+      actor ! readCompleted(0, 0)
+      connection expectMsg subscribeTo
+      actor ! Cancel
+      expectTerminated(actor)
+    }
+
+    "cancel while subscribed" in new SubscriptionScope {
+      connection expectMsg readEvents(0)
+      actor ! readCompleted(0, 0)
+      connection expectMsg subscribeTo
+      actor ! subscribeCompleted(0)
+      actor ! Cancel
+      expectTerminated(actor)
+    }
+
+    "cancel while catching up" in new SubscriptionScope {
+      connection expectMsg readEvents(0)
+      actor ! readCompleted(0, 0)
+      connection expectMsg subscribeTo
+      actor ! subscribeCompleted(1)
+      connection expectMsg readEvents(0)
+      actor ! Cancel
+      expectTerminated(actor)
+    }
   }
 
   trait SubscriptionScope extends AbstractScope {
-    def createActor = {
-      val props = SubscriptionActor.props(
+
+    def createActor() = {
+      val props = AllStreamsPublisher.props(
         connection = connection.ref,
-        client = testActor,
         fromPositionExclusive = position,
         resolveLinkTos = resolveLinkTos,
         credentials = credentials,
         readBatchSize = readBatchSize)
-      TestActorRef(props)
+      val actor = system actorOf props
+      val publisher = ActorPublisher[IndexedEvent](actor)
+      val subscriber = ActorSubscriber[IndexedEvent](testActor)
+      publisher subscribe subscriber
+      expectMsgType[Any].getClass.getName shouldEqual "akka.stream.actor.ActorSubscriber$OnSubscribe"
+      actor
     }
 
     lazy val streamId = EventStream.All
@@ -432,7 +454,10 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
     val event5 = newEvent(5)
     val event6 = newEvent(6)
 
-    def expectEvent(x: IndexedEvent) = expectMsg(x)
+    def expectEvent(x: IndexedEvent) = {
+      actor ! Request(1)
+      expectMsg(OnNext(x))
+    }
 
     def newEvent(x: Long) = IndexedEvent(mock[Event], Position.Exact(x))
 
@@ -444,5 +469,15 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
     def position: Option[Position] = None
 
     def subscribeCompleted(lastCommit: Long) = SubscribeToAllCompleted(lastCommit)
+
+    override def expectTerminatedOnFailure() = {
+      val failure = new ServerErrorException("test")
+      actor ! Failure(failure)
+      expectMsg(OnError(failure))
+      expectTerminated(actor)
+      val duration = 1.seconds
+      expectNoMsg(duration)
+      connection.expectNoMsg(duration)
+    }
   }
 }

@@ -2,9 +2,11 @@ package eventstore
 package j
 
 import java.util
-import eventstore.ExpectedVersion.Existing
-import scala.collection.JavaConverters._
+
 import akka.actor.ActorSystem
+import eventstore.ExpectedVersion.Existing
+
+import scala.collection.JavaConverters._
 
 object EsConnectionImpl {
   def apply(system: ActorSystem, settings: Settings = Settings.Default): EsConnectionImpl =
@@ -176,5 +178,17 @@ class EsConnectionImpl(connection: eventstore.EsConnection) extends EsConnection
 
   def getStreamMetadataBytes(stream: String, credentials: UserCredentials) = {
     connection.getStreamMetadata(EventStream.Id(stream), Option(credentials)).map(_.value.toArray)
+  }
+
+  def streamPublisher(stream: String, fromEventNumberExclusive: EventNumber, resolveLinkTos: Boolean, credentials: UserCredentials) = {
+    connection.streamPublisher(
+      EventStream.Id(stream),
+      Option(fromEventNumberExclusive),
+      resolveLinkTos,
+      Option(credentials))
+  }
+
+  def allStreamsPublisher(resolveLinkTos: Boolean, fromPositionExclusive: Position, credentials: UserCredentials) = {
+    connection.allStreamsPublisher(resolveLinkTos, Option(fromPositionExclusive), Option(credentials))
   }
 }

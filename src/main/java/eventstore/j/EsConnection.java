@@ -1,13 +1,15 @@
 package eventstore.j;
 
 import eventstore.*;
+import org.reactivestreams.Publisher;
 import scala.concurrent.Future;
+
 import java.io.Closeable;
 import java.util.Collection;
 
 /**
  * Maintains a full duplex connection to the EventStore
- * <p/>
+ * <p>
  * All operations are handled in a full async manner.
  * Many threads can use an <code>EsConnection</code> at the same time or a single thread can make many asynchronous requests.
  * To get the most performance out of the connection it is generally recommended to use it in this way.
@@ -16,11 +18,11 @@ public interface EsConnection {
 
   /**
    * Write events to a stream
-   * <p/>
+   * <p>
    * When writing events to a stream the {@link eventstore.ExpectedVersion} choice can
    * make a very large difference in the observed behavior. For example, if no stream exists
    * and ExpectedVersion.Any is used, a new stream will be implicitly created when appending.
-   * <p/>
+   * <p>
    * There are also differences in idempotency between different types of calls.
    * If you specify an ExpectedVersion aside from ExpectedVersion.Any the Event Store
    * will give you an idempotency guarantee. If using ExpectedVersion.Any the Event Store
@@ -69,7 +71,7 @@ public interface EsConnection {
 
   /**
    * Starts a transaction in the event store on a given stream asynchronously
-   * <p/>
+   * <p>
    * A {@link eventstore.j.EsTransaction} allows the calling of multiple writes with multiple
    * round trips over long periods of time between the caller and the event store. This method
    * is only available through the TCP interface and no equivalent exists for the RESTful interface.
@@ -87,7 +89,7 @@ public interface EsConnection {
 
   /**
    * Continues transaction by provided transaction ID.
-   * <p/>
+   * <p>
    * A {@link eventstore.j.EsTransaction} allows the calling of multiple writes with multiple
    * round trips over long periods of time between the caller and the event store. This method
    * is only available through the TCP interface and no equivalent exists for the RESTful interface.
@@ -205,11 +207,11 @@ public interface EsConnection {
    * lastCheckpoint onwards are read from the stream
    * and presented to the user of <code>SubscriptionObserver</code>
    * as if they had been pushed.
-   * <p/>
+   * <p>
    * Once the end of the stream is read the subscription is
    * transparently (to the user) switched to push new events as
    * they are written.
-   * <p/>
+   * <p>
    * If events have already been received and resubscription from the same point
    * is desired, use the event number of the last event processed which
    * appeared on the subscription.
@@ -247,11 +249,11 @@ public interface EsConnection {
    * Subscribes to a all events. Existing events from position
    * onwards are read from the Event Store and presented to the user of
    * <code>SubscriptionObserver</code> as if they had been pushed.
-   * <p/>
+   * <p>
    * Once the end of the stream is read the subscription is
    * transparently (to the user) switched to push new events as
    * they are written.
-   * <p/>
+   * <p>
    * If events have already been received and resubscription from the same point
    * is desired, use the position representing the last event processed which
    * appeared on the subscription.
@@ -297,4 +299,54 @@ public interface EsConnection {
    * @return A {@link scala.concurrent.Future} containing the metadata as byte array.
    */
   Future<byte[]> getStreamMetadataBytes(String stream, UserCredentials credentials);
+
+  /**
+   * Creates Publisher you can use to subscribe to a single event stream. Existing events from
+   * lastCheckpoint onwards are read from the stream
+   * and presented to the user of <code>SubscriptionObserver</code>
+   * as if they had been pushed.
+   * <p>
+   * Once the end of the stream is read the subscription is
+   * transparently (to the user) switched to push new events as
+   * they are written.
+   * <p>
+   * If events have already been received and resubscription from the same point
+   * is desired, use the event number of the last event processed which
+   * appeared on the subscription.
+   *
+   * @param stream                   The stream to subscribe to
+   * @param fromEventNumberExclusive The event number from which to start, or <code>null</code> to read all events.
+   * @param resolveLinkTos           Whether to resolve LinkTo events automatically
+   * @param credentials              The optional user credentials to perform operation with
+   * @return A {@link org.reactivestreams.Publisher} representing the subscription
+   */
+  Publisher<Event> streamPublisher(
+      String stream,
+      EventNumber fromEventNumberExclusive,
+      boolean resolveLinkTos,
+      UserCredentials credentials);
+
+
+  /**
+   * Creates Publisher you can use to subscribes to a all events. Existing events from position
+   * onwards are read from the Event Store and presented to the user of
+   * <code>SubscriptionObserver</code> as if they had been pushed.
+   * <p>
+   * Once the end of the stream is read the subscription is
+   * transparently (to the user) switched to push new events as
+   * they are written.
+   * <p>
+   * If events have already been received and resubscription from the same point
+   * is desired, use the position representing the last event processed which
+   * appeared on the subscription.
+   *
+   * @param fromPositionExclusive The position from which to start, or <code>null</code> to read all events
+   * @param resolveLinkTos        Whether to resolve LinkTo events automatically
+   * @param credentials           The optional user credentials to perform operation with
+   * @return A {@link org.reactivestreams.Publisher} representing the subscription
+   */
+  Publisher<IndexedEvent> allStreamsPublisher(
+      boolean resolveLinkTos,
+      Position fromPositionExclusive,
+      UserCredentials credentials);
 }

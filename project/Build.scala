@@ -1,7 +1,7 @@
+import sbt.Keys._
 import sbt._
-import Keys._
-import sbtrelease.ReleasePlugin._
 import sbtprotobuf.ProtobufPlugin.protobufSettings
+import sbtrelease.ReleasePlugin._
 import scoverage.ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages
 
 object Build extends Build {
@@ -18,15 +18,35 @@ object Build extends Build {
     scalacOptions        := Seq("-encoding", "UTF-8", "-unchecked", "-deprecation", "-feature", "-Xlint"),
     resolvers += "spray" at "http://repo.spray.io/",
     libraryDependencies ++= Seq(
-      Akka.actor, Akka.testkit, protobuf, typesafeConfig, codec, Joda.time, Joda.convert,
-      Specs2.core, Specs2.mock, mockito, Spray.json, Spray.client)
+      Akka.actor, Akka.testkit, protobuf,
+      typesafeConfig, codec, mockito,
+      Joda.time, Joda.convert,
+      Specs2.core, Specs2.mock,
+      Spray.json, Spray.client,
+      AkkaStream.stream, AkkaStream.tck, AkkaStream.testkit,
+      ReactiveStreams.streams, ReactiveStreams.tck).map(_.withSources())
   )
 
-  object Akka {
-    val actor   = apply("actor")
-    val testkit = apply("testkit") % "test"
+  object ReactiveStreams {
+    val streams = apply("reactive-streams")
+    val tck     = apply("reactive-streams-tck") % "test"
 
-    private def apply(x: String) = "com.typesafe.akka" %% s"akka-$x" % "2.3.9"
+    private def apply(x: String) = "org.reactivestreams" % x % "1.0.0"
+  }
+
+  object Akka {
+    val actor   = apply("akka-actor")
+    val testkit = apply("akka-testkit") % "test"
+
+    private def apply(x: String) = "com.typesafe.akka" %% x % "2.3.12"
+  }
+
+  object AkkaStream {
+    val stream  = apply("akka-stream-experimental")
+    val tck     = apply("akka-stream-tck-experimental") % "test"
+    val testkit = apply("akka-stream-testkit-experimental") % "test"
+
+    private def apply(x: String) = "com.typesafe.akka" %% x % "1.0"
   }
 
   object Specs2 {

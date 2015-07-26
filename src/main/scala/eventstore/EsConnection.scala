@@ -1,23 +1,29 @@
 package eventstore
 
+import java.io.Closeable
+
 import akka.actor._
 import akka.pattern.ask
+import akka.stream.actor.ActorPublisher
 import akka.util.Timeout
+import eventstore.tcp.ConnectionActor
+import eventstore.util.ActorCloseable
+import org.reactivestreams.Publisher
+
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-import tcp.ConnectionActor
-import java.io.Closeable
-import util.ActorCloseable
 
 class EsConnection(
     connection: ActorRef,
     factory: ActorRefFactory,
     operationTimeout: FiniteDuration = Settings.Default.operationTimeout) {
-  import scala.concurrent.ExecutionContext.Implicits.global
+  import factory.dispatcher
+
   implicit val timeout = Timeout(operationTimeout)
 
   def future[OUT <: Out, IN <: In](out: OUT, credentials: Option[UserCredentials] = None)(
     implicit outIn: ClassTags[OUT, IN]): Future[IN] = {
+
     val future = connection ? credentials.fold[OutLike](out)(WithCredentials(out, _))
     future.mapTo[IN](outIn.in)
   }
@@ -39,6 +45,7 @@ class EsConnection(
     observer: SubscriptionObserver[Event],
     resolveLinkTos: Boolean = Settings.Default.resolveLinkTos,
     credentials: Option[UserCredentials] = None): Closeable =
+
     subscribeToStream(streamId, observer, Some(EventNumber.Last), resolveLinkTos, credentials)
 
   def subscribeToStreamFrom(
@@ -46,8 +53,10 @@ class EsConnection(
     observer: SubscriptionObserver[Event],
     fromNumberExclusive: Option[EventNumber.Exact] = None,
     resolveLinkTos: Boolean = Settings.Default.resolveLinkTos,
-    credentials: Option[UserCredentials] = None): Closeable =
+    credentials: Option[UserCredentials] = None): Closeable = {
+
     subscribeToStream(streamId, observer, fromNumberExclusive, resolveLinkTos, credentials)
+  }
 
   private def subscribeToStream(
     streamId: EventStream.Id,
@@ -55,6 +64,7 @@ class EsConnection(
     fromNumberExclusive: Option[EventNumber],
     resolveLinkTos: Boolean,
     credentials: Option[UserCredentials]): Closeable = {
+
     val client = factory.actorOf(SubscriptionObserverActor.props(observer))
     val props = StreamSubscriptionActor.props(connection, client, streamId, fromNumberExclusive, resolveLinkTos, credentials)
     factory.actorOf(props)
@@ -64,22 +74,27 @@ class EsConnection(
   def subscribeToAll(
     observer: SubscriptionObserver[IndexedEvent],
     resolveLinkTos: Boolean = Settings.Default.resolveLinkTos,
-    credentials: Option[UserCredentials] = None): Closeable =
+    credentials: Option[UserCredentials] = None): Closeable = {
+
     subscribeToAll(observer, Some(Position.Last), resolveLinkTos, credentials)
+  }
 
   def subscribeToAllFrom(
     observer: SubscriptionObserver[IndexedEvent],
     fromPositionExclusive: Option[Position.Exact] = None,
     resolveLinkTos: Boolean = Settings.Default.resolveLinkTos,
-    credentials: Option[UserCredentials] = None): Closeable =
+    credentials: Option[UserCredentials] = None): Closeable = {
+
     subscribeToAll(observer, fromPositionExclusive, resolveLinkTos, credentials)
+  }
 
   private def subscribeToAll(
     observer: SubscriptionObserver[IndexedEvent],
     fromPositionExclusive: Option[Position],
     resolveLinkTos: Boolean,
     credentials: Option[UserCredentials]) = {
-    val client = factory.actorOf(SubscriptionObserverActor.props(observer))
+
+    val client = factory actorOf SubscriptionObserverActor.props(observer)
     val props = SubscriptionActor.props(connection, client, fromPositionExclusive, resolveLinkTos)
     factory.actorOf(props)
     ActorCloseable(client)
@@ -90,12 +105,14 @@ class EsConnection(
     metadata: Content,
     expectedMetastreamVersion: ExpectedVersion = ExpectedVersion.Any,
     credentials: Option[UserCredentials] = None): Future[Option[WriteResult]] = {
+
     val writeEvents = WriteEvents.StreamMetadata(streamId.metadata, metadata, expectedMetastreamVersion)
     future(writeEvents, credentials).map(WriteResult.opt)
   }
 
   // TODO think about replacing content with something similar to what is in the .Net client
   def getStreamMetadata(streamId: EventStream.Id, credentials: Option[UserCredentials] = None): Future[Content] = {
+
     future(ReadEvent.StreamMetadata(streamId.metadata), credentials).map {
       case ReadEventCompleted(Event.StreamMetadata(data)) => data
       case ReadEventCompleted(event)                      => throw NonMetadataEventException(event)
@@ -104,11 +121,36 @@ class EsConnection(
       case _: StreamDeletedException  => Content.Empty
     }
   }
+
+  def allStreamsPublisher(
+    resolveLinkTos: Boolean = Settings.Default.resolveLinkTos,
+    fromPositionExclusive: Option[Position] = None,
+    credentials: Option[UserCredentials] = None): Publisher[IndexedEvent] = {
+
+    val props = AllStreamsPublisher.props(connection, Some(Position.Last), resolveLinkTos, credentials)
+    val actor = factory actorOf props
+    ActorPublisher(actor)
+  }
+
+  def streamPublisher(
+    streamId: EventStream.Id,
+    fromNumberExclusive: Option[EventNumber] = None,
+    resolveLinkTos: Boolean = Settings.Default.resolveLinkTos,
+    credentials: Option[UserCredentials] = None): Publisher[Event] = {
+
+    val props = StreamPublisher.props(connection, streamId, fromNumberExclusive, resolveLinkTos, credentials)
+    val actor = factory actorOf props
+    ActorPublisher(actor)
+  }
 }
 
 object EsConnection {
-  def apply(system: ActorSystem, settings: Settings = Settings.Default): EsConnection = new EsConnection(
-    connection = system.actorOf(ConnectionActor.props(settings)),
-    factory = system,
-    operationTimeout = settings.operationTimeout)
+
+  def apply(system: ActorSystem, settings: Settings = Settings.Default): EsConnection = {
+    val props = ConnectionActor props settings
+    new EsConnection(
+      connection = system actorOf props,
+      factory = system,
+      operationTimeout = settings.operationTimeout)
+  }
 }

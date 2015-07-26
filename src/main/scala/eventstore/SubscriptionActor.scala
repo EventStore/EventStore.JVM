@@ -1,9 +1,10 @@
 package eventstore
 
-import ReadDirection.Forward
-import akka.actor.{ Props, ActorRef }
-import scala.collection.immutable.Queue
+import akka.actor.{ ActorRef, Props }
+import eventstore.ReadDirection.Forward
+
 import scala.annotation.tailrec
+import scala.collection.immutable.Queue
 
 object SubscriptionActor {
   def props(
@@ -12,8 +13,16 @@ object SubscriptionActor {
     fromPositionExclusive: Option[Position] = None,
     resolveLinkTos: Boolean = Settings.Default.resolveLinkTos,
     credentials: Option[UserCredentials] = None,
-    readBatchSize: Int = Settings.Default.readBatchSize): Props = Props(classOf[SubscriptionActor], connection, client,
-    fromPositionExclusive, resolveLinkTos, credentials, readBatchSize)
+    readBatchSize: Int = Settings.Default.readBatchSize): Props = {
+
+    Props(new SubscriptionActor(
+      connection,
+      client,
+      fromPositionExclusive,
+      resolveLinkTos,
+      credentials,
+      readBatchSize))
+  }
 
   /**
    * Java API
@@ -24,14 +33,17 @@ object SubscriptionActor {
     fromPositionExclusive: Option[Position],
     resolveLinkTos: Boolean,
     credentials: Option[UserCredentials],
-    readBatchSize: Int): Props = props(connection, client, fromPositionExclusive, resolveLinkTos,
-    credentials, readBatchSize)
+    readBatchSize: Int): Props = {
+
+    props(connection, client, fromPositionExclusive, resolveLinkTos, credentials, readBatchSize)
+  }
 
   /**
    * Java API
    */
-  def getProps(connection: ActorRef, client: ActorRef, fromPositionExclusive: Option[Position]) =
+  def getProps(connection: ActorRef, client: ActorRef, fromPositionExclusive: Option[Position]) = {
     props(connection, client, fromPositionExclusive)
+  }
 }
 
 class SubscriptionActor(

@@ -14,8 +14,17 @@ object StreamSubscriptionActor {
     fromNumberExclusive: Option[EventNumber] = None,
     resolveLinkTos: Boolean = Settings.Default.resolveLinkTos,
     credentials: Option[UserCredentials] = None,
-    readBatchSize: Int = Settings.Default.readBatchSize): Props = Props(classOf[StreamSubscriptionActor], connection, client, streamId,
-    fromNumberExclusive, resolveLinkTos, credentials, readBatchSize)
+    readBatchSize: Int = Settings.Default.readBatchSize): Props = {
+
+    Props(new StreamSubscriptionActor(
+      connection,
+      client,
+      streamId,
+      fromNumberExclusive,
+      resolveLinkTos,
+      credentials,
+      readBatchSize))
+  }
 
   /**
    * Java API
@@ -27,8 +36,10 @@ object StreamSubscriptionActor {
     fromNumberExclusive: Option[EventNumber],
     resolveLinkTos: Boolean,
     credentials: Option[UserCredentials],
-    readBatchSize: Int): Props =
+    readBatchSize: Int): Props = {
+
     props(connection, client, streamId, fromNumberExclusive, resolveLinkTos, credentials, readBatchSize)
+  }
 
   /**
    * Java API
@@ -37,7 +48,10 @@ object StreamSubscriptionActor {
     connection: ActorRef,
     client: ActorRef,
     streamId: EventStream.Id,
-    fromNumberExclusive: Option[EventNumber]): Props = props(connection, client, streamId, fromNumberExclusive)
+    fromNumberExclusive: Option[EventNumber]): Props = {
+
+    props(connection, client, streamId, fromNumberExclusive)
+  }
 }
 
 class StreamSubscriptionActor private (
@@ -180,7 +194,8 @@ class StreamSubscriptionActor private (
   }
 
   def readEventsFrom(number: Next) = {
-    toConnection(ReadStreamEvents(streamId, number, readBatchSize, Forward, resolveLinkTos = resolveLinkTos))
+    val read = ReadStreamEvents(streamId, number, readBatchSize, Forward, resolveLinkTos = resolveLinkTos)
+    toConnection(read)
   }
 
   def rcvSubscribeCompleted(receive: Last => Receive): Receive = {

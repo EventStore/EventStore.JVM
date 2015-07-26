@@ -1,9 +1,11 @@
 package eventstore
 
-import akka.actor.Props
 import akka.actor.Status.Failure
+import akka.actor.ActorRef
+import akka.stream.actor.ActorSubscriberMessage.OnError
 import akka.testkit._
 import org.specs2.mock.Mockito
+
 import scala.concurrent.duration._
 
 abstract class AbstractSubscriptionActorSpec extends util.ActorSpec with Mockito {
@@ -14,10 +16,10 @@ abstract class AbstractSubscriptionActorSpec extends util.ActorSpec with Mockito
     val resolveLinkTos = false
     val connection = TestProbe()
 
-    val actor = TestActorRef(props)
+    val actor = createActor()
     watch(actor)
 
-    def props: Props
+    def createActor(): ActorRef
 
     def streamId: EventStream
 
