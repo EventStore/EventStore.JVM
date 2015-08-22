@@ -4,6 +4,7 @@ sealed trait EventNumber extends Ordered[EventNumber]
 
 object EventNumber {
   val First: Exact = Exact(0)
+  val Current: Last.type = Last
 
   def apply(direction: ReadDirection): EventNumber = direction match {
     case ReadDirection.Forward  => First

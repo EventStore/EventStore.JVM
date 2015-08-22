@@ -337,4 +337,35 @@ class EsConnectionImpl(
       infinite = infinite
     )
   }
+
+  def createPersistentSubscription(
+    stream: String,
+    groupName: String,
+    settings: PersistentSubscriptionSettings,
+    credentials: UserCredentials) = {
+
+    val out = PersistentSubscription.Create(EventStream(stream), groupName,
+      Option(settings) getOrElse PersistentSubscriptionSettings.Default)
+    connection.future(out, Option(credentials)) map { _ => () }
+  }
+
+  def updatePersistentSubscription(
+    stream: String,
+    groupName: String,
+    settings: PersistentSubscriptionSettings,
+    credentials: UserCredentials) = {
+
+    val out = PersistentSubscription.Update(EventStream(stream), groupName,
+      Option(settings) getOrElse PersistentSubscriptionSettings.Default)
+    connection.future(out, Option(credentials)) map { _ => () }
+  }
+
+  def deletePersistentSubscription(
+    stream: String,
+    groupName: String,
+    credentials: UserCredentials) = {
+
+    val out = PersistentSubscription.Delete(EventStream(stream), groupName)
+    connection.future(out, Option(credentials)) map { _ => () }
+  }
 }

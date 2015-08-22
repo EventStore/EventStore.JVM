@@ -53,3 +53,5 @@ class RetriesLimitReachedException(message: String) extends EsException(message)
 class ProjectionException(message: String, cause: Throwable) extends EsException(message, cause) {
   def this(message: String) = this(message, null)
 }
+
+class InvalidOperationException(message: String) extends EsException(message)

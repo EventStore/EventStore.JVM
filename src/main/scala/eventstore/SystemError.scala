@@ -1,6 +1,7 @@
 package eventstore
 
 import java.net.InetSocketAddress
+
 import scala.util.control.NoStackTrace
 
 trait SystemError extends RuntimeException with NoStackTrace with Serializable
@@ -79,6 +80,9 @@ sealed trait SubscriptionDropped extends ServerError
 
 object SubscriptionDropped {
   case object AccessDenied extends SubscriptionDropped
+  case object NotFound extends SubscriptionDropped
+  case object PersistentSubscriptionDeleted extends SubscriptionDropped
+  case object SubscriberMaxCountReached extends SubscriptionDropped
 }
 
 sealed trait ScavengeError extends SystemError
@@ -86,4 +90,34 @@ sealed trait ScavengeError extends SystemError
 object ScavengeError {
   case object InProgress extends ScavengeError
   case class Failed(error: Option[String]) extends ScavengeError
+}
+
+sealed trait CreatePersistentSubscriptionError extends SystemError
+
+object CreatePersistentSubscriptionError {
+  case object AccessDenied extends CreatePersistentSubscriptionError
+  case object AlreadyExists extends CreatePersistentSubscriptionError
+  case class Error(message: Option[String]) extends CreatePersistentSubscriptionError {
+    override def toString = s"CreatePersistentSubscriptionError($message)"
+  }
+}
+
+sealed trait UpdatePersistentSubscriptionError extends SystemError
+
+object UpdatePersistentSubscriptionError {
+  case object AccessDenied extends UpdatePersistentSubscriptionError
+  case object DoesNotExist extends UpdatePersistentSubscriptionError
+  case class Error(message: Option[String]) extends UpdatePersistentSubscriptionError {
+    override def toString = s"UpdatePersistentSubscriptionError($message)"
+  }
+}
+
+sealed trait DeletePersistentSubscriptionError extends SystemError
+
+object DeletePersistentSubscriptionError {
+  case object AccessDenied extends DeletePersistentSubscriptionError
+  case object DoesNotExist extends DeletePersistentSubscriptionError
+  case class Error(message: Option[String]) extends DeletePersistentSubscriptionError {
+    override def toString = s"DeletePersistentSubscriptionError($message)"
+  }
 }

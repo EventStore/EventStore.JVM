@@ -1,15 +1,18 @@
 package eventstore
 package tcp
 
-import ReadDirection.{ Backward, Forward }
-import org.joda.time.DateTime
-import proto.{ EventStoreMessages => j, _ }
-import eventstore.util.{ ToCoarsest, DefaultFormats }
-import scala.language.reflectiveCalls
-import scala.concurrent.duration.FiniteDuration
-import scala.util.Try
-import scala.collection.JavaConverters._
 import java.util.concurrent.TimeUnit
+
+import eventstore.ReadDirection.{Backward, Forward}
+import eventstore.proto.{EventStoreMessages => j, _}
+import eventstore.util.{DefaultFormats, ToCoarsest}
+import eventstore.{PersistentSubscription => Ps}
+import org.joda.time.DateTime
+
+import scala.collection.JavaConverters._
+import scala.concurrent.duration.FiniteDuration
+import scala.language.reflectiveCalls
+import scala.util.Try
 
 object EventStoreProtoFormats extends EventStoreProtoFormats
 
@@ -59,8 +62,8 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
 
   trait ProtoOperationReader[T, P <: OperationMessage] extends ProtoTryReader[T, P] {
     def fromProto(x: P): Try[T] = {
+      import eventstore.{OperationError => E}
       import j.OperationResult._
-      import eventstore.{ OperationError => E }
 
       x.getResult() match {
         case Success              => Try(success(x))
@@ -245,8 +248,8 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
     def parse = j.ReadEventCompleted.parseFrom
 
     def fromProto(x: j.ReadEventCompleted) = {
+      import eventstore.{ReadEventError => E}
       import j.ReadEventCompleted.ReadEventResult._
-      import eventstore.{ ReadEventError => E }
 
       def failure(x: ReadEventError) = this.failure(x)
       x.getResult match {
@@ -278,8 +281,8 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
     def parse = j.ReadStreamEventsCompleted.parseFrom
 
     def fromProto(x: j.ReadStreamEventsCompleted) = {
+      import eventstore.{ReadStreamEventsError => E}
       import j.ReadStreamEventsCompleted.ReadStreamResult._
-      import eventstore.{ ReadStreamEventsError => E }
 
       def failure(x: ReadStreamEventsError) = this.failure(x)
 
@@ -328,8 +331,8 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
     def parse = j.ReadAllEventsCompleted.parseFrom
 
     def fromProto(x: j.ReadAllEventsCompleted) = {
+      import eventstore.{ReadAllEventsError => E}
       import j.ReadAllEventsCompleted.ReadAllResult._
-      import eventstore.{ ReadAllEventsError => E }
 
       def failure(x: ReadAllEventsError) = this.failure(x)
 
@@ -354,14 +357,207 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
   object ReadAllEventsForwardCompletedReader extends ReadAllEventsCompletedReader(Forward)
   object ReadAllEventsBackwardCompletedReader extends ReadAllEventsCompletedReader(Backward)
 
+  implicit object PersistentSubscriptionCreateWriter extends ProtoWriter[Ps.Create] {
+    def toProto(x: Ps.Create) = {
+      val settings = x.settings
+
+      val (preferRoundRobin, consumerStrategy) = settings.consumerStrategy match {
+        case ConsumerStrategy.RoundRobin => (true, ConsumerStrategy.RoundRobin.toString)
+        case x                           => (false, x.toString)
+      }
+
+      println(s"startFrom: ${EventNumberConverter.from(settings.startFrom)}")
+
+      val builder = j.CreatePersistentSubscription.newBuilder()
+      builder.setSubscriptionGroupName(x.groupName)
+      builder.setEventStreamId(x.streamId.streamId)
+      builder.setResolveLinkTos(settings.resolveLinkTos)
+      builder.setStartFrom(EventNumberConverter.from(settings.startFrom))
+      builder.setMessageTimeoutMilliseconds(settings.messageTimeout.toMillis.toInt)
+      builder.setRecordStatistics(settings.extraStatistics)
+      builder.setLiveBufferSize(settings.liveBufferSize)
+      builder.setReadBatchSize(settings.readBatchSize)
+      builder.setBufferSize(settings.historyBufferSize)
+      builder.setMaxRetryCount(settings.maxRetryCount)
+      builder.setPreferRoundRobin(preferRoundRobin)
+      builder.setCheckpointAfterTime(settings.checkPointAfter.toMillis.toInt)
+      builder.setCheckpointMaxCount(settings.maxCheckPointCount)
+      builder.setCheckpointMinCount(settings.minCheckPointCount)
+      builder.setSubscriberMaxCount(settings.maxSubscriberCount)
+      builder.setNamedConsumerStrategy(consumerStrategy)
+      builder
+    }
+  }
+
+  implicit object PersistentSubscriptionCreateCompletedReader
+      extends ProtoTryReader[Ps.CreateCompleted.type, j.CreatePersistentSubscriptionCompleted] {
+
+    def parse = j.CreatePersistentSubscriptionCompleted.parseFrom
+
+    def fromProto(x: j.CreatePersistentSubscriptionCompleted) = {
+      import eventstore.{CreatePersistentSubscriptionError => E}
+      import j.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult._
+
+      def failure(x: E) = this.failure(x)
+      x.getResult match {
+        case Success       => Try(Ps.CreateCompleted)
+        case AlreadyExists => failure(E.AlreadyExists)
+        case Fail          => failure(E.Error(message(option(x.hasReason, x.getReason))))
+        case AccessDenied  => failure(E.AccessDenied)
+      }
+    }
+  }
+
+  implicit object PersistentSubscriptionDeleteWriter extends ProtoWriter[Ps.Delete] {
+    def toProto(x: Ps.Delete) = {
+      val builder = j.DeletePersistentSubscription.newBuilder()
+      builder.setSubscriptionGroupName(x.groupName)
+      builder.setEventStreamId(x.streamId.streamId)
+      builder
+    }
+  }
+
+  implicit object PersistentSubscriptionDeleteCompletedReader
+      extends ProtoTryReader[Ps.DeleteCompleted.type, j.DeletePersistentSubscriptionCompleted] {
+
+    def parse = j.DeletePersistentSubscriptionCompleted.parseFrom
+
+    def fromProto(x: j.DeletePersistentSubscriptionCompleted) = {
+      import eventstore.{DeletePersistentSubscriptionError => E}
+      import j.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult._
+
+      def failure(x: E) = this.failure(x)
+      x.getResult match {
+        case Success      => Try(Ps.DeleteCompleted)
+        case DoesNotExist => failure(E.DoesNotExist)
+        case Fail         => failure(E.Error(message(option(x.hasReason, x.getReason))))
+        case AccessDenied => failure(E.AccessDenied)
+      }
+    }
+  }
+
+  implicit object PersistentSubscriptionUpdateWriter extends ProtoWriter[Ps.Update] {
+    def toProto(x: Ps.Update) = {
+      val settings = x.settings
+      val (preferRoundRobin, consumerStrategy) = settings.consumerStrategy match {
+        case ConsumerStrategy.RoundRobin => (true, ConsumerStrategy.RoundRobin.toString)
+        case x                           => (false, x.toString)
+      }
+
+      val builder = j.UpdatePersistentSubscription.newBuilder()
+      builder.setSubscriptionGroupName(x.groupName)
+      builder.setEventStreamId(x.streamId.streamId)
+      builder.setResolveLinkTos(settings.resolveLinkTos)
+      builder.setStartFrom(EventNumberConverter.from(settings.startFrom))
+      builder.setMessageTimeoutMilliseconds(settings.messageTimeout.toMillis.toInt)
+      builder.setRecordStatistics(settings.extraStatistics)
+      builder.setLiveBufferSize(settings.liveBufferSize)
+      builder.setReadBatchSize(settings.readBatchSize)
+      builder.setBufferSize(settings.historyBufferSize)
+      builder.setMaxRetryCount(settings.maxRetryCount)
+      builder.setPreferRoundRobin(preferRoundRobin)
+      builder.setCheckpointAfterTime(settings.checkPointAfter.toMillis.toInt)
+      builder.setCheckpointMaxCount(settings.maxCheckPointCount)
+      builder.setCheckpointMinCount(settings.minCheckPointCount)
+      builder.setSubscriberMaxCount(settings.maxSubscriberCount)
+      builder.setNamedConsumerStrategy(consumerStrategy)
+      builder
+    }
+  }
+
+  implicit object PersistentSubscriptionUpdateCompletedReader
+      extends ProtoTryReader[Ps.UpdateCompleted.type, j.UpdatePersistentSubscriptionCompleted] {
+
+    def parse = j.UpdatePersistentSubscriptionCompleted.parseFrom
+
+    def fromProto(x: j.UpdatePersistentSubscriptionCompleted) = {
+      import eventstore.{UpdatePersistentSubscriptionError => E}
+      import j.UpdatePersistentSubscriptionCompleted.UpdatePersistentSubscriptionResult._
+
+      def failure(x: E) = this.failure(x)
+      x.getResult match {
+        case Success      => Try(Ps.UpdateCompleted)
+        case DoesNotExist => failure(E.DoesNotExist)
+        case Fail         => failure(E.Error(message(option(x.hasReason, x.getReason))))
+        case AccessDenied => failure(E.AccessDenied)
+      }
+    }
+  }
+
+  implicit object PersistentSubscriptionConnectWriter extends ProtoWriter[Ps.Connect] {
+    def toProto(x: Ps.Connect) = {
+      val builder = j.ConnectToPersistentSubscription.newBuilder()
+      builder.setSubscriptionId(x.groupName)
+      builder.setEventStreamId(x.streamId.streamId)
+      builder.setAllowedInFlightMessages(x.bufferSize)
+      builder
+    }
+  }
+
+  implicit object PersistentSubscriptionConnectedReader
+    extends ProtoReader[Ps.Connected, j.PersistentSubscriptionConfirmation] {
+
+    def parse = j.PersistentSubscriptionConfirmation.parseFrom
+
+    def fromProto(x: j.PersistentSubscriptionConfirmation) = {
+
+      val eventNumber = for {
+        x <- option(x.hasLastEventNumber, x.getLastEventNumber)
+        y <- EventNumber.Exact.opt(x)
+      } yield y
+
+      Ps.Connected(
+        subscriptionId = x.getSubscriptionId,
+        lastCommit = x.getLastCommitPosition,
+        lastEventNumber = eventNumber)
+    }
+  }
+
+  implicit object PersistentSubscriptionAckWriter extends ProtoWriter[Ps.Ack] {
+    def toProto(x: Ps.Ack) = {
+      val builder = j.PersistentSubscriptionAckEvents.newBuilder()
+      builder.setSubscriptionId(x.subscriptionId)
+      builder.addAllProcessedEventIds(x.eventIds.map(protoByteString).toIterable.asJava)
+      builder
+    }
+  }
+
+  implicit object PersistentSubscriptionNakWriter extends ProtoWriter[Ps.Nak] {
+    import Ps.Nak.Action._
+    import j.PersistentSubscriptionNakEvents.NakAction
+
+    def toProto(x: Ps.Nak) = {
+      val action = x.action match {
+        case Unknown => NakAction.Unknown
+        case Park    => NakAction.Park
+        case Retry   => NakAction.Retry
+        case Skip    => NakAction.Skip
+        case Stop    => NakAction.Stop
+      }
+
+      val builder = j.PersistentSubscriptionNakEvents.newBuilder()
+      builder.setSubscriptionId(x.subscriptionId)
+      builder.addAllProcessedEventIds(x.eventIds.map(protoByteString).toIterable.asJava)
+      builder.setAction(action)
+      for {message <- x.message} builder.setMessage(message)
+      builder
+    }
+  }
+
+  implicit object PersistentSubscriptionEventAppearedReader
+    extends ProtoReader[Ps.EventAppeared, j.PersistentSubscriptionStreamEventAppeared] {
+
+    def parse = j.PersistentSubscriptionStreamEventAppeared.parseFrom
+
+    def fromProto(x: j.PersistentSubscriptionStreamEventAppeared) = {
+      Ps.EventAppeared(EventReader.fromProto(x.getEvent))
+    }
+  }
+
   implicit object SubscribeToWriter extends ProtoWriter[SubscribeTo] {
     def toProto(x: SubscribeTo) = {
-      val streamId = x.stream match {
-        case EventStream.All    => ""
-        case id: EventStream.Id => id.streamId
-      }
       val builder = j.SubscribeToStream.newBuilder()
-      builder.setEventStreamId(streamId)
+      builder.setEventStreamId(x.stream.streamId)
       builder.setResolveLinkTos(x.resolveLinkTos)
       builder
     }
@@ -382,7 +578,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
 
   implicit object StreamEventAppearedReader extends ProtoReader[StreamEventAppeared, j.StreamEventAppeared] {
     def parse = j.StreamEventAppeared.parseFrom
-    def fromProto(x: j.StreamEventAppeared) = StreamEventAppeared(event = IndexedEventReader.fromProto(x.getEvent))
+    def fromProto(x: j.StreamEventAppeared) = StreamEventAppeared(IndexedEventReader.fromProto(x.getEvent))
   }
 
   implicit object SubscriptionDroppedReader extends ProtoTryReader[Unsubscribed.type, j.SubscriptionDropped] {
@@ -390,13 +586,16 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
     def parse = j.SubscriptionDropped.parseFrom
 
     def fromProto(x: j.SubscriptionDropped) = {
-      import j.SubscriptionDropped.{ SubscriptionDropReason => P }
+      import j.SubscriptionDropped.{SubscriptionDropReason => P}
 
       def unsubscribed = Try(Unsubscribed)
       if (!x.hasReason) unsubscribed
       else x.getReason match {
-        case P.Unsubscribed => unsubscribed
-        case P.AccessDenied => failure(SubscriptionDropped.AccessDenied)
+        case P.Unsubscribed                  => unsubscribed
+        case P.AccessDenied                  => failure(SubscriptionDropped.AccessDenied)
+        case P.NotFound                      => failure(SubscriptionDropped.NotFound)
+        case P.PersistentSubscriptionDeleted => failure(SubscriptionDropped.PersistentSubscriptionDeleted)
+        case P.SubscriberMaxCountReached     => failure(SubscriptionDropped.SubscriberMaxCountReached)
       }
     }
   }
@@ -408,7 +607,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
     def parse = j.ScavengeDatabaseCompleted.parseFrom
 
     def fromProto(x: j.ScavengeDatabaseCompleted) = {
-      import eventstore.{ ScavengeError => E }
+      import eventstore.{ScavengeError => E}
 
       def scavengeDatabaseCompleted = ScavengeDatabaseCompleted(
         totalTime = ToCoarsest(FiniteDuration(x.getTotalTimeMs.toLong, TimeUnit.MILLISECONDS)),

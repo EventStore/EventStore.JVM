@@ -191,6 +191,50 @@ case class ReadAllEventsCompleted(
   def eventsJava: java.util.List[IndexedEvent] = events.asJava
 }
 
+object PersistentSubscription {
+
+  /**
+   * Java API
+   */
+  def create(streamId: EventStream, groupName: String, settings: PersistentSubscriptionSettings): Create = {
+    Create(streamId, groupName, settings)
+  }
+
+  /**
+   * Java API
+   */
+  def update(streamId: EventStream, groupName: String, settings: PersistentSubscriptionSettings): Update = {
+    Update(streamId, groupName, settings)
+  }
+
+  /**
+   * Java API
+   */
+  def delete(streamId: EventStream, groupName: String): Delete = {
+    Delete(streamId, groupName)
+  }
+
+  case class Create(
+    streamId: EventStream,
+    groupName: String,
+    settings: PersistentSubscriptionSettings = PersistentSubscriptionSettings.Default) extends Out
+
+  case object CreateCompleted extends In
+
+  case class Update(
+    streamId: EventStream,
+    groupName: String,
+    settings: PersistentSubscriptionSettings = PersistentSubscriptionSettings.Default) extends Out
+
+  case object UpdateCompleted extends In
+
+  case class Delete(streamId: EventStream, groupName: String) extends Out
+
+  case object DeleteCompleted extends In
+
+//  case class Connect(streamId: EventStream, groupName: String, bufferSize: Int) extends Out
+}
+
 case class SubscribeTo(stream: EventStream, resolveLinkTos: Boolean = Settings.Default.resolveLinkTos) extends Out
 
 sealed trait SubscribeCompleted extends In

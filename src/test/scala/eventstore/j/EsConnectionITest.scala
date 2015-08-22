@@ -120,6 +120,30 @@ class EsConnectionITest extends eventstore.util.ActorSpec {
       started.getId mustEqual continued.getId
     }
 
+    "create persistent subscription" in new TestScope {
+      val streamId = s"java-createPsTransaction-$randomUuid"
+      await_(connection.createPersistentSubscription(streamId, streamId, null, null))
+    }
+
+    "update persistent subscription" in new TestScope {
+      val streamId = s"java-updatePsTransaction-$randomUuid"
+      val future = for {
+        _ <- connection.createPersistentSubscription(streamId, streamId, null, null)
+        x <- connection.updatePersistentSubscription(streamId, streamId, null, null)
+      } yield x
+      await_(future)
+    }
+
+    "delete persistent subscription" in new TestScope {
+      val streamId = s"java-deletePsTransaction-$randomUuid"
+      val future = for {
+        _ <- connection.createPersistentSubscription(streamId, streamId, null, null)
+        _ <- connection.updatePersistentSubscription(streamId, streamId, null, null)
+        x <- connection.deletePersistentSubscription(streamId, streamId, null)
+      } yield x
+      await_(future)
+    }
+
     "set & get stream metadata bytes" in new TestScope {
       val streamId = s"java-streamMetadata-$randomUuid"
       val expected = Array[Byte](1, 2, 3)
