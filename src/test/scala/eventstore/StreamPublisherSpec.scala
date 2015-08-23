@@ -4,12 +4,11 @@ import akka.actor.Status.Failure
 import akka.stream.actor.ActorPublisherMessage.{ Request, Cancel }
 import akka.stream.actor.ActorSubscriberMessage.{ OnComplete, OnNext, OnError }
 import akka.stream.actor.{ ActorPublisher, ActorSubscriber }
-import akka.testkit.TestProbe
 import eventstore.ReadDirection.Forward
 import scala.concurrent.duration._
 
 class StreamPublisherSpec extends AbstractSubscriptionActorSpec {
-  "catch up subscription actor" should {
+  "StreamsPublisher" should {
 
     "read events from given position" in new SubscriptionScope {
       connection expectMsg readEvents(123)
@@ -414,7 +413,36 @@ class StreamPublisherSpec extends AbstractSubscriptionActorSpec {
     }
   }
 
-  trait SubscriptionScope extends AbstractScope {
+  "StreamsPublisher finite" should {
+
+    "stop immediately if last number passed" in new FiniteSubscriptionScope {
+      connection.expectNoMsg(duration)
+      expectMsg(OnComplete)
+      expectTerminated(actor)
+
+      override def eventNumber = Some(EventNumber.Last)
+    }
+
+    "stop when no more events left" in new FiniteSubscriptionScope {
+      connection expectMsg readEvents(0)
+      actor ! readCompleted(0, endOfStream = true)
+      expectMsg(OnComplete)
+      expectTerminated(actor)
+    }
+
+    "stop when retrieved last event" in new FiniteSubscriptionScope {
+      connection expectMsg readEvents(0)
+      actor ! readCompleted(2, false, event0, event1)
+      expectEvent(event0)
+      expectEvent(event1)
+      connection expectMsg readEvents(2)
+      actor ! readCompleted(2, endOfStream = true)
+      expectMsg(OnComplete)
+      expectTerminated(actor)
+    }
+  }
+
+  private trait SubscriptionScope extends AbstractScope {
     lazy val streamId = EventStream.Id(StreamPublisherSpec.this.getClass.getSimpleName + "-" + randomUuid.toString)
 
     def eventNumber: Option[EventNumber] = None
@@ -426,7 +454,8 @@ class StreamPublisherSpec extends AbstractSubscriptionActorSpec {
         fromNumberExclusive = eventNumber,
         resolveLinkTos = resolveLinkTos,
         credentials = credentials,
-        readBatchSize = readBatchSize)
+        readBatchSize = readBatchSize,
+        infinite = infinite)
       val actor = system actorOf props
       val publisher = ActorPublisher[IndexedEvent](actor)
       val subscriber = ActorSubscriber[IndexedEvent](testActor)
@@ -442,6 +471,8 @@ class StreamPublisherSpec extends AbstractSubscriptionActorSpec {
     val event4 = newEvent(4)
     val event5 = newEvent(5)
     val event6 = newEvent(6)
+
+    def infinite = true
 
     def expectEvent(x: Event) = {
       actor ! Request(1)
@@ -472,5 +503,9 @@ class StreamPublisherSpec extends AbstractSubscriptionActorSpec {
       expectNoMsg(duration)
       connection.expectNoMsg(duration)
     }
+  }
+
+  private trait FiniteSubscriptionScope extends SubscriptionScope {
+    override def infinite = false
   }
 }

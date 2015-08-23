@@ -3,7 +3,7 @@ package eventstore
 import akka.actor.ActorRef
 import akka.actor.Status.Failure
 import akka.stream.actor.ActorPublisher
-import akka.stream.actor.ActorPublisherMessage.{ Request, Cancel }
+import akka.stream.actor.ActorPublisherMessage.{ Cancel, Request }
 
 import scala.collection.mutable
 
@@ -18,6 +18,7 @@ private[eventstore] abstract class AbstractStreamPublisher[T, O <: Ordered[O], P
   def readBatchSize: Int
   def position(event: T): P
   def first: P
+  def infinite: Boolean
 
   context watch connection
 
@@ -55,13 +56,29 @@ private[eventstore] abstract class AbstractStreamPublisher[T, O <: Ordered[O], P
   def reading(next: Next): Receive = {
     def read(events: List[T], next: Next): Receive = {
       enqueue(events)
-      if (events.isEmpty) subscribing(next)
-      else if (ready) reading(next)
+      if (events.isEmpty) {
+        if (infinite) subscribing(next)
+        else replyingBuffered()
+      } else if (ready) reading(next)
       else rcvRequest(reading(next)) or rcvCancel or rcvFailure
     }
 
     readEventsFrom(next)
     rcvRead(read) or rcvRequest() or rcvCancel or rcvFailure
+  }
+
+  def replyingBuffered(): Receive = {
+    def rcvRequest: Receive = {
+      case Request(n) =>
+        dequeue()
+        context become replyingBuffered
+    }
+
+    if (buffer.nonEmpty) rcvRequest
+    else {
+      onCompleteThenStop()
+      PartialFunction.empty
+    }
   }
 
   def readEventsFrom(next: Next): Unit
@@ -101,19 +118,19 @@ private[eventstore] abstract class AbstractStreamPublisher[T, O <: Ordered[O], P
   }
 
   def rcvRequest(): Receive = {
-    case Request(n) =>
-      while (totalDemand > 0 && buffer.nonEmpty) {
-        val event = buffer.dequeue()
-        onNext(event)
-      }
+    case Request(n) => dequeue()
   }
 
   def rcvRequest(receive: => Receive): Receive = {
     case Request(n) =>
-      while (totalDemand > 0 && buffer.nonEmpty) {
-        val event = buffer.dequeue()
-        onNext(event)
-      }
+      dequeue()
       if (ready) context become receive
+  }
+
+  def dequeue() = {
+    while (totalDemand > 0 && buffer.nonEmpty) {
+      val event = buffer.dequeue()
+      onNext(event)
+    }
   }
 }

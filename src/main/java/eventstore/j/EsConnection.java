@@ -303,7 +303,7 @@ public interface EsConnection {
   /**
    * Creates Publisher you can use to subscribe to a single event stream. Existing events from
    * lastCheckpoint onwards are read from the stream
-   * and presented to the user of <code>SubscriptionObserver</code>
+   * and presented to the user of <code>Publisher</code>
    * as if they had been pushed.
    * <p>
    * Once the end of the stream is read the subscription is
@@ -314,23 +314,25 @@ public interface EsConnection {
    * is desired, use the event number of the last event processed which
    * appeared on the subscription.
    *
-   * @param stream                   The stream to subscribe to
+   * @param stream                   The stream to publish
    * @param fromEventNumberExclusive The event number from which to start, or <code>null</code> to read all events.
    * @param resolveLinkTos           Whether to resolve LinkTo events automatically
    * @param credentials              The optional user credentials to perform operation with
-   * @return A {@link org.reactivestreams.Publisher} representing the subscription
+   * @param infinite                 Whether to subscribe to the future events upon reading all current
+   * @return A {@link org.reactivestreams.Publisher} representing the stream
    */
   Publisher<Event> streamPublisher(
       String stream,
       EventNumber fromEventNumberExclusive,
       boolean resolveLinkTos,
-      UserCredentials credentials);
+      UserCredentials credentials,
+      boolean infinite);
 
 
   /**
    * Creates Publisher you can use to subscribes to a all events. Existing events from position
    * onwards are read from the Event Store and presented to the user of
-   * <code>SubscriptionObserver</code> as if they had been pushed.
+   * <code>Publisher</code> as if they had been pushed.
    * <p>
    * Once the end of the stream is read the subscription is
    * transparently (to the user) switched to push new events as
@@ -343,10 +345,12 @@ public interface EsConnection {
    * @param fromPositionExclusive The position from which to start, or <code>null</code> to read all events
    * @param resolveLinkTos        Whether to resolve LinkTo events automatically
    * @param credentials           The optional user credentials to perform operation with
-   * @return A {@link org.reactivestreams.Publisher} representing the subscription
+   * @param infinite              Whether to subscribe to the future events upon reading all current
+   * @return A {@link org.reactivestreams.Publisher} representing all streams
    */
   Publisher<IndexedEvent> allStreamsPublisher(
-      boolean resolveLinkTos,
       Position fromPositionExclusive,
-      UserCredentials credentials);
+      boolean resolveLinkTos,
+      UserCredentials credentials,
+      boolean infinite);
 }

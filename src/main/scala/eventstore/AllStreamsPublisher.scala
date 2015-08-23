@@ -11,14 +11,16 @@ object AllStreamsPublisher {
     fromPositionExclusive: Option[Position] = None,
     resolveLinkTos: Boolean = Settings.Default.resolveLinkTos,
     credentials: Option[UserCredentials] = None,
+    infinite: Boolean = true,
     readBatchSize: Int = Settings.Default.readBatchSize): Props = {
 
     Props(new AllStreamsPublisher(
-      connection,
-      fromPositionExclusive,
-      resolveLinkTos,
-      credentials,
-      readBatchSize))
+      connection = connection,
+      fromPositionExclusive = fromPositionExclusive,
+      resolveLinkTos = resolveLinkTos,
+      credentials = credentials,
+      readBatchSize = readBatchSize,
+      infinite = infinite))
   }
 
   /**
@@ -29,9 +31,10 @@ object AllStreamsPublisher {
     fromPositionExclusive: Option[Position],
     resolveLinkTos: Boolean,
     credentials: Option[UserCredentials],
+    infinite: Boolean,
     readBatchSize: Int): Props = {
 
-    props(connection, fromPositionExclusive, resolveLinkTos, credentials, readBatchSize)
+    props(connection, fromPositionExclusive, resolveLinkTos, credentials, infinite, readBatchSize)
   }
 
   /**
@@ -47,7 +50,8 @@ private class AllStreamsPublisher(
     fromPositionExclusive: Option[Position],
     val resolveLinkTos: Boolean,
     val credentials: Option[UserCredentials],
-    val readBatchSize: Int) extends AbstractStreamPublisher[IndexedEvent, Position, Position.Exact] {
+    val readBatchSize: Int,
+    val infinite: Boolean = true) extends AbstractStreamPublisher[IndexedEvent, Position, Position.Exact] {
 
   val streamId = EventStream.All
   var last = fromPositionExclusive collect { case x: Position.Exact => x }
@@ -59,8 +63,13 @@ private class AllStreamsPublisher(
   }
 
   def subscribingFromLast: Receive = {
-    subscribeToStream()
-    rcvSubscribed(_ => subscribed) or rcvUnsubscribed or rcvRequest() or rcvCancel or rcvFailure
+    if (infinite) {
+      subscribeToStream()
+      rcvSubscribed(_ => subscribed) or rcvUnsubscribed or rcvRequest() or rcvCancel or rcvFailure
+    } else {
+      onCompleteThenStop()
+      PartialFunction.empty
+    }
   }
 
   def subscribing(next: Next): Receive = {

@@ -12,15 +12,17 @@ object StreamPublisher {
     fromNumberExclusive: Option[EventNumber] = None,
     resolveLinkTos: Boolean = Settings.Default.resolveLinkTos,
     credentials: Option[UserCredentials] = None,
+    infinite: Boolean = true,
     readBatchSize: Int = Settings.Default.readBatchSize): Props = {
 
     Props(new StreamPublisher(
-      connection,
-      streamId,
-      fromNumberExclusive,
-      resolveLinkTos,
-      credentials,
-      readBatchSize))
+      connection = connection,
+      streamId = streamId,
+      fromNumberExclusive = fromNumberExclusive,
+      resolveLinkTos = resolveLinkTos,
+      credentials = credentials,
+      readBatchSize = readBatchSize,
+      infinite = infinite))
   }
 
   /**
@@ -32,9 +34,10 @@ object StreamPublisher {
     fromNumberExclusive: Option[EventNumber],
     resolveLinkTos: Boolean,
     credentials: Option[UserCredentials],
+    infinite: Boolean,
     readBatchSize: Int): Props = {
 
-    props(connection, streamId, fromNumberExclusive, resolveLinkTos, credentials, readBatchSize)
+    props(connection, streamId, fromNumberExclusive, resolveLinkTos, credentials, infinite, readBatchSize)
   }
 
   /**
@@ -49,13 +52,14 @@ object StreamPublisher {
   }
 }
 
-class StreamPublisher(
+private class StreamPublisher(
     val connection: ActorRef,
     val streamId: EventStream.Id,
     fromNumberExclusive: Option[EventNumber],
     val resolveLinkTos: Boolean,
     val credentials: Option[UserCredentials],
-    val readBatchSize: Int) extends AbstractStreamPublisher[Event, EventNumber, EventNumber.Exact] {
+    val readBatchSize: Int,
+    val infinite: Boolean = true) extends AbstractStreamPublisher[Event, EventNumber, EventNumber.Exact] {
 
   var last = fromNumberExclusive collect { case x: EventNumber.Exact => x }
 
@@ -134,8 +138,13 @@ class StreamPublisher(
   }
 
   def subscribingFromLast: Receive = {
-    subscribeToStream()
-    rcvSubscribed(_ => subscribed) or rcvUnsubscribed or rcvRequest() or rcvCancel or rcvFailure
+    if (infinite) {
+      subscribeToStream()
+      rcvSubscribed(_ => subscribed) or rcvUnsubscribed or rcvRequest() or rcvCancel or rcvFailure
+    } else {
+      onCompleteThenStop()
+      PartialFunction.empty
+    }
   }
 
   def position(event: Event) = event.record.number

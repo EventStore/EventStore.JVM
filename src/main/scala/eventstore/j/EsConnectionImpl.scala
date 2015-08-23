@@ -180,15 +180,31 @@ class EsConnectionImpl(connection: eventstore.EsConnection) extends EsConnection
     connection.getStreamMetadata(EventStream.Id(stream), Option(credentials)).map(_.value.toArray)
   }
 
-  def streamPublisher(stream: String, fromEventNumberExclusive: EventNumber, resolveLinkTos: Boolean, credentials: UserCredentials) = {
+  def streamPublisher(
+    stream: String,
+    fromEventNumberExclusive: EventNumber,
+    resolveLinkTos: Boolean,
+    credentials: UserCredentials,
+    infinite: Boolean) = {
+
     connection.streamPublisher(
-      EventStream.Id(stream),
-      Option(fromEventNumberExclusive),
-      resolveLinkTos,
-      Option(credentials))
+      streamId = EventStream.Id(stream),
+      fromNumberExclusive = Option(fromEventNumberExclusive),
+      resolveLinkTos = resolveLinkTos,
+      credentials = Option(credentials),
+      infinite = infinite)
   }
 
-  def allStreamsPublisher(resolveLinkTos: Boolean, fromPositionExclusive: Position, credentials: UserCredentials) = {
-    connection.allStreamsPublisher(resolveLinkTos, Option(fromPositionExclusive), Option(credentials))
+  def allStreamsPublisher(
+    fromPositionExclusive: Position,
+    resolveLinkTos: Boolean,
+    credentials: UserCredentials,
+    infinite: Boolean) = {
+
+    connection.allStreamsPublisher(
+      resolveLinkTos = resolveLinkTos,
+      fromPositionExclusive = Option(fromPositionExclusive),
+      credentials = Option(credentials),
+      infinite = infinite)
   }
 }

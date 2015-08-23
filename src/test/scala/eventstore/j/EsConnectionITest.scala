@@ -1,29 +1,33 @@
 package eventstore
 package j
 
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.Source
+import akka.stream.testkit.scaladsl.TestSink
+
 import scala.collection.JavaConverters._
 
 class EsConnectionITest extends eventstore.util.ActorSpec {
   "EsConnection" should {
 
     "write events" in new TestScope {
-      await_(connection.writeEvents("java-writeEvents-" + randomUuid, null, events, null)) mustNotEqual null
+      await_(connection.writeEvents(s"java-writeEvents-$randomUuid", null, events, null)) mustNotEqual null
     }
 
     "delete stream" in new TestScope {
-      val streamId = "java-deleteStream-" + randomUuid
+      val streamId = s"java-deleteStream-$randomUuid"
       await_(connection.writeEvents(streamId, null, events, null))
       await_(connection.deleteStream(streamId, null, null)) mustNotEqual null
     }
 
     "delete stream" in new TestScope {
-      val streamId = "java-deleteStream-" + randomUuid
+      val streamId = s"java-deleteStream-$randomUuid"
       await_(connection.writeEvents(streamId, null, events, null))
       await_(connection.deleteStream(streamId, null, true, null)) mustNotEqual null
     }
 
     "read event" in new TestScope {
-      val streamId = "java-readEvent-" + randomUuid
+      val streamId = s"java-readEvent-$randomUuid"
       await_(connection.readEvent(streamId, null, false, null)) must throwA[StreamNotFoundException]
 
       await_(connection.writeEvents(streamId, null, events, null))
@@ -35,7 +39,7 @@ class EsConnectionITest extends eventstore.util.ActorSpec {
     }
 
     "read stream events forward" in new TestScope {
-      val streamId = "java-readStreamForward-" + randomUuid
+      val streamId = s"java-readStreamForward-$randomUuid"
 
       await_(connection.readStreamEventsForward(streamId, null, 10, false, null)) must throwA[StreamNotFoundException]
 
@@ -51,7 +55,7 @@ class EsConnectionITest extends eventstore.util.ActorSpec {
     }
 
     "read stream events backward" in new TestScope {
-      val streamId = "java-readStreamBackward-" + randomUuid
+      val streamId = s"java-readStreamBackward-$randomUuid"
       await_(connection.readStreamEventsBackward(streamId, null, 10, false, null)) must throwA[StreamNotFoundException]
       await_(connection.writeEvents(streamId, null, events, null))
       val result = await_ {
@@ -91,7 +95,7 @@ class EsConnectionITest extends eventstore.util.ActorSpec {
     }
 
     "start transaction" in new TestScope {
-      val streamId = "java-startTransaction-" + randomUuid
+      val streamId = s"java-startTransaction-$randomUuid"
       val transaction = for {
         t <- connection.startTransaction(streamId, null, null)
         _ <- t.write(events)
@@ -101,7 +105,7 @@ class EsConnectionITest extends eventstore.util.ActorSpec {
     }
 
     "continue transaction" in new TestScope {
-      val streamId = "java-continueTransaction-" + randomUuid
+      val streamId = s"java-continueTransaction-$randomUuid"
       val result = for {
         started <- connection.startTransaction(streamId, null, null)
         _ <- started.write(events)
@@ -116,7 +120,7 @@ class EsConnectionITest extends eventstore.util.ActorSpec {
     }
 
     "set & get stream metadata bytes" in new TestScope {
-      val streamId = "java-streamMetadata-" + randomUuid
+      val streamId = s"java-streamMetadata-$randomUuid"
       val expected = Array[Byte](1, 2, 3)
       def streamMetadataBytes = connection.getStreamMetadataBytes(streamId, null)
       val (noStream, actual, deleted) = await_(for {
@@ -133,9 +137,33 @@ class EsConnectionITest extends eventstore.util.ActorSpec {
       actual mustEqual expected
       //      deleted must beEmpty
     }
+
+    "publish stream events" in new TestScope {
+      val streamId = s"java-publish-$randomUuid"
+      await_(connection.writeEvents(streamId, null, events, null))
+      val publisher = connection.streamPublisher(streamId, null, false, null, false)
+      Source(publisher)
+        .map(_.data)
+        .runWith(TestSink.probe[EventData])
+        .request(1)
+        .expectNext(eventData)
+        .expectComplete()
+    }
+
+    "publish all streams" in new TestScope {
+      val publisher = connection.allStreamsPublisher(Position.First, false, null, true)
+      val probe = Source(publisher)
+        .runWith(TestSink.probe[IndexedEvent])
+        .request(10)
+
+      probe.expectNext()
+      probe.expectNext()
+      probe.expectNext()
+    }
   }
 
   private trait TestScope extends ActorScope {
+    implicit val materializer = ActorMaterializer()
     val connection: EsConnection = new EsConnectionImpl(eventstore.EsConnection(system))
     val eventData = newEventData
     val events = List(eventData).asJava
