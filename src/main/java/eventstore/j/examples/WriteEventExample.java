@@ -45,7 +45,7 @@ public class WriteEventExample {
             } else
                 unhandled(message);
 
-            context().system().shutdown();
+            context().system().terminate();
         }
     }
 }
