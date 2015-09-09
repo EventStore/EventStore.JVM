@@ -1,13 +1,14 @@
 package eventstore
 package tcp
 
-import akka.util.{ ByteIterator, ByteStringBuilder }
+import akka.util.{ByteIterator, ByteStringBuilder}
 import eventstore.ReadDirection._
 import eventstore.tcp.EventStoreFormats._
-import eventstore.util.{ BytesReader, BytesWriter }
+import eventstore.util.{BytesReader, BytesWriter}
+import eventstore.{PersistentSubscription => Ps}
 
 import scala.util.control.NonFatal
-import scala.util.{ Failure, Try }
+import scala.util.{Failure, Try}
 
 object MarkerByte {
   type Reader = ByteIterator => Try[In]
@@ -58,9 +59,12 @@ object MarkerByte {
     0xB7 -> readerTry[ReadAllEventsCompleted](ReadAllEventsForwardCompletedReader),
     0xB9 -> readerTry[ReadAllEventsCompleted](ReadAllEventsBackwardCompletedReader),
 
-    0xC9 -> readerTry[PersistentSubscription.CreateCompleted.type],
-    0xCB -> readerTry[PersistentSubscription.DeleteCompleted.type],
-    0xCF -> readerTry[PersistentSubscription.UpdateCompleted.type],
+    0xC6 -> reader[Ps.Connected],
+    0xC7 -> reader[Ps.EventAppeared],
+
+    0xC9 -> readerTry[Ps.CreateCompleted.type],
+    0xCB -> readerTry[Ps.DeleteCompleted.type],
+    0xCF -> readerTry[Ps.UpdateCompleted.type],
 
     0xC1 -> reader[SubscribeCompleted],
     0xC2 -> reader[StreamEventAppeared],
@@ -118,9 +122,14 @@ object MarkerByte {
       case Backward => writer(0xB8, x)
     }
 
-    case x: PersistentSubscription.Create => writer(0xC8, x)
-    case x: PersistentSubscription.Delete => writer(0xCA, x)
-    case x: PersistentSubscription.Update => writer(0xCE, x)
+    case x: Ps.Connect => writer(0xC5, x)
+
+    case x: Ps.Ack => writer(0xCC, x)
+    case x: Ps.Nak => writer(0xCD, x)
+
+    case x: Ps.Create => writer(0xC8, x)
+    case x: Ps.Delete => writer(0xCA, x)
+    case x: Ps.Update => writer(0xCE, x)
 
     case x: SubscribeTo                   => writer(0xC0, x)
     case Unsubscribe                      => writer(0xC3, Unsubscribe)

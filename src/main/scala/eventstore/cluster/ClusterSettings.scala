@@ -17,6 +17,7 @@ import scala.concurrent.duration._
  * @param discoveryInterval The interval at which to keep discovering cluster
  * @param gossipTimeout Timeout for cluster gossip.
  */
+@SerialVersionUID(1L)
 case class ClusterSettings(
     gossipSeedsOrDns:        GossipSeedsOrDns = GossipSeedsOrDns.GossipSeeds("127.0.0.1" :: 2113),
     dnsLookupTimeout:        FiniteDuration   = 2.seconds,
@@ -87,6 +88,7 @@ object GossipSeedsOrDns {
    * @param clusterDns The DNS name to use for discovering endpoints.
    * @param externalGossipPort The well-known endpoint on which cluster managers are running.
    */
+  @SerialVersionUID(1L)
   case class ClusterDns(
       clusterDns:         String = "localhost",
       externalGossipPort: Int    = 30778
@@ -101,6 +103,7 @@ object GossipSeedsOrDns {
    *
    * @param gossipSeeds Endpoints for seeding gossip.
    */
+  @SerialVersionUID(1L)
   case class GossipSeeds(gossipSeeds: List[InetSocketAddress]) extends GossipSeedsOrDns {
     require(gossipSeeds.nonEmpty, s"gossipSeeds must be non empty")
   }

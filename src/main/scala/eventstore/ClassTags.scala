@@ -1,5 +1,6 @@
 package eventstore
 
+import eventstore.{PersistentSubscription => Ps}
 import scala.reflect.ClassTag
 
 sealed trait ClassTags[O, I] {
@@ -21,8 +22,8 @@ object ClassTags {
   implicit object ReadStreamEventsTag extends AbstractTag[ReadStreamEvents, ReadStreamEventsCompleted]
   implicit object ReadAllEventsTag extends AbstractTag[ReadAllEvents, ReadAllEventsCompleted]
   implicit object SubscribeToTag extends AbstractTag[SubscribeTo, SubscribeCompleted]
-  implicit object CreatePersistentSubscriptionTag extends AbstractTag[PersistentSubscription.Create, PersistentSubscription.CreateCompleted.type]
-  implicit object UpdatePersistentSubscriptionTag extends AbstractTag[PersistentSubscription.Update, PersistentSubscription.UpdateCompleted.type]
-  implicit object DeletePersistentSubscriptionTag extends AbstractTag[PersistentSubscription.Delete, PersistentSubscription.DeleteCompleted.type]
+  implicit object CreatePersistentSubscriptionTag extends AbstractTag[Ps.Create, Ps.CreateCompleted.type]
+  implicit object UpdatePersistentSubscriptionTag extends AbstractTag[Ps.Update, Ps.UpdateCompleted.type]
+  implicit object DeletePersistentSubscriptionTag extends AbstractTag[Ps.Delete, Ps.DeleteCompleted.type]
   implicit object InOutTag extends AbstractTag[In, Out]
 }

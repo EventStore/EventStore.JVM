@@ -6,34 +6,34 @@ import scala.util.control.NoStackTrace
 
 trait SystemError extends RuntimeException with NoStackTrace with Serializable
 
-case object OperationTimedOut extends SystemError
+@SerialVersionUID(1L) case object OperationTimedOut extends SystemError
 
 sealed trait ServerError extends SystemError
 
-case object BadRequest extends ServerError
+@SerialVersionUID(1L) case object BadRequest extends ServerError
 
-case object NotAuthenticated extends ServerError
+@SerialVersionUID(1L) case object NotAuthenticated extends ServerError
 
 sealed trait OperationError extends ServerError
 
 object OperationError {
-  case object PrepareTimeout extends OperationError
-  case object CommitTimeout extends OperationError
-  case object ForwardTimeout extends OperationError
-  case object WrongExpectedVersion extends OperationError
-  case object StreamDeleted extends OperationError
-  case object InvalidTransaction extends OperationError
-  case object AccessDenied extends OperationError
+  @SerialVersionUID(1L) case object PrepareTimeout extends OperationError
+  @SerialVersionUID(1L) case object CommitTimeout extends OperationError
+  @SerialVersionUID(1L) case object ForwardTimeout extends OperationError
+  @SerialVersionUID(1L) case object WrongExpectedVersion extends OperationError
+  @SerialVersionUID(1L) case object StreamDeleted extends OperationError
+  @SerialVersionUID(1L) case object InvalidTransaction extends OperationError
+  @SerialVersionUID(1L) case object AccessDenied extends OperationError
 }
 
 sealed trait ReadEventError extends ServerError
 
 object ReadEventError {
-  case object EventNotFound extends ReadEventError
-  case object StreamNotFound extends ReadEventError
-  case object StreamDeleted extends ReadEventError
-  case object AccessDenied extends ReadEventError
-  case class Error(message: Option[String]) extends ReadEventError {
+  @SerialVersionUID(1L) case object EventNotFound extends ReadEventError
+  @SerialVersionUID(1L) case object StreamNotFound extends ReadEventError
+  @SerialVersionUID(1L) case object StreamDeleted extends ReadEventError
+  @SerialVersionUID(1L) case object AccessDenied extends ReadEventError
+  @SerialVersionUID(1L) case class Error(message: Option[String]) extends ReadEventError {
     override def toString = s"ReadEventError($message)"
   }
 }
@@ -41,10 +41,10 @@ object ReadEventError {
 sealed trait ReadStreamEventsError extends ServerError
 
 object ReadStreamEventsError {
-  case object StreamNotFound extends ReadStreamEventsError
-  case object StreamDeleted extends ReadStreamEventsError
-  case object AccessDenied extends ReadStreamEventsError
-  case class Error(message: Option[String]) extends ReadStreamEventsError {
+  @SerialVersionUID(1L) case object StreamNotFound extends ReadStreamEventsError
+  @SerialVersionUID(1L) case object StreamDeleted extends ReadStreamEventsError
+  @SerialVersionUID(1L) case object AccessDenied extends ReadStreamEventsError
+  @SerialVersionUID(1L) case class Error(message: Option[String]) extends ReadStreamEventsError {
     override def toString = s"ReadStreamEventsError($message)"
   }
 }
@@ -52,24 +52,24 @@ object ReadStreamEventsError {
 sealed trait ReadAllEventsError extends ServerError
 
 object ReadAllEventsError {
-  case object AccessDenied extends ReadAllEventsError
-  case class Error(message: Option[String]) extends ReadAllEventsError {
+  @SerialVersionUID(1L) case object AccessDenied extends ReadAllEventsError
+  @SerialVersionUID(1L) case class Error(message: Option[String]) extends ReadAllEventsError {
     override def toString = s"ReadAllEventsError($message)"
   }
 }
 
-case class NotHandled(reason: NotHandled.Reason) extends ServerError {
+@SerialVersionUID(1L) case class NotHandled(reason: NotHandled.Reason) extends ServerError {
   override def toString = s"NotHandled($reason)"
 }
 
 object NotHandled {
   sealed trait Reason
 
-  case object NotReady extends Reason
-  case object TooBusy extends Reason
-  case class NotMaster(masterInfo: MasterInfo) extends Reason
+  @SerialVersionUID(1L) case object NotReady extends Reason
+  @SerialVersionUID(1L) case object TooBusy extends Reason
+  @SerialVersionUID(1L) case class NotMaster(masterInfo: MasterInfo) extends Reason
 
-  case class MasterInfo(
+  @SerialVersionUID(1L) case class MasterInfo(
     tcpAddress:       InetSocketAddress,
     httpAddress:      InetSocketAddress,
     tcpSecureAddress: Option[InetSocketAddress] = None
@@ -79,25 +79,25 @@ object NotHandled {
 sealed trait SubscriptionDropped extends ServerError
 
 object SubscriptionDropped {
-  case object AccessDenied extends SubscriptionDropped
-  case object NotFound extends SubscriptionDropped
-  case object PersistentSubscriptionDeleted extends SubscriptionDropped
-  case object SubscriberMaxCountReached extends SubscriptionDropped
+  @SerialVersionUID(1L) case object AccessDenied extends SubscriptionDropped
+  @SerialVersionUID(1L) case object NotFound extends SubscriptionDropped
+  @SerialVersionUID(1L) case object PersistentSubscriptionDeleted extends SubscriptionDropped
+  @SerialVersionUID(1L) case object SubscriberMaxCountReached extends SubscriptionDropped
 }
 
 sealed trait ScavengeError extends SystemError
 
 object ScavengeError {
-  case object InProgress extends ScavengeError
-  case class Failed(error: Option[String]) extends ScavengeError
+  @SerialVersionUID(1L) case object InProgress extends ScavengeError
+  @SerialVersionUID(1L) case class Failed(error: Option[String]) extends ScavengeError
 }
 
 sealed trait CreatePersistentSubscriptionError extends SystemError
 
 object CreatePersistentSubscriptionError {
-  case object AccessDenied extends CreatePersistentSubscriptionError
-  case object AlreadyExists extends CreatePersistentSubscriptionError
-  case class Error(message: Option[String]) extends CreatePersistentSubscriptionError {
+  @SerialVersionUID(1L) case object AccessDenied extends CreatePersistentSubscriptionError
+  @SerialVersionUID(1L) case object AlreadyExists extends CreatePersistentSubscriptionError
+  @SerialVersionUID(1L) case class Error(message: Option[String]) extends CreatePersistentSubscriptionError {
     override def toString = s"CreatePersistentSubscriptionError($message)"
   }
 }
@@ -105,9 +105,9 @@ object CreatePersistentSubscriptionError {
 sealed trait UpdatePersistentSubscriptionError extends SystemError
 
 object UpdatePersistentSubscriptionError {
-  case object AccessDenied extends UpdatePersistentSubscriptionError
-  case object DoesNotExist extends UpdatePersistentSubscriptionError
-  case class Error(message: Option[String]) extends UpdatePersistentSubscriptionError {
+  @SerialVersionUID(1L) case object AccessDenied extends UpdatePersistentSubscriptionError
+  @SerialVersionUID(1L) case object DoesNotExist extends UpdatePersistentSubscriptionError
+  @SerialVersionUID(1L) case class Error(message: Option[String]) extends UpdatePersistentSubscriptionError {
     override def toString = s"UpdatePersistentSubscriptionError($message)"
   }
 }
@@ -115,9 +115,9 @@ object UpdatePersistentSubscriptionError {
 sealed trait DeletePersistentSubscriptionError extends SystemError
 
 object DeletePersistentSubscriptionError {
-  case object AccessDenied extends DeletePersistentSubscriptionError
-  case object DoesNotExist extends DeletePersistentSubscriptionError
-  case class Error(message: Option[String]) extends DeletePersistentSubscriptionError {
+  @SerialVersionUID(1L) case object AccessDenied extends DeletePersistentSubscriptionError
+  @SerialVersionUID(1L) case object DoesNotExist extends DeletePersistentSubscriptionError
+  @SerialVersionUID(1L) case class Error(message: Option[String]) extends DeletePersistentSubscriptionError {
     override def toString = s"DeletePersistentSubscriptionError($message)"
   }
 }

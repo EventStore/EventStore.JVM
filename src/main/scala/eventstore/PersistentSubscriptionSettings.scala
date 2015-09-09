@@ -24,7 +24,7 @@ import scala.concurrent.duration._
  * @param maxSubscriberCount The maximum number of subscribers allowed.
  * @param consumerStrategy The [[ConsumerStrategy]] to use for distributing events to client consumers.
  */
-case class PersistentSubscriptionSettings(
+@SerialVersionUID(1L) case class PersistentSubscriptionSettings(
   resolveLinkTos: Boolean = false,
   startFrom: EventNumber = EventNumber.Last,
   extraStatistics: Boolean = false,

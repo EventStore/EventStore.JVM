@@ -29,25 +29,26 @@ private[eventstore] object Operation {
     def simple(x: Inspection) = retryable(SimpleOperation(pack, client, x))
 
     pack.message match {
-      case x: WriteEvents                   => Some(simple(WriteEventsInspection(x)))
-      case x: DeleteStream                  => Some(simple(DeleteStreamInspection(x)))
-      case x: TransactionStart              => Some(simple(TransactionStartInspection(x)))
-      case x: TransactionWrite              => Some(simple(TransactionWriteInspection(x)))
-      case x: TransactionCommit             => Some(simple(TransactionCommitInspection(x)))
-      case x: ReadEvent                     => Some(simple(ReadEventInspection(x)))
-      case x: ReadStreamEvents              => Some(simple(ReadStreamEventsInspection(x)))
-      case x: ReadAllEvents                 => Some(simple(ReadAllEventsInspection(x)))
-      case x: SubscribeTo                   => Some(retryable(SubscriptionOperation(x, pack, client, connected)))
-      case Unsubscribe                      => Some(simple(UnsubscribeInspection))
-      case ScavengeDatabase                 => Some(simple(ScavengeDatabaseInspection))
-      case Authenticate                     => Some(simple(AuthenticateInspection))
-      case Ping                             => Some(simple(PingInspection))
-      case Pong                             => None
-      case HeartbeatRequest                 => Some(simple(HeartbeatRequestInspection))
-      case HeartbeatResponse                => None
-      case x: PersistentSubscription.Create => Some(simple(CreatePersistentSubscriptionInspection(x)))
-      case x: PersistentSubscription.Update => Some(simple(UpdatePersistentSubscriptionInspection(x)))
-      case x: PersistentSubscription.Delete => Some(simple(DeletePersistentSubscriptionInspection(x)))
+      case x: WriteEvents       => Some(simple(WriteEventsInspection(x)))
+      case x: DeleteStream      => Some(simple(DeleteStreamInspection(x)))
+      case x: TransactionStart  => Some(simple(TransactionStartInspection(x)))
+      case x: TransactionWrite  => Some(simple(TransactionWriteInspection(x)))
+      case x: TransactionCommit => Some(simple(TransactionCommitInspection(x)))
+      case x: ReadEvent         => Some(simple(ReadEventInspection(x)))
+      case x: ReadStreamEvents  => Some(simple(ReadStreamEventsInspection(x)))
+      case x: ReadAllEvents     => Some(simple(ReadAllEventsInspection(x)))
+      case x: SubscribeTo       => Some(retryable(SubscriptionOperation(x, pack, client, connected)))
+      case Unsubscribe          => Some(simple(UnsubscribeInspection))
+      case ScavengeDatabase     => Some(simple(ScavengeDatabaseInspection))
+      case Authenticate         => Some(simple(AuthenticateInspection))
+      case Ping                 => Some(simple(PingInspection))
+      case Pong                 => None
+      case HeartbeatRequest     => Some(simple(HeartbeatRequestInspection))
+      case HeartbeatResponse    => None
+      case x: Ps.Connect        => Some(retryable(PersistentSubscriptionOperation(x, pack, client, connected)))
+      case x: Ps.Create         => Some(simple(CreatePersistentSubscriptionInspection(x)))
+      case x: Ps.Update         => Some(simple(UpdatePersistentSubscriptionInspection(x)))
+      case x: Ps.Delete         => Some(simple(DeletePersistentSubscriptionInspection(x)))
     }
   }
 }

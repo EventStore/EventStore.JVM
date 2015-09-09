@@ -15,17 +15,17 @@ object ConsumerStrategy {
   /**
    * Distributes events to a single client until it is full. Then round robin to the next client.
    */
-  case object DispatchToSingle extends ConsumerStrategy
+  @SerialVersionUID(1L) case object DispatchToSingle extends ConsumerStrategy
 
   /**
    * Distribute events to each client in a round robin fashion.
    */
-  case object RoundRobin extends ConsumerStrategy
+  @SerialVersionUID(1L) case object RoundRobin extends ConsumerStrategy
 
   /**
    * Unknown, not predefined strategy
    */
-  case class Custom private[eventstore] (value: String) extends ConsumerStrategy {
+  @SerialVersionUID(1L) case class Custom private[eventstore] (value: String) extends ConsumerStrategy {
     require(value != null, "value must not be null")
     require(value.nonEmpty, "value must not be empty")
 

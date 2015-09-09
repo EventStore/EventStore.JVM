@@ -13,12 +13,12 @@ object ContentType {
 
   sealed trait Known extends ContentType
 
-  case object Binary extends Known {
+  @SerialVersionUID(1L) case object Binary extends Known {
     def value = 0
     override def toString = "ContentType.Binary"
   }
 
-  case object Json extends Known {
+  @SerialVersionUID(1L) case object Json extends Known {
     def value = 1
     override def toString = "ContentType.Json"
   }

@@ -65,7 +65,7 @@ trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
   }
 }
 
-case object LiveProcessingStarted {
+@SerialVersionUID(1L) case object LiveProcessingStarted {
   /**
    * Java API
    */

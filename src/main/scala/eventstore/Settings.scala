@@ -29,6 +29,7 @@ import com.typesafe.config.{ Config, ConfigFactory }
  * @param serializationParallelism The number of serialization/deserialization functions to be run in parallel
  * @param serializationOrdered Serialization done asynchronously and these futures may complete in any order, but results will be used with preserved order if set to true
  */
+@SerialVersionUID(1L)
 case class Settings(
     address:                  InetSocketAddress       = "127.0.0.1" :: 1113,
     connectionTimeout:        FiniteDuration          = 1.second,
