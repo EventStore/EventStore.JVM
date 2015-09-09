@@ -240,13 +240,13 @@ class EsConnectionSpec extends util.ActorSpec {
 
     "create persistent subscription" in new PsScope {
       for {
-        stream <- null :: streams
+        stream <- streams
         uc <- userCredentials
         settings <- settings
       } {
         val future = connection.createPersistentSubscription(stream, groupName, settings, uc)
         val expectedSettings = Option(settings) getOrElse PersistentSubscriptionSettings.Default
-        expect(PersistentSubscription.create(EventStream(stream), groupName, expectedSettings), uc)
+        expect(PersistentSubscription.create(EventStream.Id(stream), groupName, expectedSettings), uc)
         lastSender ! PersistentSubscription.CreateCompleted
         future.await_
       }
@@ -254,13 +254,13 @@ class EsConnectionSpec extends util.ActorSpec {
 
     "update persistent subscription" in new PsScope {
       for {
-        stream <- null :: streams
+        stream <- streams
         uc <- userCredentials
         settings <- settings
       } {
         val future = connection.updatePersistentSubscription(stream, groupName, settings, uc)
         val expectedSettings = Option(settings) getOrElse PersistentSubscriptionSettings.Default
-        expect(PersistentSubscription.update(EventStream(stream), groupName, expectedSettings), uc)
+        expect(PersistentSubscription.update(EventStream.Id(stream), groupName, expectedSettings), uc)
         lastSender ! PersistentSubscription.UpdateCompleted
         future.await_
       }
@@ -268,11 +268,11 @@ class EsConnectionSpec extends util.ActorSpec {
 
     "delete persistent subscription" in new PsScope {
       for {
-        stream <- null :: streams
+        stream <- streams
         uc <- userCredentials
       } {
         val future = connection.deletePersistentSubscription(stream, groupName, uc)
-        expect(PersistentSubscription.delete(EventStream(stream), groupName), uc)
+        expect(PersistentSubscription.delete(EventStream.Id(stream), groupName), uc)
         lastSender ! PersistentSubscription.DeleteCompleted
         future.await_
       }
@@ -336,6 +336,7 @@ class EsConnectionSpec extends util.ActorSpec {
     } yield PersistentSubscriptionSettings(
       resolveLinkTos = resolveLinkTos,
       startFrom = startFrom,
-      consumerStrategy = consumerStrategy))
+      consumerStrategy = consumerStrategy
+    ))
   }
 }

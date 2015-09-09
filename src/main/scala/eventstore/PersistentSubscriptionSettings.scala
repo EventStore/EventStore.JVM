@@ -25,19 +25,20 @@ import scala.concurrent.duration._
  * @param consumerStrategy The [[ConsumerStrategy]] to use for distributing events to client consumers.
  */
 @SerialVersionUID(1L) case class PersistentSubscriptionSettings(
-  resolveLinkTos: Boolean = false,
-  startFrom: EventNumber = EventNumber.Last,
-  extraStatistics: Boolean = false,
-  messageTimeout: FiniteDuration = 30.seconds,
-  maxRetryCount: Int = 500,
-  liveBufferSize: Int = 500,
-  readBatchSize: Int = 10,
-  historyBufferSize: Int = 20,
-  checkPointAfter: FiniteDuration = 2.seconds,
-  minCheckPointCount: Int = 10,
-  maxCheckPointCount: Int = 1000,
-  maxSubscriberCount: Int = 0,
-  consumerStrategy: ConsumerStrategy = ConsumerStrategy.RoundRobin)
+  resolveLinkTos:     Boolean          = false,
+  startFrom:          EventNumber      = EventNumber.Last,
+  extraStatistics:    Boolean          = false,
+  messageTimeout:     FiniteDuration   = 30.seconds,
+  maxRetryCount:      Int              = 500,
+  liveBufferSize:     Int              = 500,
+  readBatchSize:      Int              = 10,
+  historyBufferSize:  Int              = 20,
+  checkPointAfter:    FiniteDuration   = 2.seconds,
+  minCheckPointCount: Int              = 10,
+  maxCheckPointCount: Int              = 1000,
+  maxSubscriberCount: Int              = 0,
+  consumerStrategy:   ConsumerStrategy = ConsumerStrategy.RoundRobin
+)
 
 object PersistentSubscriptionSettings {
   val Default: PersistentSubscriptionSettings = PersistentSubscriptionSettings(ConfigFactory.load())
@@ -69,7 +70,8 @@ object PersistentSubscriptionSettings {
         minCheckPointCount = conf getInt "min-checkpoint-count",
         maxCheckPointCount = conf getInt "max-checkpoint-count",
         maxSubscriberCount = conf getInt "max-subscriber-count",
-        consumerStrategy = ConsumerStrategy(conf getString "consumer-strategy"))
+        consumerStrategy = ConsumerStrategy(conf getString "consumer-strategy")
+      )
     }
 
     apply(conf getConfig "eventstore.persistent-subscription")

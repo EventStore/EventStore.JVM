@@ -2,6 +2,7 @@ package eventstore
 package operations
 
 import eventstore.tcp.{ Client, PackOut }
+import eventstore.{ PersistentSubscription => Ps }
 
 import scala.util.{ Failure, Try }
 
@@ -49,6 +50,8 @@ private[eventstore] object Operation {
       case x: Ps.Create         => Some(simple(CreatePersistentSubscriptionInspection(x)))
       case x: Ps.Update         => Some(simple(UpdatePersistentSubscriptionInspection(x)))
       case x: Ps.Delete         => Some(simple(DeletePersistentSubscriptionInspection(x)))
+      case x: Ps.Ack            => ???
+      case x: Ps.Nak            => ???
     }
   }
 }

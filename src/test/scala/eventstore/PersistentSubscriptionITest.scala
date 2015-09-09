@@ -39,13 +39,13 @@ class PersistentSubscriptionITest extends TestConnection {
       actor ! Delete(streamId, groupName)
       expectMsg(DeleteCompleted)
     }
-    
+
     "connect to stream" in new PsScope {
       appendEventToCreateStream()
       val settings = PersistentSubscriptionSettings(startFrom = EventNumber.First)
       actor ! Create(streamId, groupName, settings)
       expectMsg(CreateCompleted)
-      
+
       actor ! Connect(streamId, groupName)
       val connected = expectMsgType[Connected]
       connected.subscriptionId shouldEqual s"${streamId.streamId}::$groupName"
@@ -53,18 +53,29 @@ class PersistentSubscriptionITest extends TestConnection {
       expectNoMsg(1.seconds)
     }
 
-    "connect to all" in new PsScope {
-      val settings = PersistentSubscriptionSettings(startFrom = EventNumber.First)
-      actor ! Create(EventStream.All, groupName, settings)
+    "connect to system stream" in new PsScope {
+      val stream = EventStream.System.`$persistentSubscriptionConfig`
+      actor ! Create(stream, groupName)
       expectMsg(CreateCompleted)
 
-      actor ! Connect(EventStream.All, groupName)
+      actor ! Connect(stream, groupName)
       val connected = expectMsgType[Connected]
-      connected.subscriptionId shouldEqual s"${streamId.streamId}::$groupName"
+      connected.subscriptionId shouldEqual s"${stream.streamId}::$groupName"
+      expectNoMsg(1.seconds)
+    }
+
+    "connect to meta stream" in new PsScope {
+      val stream = EventStream.Metadata("persistentSubscriptionConfig")
+      actor ! Create(stream, groupName)
+      expectMsg(CreateCompleted)
+
+      actor ! Connect(stream, groupName)
+      val connected = expectMsgType[Connected]
+      connected.subscriptionId shouldEqual s"${stream.streamId}::$groupName"
       expectNoMsg(1.seconds)
     }
   }
-  
+
   private trait PsScope extends TestConnectionScope {
     val groupName = randomUuid.toString
   }

@@ -133,6 +133,7 @@ class PersistentSubscriptionSettingsBuilder
       minCheckPointCount = _minCheckPointCount,
       maxCheckPointCount = _maxCheckPointCount,
       maxSubscriberCount = _maxSubscriberCount,
-      consumerStrategy = _consumerStrategy)
+      consumerStrategy = _consumerStrategy
+    )
   }
 }

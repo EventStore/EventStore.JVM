@@ -3,10 +3,10 @@ package tcp
 
 import java.util.concurrent.TimeUnit
 
-import eventstore.ReadDirection.{Backward, Forward}
-import eventstore.proto.{EventStoreMessages => j, _}
-import eventstore.util.{DefaultFormats, ToCoarsest}
-import eventstore.{PersistentSubscription => Ps}
+import eventstore.ReadDirection.{ Backward, Forward }
+import eventstore.proto.{ EventStoreMessages => j, _ }
+import eventstore.util.{ DefaultFormats, ToCoarsest }
+import eventstore.{ PersistentSubscription => Ps }
 import org.joda.time.DateTime
 
 import scala.collection.JavaConverters._
@@ -62,7 +62,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
 
   trait ProtoOperationReader[T, P <: OperationMessage] extends ProtoTryReader[T, P] {
     def fromProto(x: P): Try[T] = {
-      import eventstore.{OperationError => E}
+      import eventstore.{ OperationError => E }
       import j.OperationResult._
 
       x.getResult() match {
@@ -248,7 +248,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
     def parse = j.ReadEventCompleted.parseFrom
 
     def fromProto(x: j.ReadEventCompleted) = {
-      import eventstore.{ReadEventError => E}
+      import eventstore.{ ReadEventError => E }
       import j.ReadEventCompleted.ReadEventResult._
 
       def failure(x: ReadEventError) = this.failure(x)
@@ -281,7 +281,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
     def parse = j.ReadStreamEventsCompleted.parseFrom
 
     def fromProto(x: j.ReadStreamEventsCompleted) = {
-      import eventstore.{ReadStreamEventsError => E}
+      import eventstore.{ ReadStreamEventsError => E }
       import j.ReadStreamEventsCompleted.ReadStreamResult._
 
       def failure(x: ReadStreamEventsError) = this.failure(x)
@@ -331,7 +331,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
     def parse = j.ReadAllEventsCompleted.parseFrom
 
     def fromProto(x: j.ReadAllEventsCompleted) = {
-      import eventstore.{ReadAllEventsError => E}
+      import eventstore.{ ReadAllEventsError => E }
       import j.ReadAllEventsCompleted.ReadAllResult._
 
       def failure(x: ReadAllEventsError) = this.failure(x)
@@ -366,8 +366,6 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
         case x                           => (false, x.toString)
       }
 
-      println(s"startFrom: ${EventNumberConverter.from(settings.startFrom)}")
-
       val builder = j.CreatePersistentSubscription.newBuilder()
       builder.setSubscriptionGroupName(x.groupName)
       builder.setEventStreamId(x.streamId.streamId)
@@ -395,7 +393,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
     def parse = j.CreatePersistentSubscriptionCompleted.parseFrom
 
     def fromProto(x: j.CreatePersistentSubscriptionCompleted) = {
-      import eventstore.{CreatePersistentSubscriptionError => E}
+      import eventstore.{ CreatePersistentSubscriptionError => E }
       import j.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult._
 
       def failure(x: E) = this.failure(x)
@@ -423,7 +421,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
     def parse = j.DeletePersistentSubscriptionCompleted.parseFrom
 
     def fromProto(x: j.DeletePersistentSubscriptionCompleted) = {
-      import eventstore.{DeletePersistentSubscriptionError => E}
+      import eventstore.{ DeletePersistentSubscriptionError => E }
       import j.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult._
 
       def failure(x: E) = this.failure(x)
@@ -471,7 +469,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
     def parse = j.UpdatePersistentSubscriptionCompleted.parseFrom
 
     def fromProto(x: j.UpdatePersistentSubscriptionCompleted) = {
-      import eventstore.{UpdatePersistentSubscriptionError => E}
+      import eventstore.{ UpdatePersistentSubscriptionError => E }
       import j.UpdatePersistentSubscriptionCompleted.UpdatePersistentSubscriptionResult._
 
       def failure(x: E) = this.failure(x)
@@ -495,7 +493,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
   }
 
   implicit object PersistentSubscriptionConnectedReader
-    extends ProtoReader[Ps.Connected, j.PersistentSubscriptionConfirmation] {
+      extends ProtoReader[Ps.Connected, j.PersistentSubscriptionConfirmation] {
 
     def parse = j.PersistentSubscriptionConfirmation.parseFrom
 
@@ -509,7 +507,8 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
       Ps.Connected(
         subscriptionId = x.getSubscriptionId,
         lastCommit = x.getLastCommitPosition,
-        lastEventNumber = eventNumber)
+        lastEventNumber = eventNumber
+      )
     }
   }
 
@@ -539,13 +538,13 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
       builder.setSubscriptionId(x.subscriptionId)
       builder.addAllProcessedEventIds(x.eventIds.map(protoByteString).toIterable.asJava)
       builder.setAction(action)
-      for {message <- x.message} builder.setMessage(message)
+      for { message <- x.message } builder.setMessage(message)
       builder
     }
   }
 
   implicit object PersistentSubscriptionEventAppearedReader
-    extends ProtoReader[Ps.EventAppeared, j.PersistentSubscriptionStreamEventAppeared] {
+      extends ProtoReader[Ps.EventAppeared, j.PersistentSubscriptionStreamEventAppeared] {
 
     def parse = j.PersistentSubscriptionStreamEventAppeared.parseFrom
 
@@ -586,7 +585,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
     def parse = j.SubscriptionDropped.parseFrom
 
     def fromProto(x: j.SubscriptionDropped) = {
-      import j.SubscriptionDropped.{SubscriptionDropReason => P}
+      import j.SubscriptionDropped.{ SubscriptionDropReason => P }
 
       def unsubscribed = Try(Unsubscribed)
       if (!x.hasReason) unsubscribed
@@ -607,7 +606,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
     def parse = j.ScavengeDatabaseCompleted.parseFrom
 
     def fromProto(x: j.ScavengeDatabaseCompleted) = {
-      import eventstore.{ScavengeError => E}
+      import eventstore.{ ScavengeError => E }
 
       def scavengeDatabaseCompleted = ScavengeDatabaseCompleted(
         totalTime = ToCoarsest(FiniteDuration(x.getTotalTimeMs.toLong, TimeUnit.MILLISECONDS)),

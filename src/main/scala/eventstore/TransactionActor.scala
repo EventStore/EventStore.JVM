@@ -32,8 +32,10 @@ object TransactionActor {
   @SerialVersionUID(1L) case object WriteCompleted
 
   @SerialVersionUID(1L) case object Commit extends Command
-  @SerialVersionUID(1L) case class CommitCompleted(range: Option[EventNumber.Range] = None,
-    position: Option[Position.Exact] = None)
+  @SerialVersionUID(1L) case class CommitCompleted(
+    range:    Option[EventNumber.Range] = None,
+    position: Option[Position.Exact]    = None
+  )
 
   /**
    * Java API

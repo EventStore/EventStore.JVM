@@ -534,32 +534,6 @@ public interface EsConnection {
       int bufferSize = 10,
       bool autoAck = true);
 
-  /*
-  /// <summary>
-  /// Subscribes a persistent subscription (competing consumer) to all events in the event store
-  /// </summary>
-  /// <param name="groupName">The subscription group to connect to</param>
-  /// <param name="eventAppeared">An action invoked when an event appears</param>
-  /// <param name="subscriptionDropped">An action invoked if the subscription is dropped</param>
-  /// <param name="userCredentials">User credentials to use for the operation</param>
-  /// <param name="bufferSize">The buffer size to use for the persistent subscription</param>
-  /// <param name="autoAck">Whether the subscription should automatically acknowledge messages processed.
-  /// If not set the receiver is required to explicitly acknowledge messages through the subscription.</param>
-  /// <remarks>This will connect you to a persistent subscription group for all events. The subscription group
-  /// must first be created with CreatePersistentSubscriptionAsync many connections
-  /// can connect to the same group and they will be treated as competing consumers within the group.
-  /// If one connection dies work will be balanced across the rest of the consumers in the group. If
-  /// you attempt to connect to a group that does not exist you will be given an exception.
-  /// </remarks>
-  /// <returns>An <see cref="EventStoreSubscription"/> representing the subscription</returns>
-  EventStorePersistentSubscription ConnectToPersistentSubscriptionForAll(
-      string groupName,
-      Action<EventStorePersistentSubscription, ResolvedEvent> eventAppeared,
-      Action<EventStorePersistentSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
-      UserCredentials userCredentials = null,
-      int? bufferSize = null,
-      bool autoAck = true);
-
 */
 
 
@@ -581,9 +555,9 @@ public interface EsConnection {
   /**
    * Asynchronously update a persistent subscription group on a stream
    *
-   * @param stream The name of the stream to create the persistent subscription on
-   * @param groupName The name of the group to create
-   * @param settings The {@link PersistentSubscriptionSettings} for the subscription, or <code>null</code> for defaults
+   * @param stream      The name of the stream to create the persistent subscription on
+   * @param groupName   The name of the group to create
+   * @param settings    The {@link PersistentSubscriptionSettings} for the subscription, or <code>null</code> for defaults
    * @param credentials The credentials to be used for this operation, or <code>null</code> for default
    * @return A {@link scala.concurrent.Future} representing the operation
    */
@@ -596,8 +570,8 @@ public interface EsConnection {
   /**
    * Asynchronously delete a persistent subscription group on a stream
    *
-   * @param stream The name of the stream to create the persistent subscription on
-   * @param groupName The name of the group to create
+   * @param stream      The name of the stream to create the persistent subscription on
+   * @param groupName   The name of the group to create
    * @param credentials The credentials to be used for this operation, or <code>null</code> for default
    * @return A {@link scala.concurrent.Future} representing the operation
    */

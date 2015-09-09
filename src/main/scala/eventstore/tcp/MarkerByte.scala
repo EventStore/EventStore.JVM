@@ -1,14 +1,14 @@
 package eventstore
 package tcp
 
-import akka.util.{ByteIterator, ByteStringBuilder}
+import akka.util.{ ByteIterator, ByteStringBuilder }
 import eventstore.ReadDirection._
 import eventstore.tcp.EventStoreFormats._
-import eventstore.util.{BytesReader, BytesWriter}
-import eventstore.{PersistentSubscription => Ps}
+import eventstore.util.{ BytesReader, BytesWriter }
+import eventstore.{ PersistentSubscription => Ps }
 
 import scala.util.control.NonFatal
-import scala.util.{Failure, Try}
+import scala.util.{ Failure, Try }
 
 object MarkerByte {
   type Reader = ByteIterator => Try[In]
@@ -122,18 +122,16 @@ object MarkerByte {
       case Backward => writer(0xB8, x)
     }
 
-    case x: Ps.Connect => writer(0xC5, x)
+    case x: Ps.Connect    => writer(0xC5, x)
+    case x: Ps.Ack        => writer(0xCC, x)
+    case x: Ps.Nak        => writer(0xCD, x)
+    case x: Ps.Create     => writer(0xC8, x)
+    case x: Ps.Delete     => writer(0xCA, x)
+    case x: Ps.Update     => writer(0xCE, x)
 
-    case x: Ps.Ack => writer(0xCC, x)
-    case x: Ps.Nak => writer(0xCD, x)
-
-    case x: Ps.Create => writer(0xC8, x)
-    case x: Ps.Delete => writer(0xCA, x)
-    case x: Ps.Update => writer(0xCE, x)
-
-    case x: SubscribeTo                   => writer(0xC0, x)
-    case Unsubscribe                      => writer(0xC3, Unsubscribe)
-    case ScavengeDatabase                 => writer(0xD0, ScavengeDatabase)
-    case Authenticate                     => writer(0xF2, Authenticate)
+    case x: SubscribeTo   => writer(0xC0, x)
+    case Unsubscribe      => writer(0xC3, Unsubscribe)
+    case ScavengeDatabase => writer(0xD0, ScavengeDatabase)
+    case Authenticate     => writer(0xF2, Authenticate)
   }
 }

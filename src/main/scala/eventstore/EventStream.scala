@@ -88,6 +88,7 @@ object EventStream {
 
   object System {
     val `$streams`: System = System("streams")
+    val `$persistentSubscriptionConfig`: System = System("persistentSubscriptionConfig")
 
     def apply(x: UserCredentials): System = System(s"user-${x.login}")
   }

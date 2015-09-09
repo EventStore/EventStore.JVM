@@ -29,7 +29,6 @@ sealed trait InOut extends In with Out
 @SerialVersionUID(1L) case object Ping extends InOut
 @SerialVersionUID(1L) case object Pong extends InOut
 
-
 @SerialVersionUID(1L) case class WriteEvents(
   streamId:        EventStream.Id,
   events:          List[EventData],
@@ -60,7 +59,7 @@ object WriteEvents {
 ) extends In
 
 @SerialVersionUID(1L) case class DeleteStream(
-  streamId: EventStream.Id,
+  streamId:        EventStream.Id,
   expectedVersion: ExpectedVersion.Existing = ExpectedVersion.Any,
   hard:            Boolean                  = false,
   requireMaster:   Boolean                  = Settings.Default.requireMaster
@@ -69,7 +68,7 @@ object WriteEvents {
 @SerialVersionUID(1L) case class DeleteStreamCompleted(position: Option[Position.Exact] = None) extends In
 
 @SerialVersionUID(1L) case class TransactionStart(
-  streamId: EventStream.Id,
+  streamId:        EventStream.Id,
   expectedVersion: ExpectedVersion = ExpectedVersion.Any,
   requireMaster:   Boolean         = Settings.Default.requireMaster
 ) extends Out
@@ -186,27 +185,29 @@ object PersistentSubscription {
   /**
    * Java API
    */
-  def create(streamId: EventStream, groupName: String, settings: PersistentSubscriptionSettings): Create = {
+  def create(streamId: EventStream.Id, groupName: String, settings: PersistentSubscriptionSettings): Create = {
     Create(streamId, groupName, settings)
   }
 
   /**
    * Java API
    */
-  def update(streamId: EventStream, groupName: String, settings: PersistentSubscriptionSettings): Update = {
+  def update(streamId: EventStream.Id, groupName: String, settings: PersistentSubscriptionSettings): Update = {
     Update(streamId, groupName, settings)
   }
 
   /**
    * Java API
    */
-  def delete(streamId: EventStream, groupName: String): Delete = {
+  def delete(streamId: EventStream.Id, groupName: String): Delete = {
     Delete(streamId, groupName)
   }
 
   @SerialVersionUID(1L)
-  case class Create(streamId: EventStream, groupName: String,
-    settings: PersistentSubscriptionSettings = PersistentSubscriptionSettings.Default) extends Out {
+  case class Create(
+      streamId: EventStream.Id, groupName: String,
+      settings: PersistentSubscriptionSettings = PersistentSubscriptionSettings.Default
+  ) extends Out {
 
     require(groupName != null, "groupName must not be null")
     require(groupName.nonEmpty, "groupName must not be empty")
@@ -216,8 +217,11 @@ object PersistentSubscription {
   case object CreateCompleted extends In
 
   @SerialVersionUID(1L)
-  case class Update(streamId: EventStream, groupName: String,
-    settings: PersistentSubscriptionSettings = PersistentSubscriptionSettings.Default) extends Out {
+  case class Update(
+      streamId:  EventStream.Id,
+      groupName: String,
+      settings:  PersistentSubscriptionSettings = PersistentSubscriptionSettings.Default
+  ) extends Out {
 
     require(groupName != null, "groupName must not be null")
     require(groupName.nonEmpty, "groupName must not be empty")
@@ -227,7 +231,7 @@ object PersistentSubscription {
   case object UpdateCompleted extends In
 
   @SerialVersionUID(1L)
-  case class Delete(streamId: EventStream, groupName: String) extends Out {
+  case class Delete(streamId: EventStream.Id, groupName: String) extends Out {
     require(groupName != null, "groupName must not be null")
     require(groupName.nonEmpty, "groupName must not be empty")
   }
@@ -243,8 +247,12 @@ object PersistentSubscription {
   }
 
   @SerialVersionUID(1L)
-  case class Nak(subscriptionId: String, eventIds: List[Uuid], action: Nak.Action,
-    message: Option[String] = None) extends Out {
+  case class Nak(
+      subscriptionId: String,
+      eventIds:       List[Uuid],
+      action:         Nak.Action,
+      message:        Option[String] = None
+  ) extends Out {
 
     require(subscriptionId != null, "subscriptionId must not be null")
     require(subscriptionId.nonEmpty, "subscriptionId must not be empty")
@@ -262,11 +270,17 @@ object PersistentSubscription {
     }
   }
 
-  @SerialVersionUID(1L) case class Connect(streamId: EventStream, groupName: String,
-    bufferSize: Int = 10) extends Out
+  @SerialVersionUID(1L) case class Connect(
+    streamId:   EventStream.Id,
+    groupName:  String,
+    bufferSize: Int            = 10
+  ) extends Out
 
-  @SerialVersionUID(1L) case class Connected(subscriptionId: String, lastCommit: Long,
-    lastEventNumber: Option[EventNumber]) extends In
+  @SerialVersionUID(1L) case class Connected(
+    subscriptionId:  String,
+    lastCommit:      Long,
+    lastEventNumber: Option[EventNumber]
+  ) extends In
 
   @SerialVersionUID(1L) case class EventAppeared(event: Event) extends In
 }

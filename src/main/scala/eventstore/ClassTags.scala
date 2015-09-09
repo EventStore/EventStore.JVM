@@ -1,6 +1,6 @@
 package eventstore
 
-import eventstore.{PersistentSubscription => Ps}
+import eventstore.{ PersistentSubscription => Ps }
 import scala.reflect.ClassTag
 
 sealed trait ClassTags[O, I] {

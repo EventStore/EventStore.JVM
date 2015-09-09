@@ -13,8 +13,8 @@ abstract class EsException(message: String, cause: Throwable)
 }
 
 @SerialVersionUID(1L) class CannotEstablishConnectionException(message: String, cause: Throwable)
-  extends EsException(message, cause) {
-  
+    extends EsException(message, cause) {
+
   def this(message: String) = this(message, null)
 }
 
