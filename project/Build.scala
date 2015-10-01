@@ -23,7 +23,7 @@ object Build extends Build {
       Specs2.core, Specs2.mock,
       Spray.json, Spray.client,
       AkkaStream.stream, /*AkkaStream.http,*/ AkkaStream.tck, AkkaStream.testkit,
-      ReactiveStreams.streams, ReactiveStreams.tck).map(_.withSources())
+      ReactiveStreams.streams, ReactiveStreams.tck)
   )
 
   object ReactiveStreams {
