@@ -412,6 +412,25 @@ class StreamPublisherSpec extends AbstractSubscriptionActorSpec {
       actor ! Cancel
       expectTerminated(actor)
     }
+
+    "subscribe to non-existing stream" in new SubscriptionScope {
+      connection expectMsg readEvents(0)
+      actor ! Status.Failure(StreamNotFoundException(streamId))
+      connection expectMsg subscribeTo
+      actor ! subscribeCompleted(0)
+      connection expectMsg readEvents(0)
+    }
+
+    "subscribe to non-existing stream if last number passed" in new SubscriptionScope {
+      connection expectMsg readEvents(2)
+      actor ! Status.Failure(StreamNotFoundException(streamId))
+      connection expectMsg subscribeTo
+      actor ! subscribeCompleted(2)
+      actor ! streamEventAppeared(event3)
+      expectEvent(event3)
+
+      override def eventNumber = Some(EventNumber.Exact(2))
+    }
   }
 
   "StreamsPublisher finite" should {
@@ -442,16 +461,16 @@ class StreamPublisherSpec extends AbstractSubscriptionActorSpec {
       expectTerminated(actor)
     }
 
-    "subscribe to non-existing stream" in new SubscriptionScope {
+    "subscribe to non-existing stream" in new FiniteSubscriptionScope {
       connection expectMsg readEvents(0)
       actor ! Status.Failure(StreamNotFoundException(streamId))
-      connection expectMsg subscribeTo
+      expectMsg(OnComplete)
     }
 
-    "subscribe to non-existing stream if last number passed" in new SubscriptionScope {
+    "subscribe to non-existing stream if last number passed" in new FiniteSubscriptionScope {
       connection expectMsg readEvents(5)
       actor ! Status.Failure(StreamNotFoundException(streamId))
-      connection expectMsg subscribeTo
+      expectMsg(OnComplete)
 
       override def eventNumber = Some(EventNumber.Exact(5))
     }
