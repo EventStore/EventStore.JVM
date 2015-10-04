@@ -100,7 +100,7 @@ private class AllStreamsPublisher(
         catchUp(subscriptionCommit, stash enqueue event)
       }
 
-      rcvRead(read) or
+      rcvRead(next, read) or
         rcvEventAppeared(eventAppeared) or
         rcvUnsubscribed or
         rcvRequest() or
@@ -130,7 +130,7 @@ private class AllStreamsPublisher(
     toConnection(msg)
   }
 
-  def rcvRead(receive: (List[IndexedEvent], Position.Exact) => Receive): Receive = {
+  def rcvRead(next: Next, receive: (List[IndexedEvent], Position.Exact) => Receive): Receive = {
     case ReadAllEventsCompleted(events, _, next, Forward) =>
       context become receive(events, next)
   }

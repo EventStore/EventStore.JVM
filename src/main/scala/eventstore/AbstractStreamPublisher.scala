@@ -64,7 +64,7 @@ private[eventstore] abstract class AbstractStreamPublisher[T, O <: Ordered[O], P
     }
 
     readEventsFrom(next)
-    rcvRead(read) or rcvRequest() or rcvCancel or rcvFailure
+    rcvRead(next, read) or rcvRequest() or rcvCancel or rcvFailure
   }
 
   def replyingBuffered(): Receive = {
@@ -83,9 +83,9 @@ private[eventstore] abstract class AbstractStreamPublisher[T, O <: Ordered[O], P
 
   def readEventsFrom(next: Next): Unit
 
-  def rcvRead(receive: (List[T], Next) => Receive): Receive
+  def rcvRead(next: Next, receive: (List[T], Next) => Receive): Receive
 
-  def subscribing(next: Next): Receive // TODO
+  def subscribing(next: Next): Receive
 
   def subscribingFromLast: Receive
 

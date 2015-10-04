@@ -1,5 +1,6 @@
 package eventstore
 
+import akka.actor.Status
 import akka.actor.Status.Failure
 import akka.stream.actor.ActorPublisherMessage.{ Request, Cancel }
 import akka.stream.actor.ActorSubscriberMessage.{ OnComplete, OnNext, OnError }
@@ -439,6 +440,20 @@ class StreamPublisherSpec extends AbstractSubscriptionActorSpec {
       actor ! readCompleted(2, endOfStream = true)
       expectMsg(OnComplete)
       expectTerminated(actor)
+    }
+
+    "subscribe to non-existing stream" in new SubscriptionScope {
+      connection expectMsg readEvents(0)
+      actor ! Status.Failure(StreamNotFoundException(streamId))
+      connection expectMsg subscribeTo
+    }
+
+    "subscribe to non-existing stream if last number passed" in new SubscriptionScope {
+      connection expectMsg readEvents(5)
+      actor ! Status.Failure(StreamNotFoundException(streamId))
+      connection expectMsg subscribeTo
+
+      override def eventNumber = Some(EventNumber.Exact(5))
     }
   }
 

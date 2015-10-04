@@ -1,6 +1,6 @@
 package eventstore
 
-import akka.actor.{ ActorRef, Props }
+import akka.actor.{ Status, ActorRef, Props }
 import eventstore.ReadDirection.Forward
 
 import scala.collection.immutable.Queue
@@ -98,7 +98,7 @@ private class StreamPublisher(
         catchUp(subscriptionNumber, stash enqueue event.event)
       }
 
-      rcvRead(read) or
+      rcvRead(next, read) or
         rcvEventAppeared(eventAppeared) or
         rcvUnsubscribed or
         rcvRequest() or
@@ -128,9 +128,12 @@ private class StreamPublisher(
     toConnection(read)
   }
 
-  def rcvRead(receive: (List[Event], EventNumber.Exact) => Receive): Receive = {
+  def rcvRead(next: Next, receive: (List[Event], EventNumber.Exact) => Receive): Receive = {
     case ReadStreamEventsCompleted(events, n: Next, _, endOfStream, _, Forward) =>
       context become receive(events, n)
+
+    case Status.Failure(_: StreamNotFoundException) =>
+      context become receive(Nil, next)
   }
 
   def rcvSubscribed(receive: Last => Receive): Receive = {
