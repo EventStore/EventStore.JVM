@@ -5,7 +5,7 @@ import eventstore.tcp.ConnectionActor
 
 class EventStoreExtension(system: ActorSystem) extends Extension {
 
-  def settings: Settings = Settings.Default
+  def settings: Settings = Settings(system.settings.config)
 
   val actor: ActorRef = system.actorOf(ConnectionActor.props(settings), "eventstore-connection")
 
