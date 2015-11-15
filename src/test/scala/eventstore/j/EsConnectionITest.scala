@@ -142,7 +142,7 @@ class EsConnectionITest extends eventstore.util.ActorSpec {
       val streamId = s"java-publish-$randomUuid"
       val publisher = connection.streamPublisher(streamId, null, false, null, false)
       await_(connection.writeEvents(streamId, null, events, null))
-      Source(publisher)
+      Source.fromPublisher(publisher)
         .map(_.data)
         .runWith(TestSink.probe[EventData])
         .request(1)
@@ -152,7 +152,7 @@ class EsConnectionITest extends eventstore.util.ActorSpec {
 
     "publish all streams" in new TestScope {
       val publisher = connection.allStreamsPublisher(Position.First, false, null, true)
-      val probe = Source(publisher)
+      val probe = Source.fromPublisher(publisher)
         .runWith(TestSink.probe[IndexedEvent])
         .request(10)
 

@@ -11,7 +11,7 @@ object ListAllStreamsExample extends App {
   implicit val materializer = ActorMaterializer()
   val connection = EventStoreExtension(system).connection
   val publisher = connection.streamPublisher(EventStream.System.`$streams`, infinite = false, resolveLinkTos = true)
-  Source(publisher)
+  Source.fromPublisher(publisher)
     .runForeach { x => println(x.streamId.streamId) }
     .onComplete { _ => system.terminate() }
 }

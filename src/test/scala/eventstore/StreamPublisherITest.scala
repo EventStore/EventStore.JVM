@@ -80,7 +80,7 @@ class StreamPublisherITest extends TestConnection {
     val connection = new EsConnection(actor, system)
 
     def source(eventNumber: Option[EventNumber] = None, infinite: Boolean = true) = {
-      Source(connection.streamPublisher(streamId, eventNumber, infinite = infinite))
+      Source.fromPublisher(connection.streamPublisher(streamId, eventNumber, infinite = infinite))
     }
   }
 }
