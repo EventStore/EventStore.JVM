@@ -37,7 +37,7 @@ object Build extends Build {
     val actor   = apply("akka-actor")
     val testkit = apply("akka-testkit") % "test"
 
-    private def apply(x: String) = "com.typesafe.akka" %% x % "2.4.0"
+    private def apply(x: String) = "com.typesafe.akka" %% x % "2.4.1"
   }
 
   object AkkaStream {
