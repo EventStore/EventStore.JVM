@@ -11,7 +11,6 @@ import eventstore.util.ActorCloseable
 import org.reactivestreams.Publisher
 
 import scala.concurrent.Future
-import scala.concurrent.duration.FiniteDuration
 
 /**
  * Maintains a full duplex connection to the EventStore
@@ -23,10 +22,10 @@ import scala.concurrent.duration.FiniteDuration
 class EsConnection(
     connection: ActorRef,
     factory: ActorRefFactory,
-    operationTimeout: FiniteDuration = Settings.Default.operationTimeout) {
+    settings: Settings = Settings.Default) {
   import factory.dispatcher
 
-  implicit val timeout = Timeout(operationTimeout)
+  implicit val timeout = Timeout(settings.operationTimeout)
 
   def future[OUT <: Out, IN <: In](out: OUT, credentials: Option[UserCredentials] = None)(
     implicit outIn: ClassTags[OUT, IN]): Future[IN] = {
@@ -83,7 +82,7 @@ class EsConnection(
   def subscribeToStream(
     streamId: EventStream.Id,
     observer: SubscriptionObserver[Event],
-    resolveLinkTos: Boolean = Settings.Default.resolveLinkTos,
+    resolveLinkTos: Boolean = settings.resolveLinkTos,
     credentials: Option[UserCredentials] = None): Closeable = {
 
     subscribeToStream(streamId, observer, Some(EventNumber.Last), resolveLinkTos, credentials)
@@ -114,7 +113,7 @@ class EsConnection(
     streamId: EventStream.Id,
     observer: SubscriptionObserver[Event],
     fromNumberExclusive: Option[EventNumber.Exact] = None,
-    resolveLinkTos: Boolean = Settings.Default.resolveLinkTos,
+    resolveLinkTos: Boolean = settings.resolveLinkTos,
     credentials: Option[UserCredentials] = None): Closeable = {
 
     subscribeToStream(streamId, observer, fromNumberExclusive, resolveLinkTos, credentials)
@@ -128,7 +127,13 @@ class EsConnection(
     credentials: Option[UserCredentials]): Closeable = {
 
     val client = factory.actorOf(SubscriptionObserverActor.props(observer))
-    val props = StreamSubscriptionActor.props(connection, client, streamId, fromNumberExclusive, resolveLinkTos, credentials)
+    val props = StreamSubscriptionActor.props(
+      connection = connection,
+      client = client,
+      streamId = streamId,
+      fromNumberExclusive = fromNumberExclusive,
+      credentials = credentials,
+      settings = settings.copy(resolveLinkTos = resolveLinkTos))
     factory.actorOf(props)
     ActorCloseable(client)
   }
@@ -144,7 +149,7 @@ class EsConnection(
    */
   def subscribeToAll(
     observer: SubscriptionObserver[IndexedEvent],
-    resolveLinkTos: Boolean = Settings.Default.resolveLinkTos,
+    resolveLinkTos: Boolean = settings.resolveLinkTos,
     credentials: Option[UserCredentials] = None): Closeable = {
 
     subscribeToAll(observer, Some(Position.Last), resolveLinkTos, credentials)
@@ -172,7 +177,7 @@ class EsConnection(
   def subscribeToAllFrom(
     observer: SubscriptionObserver[IndexedEvent],
     fromPositionExclusive: Option[Position.Exact] = None,
-    resolveLinkTos: Boolean = Settings.Default.resolveLinkTos,
+    resolveLinkTos: Boolean = settings.resolveLinkTos,
     credentials: Option[UserCredentials] = None): Closeable = {
 
     subscribeToAll(observer, fromPositionExclusive, resolveLinkTos, credentials)
@@ -185,7 +190,12 @@ class EsConnection(
     credentials: Option[UserCredentials]) = {
 
     val client = factory actorOf SubscriptionObserverActor.props(observer)
-    val props = SubscriptionActor.props(connection, client, fromPositionExclusive, resolveLinkTos)
+    val props = SubscriptionActor.props(
+      connection = connection,
+      client = client,
+      fromPositionExclusive = fromPositionExclusive,
+      credentials,
+      settings = settings.copy(resolveLinkTos = resolveLinkTos))
     factory.actorOf(props)
     ActorCloseable(client)
   }
@@ -237,19 +247,18 @@ class EsConnection(
   def streamPublisher(
     streamId: EventStream.Id,
     fromNumberExclusive: Option[EventNumber] = None,
-    resolveLinkTos: Boolean = Settings.Default.resolveLinkTos,
+    resolveLinkTos: Boolean = settings.resolveLinkTos,
     credentials: Option[UserCredentials] = None,
     infinite: Boolean = true,
-    readBatchSize: Int = Settings.Default.readBatchSize): Publisher[Event] = {
+    readBatchSize: Int = settings.readBatchSize): Publisher[Event] = {
 
     val props = StreamPublisher.props(
       connection = connection,
       streamId = streamId,
       fromNumberExclusive = fromNumberExclusive,
-      resolveLinkTos = resolveLinkTos,
       credentials = credentials,
-      infinite = infinite,
-      readBatchSize = readBatchSize)
+      settings = settings.copy(resolveLinkTos = resolveLinkTos, readBatchSize = readBatchSize),
+      infinite = infinite)
     val actor = factory actorOf props
     ActorPublisher(actor)
   }
@@ -275,19 +284,18 @@ class EsConnection(
    * @return A [[org.reactivestreams.Publisher]] representing all streams
    */
   def allStreamsPublisher(
-    resolveLinkTos: Boolean = Settings.Default.resolveLinkTos,
+    resolveLinkTos: Boolean = settings.resolveLinkTos,
     fromPositionExclusive: Option[Position] = None,
     credentials: Option[UserCredentials] = None,
     infinite: Boolean = true,
-    readBatchSize: Int = Settings.Default.readBatchSize): Publisher[IndexedEvent] = {
+    readBatchSize: Int = settings.readBatchSize): Publisher[IndexedEvent] = {
 
     val props = AllStreamsPublisher.props(
       connection = connection,
       fromPositionExclusive = fromPositionExclusive,
-      resolveLinkTos = resolveLinkTos,
       credentials = credentials,
-      infinite = infinite,
-      readBatchSize = readBatchSize)
+      settings = settings.copy(resolveLinkTos = resolveLinkTos, readBatchSize = readBatchSize),
+      infinite = infinite)
 
     val actor = factory actorOf props
     ActorPublisher(actor)
@@ -301,6 +309,6 @@ object EsConnection {
     new EsConnection(
       connection = system actorOf props,
       factory = system,
-      operationTimeout = settings.operationTimeout)
+      settings = settings)
   }
 }

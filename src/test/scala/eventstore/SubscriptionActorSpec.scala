@@ -416,9 +416,8 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
         connection = connection.ref,
         client = testActor,
         fromPositionExclusive = position,
-        resolveLinkTos = resolveLinkTos,
         credentials = credentials,
-        readBatchSize = readBatchSize)
+        settings = Settings.Default.copy(readBatchSize = readBatchSize, resolveLinkTos = resolveLinkTos))
       TestActorRef(props)
     }
 

@@ -486,9 +486,8 @@ class StreamPublisherSpec extends AbstractSubscriptionActorSpec {
         streamId = streamId,
         connection = connection.ref,
         fromNumberExclusive = eventNumber,
-        resolveLinkTos = resolveLinkTos,
         credentials = credentials,
-        readBatchSize = readBatchSize,
+        settings = Settings.Default.copy(readBatchSize = readBatchSize, resolveLinkTos = resolveLinkTos),
         infinite = infinite)
       val actor = system actorOf props
       val publisher = ActorPublisher[IndexedEvent](actor)

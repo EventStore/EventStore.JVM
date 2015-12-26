@@ -13,9 +13,8 @@ private[eventstore] abstract class AbstractStreamPublisher[T, O <: Ordered[O], P
 
   def streamId: EventStream
   def connection: ActorRef
-  def resolveLinkTos: Boolean
   def credentials: Option[UserCredentials]
-  def readBatchSize: Int
+  def settings: Settings
   def position(event: T): P
   def first: P
   def infinite: Boolean
@@ -25,7 +24,7 @@ private[eventstore] abstract class AbstractStreamPublisher[T, O <: Ordered[O], P
   var last: Last
   val buffer = mutable.Queue.empty[T]
 
-  def ready = buffer.size <= readBatchSize
+  def ready = buffer.size <= settings.readBatchSize
 
   def enqueue(events: Iterable[T]): Unit = {
     for { event <- events } enqueue(event)
@@ -37,7 +36,7 @@ private[eventstore] abstract class AbstractStreamPublisher[T, O <: Ordered[O], P
 
   def toConnection(x: Out) = connection ! credentials.fold[OutLike](x)(x.withCredentials)
 
-  def subscribeToStream() = toConnection(SubscribeTo(streamId, resolveLinkTos = resolveLinkTos))
+  def subscribeToStream() = toConnection(SubscribeTo(streamId, resolveLinkTos = settings.resolveLinkTos))
 
   def unsubscribe() = toConnection(Unsubscribe)
 

@@ -111,8 +111,8 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
       connection = actor,
       client = client,
       fromPositionExclusive = fromPositionExclusive,
-      resolveLinkTos = resolveLinkTos,
-      readBatchSize = Settings.Default.readBatchSize))
+      credentials = None,
+      settings = Settings.Default.copy(resolveLinkTos = resolveLinkTos)))
 
     def expectEvents(
       events: List[EventData],

@@ -6,6 +6,8 @@ import eventstore.ReadDirection.Forward
 import scala.collection.immutable.Queue
 
 object AllStreamsPublisher {
+
+  @deprecated("Use `props` with Settings as argument", "2.2")
   def props(
     connection: ActorRef,
     fromPositionExclusive: Option[Position] = None,
@@ -14,12 +16,26 @@ object AllStreamsPublisher {
     infinite: Boolean = true,
     readBatchSize: Int = Settings.Default.readBatchSize): Props = {
 
+    props(
+      connection = connection,
+      fromPositionExclusive = fromPositionExclusive,
+      credentials = credentials,
+      settings = Settings.Default.copy(readBatchSize = readBatchSize, resolveLinkTos = resolveLinkTos),
+      infinite = infinite)
+  }
+
+  def props(
+    connection: ActorRef,
+    fromPositionExclusive: Option[Position],
+    credentials: Option[UserCredentials],
+    settings: Settings,
+    infinite: Boolean): Props = {
+
     Props(new AllStreamsPublisher(
       connection = connection,
       fromPositionExclusive = fromPositionExclusive,
-      resolveLinkTos = resolveLinkTos,
       credentials = credentials,
-      readBatchSize = readBatchSize,
+      settings = settings,
       infinite = infinite))
   }
 
@@ -40,6 +56,24 @@ object AllStreamsPublisher {
   /**
    * Java API
    */
+  def getProps(
+    connection: ActorRef,
+    fromPositionExclusive: Option[Position],
+    credentials: Option[UserCredentials],
+    settings: Settings,
+    infinite: Boolean): Props = {
+
+    props(
+      connection = connection,
+      fromPositionExclusive = fromPositionExclusive,
+      credentials = credentials,
+      settings = settings,
+      infinite = infinite)
+  }
+
+  /**
+   * Java API
+   */
   def getProps(connection: ActorRef, fromPositionExclusive: Option[Position]) = {
     props(connection, fromPositionExclusive)
   }
@@ -48,9 +82,8 @@ object AllStreamsPublisher {
 private class AllStreamsPublisher(
     val connection: ActorRef,
     fromPositionExclusive: Option[Position],
-    val resolveLinkTos: Boolean,
     val credentials: Option[UserCredentials],
-    val readBatchSize: Int,
+    val settings: Settings,
     val infinite: Boolean = true) extends AbstractStreamPublisher[IndexedEvent, Position, Position.Exact] {
 
   val streamId = EventStream.All
@@ -126,7 +159,12 @@ private class AllStreamsPublisher(
   }
 
   def readEventsFrom(next: Next) = {
-    val msg = ReadAllEvents(next, readBatchSize, Forward, resolveLinkTos = resolveLinkTos)
+    val msg = ReadAllEvents(
+      fromPosition = next,
+      maxCount = settings.readBatchSize,
+      direction = Forward,
+      resolveLinkTos = settings.resolveLinkTos,
+      requireMaster = settings.requireMaster)
     toConnection(msg)
   }
 

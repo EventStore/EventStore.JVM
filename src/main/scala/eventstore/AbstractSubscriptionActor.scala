@@ -7,9 +7,8 @@ trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
   def client: ActorRef
   def connection: ActorRef
   def streamId: EventStream
-  def resolveLinkTos: Boolean
   def credentials: Option[UserCredentials]
-  def readBatchSize: Int
+  def settings: Settings
 
   type Next
   type Last
@@ -44,7 +43,7 @@ trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
 
   def toConnection(x: Out) = connection ! credentials.fold[OutLike](x)(x.withCredentials)
 
-  def subscribeToStream() = toConnection(SubscribeTo(streamId, resolveLinkTos = resolveLinkTos))
+  def subscribeToStream() = toConnection(SubscribeTo(streamId, resolveLinkTos = settings.resolveLinkTos))
 
   def unsubscribe() = toConnection(Unsubscribe)
 

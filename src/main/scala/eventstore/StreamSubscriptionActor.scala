@@ -7,6 +7,8 @@ import scala.annotation.tailrec
 import scala.collection.immutable.Queue
 
 object StreamSubscriptionActor {
+
+  @deprecated("Use `props` with Settings as argument", "2.2")
   def props(
     connection: ActorRef,
     client: ActorRef,
@@ -21,9 +23,25 @@ object StreamSubscriptionActor {
       client,
       streamId,
       fromNumberExclusive,
-      resolveLinkTos,
       credentials,
-      readBatchSize))
+      Settings.Default.copy(readBatchSize = readBatchSize, resolveLinkTos = resolveLinkTos)))
+  }
+
+  def props(
+    connection: ActorRef,
+    client: ActorRef,
+    streamId: EventStream.Id,
+    fromNumberExclusive: Option[EventNumber],
+    credentials: Option[UserCredentials],
+    settings: Settings): Props = {
+
+    Props(new StreamSubscriptionActor(
+      connection,
+      client,
+      streamId,
+      fromNumberExclusive,
+      credentials,
+      settings))
   }
 
   /**
@@ -59,9 +77,8 @@ class StreamSubscriptionActor private (
     val client: ActorRef,
     val streamId: EventStream.Id,
     fromNumberExclusive: Option[EventNumber],
-    val resolveLinkTos: Boolean,
     val credentials: Option[UserCredentials],
-    val readBatchSize: Int) extends AbstractSubscriptionActor[Event] {
+    val settings: Settings) extends AbstractSubscriptionActor[Event] {
 
   type Next = EventNumber.Exact
   type Last = Option[EventNumber.Exact]
@@ -154,7 +171,7 @@ class StreamSubscriptionActor private (
     def liveProcessing(last: Last, n: Long, ready: Boolean): Receive = {
       def eventAppeared(event: IndexedEvent) = {
         val l = process(last, event.event)
-        if (n < readBatchSize) liveProcessing(l, n + 1, ready)
+        if (n < settings.readBatchSize) liveProcessing(l, n + 1, ready)
         else {
           checkReadiness()
           if (ready) liveProcessing(l, 0, ready = false)
@@ -194,7 +211,13 @@ class StreamSubscriptionActor private (
   }
 
   def readEventsFrom(number: Next) = {
-    val read = ReadStreamEvents(streamId, number, readBatchSize, Forward, resolveLinkTos = resolveLinkTos)
+    val read = ReadStreamEvents(
+      streamId = streamId,
+      fromNumber = number,
+      maxCount = settings.readBatchSize,
+      direction = Forward,
+      resolveLinkTos = settings.resolveLinkTos,
+      requireMaster = settings.requireMaster)
     toConnection(read)
   }
 
