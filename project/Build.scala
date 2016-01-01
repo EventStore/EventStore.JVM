@@ -46,7 +46,7 @@ object Build extends Build {
     val tck     = apply("akka-stream-tck-experimental") % "test"
     val testkit = apply("akka-stream-testkit-experimental") % "test"
 
-    private def apply(x: String) = "com.typesafe.akka" %% x % "2.0"
+    private def apply(x: String) = "com.typesafe.akka" %% x % "2.0.1"
   }
 
   object Specs2 {
