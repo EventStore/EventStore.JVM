@@ -9,7 +9,7 @@
   </tr>
   <tr>
     <td><a href="http://akka.io">Akka</a> </td>
-    <td>2.4.0</td>
+    <td>2.4.1</td>
   </tr>
 </table>
 
@@ -20,7 +20,7 @@ We have two APIs available:
 
 We are using [`scala.concurrent.Future`](http://docs.scala-lang.org/overviews/core/futures.html) for asynchronous calls, however it is not friendly enough for Java users.
 In order to make Java devs happy and not reinvent a wheel, we propose to use tools invented by Akka team.
-[Check it out](http://doc.akka.io/docs/akka/2.4.0/java/futures.html)
+[Check it out](http://doc.akka.io/docs/akka/2.4.1/java/futures.html)
 
 ```java
 final EsConnection connection = EsConnectionFactory.create(system);

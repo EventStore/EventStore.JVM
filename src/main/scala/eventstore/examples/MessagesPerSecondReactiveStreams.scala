@@ -13,7 +13,7 @@ object MessagesPerSecondReactiveStreams extends App {
   val connection = EventStoreExtension(system).connection
   val publisher = connection.allStreamsPublisher()
 
-  Source(publisher)
+  Source.fromPublisher(publisher)
     .groupedWithin(Int.MaxValue, 1.second)
     .runForeach { xs => println(f"${xs.size.toDouble / 1000}%2.1fk m/s") }
 }
