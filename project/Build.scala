@@ -22,7 +22,7 @@ object Build extends Build {
       Joda.time, Joda.convert,
       Specs2.core, Specs2.mock,
       Spray.json, Spray.client,
-      AkkaStream.stream, /*AkkaStream.http,*/ AkkaStream.tck, AkkaStream.testkit,
+      Akka.stream, /*AkkaStream.http,*/ Akka.streamTestkit,
       ReactiveStreams.streams, ReactiveStreams.tck)
   )
 
@@ -37,16 +37,11 @@ object Build extends Build {
     val actor   = apply("akka-actor")
     val testkit = apply("akka-testkit") % "test"
 
-    private def apply(x: String) = "com.typesafe.akka" %% x % "2.4.1"
-  }
+    val stream  = apply("akka-stream")
+    //    val http    = apply("akka-http-experimental")
+    val streamTestkit = apply("akka-stream-testkit") % "test"
 
-  object AkkaStream {
-    val stream  = apply("akka-stream-experimental")
-//    val http    = apply("akka-http-experimental")
-    val tck     = apply("akka-stream-tck-experimental") % "test"
-    val testkit = apply("akka-stream-testkit-experimental") % "test"
-
-    private def apply(x: String) = "com.typesafe.akka" %% x % "2.0.1"
+    private def apply(x: String) = "com.typesafe.akka" %% x % "2.4.2"
   }
 
   object Specs2 {
