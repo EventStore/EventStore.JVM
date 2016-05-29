@@ -95,7 +95,10 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
     def parse = j.EventRecord.parseFrom
 
     def fromProto(x: j.EventRecord) = {
-      EventRecord(
+      val streamId = x.getEventStreamId
+
+      if (streamId == "") EventRecord.Deleted
+      else EventRecord(
         streamId = EventStream.Id(x.getEventStreamId),
         number = EventNumber.Exact(x.getEventNumber),
         data = EventData(

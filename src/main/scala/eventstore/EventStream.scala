@@ -65,6 +65,14 @@ object EventStream {
     override lazy val toString = s"Stream($streamId)"
   }
 
+  case object Undefined extends Id {
+    def value = ""
+    def prefix = ""
+    def metadata = Metadata.Undefined
+    def isMetadata = false
+    def isSystem = false
+  }
+
   case class System(value: String) extends HasMetadata {
     require(value != null, "value must not be null")
     require(value.nonEmpty, "value must not be empty")
@@ -96,5 +104,9 @@ object EventStream {
     lazy val original: HasMetadata = HasMetadata(value)
 
     override lazy val toString = s"MetadataStream($streamId)"
+  }
+
+  object Metadata {
+    val Undefined: Metadata = Metadata("undefined")
   }
 }

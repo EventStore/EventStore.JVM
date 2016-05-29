@@ -98,6 +98,48 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
       expectIndexedEvent
       expectIndexedEvent.event mustEqual ResolvedEvent(linked, link)
     }
+
+    "read link events if resolveLinkTos = false and deleted linked" in new SubscribeToAllCatchingUpScope {
+      val last = lastPosition
+      val linkedData = newEventData.copy(eventType = "linked")
+      val linkedStreamId = newStreamId
+      val linked = EventRecord(
+        linkedStreamId,
+        writeEventsCompleted(List(linkedData), streamId = linkedStreamId).get.start,
+        linkedData,
+        Some(date))
+      val link = append(linked.link())
+
+      actor ! DeleteStream(linkedStreamId, hard = true)
+      expectMsgType[DeleteStreamCompleted]
+
+      newSubscription(Some(last), resolveLinkTos = false)
+      expectIndexedEvent.event mustEqual linked
+      expectIndexedEvent.event mustEqual link
+      fishForLiveProcessingStarted(last)
+    }
+
+    "read link events if resolveLinkTos = true and deleted linked" in new SubscribeToAllCatchingUpScope {
+      val last = lastPosition
+
+      val linkedData = newEventData.copy(eventType = "linked")
+      val linkedStreamId = newStreamId
+      val linked = EventRecord(
+        linkedStreamId,
+        writeEventsCompleted(List(linkedData), streamId = linkedStreamId).get.start,
+        linkedData,
+        Some(date))
+      val link = append(linked.link())
+
+      actor ! DeleteStream(linkedStreamId, hard = true)
+      expectMsgType[DeleteStreamCompleted]
+
+      newSubscription(Some(last), resolveLinkTos = true)
+      expectIndexedEvent.event mustEqual linked
+      expectIndexedEvent.event mustEqual ResolvedEvent(EventRecord.Deleted, link).fixDate
+      fishForLiveProcessingStarted(last)
+    }
+
   }
 
   private trait SubscribeToAllCatchingUpScope extends TestConnectionScope {

@@ -1,8 +1,11 @@
 package eventstore
 
+import java.util.UUID
+
 import eventstore.util.ByteStringToString
 import org.joda.time.DateTime
-import scala.PartialFunction.{ condOpt, cond }
+
+import scala.PartialFunction.{ cond, condOpt }
 
 sealed trait Event extends Ordered[Event] {
   def streamId: EventStream.Id
@@ -40,6 +43,13 @@ case class EventRecord(
     data: EventData,
     created: Option[DateTime] = None) extends Event {
   def record = this
+}
+
+object EventRecord {
+  val Deleted: EventRecord = EventRecord(
+    streamId = EventStream.Undefined,
+    number = EventNumber.First,
+    data = EventData.StreamDeleted(UUID.fromString("00000000-0000-0000-0000-000000000000")))
 }
 
 case class ResolvedEvent(linkedEvent: EventRecord, linkEvent: EventRecord) extends Event {

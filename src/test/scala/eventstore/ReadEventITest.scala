@@ -39,6 +39,31 @@ class ReadEventITest extends TestConnection {
       val event = readEventCompleted(EventNumber.Last, resolveLinkTos = true)
       event mustEqual ResolvedEvent(linked, link)
     }
+
+    "return link event if resolveLinkTos = false and linked stream is deleted" in new ReadEventScope {
+      val linkedData = newEventData.copy(eventType = "linked")
+      val linkedStreamId = newStreamId
+      val linked = EventRecord(linkedStreamId, writeEventsCompleted(List(linkedData), streamId = linkedStreamId).get.start, linkedData, Some(date))
+      val link = append(linked.link())
+
+      actor ! DeleteStream(linkedStreamId, hard = true)
+      expectMsgType[DeleteStreamCompleted]
+
+      readEventCompleted(link.number) mustEqual link
+    }
+
+    "return link with undefined streamId event if resolveLinkTos = true and linked stream is deleted" in new ReadEventScope {
+      val linkedData = newEventData.copy(eventType = "linked")
+      val linkedStreamId = newStreamId
+      val linked = EventRecord(linkedStreamId, writeEventsCompleted(List(linkedData), streamId = linkedStreamId).get.start, linkedData, Some(date))
+      val link = append(linked.link())
+
+      actor ! DeleteStream(linkedStreamId, hard = true)
+      expectMsgType[DeleteStreamCompleted]
+
+      actor ! ReadEvent(streamId, link.number, resolveLinkTos = true)
+      expectMsgType[ReadEventCompleted].fixDate.event mustEqual ResolvedEvent(EventRecord.Deleted, link).fixDate
+    }
   }
 
   private trait ReadEventScope extends TestConnectionScope {
