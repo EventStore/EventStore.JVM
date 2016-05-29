@@ -40,6 +40,31 @@ public interface EsConnection {
       Collection<EventData> events,
       UserCredentials credentials);
 
+  /**
+   * Write events to a stream
+   * <p>
+   * When writing events to a stream the {@link eventstore.ExpectedVersion} choice can
+   * make a very large difference in the observed behavior. For example, if no stream exists
+   * and ExpectedVersion.Any is used, a new stream will be implicitly created when appending.
+   * <p>
+   * There are also differences in idempotency between different types of calls.
+   * If you specify an ExpectedVersion aside from ExpectedVersion.Any the Event Store
+   * will give you an idempotency guarantee. If using ExpectedVersion.Any the Event Store
+   * will do its best to provide idempotency but does not guarantee idempotency
+   *
+   * @param stream          name of the stream to write events to
+   * @param expectedVersion expected version of the stream to write to, or <code>ExpectedVersion.Any</code> if <code>null</code>
+   * @param events          events to append to the stream
+   * @param credentials     optional user credentials to perform operation with.
+   * @param requireMaster   Require Event Store to refuse operation if it is not master
+   * @return A {@link scala.concurrent.Future} that the caller can await on
+   */
+  Future<WriteResult> writeEvents(
+      String stream,
+      ExpectedVersion expectedVersion,
+      Collection<EventData> events,
+      UserCredentials credentials,
+      boolean requireMaster);
 
   /**
    * Deletes a stream from the Event Store
@@ -70,6 +95,23 @@ public interface EsConnection {
       UserCredentials credentials);
 
   /**
+   * Deletes a stream from the Event Store
+   *
+   * @param stream          name of the stream to delete
+   * @param expectedVersion optional expected version that the stream should have when being deleted, or <code>ExpectedVersion.Any</code> if <code>null</code>
+   * @param hardDelete      Indicator for tombstoning vs soft-deleting the stream. Tombstoned streams can never be recreated. Soft-deleted streams can be written to again, but the EventNumber sequence will not start from 0.
+   * @param credentials     optional user credentials to perform operation with.
+   * @param requireMaster   Require Event Store to refuse operation if it is not master
+   * @return A {@link scala.concurrent.Future} that the caller can await on
+   */
+  Future<DeleteResult> deleteStream(
+      String stream,
+      ExpectedVersion.Existing expectedVersion,
+      boolean hardDelete,
+      UserCredentials credentials,
+      boolean requireMaster);
+
+  /**
    * Starts a transaction in the event store on a given stream asynchronously
    * <p>
    * A {@link eventstore.j.EsTransaction} allows the calling of multiple writes with multiple
@@ -85,6 +127,25 @@ public interface EsConnection {
       String stream,
       ExpectedVersion expectedVersion,
       UserCredentials credentials);
+
+  /**
+   * Starts a transaction in the event store on a given stream asynchronously
+   * <p>
+   * A {@link eventstore.j.EsTransaction} allows the calling of multiple writes with multiple
+   * round trips over long periods of time between the caller and the event store. This method
+   * is only available through the TCP interface and no equivalent exists for the RESTful interface.
+   *
+   * @param stream          The stream to start a transaction on
+   * @param expectedVersion The expected version of the stream at the time of starting the transaction
+   * @param credentials     The optional user credentials to perform operation with
+   * @param requireMaster   Require Event Store to refuse operation if it is not master
+   * @return A {@link scala.concurrent.Future} containing an actual transaction
+   */
+  Future<EsTransaction> startTransaction(
+      String stream,
+      ExpectedVersion expectedVersion,
+      UserCredentials credentials,
+      boolean requireMaster);
 
 
   /**
@@ -116,6 +177,23 @@ public interface EsConnection {
       boolean resolveLinkTos,
       UserCredentials credentials);
 
+  /**
+   * Reads a single event from a stream at event number
+   *
+   * @param stream         name of the stream to read from
+   * @param eventNumber    optional event number to read, or EventNumber.Last for reading latest event, EventNumber.Last if null
+   * @param resolveLinkTos whether to resolve LinkTo events automatically
+   * @param credentials    The optional user credentials to perform operation with
+   * @param requireMaster  Require Event Store to refuse operation if it is not master
+   * @return A {@link scala.concurrent.Future} containing an event
+   */
+  Future<Event> readEvent(
+      String stream,
+      EventNumber eventNumber,
+      boolean resolveLinkTos,
+      UserCredentials credentials,
+      boolean requireMaster);
+
 
   /**
    * Reads count events from a stream forwards (e.g. oldest to newest) starting from event number
@@ -133,6 +211,25 @@ public interface EsConnection {
       int maxCount,
       boolean resolveLinkTos,
       UserCredentials credentials);
+
+  /**
+   * Reads count events from a stream forwards (e.g. oldest to newest) starting from event number
+   *
+   * @param stream         name of stream to read from
+   * @param fromNumber     optional event number to read, EventNumber.First if null
+   * @param maxCount       maximum count of items to read
+   * @param resolveLinkTos whether to resolve LinkTo events automatically
+   * @param credentials    The optional user credentials to perform operation with
+   * @param requireMaster  Require Event Store to refuse operation if it is not master
+   * @return A {@link scala.concurrent.Future} containing the results of the read operation
+   */
+  Future<ReadStreamEventsCompleted> readStreamEventsForward(
+      String stream,
+      EventNumber.Exact fromNumber,
+      int maxCount,
+      boolean resolveLinkTos,
+      UserCredentials credentials,
+      boolean requireMaster);
 
 
   /**
@@ -152,6 +249,25 @@ public interface EsConnection {
       boolean resolveLinkTos,
       UserCredentials credentials);
 
+  /**
+   * Reads count events from from a stream backwards (e.g. newest to oldest) starting from event number
+   *
+   * @param stream         name of stream to read from
+   * @param fromNumber     optional event number to read, EventNumber.Last if null
+   * @param maxCount       maximum count of items to read
+   * @param resolveLinkTos whether to resolve LinkTo events automatically
+   * @param credentials    The optional user credentials to perform operation with
+   * @param requireMaster  Require Event Store to refuse operation if it is not master
+   * @return A {@link scala.concurrent.Future} containing the results of the read operation
+   */
+  Future<ReadStreamEventsCompleted> readStreamEventsBackward(
+      String stream,
+      EventNumber fromNumber,
+      int maxCount,
+      boolean resolveLinkTos,
+      UserCredentials credentials,
+      boolean requireMaster);
+
 
   /**
    * Reads all events in the node forward (e.g. beginning to end) starting from position
@@ -168,6 +284,23 @@ public interface EsConnection {
       boolean resolveLinkTos,
       UserCredentials credentials);
 
+  /**
+   * Reads all events in the node forward (e.g. beginning to end) starting from position
+   *
+   * @param fromPosition   optional position to start reading from, Position.First of null
+   * @param maxCount       maximum count of items to read
+   * @param resolveLinkTos whether to resolve LinkTo events automatically
+   * @param credentials    The optional user credentials to perform operation with
+   * @param requireMaster  Require Event Store to refuse operation if it is not master
+   * @return A {@link scala.concurrent.Future} containing the results of the read operation
+   */
+  Future<ReadAllEventsCompleted> readAllEventsForward(
+      Position fromPosition,
+      int maxCount,
+      boolean resolveLinkTos,
+      UserCredentials credentials,
+      boolean requireMaster);
+
 
   /**
    * Reads all events in the node backwards (e.g. end to beginning) starting from position
@@ -183,6 +316,24 @@ public interface EsConnection {
       int maxCount,
       boolean resolveLinkTos,
       UserCredentials credentials);
+
+  /**
+   * Reads all events in the node backwards (e.g. end to beginning) starting from position
+   *
+   * @param fromPosition   optional position to start reading from, Position.Last of null
+   * @param maxCount       maximum count of items to read
+   * @param resolveLinkTos whether to resolve LinkTo events automatically
+   * @param credentials    The optional user credentials to perform operation with
+   * @param requireMaster  Require Event Store to refuse operation if it is not master
+   * @return A {@link scala.concurrent.Future} containing the results of the read operation
+   */
+  Future<ReadAllEventsCompleted> readAllEventsBackward(
+      Position fromPosition,
+      int maxCount,
+      boolean resolveLinkTos,
+      UserCredentials credentials,
+      boolean requireMaster);
+
 
   /**
    * Subscribes to a single event stream. New events
