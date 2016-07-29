@@ -1,26 +1,25 @@
 package eventstore
 package cluster
 
-import org.joda.time.{ DateTimeZone, DateTime }
+import org.joda.time.{ DateTime, DateTimeZone }
 import org.specs2.mutable.Specification
 import org.specs2.specification.Scope
-import spray.json._
-import scala.io.Source
-import NodeState.{ Slave, Master }
+import NodeState.{ Master, Slave }
 import eventstore.cluster.ClusterProtocol.ClusterInfoFormat
+import play.api.libs.json.Json
 
 class ClusterProtocolSpec extends Specification {
   "ClusterProtocol" should {
     "parse gossip.json" in new TestScope {
       val is = getClass.getResourceAsStream("gossip.json")
-      val json = Source.fromInputStream(is, "UTF-8").getLines().mkString("\n").parseJson
-      val actual = ClusterInfoFormat.read(json)
+      val json = Json.parse(is)
+      val actual = ClusterInfoFormat.reads(json).get
       actual mustEqual clusterInfo
     }
 
     "read & write cluster info" in new TestScope {
-      val json = ClusterInfoFormat.write(clusterInfo)
-      ClusterInfoFormat.read(json) mustEqual clusterInfo
+      val json = ClusterInfoFormat.writes(clusterInfo)
+      ClusterInfoFormat.reads(json).get mustEqual clusterInfo
     }
 
     trait TestScope extends Scope {

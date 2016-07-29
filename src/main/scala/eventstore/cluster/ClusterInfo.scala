@@ -22,7 +22,7 @@ object ClusterInfo {
     import system.dispatcher
     import spray.client.pipelining._
     import spray.http._
-    import spray.httpx.SprayJsonSupport._
+    import spray.httpx.PlayJsonSupport._
 
     val pipeline = sendReceive ~> unmarshal[ClusterInfo]
 

@@ -5,11 +5,11 @@
 <table border="0">
   <tr>
     <td><a href="http://www.scala-lang.org">Scala</a> </td>
-    <td>2.11.6</td>
+    <td>2.11.8</td>
   </tr>
   <tr>
     <td><a href="http://akka.io">Akka</a> </td>
-    <td>2.4.1</td>
+    <td>2.4.8</td>
   </tr>
 </table>
 

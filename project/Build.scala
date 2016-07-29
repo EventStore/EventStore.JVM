@@ -8,20 +8,20 @@ object Build extends Build {
   lazy val basicSettings = Seq(
     name                 := "eventstore-client",
     organization         := "com.geteventstore",
-    scalaVersion         := "2.11.6",
+    scalaVersion         := "2.11.8",
     licenses             := Seq("BSD 3-Clause" -> url("http://raw.github.com/EventStore/EventStore.JVM/master/LICENSE")),
     homepage             := Some(new URL("http://github.com/EventStore/EventStore.JVM")),
     organizationHomepage := Some(new URL("http://geteventstore.com")),
     description          := "Event Store JVM Client",
     startYear            := Some(2013),
-    scalacOptions        := Seq("-encoding", "UTF-8", "-unchecked", "-deprecation", "-feature", "-Xlint"),
+    scalacOptions        := Seq("-encoding", "UTF-8", "-unchecked", "-deprecation", "-feature"),
     resolvers += "spray" at "http://repo.spray.io/",
     libraryDependencies ++= Seq(
       Akka.actor, Akka.testkit, protobuf,
       typesafeConfig, codec, mockito,
       Joda.time, Joda.convert,
       Specs2.core, Specs2.mock,
-      Spray.json, Spray.client,
+      sprayClient, playJson,
       Akka.stream, /*AkkaStream.http,*/ Akka.streamTestkit,
       ReactiveStreams.streams, ReactiveStreams.tck)
   )
@@ -41,7 +41,7 @@ object Build extends Build {
     //    val http    = apply("akka-http-experimental")
     val streamTestkit = apply("akka-stream-testkit") % "test"
 
-    private def apply(x: String) = "com.typesafe.akka" %% x % "2.4.2"
+    private def apply(x: String) = "com.typesafe.akka" %% x % "2.4.8"
   }
 
   object Specs2 {
@@ -51,22 +51,16 @@ object Build extends Build {
     private def apply(x: String) = "org.specs2" %% s"specs2-$x" % "2.4.15" % "test"
   }
 
-  object Spray {
-    val client = apply("spray-client")
-    val json   = apply("spray-json")
-
-    private def apply(x: String) = "io.spray" %% x % "1.3.2"
-  }
-
   val typesafeConfig = "com.typesafe" % "config" % "1.3.0"
+  val playJson       = "com.typesafe.play" %% "play-json" % "2.5.4"
   val codec          = "org.apache.directory.studio" % "org.apache.commons.codec" % "1.8"
   val protobuf       = "com.google.protobuf" % "protobuf-java" % "2.5.0"
-  val jodaTime       = "joda-time" % "joda-time" % "2.7"
+  val sprayClient    = "io.spray" %% "spray-client" % "1.3.3"
   val mockito        = "org.mockito" % "mockito-all" % "1.9.5" % "test"
 
   object Joda {
-    val time    = "joda-time" % "joda-time" % "2.8.2"
-    val convert = "org.joda" % "joda-convert" % "1.8"
+    val time    = "joda-time" % "joda-time" % "2.9.4"
+    val convert = "org.joda" % "joda-convert" % "1.8.1"
   }
 
   lazy val IntegrationTest = config("it") extend Test

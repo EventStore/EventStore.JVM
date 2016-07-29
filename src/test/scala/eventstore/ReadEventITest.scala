@@ -13,6 +13,12 @@ class ReadEventITest extends TestConnection {
       readEventFailed(EventNumber(5)) must throwA[StreamDeletedException]
     }
 
+    "fail reading last if stream deleted" in new ReadEventScope {
+      appendEventToCreateStream()
+      deleteStream()
+      readEventFailed(EventNumber.Last) must throwA[StreamDeletedException]
+    }
+
     "fail if stream does not have such event" in new ReadEventScope {
       appendEventToCreateStream()
       readEventFailed(EventNumber(5)) must throwA[EventNotFoundException]

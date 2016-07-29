@@ -1,6 +1,6 @@
 language: scala
 scala:
-  - "2.11.6"
+  - "2.11.8"
 script:
   - travis_retry sbt clean coverage test
 after_success: "sbt coverageReport coveralls"
