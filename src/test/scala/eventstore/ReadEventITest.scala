@@ -1,5 +1,7 @@
 package eventstore
 
+import play.api.libs.json.Json
+
 class ReadEventITest extends TestConnection {
 
   "read event" should {
@@ -17,6 +19,12 @@ class ReadEventITest extends TestConnection {
       appendEventToCreateStream()
       deleteStream()
       readEventFailed(EventNumber.Last) must throwA[StreamDeletedException]
+    }
+
+    "fail reading last if stream truncated" in new ReadEventScope {
+      appendEventToCreateStream()
+      truncateStream(EventNumber.Exact(1))
+      readEventFailed(EventNumber.Last) must throwA[EventNotFoundException]
     }
 
     "fail if stream does not have such event" in new ReadEventScope {

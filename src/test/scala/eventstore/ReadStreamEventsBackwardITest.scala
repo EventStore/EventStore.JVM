@@ -23,6 +23,27 @@ class ReadStreamEventsBackwardITest extends TestConnection {
       readStreamEventsFailed(EventNumber.Last, 1000) must throwA[StreamDeletedException]
     }
 
+    "read last number if stream truncated" in new TestConnectionScope {
+      appendEventToCreateStream()
+      truncateStream(EventNumber.Exact(1))
+      readStreamEventsCompleted(EventNumber.Last, 1).lastEventNumber mustEqual EventNumber.First
+    }
+
+    "read last number if stream truncated many" in new TestConnectionScope {
+      appendMany(10)
+      truncateStream(EventNumber.Exact(15))
+
+      actor ! ReadEvent.StreamMetadata(streamId.metadata)
+      expectMsgType[ReadEventCompleted]
+
+      readStreamEventsCompleted(EventNumber.Last, 1).lastEventNumber mustEqual EventNumber.Exact(9)
+
+      val events = appendMany(10).takeRight(5)
+      val result = readStreamEventsCompleted(EventNumber.Last, 10)
+      result.events.size mustEqual 5
+      result.events.map {_.data} mustEqual events.reverse
+    }
+
     "get empty slice if called with non existing range" in new TestConnectionScope {
       append(newEventData)
       readStreamEvents(EventNumber(1000), 10) must beEmpty

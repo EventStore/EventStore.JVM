@@ -5,6 +5,8 @@ import akka.testkit._
 import eventstore.ReadDirection._
 import eventstore.tcp.ConnectionActor
 import org.joda.time.DateTime
+import play.api.libs.json._
+
 import scala.concurrent.duration._
 
 abstract class TestConnection extends util.ActorSpec {
@@ -20,6 +22,12 @@ abstract class TestConnection extends util.ActorSpec {
       val probe = TestProbe()
       actor.!(DeleteStream(streamId, hard = hard, expectedVersion = expVer))(probe.ref)
       probe.expectMsgType[DeleteStreamCompleted].position must beSome
+    }
+
+    def truncateStream(number: EventNumber.Exact, streamId: EventStream.Id = streamId): Unit = {
+      val json = Json.obj("$tb" -> number.value)
+      actor ! WriteEvents.StreamMetadata(streamId.metadata, Content.Json(json.toString()))
+      expectMsgType[WriteEventsCompleted]
     }
 
     def newEventData: EventData = EventData(
