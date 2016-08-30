@@ -41,7 +41,7 @@ class ReadStreamEventsBackwardITest extends TestConnection {
       val events = appendMany(10).takeRight(5)
       val result = readStreamEventsCompleted(EventNumber.Last, 10)
       result.events.size mustEqual 5
-      result.events.map {_.data} mustEqual events.reverse
+      result.events.map { _.data } mustEqual events.reverse
     }
 
     "get empty slice if called with non existing range" in new TestConnectionScope {

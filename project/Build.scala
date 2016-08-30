@@ -1,6 +1,6 @@
 import sbt.Keys._
 import sbt._
-import sbtprotobuf.ProtobufPlugin.protobufSettings
+import sbtprotobuf.{ProtobufPlugin => PB}
 import sbtrelease.ReleasePlugin._
 import scoverage.ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages
 
@@ -17,7 +17,7 @@ object Build extends Build {
     scalacOptions        := Seq("-encoding", "UTF-8", "-unchecked", "-deprecation", "-feature"),
     resolvers += "spray" at "http://repo.spray.io/",
     libraryDependencies ++= Seq(
-      Akka.actor, Akka.testkit, protobuf,
+      Akka.actor, Akka.testkit,
       typesafeConfig, codec, mockito,
       Joda.time, Joda.convert,
       Specs2.core, Specs2.mock,
@@ -54,7 +54,6 @@ object Build extends Build {
   val typesafeConfig = "com.typesafe" % "config" % "1.3.0"
   val playJson       = "com.typesafe.play" %% "play-json" % "2.5.4"
   val codec          = "org.apache.directory.studio" % "org.apache.commons.codec" % "1.8"
-  val protobuf       = "com.google.protobuf" % "protobuf-java" % "2.5.0"
   val sprayClient    = "io.spray" %% "spray-client" % "1.3.3"
   val mockito        = "org.mockito" % "mockito-all" % "1.9.5" % "test"
 
@@ -69,8 +68,13 @@ object Build extends Build {
   lazy val root = Project(
     "eventstore-client",
     file("."),
-    settings = basicSettings ++ Defaults.coreDefaultSettings ++ releaseSettings ++ protobufSettings ++ Scalariform.settings ++ Publish.settings)
+    settings = basicSettings ++ Defaults.coreDefaultSettings ++ releaseSettings ++ PB.protobufSettings ++ Scalariform.settings ++ Publish.settings)
     .configs(IntegrationTest, ClusterTest)
+    .settings(
+      version in PB.protobufConfig := "3.0.0",
+      PB.runProtoc in PB.protobufConfig := { args =>
+       com.github.os72.protocjar.Protoc.runProtoc("-v3.0.0" +: args.toArray)
+      })
     .settings(inConfig(IntegrationTest)(Defaults.testTasks): _*)
     .settings(inConfig(ClusterTest)(Defaults.testTasks): _*)
     .settings(
