@@ -1,3 +1,4 @@
+syntax = "proto2";
 package eventstore.proto;
 
 enum OperationResult {
