@@ -1,6 +1,7 @@
 package eventstore
 
-import akka.io.Tcp.PeerClosed
+import akka.actor.Status
+import akka.stream.StreamTcpException
 import akka.testkit.TestProbe
 import eventstore.tcp.ConnectionActor
 
@@ -18,7 +19,7 @@ abstract class AbstractSubscriptionActorITest extends util.ActorSpec {
 
     def expectLiveProcessingStarted = expectMsg(LiveProcessingStarted)
 
-    def reconnect() = connection ! PeerClosed
+    def reconnect() = connection ! Status.Failure(new StreamTcpException("peer closed"))
 
     def settings = Settings.Default
   }

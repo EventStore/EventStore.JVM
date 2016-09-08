@@ -1,14 +1,14 @@
 package eventstore
 package operations
 
-import akka.actor.ActorRef
-import NotHandled.{ TooBusy, NotReady }
-import eventstore.tcp.PackOut
-import scala.util.{ Try, Success, Failure }
+import NotHandled.{ NotReady, TooBusy }
+import eventstore.tcp.{ Client, PackOut }
+
+import scala.util.{ Failure, Success, Try }
 
 private[eventstore] case class SimpleOperation(
     pack: PackOut,
-    client: ActorRef,
+    client: Client,
     inspection: Inspection) extends Operation {
 
   def id = pack.correlationId

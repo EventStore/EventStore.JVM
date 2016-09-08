@@ -46,7 +46,7 @@ private[eventstore] abstract class AbstractStreamPublisher[T, O <: Ordered[O], P
 
   override def onNext(element: T) = {
     val p = position(element)
-    if (last map { _ < p } getOrElse true) {
+    if (last forall { _ < p }) {
       last = Some(p)
       super.onNext(element)
     }

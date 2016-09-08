@@ -55,7 +55,7 @@ trait EventStoreFormats extends EventStoreProtoFormats {
     def read(bi: ByteIterator) = bi.getByte
   }
 
-  implicit object PackOutOutWriter extends BytesWriter[PackOut] {
+  implicit object PackOutWriter extends BytesWriter[PackOut] {
     def write(x: PackOut, builder: ByteStringBuilder) {
       val (writeMarker, writeMessage) = MarkerByte.writeMessage(x.message)
       writeMarker(builder)

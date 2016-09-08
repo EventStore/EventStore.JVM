@@ -22,7 +22,7 @@ class SettingsBuilder extends Builder[Settings]
   protected var _connectionTimeout = Default.connectionTimeout
   protected var _operationTimeout = Default.operationTimeout
   protected var _readBatchSize = Default.readBatchSize
-  protected var _backpressure = Default.backpressure
+  protected var _bufferSize = Default.bufferSize
   protected var _cluster = Default.cluster
 
   def address(x: InetSocketAddress): SettingsBuilder = set { _address = x }
@@ -100,7 +100,7 @@ class SettingsBuilder extends Builder[Settings]
 
   def readBatchSize(x: Int): SettingsBuilder = set { _readBatchSize = x }
 
-  def backpressure(x: BackpressureSettings): SettingsBuilder = set { _backpressure = x }
+  def bufferSize(x: Int): SettingsBuilder = set { _bufferSize = x }
 
   def cluster(x: ClusterSettings): SettingsBuilder = set { _cluster = Some(x) }
 
@@ -117,6 +117,6 @@ class SettingsBuilder extends Builder[Settings]
     resolveLinkTos = _resolveLinkTos,
     requireMaster = _requireMaster,
     readBatchSize = _readBatchSize,
-    backpressure = _backpressure,
+    bufferSize = _bufferSize,
     cluster = _cluster)
 }

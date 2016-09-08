@@ -1,14 +1,14 @@
 package eventstore
 package operations
 
-import akka.actor.ActorRef
-import eventstore.tcp.PackOut
+import eventstore.tcp.{ Client, PackOut }
+
 import scala.util.{ Failure, Try }
 
 private[eventstore] trait Operation {
   def id: Uuid
 
-  def client: ActorRef
+  def client: Client
 
   def inspectOut: PartialFunction[Out, OnOutgoing]
 
@@ -24,7 +24,7 @@ private[eventstore] trait Operation {
 }
 
 private[eventstore] object Operation {
-  def opt(pack: PackOut, client: ActorRef, connected: Boolean, maxRetries: Int): Option[Operation] = {
+  def opt(pack: PackOut, client: Client, connected: Boolean, maxRetries: Int): Option[Operation] = {
     def retryable(x: Operation) = RetryableOperation(x, maxRetries, connected)
     def simple(x: Inspection) = retryable(SimpleOperation(pack, client, x))
 

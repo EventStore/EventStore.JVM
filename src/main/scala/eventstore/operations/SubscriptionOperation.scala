@@ -1,12 +1,12 @@
 package eventstore
 package operations
 
-import akka.actor.ActorRef
-import eventstore.NotHandled.{ TooBusy, NotReady }
-import eventstore.tcp.PackOut
+import eventstore.NotHandled.{ NotReady, TooBusy }
+import eventstore.tcp.{ Client, PackOut }
 import eventstore.SubscriptionDropped.AccessDenied
 import eventstore.operations.OnIncoming._
-import scala.util.{ Success, Failure, Try }
+
+import scala.util.{ Failure, Success, Try }
 
 private[eventstore] sealed trait SubscriptionOperation extends Operation {
   def stream: EventStream
@@ -31,7 +31,7 @@ private[eventstore] object SubscriptionOperation {
   def apply(
     subscribeTo: SubscribeTo,
     pack: PackOut,
-    client: ActorRef,
+    client: Client,
     ongoing: Boolean): Operation = {
     Subscribing(subscribeTo, pack, client, ongoing, 0)
   }
@@ -39,7 +39,7 @@ private[eventstore] object SubscriptionOperation {
   case class Subscribing(
       subscribeTo: SubscribeTo,
       pack: PackOut,
-      client: ActorRef,
+      client: Client,
       ongoing: Boolean,
       version: Int) extends SubscriptionOperation {
 
@@ -99,7 +99,7 @@ private[eventstore] object SubscriptionOperation {
   case class Subscribed(
       subscribeTo: SubscribeTo,
       pack: PackOut,
-      client: ActorRef,
+      client: Client,
       ongoing: Boolean,
       version: Int) extends SubscriptionOperation {
 
@@ -140,7 +140,7 @@ private[eventstore] object SubscriptionOperation {
   case class Unsubscribing(
       stream: EventStream,
       pack: PackOut,
-      client: ActorRef,
+      client: Client,
       ongoing: Boolean,
       version: Int) extends SubscriptionOperation {
 

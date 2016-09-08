@@ -107,7 +107,7 @@ private class StreamPublisher(
 
   def subscribing(next: Next): Receive = {
     def subscribed(subscriptionNumber: Last) = subscriptionNumber
-      .filter { subscriptionNumber => last map { _ < subscriptionNumber } getOrElse true }
+      .filter { subscriptionNumber => last forall { _ < subscriptionNumber } }
       .map { subscriptionNumber => catchingUp(next, subscriptionNumber, Queue()) }
       .getOrElse { this.subscribed }
 
