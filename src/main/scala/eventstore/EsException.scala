@@ -12,7 +12,9 @@ abstract class EsException(message: String, cause: Throwable)
   def this(message: String) = this(message, null)
 }
 
-class CannotEstablishConnectionException(message: String) extends EsException
+class CannotEstablishConnectionException(message: String, cause: Throwable) extends EsException(message, cause) {
+  def this(message: String) = this(message, null)
+}
 
 case class StreamNotFoundException(streamId: EventStream.Id) extends EsException(s"$streamId not found")
 
@@ -47,3 +49,7 @@ class ScavengeFailedException(message: String) extends EsException(message)
 class CommandNotExpectedException(message: String) extends EsException(message)
 
 class RetriesLimitReachedException(message: String) extends EsException(message)
+
+class ProjectionException(message: String, cause: Throwable) extends EsException(message, cause) {
+  def this(message: String) = this(message, null)
+}
