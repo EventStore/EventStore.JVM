@@ -161,21 +161,23 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
   def rcvPack(os: Operations, rcv: Operations => Receive, connection: Option[Connection]): Receive = {
     def send(packOut: PackOut) = for { connection <- connection } connection(packOut)
 
+    def inspectIn(msg: Try[In], operation: Operation) = operation.inspectIn(msg) match {
+      case OnIncoming.Ignore   => os
+      case OnIncoming.Stop(in) => stopOperation(operation, os, in)
+      case OnIncoming.Retry(operation, packOut) =>
+        send(packOut)
+        os + operation
+      case OnIncoming.Continue(operation, in) =>
+        operation.client(in)
+        os + operation
+    }
+
     def onPackIn(packIn: PackIn) = {
       val correlationId = packIn.correlationId
       val msg = packIn.message
 
       def forward: Operations = os.single(correlationId) map { operation =>
-        operation.inspectIn(msg) match {
-          case OnIncoming.Ignore   => os
-          case OnIncoming.Stop(in) => stopOperation(operation, os, in)
-          case OnIncoming.Retry(operation, packOut) =>
-            send(packOut)
-            os + operation
-          case OnIncoming.Continue(operation, in) =>
-            operation.client(in)
-            os + operation
-        }
+        inspectIn(msg, operation)
       } getOrElse {
         msg match {
           case Failure(x) => log.warning("Cannot deliver {}, client not found for correlationId: {}", msg, correlationId)
@@ -235,16 +237,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
     def onTimedOut(timedOut: TimedOut) = {
       val operation = os.single(timedOut.id)
       for { operation <- operation if operation.version == timedOut.version } {
-        val result = operation.inspectIn(Failure(OperationTimedOut)) match {
-          case OnIncoming.Ignore   => os
-          case OnIncoming.Stop(in) => stopOperation(operation, os, in)
-          case OnIncoming.Retry(operation, packOut) =>
-            send(packOut)
-            os + operation
-          case OnIncoming.Continue(operation, in) =>
-            operation.client(in)
-            os + operation
-        }
+        val result = inspectIn(Failure(OperationTimedOut), operation)
         context become rcv(result)
       }
     }

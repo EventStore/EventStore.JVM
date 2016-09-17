@@ -9,10 +9,12 @@ import java.net.InetSocketAddress
 import java.nio.ByteOrder
 
 import akka.stream.StreamTcpException
-import eventstore.NotHandled.{ MasterInfo, NotMaster }
+import eventstore.HeartbeatRequest
+import eventstore.NotHandled.{ MasterInfo, NotMaster, NotReady }
 import eventstore.cluster.ClusterDiscovererActor.{ Address, GetAddress }
 import eventstore.cluster.{ ClusterException, ClusterSettings }
 import eventstore.cluster.GossipSeedsOrDns.GossipSeeds
+import eventstore.tcp.ConnectionActor.Disconnected
 import org.specs2.mock.Mockito
 
 import scala.concurrent.duration._
@@ -278,22 +280,6 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       expectNoMsg(100.millis)
     }
 
-    "reply with OperationTimedOut for all awaiting operations" in new OperationTimedOutScope {
-      sendConnected()
-      val subscribeTo = PackOut(SubscribeTo(EventStream.All), id, credentials)
-      client ! subscribeTo
-      client ! PackIn(Try(SubscribeToAllCompleted(0)))
-
-      client ! PackOut(Unsubscribe, id, credentials)
-      expectNoMsg(100.millis)
-      expectOperationTimedOut(subscribeTo, Unsubscribe)
-
-      client ! PackIn(Try(SubscribeToAllCompleted(0)), id)
-      client ! PackIn(Try(Unsubscribed))
-      client ! PackIn(Try(Unsubscribed), id)
-      expectNoMsg(100.millis)
-    }.pendingUntilFixed
-
     "bind actor to correlationId temporarily" in new TcpScope {
       val (connection, tcpConnection) = connect()
       val probe = TestProbe()
@@ -343,10 +329,9 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       client ! PackIn(Try(subscribeCompleted), id)
       connection.expectMsg(PackOut(Unsubscribe, id, credentials))
       client ! PackIn(Try(Unsubscribed), id)
-      expectMsg(subscribeCompleted)
       expectMsg(Unsubscribed)
       expectNoMsg(duration)
-    }.pendingUntilFixed
+    }
 
     "not unsubscribe if not yet subscribed and client died" in new TestScope {
       val probe = TestProbe()
@@ -680,6 +665,49 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       client.tell(ConnectionActor.Connected(new InetSocketAddress(0)), probe.ref)
       expectTerminated(probe.ref)
     }
+
+    "ignore Disconnected" in new TestScope {
+      sendConnected()
+      client ! Disconnected(new InetSocketAddress(0))
+      expectNoMsgs()
+    }
+
+    "handle Disconnect" in new TestScope {
+      sendConnected()
+      client ! Disconnected(settings.address)
+      expectConnect()
+    }
+
+    "stop on ClusterFailure" in new ClusterScope {
+      discoverer expectMsg GetAddress()
+      watch(client)
+      client ! Status.Failure(new ClusterException("test"))
+      expectTerminated(client)
+    }
+
+    "automatically reply on Ping" in new TestScope {
+      sendConnected()
+      val ping = PackIn(Ping)
+      client ! ping
+      connection.expectMsg(PackOut(Pong, ping.correlationId))
+    }
+
+    "automatically reply on HeartbeatRequest" in new TestScope {
+      sendConnected()
+      val heartbeatRequest = PackIn(HeartbeatRequest)
+      client ! heartbeatRequest
+      connection.expectMsg(PackOut(HeartbeatResponse, heartbeatRequest.correlationId))
+    }
+
+    /*
+    "retry if received NotReady" in new TestScope {
+      sendConnected()
+      val heartbeatRequest = PackOut(HeartbeatRequest)
+      client ! heartbeatRequest
+      connection.expectMsg(client)
+      client ! PackIn(Failure(NotHandled(NotHandled.NotReady)), id)
+      client ! PackIn(Failure(NotReady))
+    }*/
   }
 
   abstract class TcpScope extends ActorScope {

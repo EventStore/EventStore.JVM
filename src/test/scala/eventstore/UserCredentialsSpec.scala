@@ -8,5 +8,12 @@ class UserCredentialsSpec extends Specification {
       val password = "myPassword"
       UserCredentials(login = "myLogin", password = password).toString must not(contain(password))
     }
+
+    "require not-null and non-empty values" in {
+      UserCredentials(login = null, password = "password") must throwAn[IllegalArgumentException]
+      UserCredentials(login = "", password = "password") must throwAn[IllegalArgumentException]
+      UserCredentials(login = "login", password = null) must throwAn[IllegalArgumentException]
+      UserCredentials(login = "login", password = "") must throwAn[IllegalArgumentException]
+    }
   }
 }
