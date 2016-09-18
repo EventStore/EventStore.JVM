@@ -159,7 +159,7 @@ private[eventstore] class ClusterDiscovererActor(
 
 private[eventstore] object ClusterDiscovererActor {
   def props(settings: ClusterSettings, clusterInfo: ClusterInfo.FutureFunc): Props = {
-    Props(classOf[ClusterDiscovererActor], settings, clusterInfo)
+    Props(new ClusterDiscovererActor(settings, clusterInfo))
   }
 
   case class GetAddress(failed: Option[InetSocketAddress] = None)

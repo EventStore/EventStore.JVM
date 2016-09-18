@@ -17,12 +17,10 @@ object Build extends Build {
     scalacOptions        := Seq("-encoding", "UTF-8", "-unchecked", "-deprecation", "-feature"),
     resolvers += "spray" at "http://repo.spray.io/",
     libraryDependencies ++= Seq(
-      Akka.actor, Akka.testkit,
-      typesafeConfig, codec, mockito,
+      Akka.actor, Akka.testkit, Akka.stream, Akka.http, Akka.streamTestkit,
+      typesafeConfig, codec, mockito, playJson,
       Joda.time, Joda.convert,
       Specs2.core, Specs2.mock,
-      sprayClient, playJson,
-      Akka.stream, /*AkkaStream.http,*/ Akka.streamTestkit,
       ReactiveStreams.streams, ReactiveStreams.tck)
   )
 
@@ -34,11 +32,10 @@ object Build extends Build {
   }
 
   object Akka {
-    val actor   = apply("akka-actor")
-    val testkit = apply("akka-testkit") % "test"
-
-    val stream  = apply("akka-stream")
-    //    val http    = apply("akka-http-experimental")
+    val actor         = apply("akka-actor")
+    val testkit       = apply("akka-testkit") % "test"
+    val stream        = apply("akka-stream")
+    val http          = apply("akka-http-experimental")
     val streamTestkit = apply("akka-stream-testkit") % "test"
 
     private def apply(x: String) = "com.typesafe.akka" %% x % "2.4.8"
@@ -54,7 +51,6 @@ object Build extends Build {
   val typesafeConfig = "com.typesafe" % "config" % "1.3.0"
   val playJson       = "com.typesafe.play" %% "play-json" % "2.5.4"
   val codec          = "org.apache.directory.studio" % "org.apache.commons.codec" % "1.8"
-  val sprayClient    = "io.spray" %% "spray-client" % "1.3.3"
   val mockito        = "org.mockito" % "mockito-all" % "1.9.5" % "test"
 
   object Joda {

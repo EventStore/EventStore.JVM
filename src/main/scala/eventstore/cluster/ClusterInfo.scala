@@ -2,9 +2,19 @@ package eventstore
 package cluster
 
 import java.net.InetSocketAddress
+
 import akka.actor.ActorSystem
+import akka.http.scaladsl.Http.HostConnectionPool
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl._
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.unmarshalling.Unmarshal
 import org.joda.time.DateTime
+
+import scala.collection.concurrent.TrieMap
 import scala.concurrent._
+import scala.util.Try
 
 case class ClusterInfo(serverAddress: InetSocketAddress, members: List[MemberInfo]) {
   lazy val bestNode: Option[MemberInfo] = {
@@ -19,19 +29,30 @@ object ClusterInfo {
 
   def futureFunc(implicit system: ActorSystem): FutureFunc = {
     import ClusterProtocol._
+    import eventstore.util.PlayJsonSupport._
     import system.dispatcher
-    import spray.client.pipelining._
-    import spray.http._
-    import spray.httpx.PlayJsonSupport._
 
-    val pipeline = sendReceive ~> unmarshal[ClusterInfo]
+    val http = Http(system)
+    val acceptHeader = headers.Accept(MediaRange(MediaTypes.`application/json`))
+    implicit val materializer = ActorMaterializer()
 
-    (address: InetSocketAddress) => {
+    val pools = TrieMap.empty[Uri, Flow[(HttpRequest, Unit), (Try[HttpResponse], Unit), HostConnectionPool]]
+
+    def clusterInfo(address: InetSocketAddress) = {
       val host = address.getHostString
       val port = address.getPort
       val uri = Uri(s"http://$host:$port/gossip?format=json")
-      pipeline(Get(uri))
+      val req = HttpRequest(uri = uri, headers = List(acceptHeader))
+      val pool = pools.getOrElseUpdate(uri, http.cachedHostConnectionPool[Unit](host, port))
+      val source = Source.single((req, ()))
+      val (_, response) = pool.runWith(source, Sink.head)
+      for {
+        (response, _) <- response
+        clusterInfo <- Unmarshal(response.get).to[ClusterInfo]
+      } yield clusterInfo
     }
+
+    clusterInfo
   }
 }
 
