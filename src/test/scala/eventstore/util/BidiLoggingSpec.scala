@@ -16,8 +16,6 @@ class BidiLoggingSpec extends ActorSpec with Mockito {
   "BidiLogging" should {
 
     "log incoming & outgoing if enabled" in new TestScope {
-      log.isDebugEnabled returns true
-
       val packIn = PackIn(Authenticated)
       val packOut = PackOut(Authenticate, packIn.correlationId)
       source ! packIn
@@ -27,6 +25,7 @@ class BidiLoggingSpec extends ActorSpec with Mockito {
     }
 
     "not log incoming & outgoing if disabled" in new TestScope {
+      log.isDebugEnabled returns false
       source ! PackIn(Authenticated)
       sink.expectMsgType[PackOut].message shouldEqual Authenticate
       there was two(log).isDebugEnabled
@@ -49,7 +48,11 @@ class BidiLoggingSpec extends ActorSpec with Mockito {
   }
 
   private trait TestScope extends ActorScope {
-    val log = mock[LoggingAdapter]
+    val log = {
+      val log = mock[LoggingAdapter]
+      log.isDebugEnabled returns true
+      log
+    }
     val logging = BidiLogging(log)
     val sink = TestProbe()
     val flow = Flow.fromFunction[PackIn, PackOut] {
