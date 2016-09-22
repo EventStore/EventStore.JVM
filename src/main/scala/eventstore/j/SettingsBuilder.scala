@@ -114,6 +114,7 @@ class SettingsBuilder extends Builder[Settings]
     heartbeatTimeout = _heartbeatTimeout,
     operationMaxRetries = _operationMaxRetries,
     connectionTimeout = _connectionTimeout,
+    operationTimeout = _operationTimeout,
     resolveLinkTos = _resolveLinkTos,
     requireMaster = _requireMaster,
     readBatchSize = _readBatchSize,
