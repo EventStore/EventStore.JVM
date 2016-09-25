@@ -15,7 +15,6 @@ object Build extends Build {
     description          := "Event Store JVM Client",
     startYear            := Some(2013),
     scalacOptions        := Seq("-encoding", "UTF-8", "-unchecked", "-deprecation", "-feature"),
-    resolvers += "spray" at "http://repo.spray.io/",
     libraryDependencies ++= Seq(
       Akka.actor, Akka.testkit, Akka.stream, Akka.http, Akka.streamTestkit,
       typesafeConfig, codec, mockito, playJson,
@@ -76,7 +75,7 @@ object Build extends Build {
     .settings(
       coverageExcludedPackages :=
         "eventstore.examples;eventstore.j;" +
-        "eventstore.proto;eventstore.pipeline;" +
+        "eventstore.proto;" +
         "eventstore.tcp.EventStoreProtoFormats;" +
         "eventstore.tcp.MarkerByte;" +
         "eventstore.util.ToCoarsest",
