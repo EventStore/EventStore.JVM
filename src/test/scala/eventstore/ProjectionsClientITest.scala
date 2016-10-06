@@ -2,11 +2,11 @@ package eventstore
 
 import akka.stream.ThrottleMode.Shaping
 import akka.stream.scaladsl.Source
-import eventstore.EsProjectionsClient.ProjectionCreationResult._
-import eventstore.EsProjectionsClient.ProjectionDeleteResult._
-import eventstore.EsProjectionsClient.ProjectionMode._
-import eventstore.EsProjectionsClient.ProjectionStatus._
-import eventstore.EsProjectionsClient._
+import eventstore.ProjectionsClient.ProjectionCreationResult._
+import eventstore.ProjectionsClient.ProjectionDeleteResult._
+import eventstore.ProjectionsClient.ProjectionMode._
+import eventstore.ProjectionsClient.ProjectionStatus._
+import eventstore.ProjectionsClient._
 import org.specs2.execute.EventuallyResults
 import play.api.libs.json.Json
 
@@ -14,7 +14,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Random
 
-class EsProjectionsClientITest extends AbstractStreamsITest {
+class ProjectionsClientITest extends AbstractStreamsITest {
   sequential
 
   val timeout = 20.seconds
@@ -40,7 +40,7 @@ class EsProjectionsClientITest extends AbstractStreamsITest {
 
   "the projections client" should {
     "be able to create a projection" in new TestScope {
-      val client = new EsProjectionsClient(settings, system)
+      val client = new ProjectionsClient(settings, system)
       val projectionName = generateProjectionName
 
       val result = client.createProjection(projectionName, ProjectionCode, OneTime)
@@ -49,7 +49,7 @@ class EsProjectionsClientITest extends AbstractStreamsITest {
     }
 
     "fail to create the same projection twice" in new TestScope {
-      val client = new EsProjectionsClient(settings, system)
+      val client = new ProjectionsClient(settings, system)
       val projectionName = generateProjectionName
 
       val result = for {
@@ -61,7 +61,7 @@ class EsProjectionsClientITest extends AbstractStreamsITest {
     }
 
     "return the completed status for a one time projection" in new TestScope {
-      val client = new EsProjectionsClient(settings, system)
+      val client = new ProjectionsClient(settings, system)
       val projectionName = generateProjectionName
 
       client.createProjection(projectionName, ProjectionCode, OneTime)
@@ -73,7 +73,7 @@ class EsProjectionsClientITest extends AbstractStreamsITest {
     }
 
     "return the running status for a continous projection" in new TestScope {
-      val client = new EsProjectionsClient(settings, system)
+      val client = new ProjectionsClient(settings, system)
       val projectionName = generateProjectionName
 
       val result = for {
@@ -86,7 +86,7 @@ class EsProjectionsClientITest extends AbstractStreamsITest {
     }
 
     "return the faulted status for a continous projection that doesnt compile" in new TestScope {
-      val client = new EsProjectionsClient(settings, system)
+      val client = new ProjectionsClient(settings, system)
       val projectionName = generateProjectionName
 
       val result = for {
@@ -100,14 +100,14 @@ class EsProjectionsClientITest extends AbstractStreamsITest {
     }
 
     "return None when fetching the project details of a non existant projection" in new TestScope {
-      val client = new EsProjectionsClient(settings, system)
+      val client = new ProjectionsClient(settings, system)
 
       val projectionDetails = client.fetchProjectionDetails("notExist").await_(timeout)
       projectionDetails should beNone
     }
 
     "fetch the projection state" in new TestScope {
-      val client = new EsProjectionsClient(settings, system)
+      val client = new ProjectionsClient(settings, system)
       val projectionName = generateProjectionName
 
       client.createProjection(projectionName, ProjectionCode, OneTime)
@@ -119,7 +119,7 @@ class EsProjectionsClientITest extends AbstractStreamsITest {
     }
 
     "return an empty state when the projection doesn't exist" in new TestScope {
-      val client = new EsProjectionsClient(settings, system)
+      val client = new ProjectionsClient(settings, system)
       val projectionName = generateProjectionName
 
       val projectionState = client.fetchProjectionState(projectionName).await_(timeout)
@@ -128,7 +128,7 @@ class EsProjectionsClientITest extends AbstractStreamsITest {
 
     "return an empty state when the projection has no state" in new TestScope {
       val projectionName = generateProjectionName
-      val client = new EsProjectionsClient(settings, system)
+      val client = new ProjectionsClient(settings, system)
 
       client.createProjection(projectionName, ProjectionCodeWithNoState, OneTime)
 
@@ -141,7 +141,7 @@ class EsProjectionsClientITest extends AbstractStreamsITest {
     }
 
     "fetch the projection result" in new TestScope {
-      val client = new EsProjectionsClient(settings, system)
+      val client = new ProjectionsClient(settings, system)
       val projectionName = generateProjectionName
 
       client.createProjection(projectionName, ProjectionCode, OneTime)
@@ -154,7 +154,7 @@ class EsProjectionsClientITest extends AbstractStreamsITest {
 
     "return an empty result when the projection doesn't exist" in new TestScope {
       val projectionName = generateProjectionName
-      val client = new EsProjectionsClient(settings, system)
+      val client = new ProjectionsClient(settings, system)
 
       val projectionResult = client.fetchProjectionResult(projectionName).await_(timeout)
       projectionResult shouldEqual None
@@ -162,7 +162,7 @@ class EsProjectionsClientITest extends AbstractStreamsITest {
 
     "return an empty result when the projection has no result" in new TestScope {
       val projectionName = generateProjectionName
-      val client = new EsProjectionsClient(settings, system)
+      val client = new ProjectionsClient(settings, system)
 
       client.createProjection(projectionName, ProjectionCodeWithNoState, OneTime)
 
@@ -175,7 +175,7 @@ class EsProjectionsClientITest extends AbstractStreamsITest {
     }
 
     "stop a continous projection and return the stopped status for it" in new TestScope {
-      val client = new EsProjectionsClient(settings, system)
+      val client = new ProjectionsClient(settings, system)
       val projectionName = generateProjectionName
 
       val result = for {
@@ -189,7 +189,7 @@ class EsProjectionsClientITest extends AbstractStreamsITest {
     }
 
     "restart a stopped projection" in new TestScope {
-      val client = new EsProjectionsClient(settings, system)
+      val client = new ProjectionsClient(settings, system)
       val projectionName = generateProjectionName
 
       val result = for {
@@ -204,7 +204,7 @@ class EsProjectionsClientITest extends AbstractStreamsITest {
     }
 
     "delete a completed onetime projection" in new TestScope {
-      val client = new EsProjectionsClient(settings, system)
+      val client = new ProjectionsClient(settings, system)
       val projectionName = generateProjectionName
 
       val result = for {
@@ -219,7 +219,7 @@ class EsProjectionsClientITest extends AbstractStreamsITest {
     }
 
     "delete a stopped continuous projection" in new TestScope {
-      val client = new EsProjectionsClient(settings, system)
+      val client = new ProjectionsClient(settings, system)
       val projectionName = generateProjectionName
 
       val result = for {
@@ -234,7 +234,7 @@ class EsProjectionsClientITest extends AbstractStreamsITest {
     }
 
     "fail to delete a running projection" in new TestScope {
-      val client = new EsProjectionsClient(settings, system)
+      val client = new ProjectionsClient(settings, system)
       val projectionName = generateProjectionName
 
       val result = for {
@@ -257,7 +257,7 @@ class EsProjectionsClientITest extends AbstractStreamsITest {
     }
   }
 
-  def waitForProjectionStatus(client: EsProjectionsClient, name: String, expectedStatus: ProjectionStatus, waitDuration: FiniteDuration = 10.seconds): Future[Boolean] = {
+  def waitForProjectionStatus(client: ProjectionsClient, name: String, expectedStatus: ProjectionStatus, waitDuration: FiniteDuration = 10.seconds): Future[Boolean] = {
     val retryCount = 10
     val retryDelay = waitDuration / retryCount
 

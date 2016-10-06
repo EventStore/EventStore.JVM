@@ -1,6 +1,6 @@
 package eventstore
 
-import eventstore.EsProjectionsClient.{ ProjectionMode, ProjectionStatus }
+import eventstore.ProjectionsClient.{ ProjectionMode, ProjectionStatus }
 import play.api.libs.json._
 
 object ProjectionDetails {

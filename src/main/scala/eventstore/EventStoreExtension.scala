@@ -11,7 +11,7 @@ class EventStoreExtension(system: ActorSystem) extends Extension {
 
   val connection: EsConnection = new EsConnection(actor, system, settings)
 
-  lazy val projectionsClient: EsProjectionsClient = new EsProjectionsClient(settings, system)
+  lazy val projectionsClient: ProjectionsClient = new ProjectionsClient(settings, system)
 }
 
 object EventStoreExtension extends ExtensionId[EventStoreExtension] with ExtensionIdProvider {

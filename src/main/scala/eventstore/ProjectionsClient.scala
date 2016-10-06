@@ -4,26 +4,24 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{ Authorization, BasicHttpCredentials }
+import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.ActorMaterializer
-import akka.stream.ThrottleMode.Shaping
-import akka.stream.scaladsl.{ Flow, Sink, Source }
-import eventstore.EsProjectionsClient.ProjectionCreationResult._
-import eventstore.EsProjectionsClient.ProjectionDeleteResult._
-import eventstore.EsProjectionsClient.ProjectionMode
-import eventstore.EsProjectionsClient.ProjectionMode._
-import play.api.libs.json.{ JsError, JsSuccess, Json }
+import akka.stream.scaladsl.{Flow, Sink, Source}
+import eventstore.ProjectionsClient.ProjectionCreationResult._
+import eventstore.ProjectionsClient.ProjectionDeleteResult._
+import eventstore.ProjectionsClient.ProjectionMode
+import eventstore.ProjectionsClient.ProjectionMode._
+import play.api.libs.json.{JsError, JsSuccess, Json}
 
 import scala.concurrent.Future
-import scala.concurrent.duration._
 import scala.util.Try
 
 /**
  * The API miss documentation so I used the C# client as a starting point
  * See : https://github.com/EventStore/EventStore/blob/release-v3.9.0/src/EventStore.ClientAPI/Projections/ProjectionsClient.cs
  */
-protected[this] trait EventStoreProjectionsUrls {
+protected[this] trait ProjectionsUrls {
   def createProjectionUrl(name: String, mode: ProjectionMode = Continuous, allowEmit: Boolean = true): String = {
     val emit = if (allowEmit) "emit=1&checkpoints=yes" else "emit=0"
     val projectionModeStr = mode match {
@@ -46,7 +44,7 @@ protected[this] trait EventStoreProjectionsUrls {
     s"${projectionBaseUrl(name)}/command/$command"
 }
 
-object EsProjectionsClient {
+object ProjectionsClient {
   sealed trait ProjectionMode
   object ProjectionMode {
     case object Continuous extends ProjectionMode
@@ -96,11 +94,11 @@ object EsProjectionsClient {
 /**
  * A client allowing to create, get the status and delete an existing projection.
  */
-class EsProjectionsClient(settings: Settings = Settings.Default, system: ActorSystem) extends EventStoreProjectionsUrls {
+class ProjectionsClient(settings: Settings = Settings.Default, system: ActorSystem) extends ProjectionsUrls {
 
   implicit val materializer = ActorMaterializer.create(system)
 
-  import EsProjectionsClient._
+  import ProjectionsClient._
   import materializer.executionContext
 
   private val connection: Flow[HttpRequest, Try[HttpResponse], NotUsed] = {
