@@ -4,15 +4,15 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials}
+import akka.http.scaladsl.model.headers.{ Authorization, BasicHttpCredentials }
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.scaladsl.{ Flow, Sink, Source }
 import eventstore.ProjectionsClient.ProjectionCreationResult._
 import eventstore.ProjectionsClient.ProjectionDeleteResult._
 import eventstore.ProjectionsClient.ProjectionMode
 import eventstore.ProjectionsClient.ProjectionMode._
-import play.api.libs.json.{JsError, JsSuccess, Json}
+import play.api.libs.json.{ JsError, JsSuccess, Json }
 
 import scala.concurrent.Future
 import scala.util.Try

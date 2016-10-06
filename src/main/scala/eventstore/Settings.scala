@@ -103,6 +103,6 @@ object HttpSettings {
     val port = conf getInt "http.port"
     val prefix = conf getString "http.prefix"
 
-    HttpSettings(uri = Uri(s"$protocol://$host:$port/$prefix"))
+    HttpSettings(uri = Uri(s"$protocol://$host:$port$prefix"))
   }
 }
