@@ -2,9 +2,12 @@ package eventstore
 
 import eventstore.cluster.ClusterSettings
 import eventstore.util.ToCoarsest
+
 import scala.concurrent.duration._
 import java.net.InetSocketAddress
-import com.typesafe.config.{ ConfigFactory, Config }
+
+import akka.http.scaladsl.model.Uri
+import com.typesafe.config.{ Config, ConfigFactory }
 
 /**
  * @param address IP & port of Event Store
@@ -89,15 +92,17 @@ object Settings {
   def getInstance(): Settings = Default
 }
 
-case class HttpSettings(protocol: String = "http", port: Int = 2113, prefix: String = "", url: String = "http://127.0.0.1:2113/") {
-  require(List("http", "https").contains(protocol), s"protocol must be either http or https but is $protocol")
-  require(port < 65536, s"Port must be valid but was $port")
+case class HttpSettings(uri: Uri = Uri("http://127.0.0.1:2113")) {
+  require(List("http", "https").contains(uri.scheme), s"Scheme must be either http or https but is ${uri.scheme}")
 }
 
 object HttpSettings {
-  def apply(conf: Config): HttpSettings = HttpSettings(
-    protocol = conf getString "http.protocol",
-    port = conf getInt "http.port",
-    prefix = conf getString "http.prefix",
-    url = conf getString "http.url")
+  def apply(conf: Config): HttpSettings = {
+    val protocol = conf getString "http.protocol"
+    val host = conf getString "address.host"
+    val port = conf getInt "http.port"
+    val prefix = conf getString "http.prefix"
+
+    HttpSettings(uri = Uri(s"$protocol://$host:$port/$prefix"))
+  }
 }

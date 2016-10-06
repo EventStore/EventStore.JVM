@@ -1,9 +1,16 @@
 package eventstore
 
+import akka.stream.ThrottleMode.Shaping
+import akka.stream.scaladsl.Source
+import eventstore.EsProjectionsClient.ProjectionCreationResult._
+import eventstore.EsProjectionsClient.ProjectionDeleteResult._
+import eventstore.EsProjectionsClient.ProjectionMode._
+import eventstore.EsProjectionsClient.ProjectionStatus._
 import eventstore.EsProjectionsClient._
 import org.specs2.execute.EventuallyResults
 import play.api.libs.json.Json
 
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Random
 
@@ -60,7 +67,8 @@ class EsProjectionsClientITest extends AbstractStreamsITest {
       client.createProjection(projectionName, ProjectionCode, OneTime)
 
       EventuallyResults.eventually {
-        client.fetchProjectionStatus(projectionName).await_(timeout) should beEqualTo(Completed)
+        val projectionDetails = client.fetchProjectionDetails(projectionName).await_(timeout)
+        projectionDetails.map(_.status) should beSome(Completed)
       }
     }
 
@@ -70,10 +78,11 @@ class EsProjectionsClientITest extends AbstractStreamsITest {
 
       val result = for {
         _ <- client.createProjection(projectionName, ProjectionCode, Continuous)
-        status <- client.fetchProjectionStatus(projectionName)
-      } yield status
+        details <- client.fetchProjectionDetails(projectionName)
+      } yield details
 
-      result.await_(timeout) should beEqualTo(Running)
+      val projectionDetails = result.await_(timeout)
+      projectionDetails.map(_.status) should beSome(Running)
     }
 
     "return the faulted status for a continous projection that doesnt compile" in new TestScope {
@@ -83,17 +92,18 @@ class EsProjectionsClientITest extends AbstractStreamsITest {
       val result = for {
         _ <- client.createProjection(projectionName, "blah", Continuous)
         _ <- client.stopProjection(projectionName)
-        status <- client.fetchProjectionStatus(projectionName)
-      } yield status
+        details <- client.fetchProjectionDetails(projectionName)
+      } yield details
 
-      result.await_(timeout) should beEqualTo(Faulted)
+      val projectionDetails = result.await_(timeout)
+      projectionDetails.map(_.status) should beSome(Faulted)
     }
 
-    "return absent when fetching the project status of a non existant projection" in new TestScope {
+    "return None when fetching the project details of a non existant projection" in new TestScope {
       val client = new EsProjectionsClient(settings, system)
 
-      val projectionStatus = client.fetchProjectionStatus("notExist").await_(timeout)
-      projectionStatus should beEqualTo(Absent)
+      val projectionDetails = client.fetchProjectionDetails("notExist").await_(timeout)
+      projectionDetails should beNone
     }
 
     "fetch the projection state" in new TestScope {
@@ -113,7 +123,6 @@ class EsProjectionsClientITest extends AbstractStreamsITest {
       val projectionName = generateProjectionName
 
       val projectionState = client.fetchProjectionState(projectionName).await_(timeout)
-
       projectionState shouldEqual None
     }
 
@@ -124,7 +133,7 @@ class EsProjectionsClientITest extends AbstractStreamsITest {
       client.createProjection(projectionName, ProjectionCodeWithNoState, OneTime)
 
       EventuallyResults.eventually {
-        val projectionCompleted = client.fetchProjectionStatus(projectionName).await_(timeout) should beEqualTo(Completed)
+        val projectionCompleted = client.fetchProjectionDetails(projectionName).await_(timeout).map(_.status) should beSome(Completed)
         val resultIsEmpty = client.fetchProjectionState(projectionName).await_(timeout) shouldEqual Some("{}")
 
         projectionCompleted and resultIsEmpty
@@ -158,7 +167,7 @@ class EsProjectionsClientITest extends AbstractStreamsITest {
       client.createProjection(projectionName, ProjectionCodeWithNoState, OneTime)
 
       EventuallyResults.eventually {
-        val projectionCompleted = client.fetchProjectionStatus(projectionName).await_(timeout) should beEqualTo(Completed)
+        val projectionCompleted = client.fetchProjectionDetails(projectionName).await_(timeout).map(_.status) should beSome(Completed)
         val resultIsEmpty = client.fetchProjectionResult(projectionName).await_(timeout) shouldEqual Some("{}")
 
         projectionCompleted and resultIsEmpty
@@ -172,10 +181,11 @@ class EsProjectionsClientITest extends AbstractStreamsITest {
       val result = for {
         _ <- client.createProjection(projectionName, ProjectionCode, Continuous)
         _ <- client.stopProjection(projectionName)
-        status <- client.fetchProjectionStatus(projectionName)
+        status <- client.fetchProjectionDetails(projectionName)
       } yield status
 
-      result.await_(timeout) should beEqualTo(Stopped)
+      val projectionDetails = result.await_(timeout)
+      projectionDetails.map(_.status) should beSome(Stopped)
     }
 
     "restart a stopped projection" in new TestScope {
@@ -186,10 +196,11 @@ class EsProjectionsClientITest extends AbstractStreamsITest {
         _ <- client.createProjection(projectionName, ProjectionCode, Continuous)
         _ <- client.stopProjection(projectionName)
         _ <- client.startProjection(projectionName)
-        status <- client.fetchProjectionStatus(projectionName)
+        status <- client.fetchProjectionDetails(projectionName)
       } yield status
 
-      result.await_(timeout) should beEqualTo(Running)
+      val projectionDetails = result.await_(timeout)
+      projectionDetails.map(_.status) should beSome(Running)
     }
 
     "delete a completed onetime projection" in new TestScope {
@@ -198,9 +209,9 @@ class EsProjectionsClientITest extends AbstractStreamsITest {
 
       val result = for {
         _ <- client.createProjection(projectionName, ProjectionCode, OneTime)
-        _ <- client.waitForProjectionStatus(projectionName, Completed)
+        _ <- waitForProjectionStatus(client, projectionName, Completed)
         _ <- client.stopProjection(projectionName)
-        stopped <- client.waitForProjectionStatus(projectionName, Stopped)
+        stopped <- waitForProjectionStatus(client, projectionName, Stopped)
         deleteResult <- client.deleteProjection(projectionName)
       } yield deleteResult
 
@@ -213,9 +224,9 @@ class EsProjectionsClientITest extends AbstractStreamsITest {
 
       val result = for {
         _ <- client.createProjection(projectionName, ProjectionCode, Continuous)
-        stopped <- client.waitForProjectionStatus(projectionName, Running)
+        stopped <- waitForProjectionStatus(client, projectionName, Running)
         _ <- client.stopProjection(projectionName)
-        stopped <- client.waitForProjectionStatus(projectionName, Stopped)
+        stopped <- waitForProjectionStatus(client, projectionName, Stopped)
         deleteResult <- client.deleteProjection(projectionName)
       } yield deleteResult
 
@@ -244,5 +255,17 @@ class EsProjectionsClientITest extends AbstractStreamsITest {
     "test_" + random.alphanumeric.take(nameLength).foldLeft("") {
       _ + _
     }
+  }
+
+  def waitForProjectionStatus(client: EsProjectionsClient, name: String, expectedStatus: ProjectionStatus, waitDuration: FiniteDuration = 10.seconds): Future[Boolean] = {
+    val retryCount = 10
+    val retryDelay = waitDuration / retryCount
+
+    Source(1 to retryCount)
+      .throttle(1, retryDelay, 1, Shaping)
+      .mapAsync(1)(_ => client.fetchProjectionDetails(name))
+      .takeWhile(_ != expectedStatus)
+      .runFold(0) { case (sum, _) => sum + 1 }
+      .map(failedCount => failedCount != retryCount)
   }
 }

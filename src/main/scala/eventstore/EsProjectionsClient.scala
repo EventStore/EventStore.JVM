@@ -6,11 +6,14 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{ Authorization, BasicHttpCredentials }
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.Materializer
+import akka.stream.ActorMaterializer
 import akka.stream.ThrottleMode.Shaping
 import akka.stream.scaladsl.{ Flow, Sink, Source }
-import eventstore.EsProjectionsClient.{ Continuous, OneTime, ProjectionMode, Transient }
-import play.api.libs.json.Json
+import eventstore.EsProjectionsClient.ProjectionCreationResult._
+import eventstore.EsProjectionsClient.ProjectionDeleteResult._
+import eventstore.EsProjectionsClient.ProjectionMode
+import eventstore.EsProjectionsClient.ProjectionMode._
+import play.api.libs.json.{ JsError, JsSuccess, Json }
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -45,41 +48,66 @@ protected[this] trait EventStoreProjectionsUrls {
 
 object EsProjectionsClient {
   sealed trait ProjectionMode
-  object Continuous extends ProjectionMode
-  object OneTime extends ProjectionMode
-  object Transient extends ProjectionMode
+  object ProjectionMode {
+    case object Continuous extends ProjectionMode
+    case object OneTime extends ProjectionMode
+    case object Transient extends ProjectionMode
+
+    def apply(modeString: String): ProjectionMode = modeString.toLowerCase match {
+      case "onetime"    => OneTime
+      case "transient"  => Transient
+      case "continuous" => Continuous
+      case other        => throw new IllegalArgumentException(s"Expected ProjectionMode tp be one of OneTime|Transient|Continuous but was $other")
+    }
+
+  }
 
   sealed trait ProjectionStatus
-  object Running extends ProjectionStatus
-  object Faulted extends ProjectionStatus
-  object Completed extends ProjectionStatus
-  object Stopped extends ProjectionStatus
-  object Absent extends ProjectionStatus
-  final case class Other(status: String) extends ProjectionStatus
+  object ProjectionStatus {
+    case object Running extends ProjectionStatus
+    case object Faulted extends ProjectionStatus
+    case object Completed extends ProjectionStatus
+    case object Stopped extends ProjectionStatus
+    final case class Other(status: String) extends ProjectionStatus
+
+    def apply(statusString: String): ProjectionStatus = statusString match {
+      case status if status.startsWith("Running")   => Running
+      case status if status.startsWith("Completed") => Completed
+      case status if status.startsWith("Stopped")   => Stopped
+      case status if status.startsWith("Faulted")   => Faulted
+      case other                                    => Other(other)
+    }
+  }
 
   sealed trait ProjectionCreationResult
-  object ProjectionCreated extends ProjectionCreationResult
-  object ProjectionAlreadyExist extends ProjectionCreationResult
+  object ProjectionCreationResult {
+    case object ProjectionCreated extends ProjectionCreationResult
+    case object ProjectionAlreadyExist extends ProjectionCreationResult
+  }
 
   sealed trait ProjectionDeleteResult
-  object ProjectionDeleted extends ProjectionDeleteResult
-  case class UnableToDeleteProjection(reason: String) extends ProjectionDeleteResult
+  object ProjectionDeleteResult {
+    case object ProjectionDeleted extends ProjectionDeleteResult
+    case class UnableToDeleteProjection(reason: String) extends ProjectionDeleteResult
+  }
 
 }
 
 /**
  * A client allowing to create, get the status and delete an existing projection.
  */
-class EsProjectionsClient(settings: Settings = Settings.Default, system: ActorSystem)(implicit materializer: Materializer) extends EventStoreProjectionsUrls {
+class EsProjectionsClient(settings: Settings = Settings.Default, system: ActorSystem) extends EventStoreProjectionsUrls {
 
-  import materializer.executionContext
+  implicit val materializer = ActorMaterializer.create(system)
+
   import EsProjectionsClient._
+  import materializer.executionContext
 
   private val connection: Flow[HttpRequest, Try[HttpResponse], NotUsed] = {
-    val uri = Uri(settings.http.url)
     val httpExt = Http(system)
+    val uri = settings.http.uri
 
-    val connectionPool = if (settings.http.protocol == "http") {
+    val connectionPool = if (uri.scheme == "http") {
       httpExt.cachedHostConnectionPool[Unit](uri.authority.host.address(), uri.authority.port)
     } else {
       httpExt.cachedHostConnectionPoolHttps[Unit](uri.authority.host.address(), uri.authority.port)
@@ -98,17 +126,17 @@ class EsProjectionsClient(settings: Settings = Settings.Default, system: ActorSy
   /**
    * Create the projection with the specified name and code
    * @param name the name of the projection to create
-   * @param javascriptCode the javascript code for the projection
+   * @param javascript the javascript code for the projection
    * @param mode the projection's mode (Either OneTime, Continuous or Transient)
-   * @param allowEmit
+   * @param allowEmit indicates if the projection is allowed to emit new events.
    * @return
    */
-  def createProjection(name: String, javascriptCode: String, mode: ProjectionMode = Continuous, allowEmit: Boolean = true): Future[ProjectionCreationResult] = {
+  def createProjection(name: String, javascript: String, mode: ProjectionMode = Continuous, allowEmit: Boolean = true): Future[ProjectionCreationResult] = {
     val request = HttpRequest(
       method = HttpMethods.POST,
       uri = Uri(createProjectionUrl(name, mode, allowEmit)),
       headers = defaultHeaders,
-      entity = HttpEntity(ContentTypes.`application/json`, javascriptCode))
+      entity = HttpEntity(ContentTypes.`application/json`, javascript))
 
     singleRequestWithErrorHandling(request)
       .map {
@@ -120,11 +148,11 @@ class EsProjectionsClient(settings: Settings = Settings.Default, system: ActorSy
   }
 
   /**
-   * Fetch the status for the specified projection.
+   * Fetch the details for the specified projection.
    * @param name the name of the projection
-   * @return Absent if the projection doesn't exist. Otherwise either Running/Completed/Stopped/Faulted or Other.
+   * @return the Projection details if it exist. None otherwise
    */
-  def fetchProjectionStatus(name: String): Future[ProjectionStatus] = {
+  def fetchProjectionDetails(name: String): Future[Option[ProjectionDetails]] = {
     val request = HttpRequest(
       method = HttpMethods.GET,
       uri = Uri(projectionBaseUrl(name)),
@@ -132,15 +160,14 @@ class EsProjectionsClient(settings: Settings = Settings.Default, system: ActorSy
 
     singleRequestWithErrorHandling(request)
       .mapAsync(1) {
-        case response if response.status == StatusCodes.NotFound => Future.successful(Absent)
+        case response if response.status == StatusCodes.NotFound => Future.successful(None)
         case response => Unmarshal(response).to[String].map { rawJson =>
           val json = Json.parse(rawJson)
-          (json \ "status").as[String] match {
-            case status if status.startsWith("Running")   => Running
-            case status if status.startsWith("Completed") => Completed
-            case status if status.startsWith("Stopped")   => Stopped
-            case status if status.startsWith("Faulted")   => Faulted
-            case other                                    => Other(other)
+          Json.fromJson[ProjectionDetails](json) match {
+            case JsSuccess(details, _) => Some(details)
+            case e: JsError =>
+              val error = Json.prettyPrint(JsError.toJson(e))
+              throw new ServerErrorException(s"Invalid json for ProjectionDetails : $error")
           }
         }
       }
@@ -204,25 +231,6 @@ class EsProjectionsClient(settings: Settings = Settings.Default, system: ActorSy
   }
 
   /**
-   * Blocks for at most #waitDuration for the projection #name to change to the desired status.
-   * @param name the name of the projection to wait on
-   * @param expectedStatus the desired status
-   * @param waitDuration the maximum wait duration
-   * @return true is the expectedStatus was reached, false otherwise
-   */
-  def waitForProjectionStatus(name: String, expectedStatus: ProjectionStatus, waitDuration: FiniteDuration = 10.seconds): Future[Boolean] = {
-    val retryCount = 10
-    val retryDelay = waitDuration / retryCount
-
-    Source(1 to retryCount)
-      .throttle(1, retryDelay, 1, Shaping)
-      .mapAsync(1)(_ => fetchProjectionStatus(name))
-      .takeWhile(_ != expectedStatus)
-      .runFold(0) { case (sum, _) => sum + 1 }
-      .map(failedCount => failedCount != retryCount)
-  }
-
-  /**
    * Start the projection with the specified name.
    * Note that when eventstore responds to the command. It only acknowledges it.
    * To know when it is started, you should use #waitForProjectionStatus
@@ -272,7 +280,7 @@ class EsProjectionsClient(settings: Settings = Settings.Default, system: ActorSy
           case ex => throw new ProjectionException(s"Failed to query eventstore on ${request.uri}", ex)
         }.get
         if (response.status == StatusCodes.Unauthorized)
-          throw new CannotEstablishConnectionException("Invalid credentials")
+          throw new AccessDeniedException("Invalid credentials ")
         else
           response
       }
