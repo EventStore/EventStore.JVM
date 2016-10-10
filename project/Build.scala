@@ -1,8 +1,7 @@
 import sbt.Keys._
 import sbt._
 import sbtprotobuf.{ProtobufPlugin => PB}
-import sbtrelease.ReleasePlugin._
-import scoverage.ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages
+import scoverage.ScoverageKeys.coverageExcludedPackages
 
 object Build extends Build {
   lazy val basicSettings = Seq(
@@ -37,18 +36,18 @@ object Build extends Build {
     val http          = apply("akka-http-experimental")
     val streamTestkit = apply("akka-stream-testkit") % "test"
 
-    private def apply(x: String) = "com.typesafe.akka" %% x % "2.4.8"
+    private def apply(x: String) = "com.typesafe.akka" %% x % "2.4.11"
   }
 
   object Specs2 {
     val core = apply("core")
     val mock = apply("mock")
 
-    private def apply(x: String) = "org.specs2" %% s"specs2-$x" % "2.4.15" % "test"
+    private def apply(x: String) = "org.specs2" %% s"specs2-$x" % "2.4.17" % "test"
   }
 
-  val typesafeConfig = "com.typesafe" % "config" % "1.3.0"
-  val playJson       = "com.typesafe.play" %% "play-json" % "2.5.4"
+  val typesafeConfig = "com.typesafe" % "config" % "1.3.1"
+  val playJson       = "com.typesafe.play" %% "play-json" % "2.5.9"
   val codec          = "org.apache.directory.studio" % "org.apache.commons.codec" % "1.8"
   val mockito        = "org.mockito" % "mockito-all" % "1.9.5" % "test"
 
@@ -63,7 +62,7 @@ object Build extends Build {
   lazy val root = Project(
     "eventstore-client",
     file("."),
-    settings = basicSettings ++ Defaults.coreDefaultSettings ++ releaseSettings ++ PB.protobufSettings ++ Scalariform.settings ++ Publish.settings)
+    settings = basicSettings ++ Defaults.coreDefaultSettings ++ PB.protobufSettings ++ Scalariform.settings ++ Publish.settings)
     .configs(IntegrationTest, ClusterTest)
     .settings(
       version in PB.protobufConfig := "3.0.0",
