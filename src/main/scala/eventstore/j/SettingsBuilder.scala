@@ -24,6 +24,7 @@ class SettingsBuilder extends Builder[Settings]
   protected var _readBatchSize = Default.readBatchSize
   protected var _bufferSize = Default.bufferSize
   protected var _cluster = Default.cluster
+  protected var _http = Default.http
 
   def address(x: InetSocketAddress): SettingsBuilder = set { _address = x }
 
@@ -104,6 +105,8 @@ class SettingsBuilder extends Builder[Settings]
 
   def cluster(x: ClusterSettings): SettingsBuilder = set { _cluster = Some(x) }
 
+  def http(x: HttpSettings): SettingsBuilder = set { _http = x }
+
   def build: Settings = Settings(
     address = _address,
     maxReconnections = _maxReconnections,
@@ -119,5 +122,6 @@ class SettingsBuilder extends Builder[Settings]
     requireMaster = _requireMaster,
     readBatchSize = _readBatchSize,
     bufferSize = _bufferSize,
-    cluster = _cluster)
+    cluster = _cluster,
+    http = _http)
 }

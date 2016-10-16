@@ -2,9 +2,12 @@ package eventstore
 
 import eventstore.cluster.ClusterSettings
 import eventstore.util.ToCoarsest
+
 import scala.concurrent.duration._
 import java.net.InetSocketAddress
-import com.typesafe.config.{ ConfigFactory, Config }
+
+import akka.http.scaladsl.model.Uri
+import com.typesafe.config.{ Config, ConfigFactory }
 
 /**
  * @param address IP & port of Event Store
@@ -21,6 +24,7 @@ import com.typesafe.config.{ ConfigFactory, Config }
  * @param requireMaster Whether or not to require Event Store to refuse serving read or write request if it is not master
  * @param readBatchSize Number of events to be retrieved by client as single message
  * @param bufferSize The size of the buffer in element count
+ * @param http Url to access eventstore though the Http API
  */
 case class Settings(
     address: InetSocketAddress = "127.0.0.1" :: 1113,
@@ -37,7 +41,8 @@ case class Settings(
     requireMaster: Boolean = true,
     readBatchSize: Int = 500,
     bufferSize: Int = 100000,
-    cluster: Option[ClusterSettings] = None) {
+    cluster: Option[ClusterSettings] = None,
+    http: HttpSettings = HttpSettings()) {
   require(reconnectionDelayMin > Duration.Zero, "reconnectionDelayMin must be > 0")
   require(reconnectionDelayMax > Duration.Zero, "reconnectionDelayMax must be > 0")
   require(operationTimeout > Duration.Zero, "operationTimeout must be > 0")
@@ -75,7 +80,8 @@ object Settings {
         requireMaster = conf getBoolean "require-master",
         readBatchSize = conf getInt "read-batch-size",
         bufferSize = conf getInt "buffer-size",
-        cluster = cluster)
+        cluster = cluster,
+        http = HttpSettings(conf))
     }
     apply(conf getConfig "eventstore")
   }
@@ -84,4 +90,19 @@ object Settings {
    * Java API
    */
   def getInstance(): Settings = Default
+}
+
+case class HttpSettings(uri: Uri = Uri("http://127.0.0.1:2113")) {
+  require(List("http", "https").contains(uri.scheme), s"Scheme must be either http or https but is ${uri.scheme}")
+}
+
+object HttpSettings {
+  def apply(conf: Config): HttpSettings = {
+    val protocol = conf getString "http.protocol"
+    val host = conf getString "address.host"
+    val port = conf getInt "http.port"
+    val prefix = conf getString "http.prefix"
+
+    HttpSettings(uri = Uri(s"$protocol://$host:$port$prefix"))
+  }
 }
