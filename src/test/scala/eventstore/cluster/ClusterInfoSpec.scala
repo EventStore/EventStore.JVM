@@ -21,14 +21,16 @@ class ClusterInfoSpec extends Specification {
     "return None if no alive nodes" in new TestScope {
       ClusterInfo(address, List(
         member(isAlive = false),
-        member(isAlive = false))).bestNode must beNone
+        member(isAlive = false)
+      )).bestNode must beNone
     }
 
     "return None if no node with proper state" in new TestScope {
       ClusterInfo(address, List(
         member(ShuttingDown),
         member(Shutdown),
-        member(Manager))).bestNode must beNone
+        member(Manager)
+      )).bestNode must beNone
     }
   }
 
@@ -52,6 +54,7 @@ class ClusterInfoSpec extends Specification {
       epochPosition = 0,
       epochNumber = 0,
       epochId = randomUuid,
-      nodePriority = 0)
+      nodePriority = 0
+    )
   }
 }

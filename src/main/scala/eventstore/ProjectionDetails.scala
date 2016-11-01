@@ -12,14 +12,16 @@ object ProjectionDetails {
   implicit val projectionDetailsJsonFormat = Json.reads[ProjectionDetails]
 }
 
-case class ProjectionDetails(name: String,
-                             effectiveName: String,
-                             version: Int,
-                             epoch: Int,
-                             status: ProjectionStatus,
-                             stateReason: String,
-                             mode: ProjectionMode,
-                             writesInProgress: Int,
-                             readsInProgress: Int,
-                             progress: Double,
-                             bufferedEvents: Int)
+case class ProjectionDetails(
+  name:             String,
+  effectiveName:    String,
+  version:          Int,
+  epoch:            Int,
+  status:           ProjectionStatus,
+  stateReason:      String,
+  mode:             ProjectionMode,
+  writesInProgress: Int,
+  readsInProgress:  Int,
+  progress:         Double,
+  bufferedEvents:   Int
+)

@@ -69,9 +69,10 @@ object NotHandled {
   case class NotMaster(masterInfo: MasterInfo) extends Reason
 
   case class MasterInfo(
-    tcpAddress: InetSocketAddress,
-    httpAddress: InetSocketAddress,
-    tcpSecureAddress: Option[InetSocketAddress] = None)
+    tcpAddress:       InetSocketAddress,
+    httpAddress:      InetSocketAddress,
+    tcpSecureAddress: Option[InetSocketAddress] = None
+  )
 }
 
 sealed trait SubscriptionDropped extends ServerError

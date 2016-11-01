@@ -34,5 +34,6 @@ class DeleteStreamBuilder(streamId: String) extends Builder[DeleteStream]
     streamId = _streamId,
     expectedVersion = _expectVersion,
     hard = _hard,
-    requireMaster = _requireMaster)
+    requireMaster = _requireMaster
+  )
 }

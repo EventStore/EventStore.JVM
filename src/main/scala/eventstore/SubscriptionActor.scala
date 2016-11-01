@@ -10,46 +10,51 @@ object SubscriptionActor {
 
   @deprecated("Use `props` with Settings as argument", "2.2")
   def props(
-    connection: ActorRef,
-    client: ActorRef,
-    fromPositionExclusive: Option[Position] = None,
-    resolveLinkTos: Boolean = Settings.Default.resolveLinkTos,
-    credentials: Option[UserCredentials] = None,
-    readBatchSize: Int = Settings.Default.readBatchSize): Props = {
+    connection:            ActorRef,
+    client:                ActorRef,
+    fromPositionExclusive: Option[Position]        = None,
+    resolveLinkTos:        Boolean                 = Settings.Default.resolveLinkTos,
+    credentials:           Option[UserCredentials] = None,
+    readBatchSize:         Int                     = Settings.Default.readBatchSize
+  ): Props = {
 
     props(
       connection = connection,
       client = client,
       fromPositionExclusive = fromPositionExclusive,
       credentials = credentials,
-      settings = Settings.Default.copy(resolveLinkTos = resolveLinkTos, readBatchSize = readBatchSize))
+      settings = Settings.Default.copy(resolveLinkTos = resolveLinkTos, readBatchSize = readBatchSize)
+    )
   }
 
   def props(
-    connection: ActorRef,
-    client: ActorRef,
+    connection:            ActorRef,
+    client:                ActorRef,
     fromPositionExclusive: Option[Position],
-    credentials: Option[UserCredentials],
-    settings: Settings): Props = {
+    credentials:           Option[UserCredentials],
+    settings:              Settings
+  ): Props = {
 
     Props(new SubscriptionActor(
       connection = connection,
       client = client,
       fromPositionExclusive = fromPositionExclusive,
       credentials = credentials,
-      settings = settings))
+      settings = settings
+    ))
   }
 
   /**
    * Java API
    */
   def getProps(
-    connection: ActorRef,
-    client: ActorRef,
+    connection:            ActorRef,
+    client:                ActorRef,
     fromPositionExclusive: Option[Position],
-    resolveLinkTos: Boolean,
-    credentials: Option[UserCredentials],
-    readBatchSize: Int): Props = {
+    resolveLinkTos:        Boolean,
+    credentials:           Option[UserCredentials],
+    readBatchSize:         Int
+  ): Props = {
 
     props(connection, client, fromPositionExclusive, resolveLinkTos, credentials, readBatchSize)
   }
@@ -63,11 +68,12 @@ object SubscriptionActor {
 }
 
 class SubscriptionActor(
-    val connection: ActorRef,
-    val client: ActorRef,
+    val connection:        ActorRef,
+    val client:            ActorRef,
     fromPositionExclusive: Option[Position],
-    val credentials: Option[UserCredentials],
-    val settings: Settings) extends AbstractSubscriptionActor[IndexedEvent] {
+    val credentials:       Option[UserCredentials],
+    val settings:          Settings
+) extends AbstractSubscriptionActor[IndexedEvent] {
 
   type Next = Position.Exact
   type Last = Option[Position.Exact]
@@ -204,7 +210,8 @@ class SubscriptionActor(
       position, settings.readBatchSize,
       Forward,
       resolveLinkTos = settings.resolveLinkTos,
-      requireMaster = settings.requireMaster)
+      requireMaster = settings.requireMaster
+    )
     toConnection(msg)
   }
 

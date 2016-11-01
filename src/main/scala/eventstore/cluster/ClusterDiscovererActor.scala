@@ -9,8 +9,9 @@ import scala.util.Random.shuffle
 import scala.util.control.NonFatal
 
 private[eventstore] class ClusterDiscovererActor(
-    settings: ClusterSettings,
-    clusterInfo: ClusterInfo.FutureFunc) extends Actor with ActorLogging {
+    settings:    ClusterSettings,
+    clusterInfo: ClusterInfo.FutureFunc
+) extends Actor with ActorLogging {
   import ClusterDiscovererActor._
   import context.dispatcher
   import settings._

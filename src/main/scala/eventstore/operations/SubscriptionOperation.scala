@@ -30,18 +30,20 @@ private[eventstore] object SubscriptionOperation {
 
   def apply(
     subscribeTo: SubscribeTo,
-    pack: PackOut,
-    client: Client,
-    ongoing: Boolean): Operation = {
+    pack:        PackOut,
+    client:      Client,
+    ongoing:     Boolean
+  ): Operation = {
     Subscribing(subscribeTo, pack, client, ongoing, 0)
   }
 
   case class Subscribing(
       subscribeTo: SubscribeTo,
-      pack: PackOut,
-      client: Client,
-      ongoing: Boolean,
-      version: Int) extends SubscriptionOperation {
+      pack:        PackOut,
+      client:      Client,
+      ongoing:     Boolean,
+      version:     Int
+  ) extends SubscriptionOperation {
 
     def stream = subscribeTo.stream
 
@@ -98,10 +100,11 @@ private[eventstore] object SubscriptionOperation {
 
   case class Subscribed(
       subscribeTo: SubscribeTo,
-      pack: PackOut,
-      client: Client,
-      ongoing: Boolean,
-      version: Int) extends SubscriptionOperation {
+      pack:        PackOut,
+      client:      Client,
+      ongoing:     Boolean,
+      version:     Int
+  ) extends SubscriptionOperation {
 
     def stream = subscribeTo.stream
 
@@ -138,11 +141,12 @@ private[eventstore] object SubscriptionOperation {
   }
 
   case class Unsubscribing(
-      stream: EventStream,
-      pack: PackOut,
-      client: Client,
+      stream:  EventStream,
+      pack:    PackOut,
+      client:  Client,
       ongoing: Boolean,
-      version: Int) extends SubscriptionOperation {
+      version: Int
+  ) extends SubscriptionOperation {
 
     def inspectIn(in: Try[In]) = {
       def unexpected(x: Any) = this.unexpected(x, Unsubscribed.getClass)

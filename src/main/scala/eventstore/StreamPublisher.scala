@@ -8,13 +8,14 @@ import scala.collection.immutable.Queue
 object StreamPublisher {
   @deprecated("Use `props` with Settings as argument", "2.2")
   def props(
-    connection: ActorRef,
-    streamId: EventStream.Id,
-    fromNumberExclusive: Option[EventNumber] = None,
-    resolveLinkTos: Boolean = Settings.Default.resolveLinkTos,
-    credentials: Option[UserCredentials] = None,
-    infinite: Boolean = true,
-    readBatchSize: Int = Settings.Default.readBatchSize): Props = {
+    connection:          ActorRef,
+    streamId:            EventStream.Id,
+    fromNumberExclusive: Option[EventNumber]     = None,
+    resolveLinkTos:      Boolean                 = Settings.Default.resolveLinkTos,
+    credentials:         Option[UserCredentials] = None,
+    infinite:            Boolean                 = true,
+    readBatchSize:       Int                     = Settings.Default.readBatchSize
+  ): Props = {
 
     props(
       connection = connection,
@@ -22,16 +23,18 @@ object StreamPublisher {
       fromNumberExclusive = fromNumberExclusive,
       credentials = credentials,
       settings = Settings.Default.copy(readBatchSize = readBatchSize, resolveLinkTos = resolveLinkTos),
-      infinite = infinite)
+      infinite = infinite
+    )
   }
 
   def props(
-    connection: ActorRef,
-    streamId: EventStream.Id,
+    connection:          ActorRef,
+    streamId:            EventStream.Id,
     fromNumberExclusive: Option[EventNumber],
-    credentials: Option[UserCredentials],
-    settings: Settings,
-    infinite: Boolean): Props = {
+    credentials:         Option[UserCredentials],
+    settings:            Settings,
+    infinite:            Boolean
+  ): Props = {
 
     Props(new StreamPublisher(
       connection = connection,
@@ -39,20 +42,22 @@ object StreamPublisher {
       fromNumberExclusive = fromNumberExclusive,
       credentials = credentials,
       settings = settings,
-      infinite = infinite))
+      infinite = infinite
+    ))
   }
 
   /**
    * Java API
    */
   def getProps(
-    connection: ActorRef,
-    streamId: EventStream.Id,
+    connection:          ActorRef,
+    streamId:            EventStream.Id,
     fromNumberExclusive: Option[EventNumber],
-    resolveLinkTos: Boolean,
-    credentials: Option[UserCredentials],
-    infinite: Boolean,
-    readBatchSize: Int): Props = {
+    resolveLinkTos:      Boolean,
+    credentials:         Option[UserCredentials],
+    infinite:            Boolean,
+    readBatchSize:       Int
+  ): Props = {
 
     props(connection, streamId, fromNumberExclusive, resolveLinkTos, credentials, infinite, readBatchSize)
   }
@@ -61,12 +66,13 @@ object StreamPublisher {
    * Java API
    */
   def getProps(
-    connection: ActorRef,
-    streamId: EventStream.Id,
+    connection:          ActorRef,
+    streamId:            EventStream.Id,
     fromNumberExclusive: Option[EventNumber],
-    credentials: Option[UserCredentials] = None,
-    settings: Settings,
-    infinite: Boolean): Props = {
+    credentials:         Option[UserCredentials] = None,
+    settings:            Settings,
+    infinite:            Boolean
+  ): Props = {
 
     props(
       connection = connection,
@@ -74,28 +80,31 @@ object StreamPublisher {
       fromNumberExclusive = fromNumberExclusive,
       credentials = credentials,
       settings = settings,
-      infinite = infinite)
+      infinite = infinite
+    )
   }
 
   /**
    * Java API
    */
   def getProps(
-    connection: ActorRef,
-    streamId: EventStream.Id,
-    fromNumberExclusive: Option[EventNumber]): Props = {
+    connection:          ActorRef,
+    streamId:            EventStream.Id,
+    fromNumberExclusive: Option[EventNumber]
+  ): Props = {
 
     props(connection, streamId, fromNumberExclusive)
   }
 }
 
 private class StreamPublisher(
-    val connection: ActorRef,
-    val streamId: EventStream.Id,
+    val connection:      ActorRef,
+    val streamId:        EventStream.Id,
     fromNumberExclusive: Option[EventNumber],
-    val credentials: Option[UserCredentials],
-    val settings: Settings,
-    val infinite: Boolean = true) extends AbstractStreamPublisher[Event, EventNumber, EventNumber.Exact] {
+    val credentials:     Option[UserCredentials],
+    val settings:        Settings,
+    val infinite:        Boolean                 = true
+) extends AbstractStreamPublisher[Event, EventNumber, EventNumber.Exact] {
 
   var last = fromNumberExclusive collect { case x: EventNumber.Exact => x }
 
@@ -166,7 +175,8 @@ private class StreamPublisher(
       maxCount = settings.readBatchSize,
       direction = Forward,
       resolveLinkTos = settings.resolveLinkTos,
-      requireMaster = settings.requireMaster)
+      requireMaster = settings.requireMaster
+    )
     toConnection(read)
   }
 

@@ -30,5 +30,6 @@ class ReadEventBuilder(streamId: String) extends Builder[ReadEvent]
     streamId = _streamId,
     eventNumber = _eventNumber,
     resolveLinkTos = _resolveLinkTos,
-    requireMaster = _requireMaster)
+    requireMaster = _requireMaster
+  )
 }

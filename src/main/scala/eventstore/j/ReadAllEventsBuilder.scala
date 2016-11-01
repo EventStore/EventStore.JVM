@@ -38,5 +38,6 @@ class ReadAllEventsBuilder extends Builder[ReadAllEvents]
     maxCount = _maxCount,
     direction = _direction,
     resolveLinkTos = _resolveLinkTos,
-    requireMaster = _requireMaster)
+    requireMaster = _requireMaster
+  )
 }

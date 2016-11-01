@@ -39,5 +39,6 @@ class ReadStreamEventsBuilder(streamId: String) extends Builder[ReadStreamEvents
     maxCount = _maxCount,
     direction = _direction,
     resolveLinkTos = _resolveLinkTos,
-    requireMaster = _requireMaster)
+    requireMaster = _requireMaster
+  )
 }

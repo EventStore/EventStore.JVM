@@ -71,7 +71,8 @@ class ReadAllEventsBackwardITest extends TestConnection {
       val position = readAllEventsCompleted(startPosition, 10).nextPosition
       val wrongPosition = Position(
         commitPosition = position.commitPosition - 1,
-        preparePosition = position.preparePosition - 1)
+        preparePosition = position.preparePosition - 1
+      )
       readAllEventsFailed(wrongPosition, 10) must throwA[ServerErrorException]
     }
 

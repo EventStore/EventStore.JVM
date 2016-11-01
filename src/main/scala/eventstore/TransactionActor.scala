@@ -7,10 +7,11 @@ import scala.collection.immutable.Queue
 object TransactionActor {
 
   def props(
-    connection: ActorRef,
-    kickoff: Kickoff,
-    requireMaster: Boolean = Settings.Default.requireMaster,
-    credentials: Option[UserCredentials] = None): Props =
+    connection:    ActorRef,
+    kickoff:       Kickoff,
+    requireMaster: Boolean                 = Settings.Default.requireMaster,
+    credentials:   Option[UserCredentials] = None
+  ): Props =
     Props(classOf[TransactionActor], connection, kickoff, requireMaster, credentials)
 
   sealed trait Kickoff
@@ -37,10 +38,11 @@ object TransactionActor {
    * Java API
    */
   def getProps(
-    connection: ActorRef,
-    kickoff: Kickoff,
+    connection:    ActorRef,
+    kickoff:       Kickoff,
     requireMaster: Boolean,
-    credentials: Option[UserCredentials]): Props = props(connection, kickoff, requireMaster, credentials)
+    credentials:   Option[UserCredentials]
+  ): Props = props(connection, kickoff, requireMaster, credentials)
 
   /**
    * Java API
@@ -89,10 +91,11 @@ object TransactionActor {
 }
 
 class TransactionActor(
-    connection: ActorRef,
-    kickoff: TransactionActor.Kickoff,
+    connection:    ActorRef,
+    kickoff:       TransactionActor.Kickoff,
     requireMaster: Boolean,
-    credentials: Option[UserCredentials]) extends Actor with ActorLogging {
+    credentials:   Option[UserCredentials]
+) extends Actor with ActorLogging {
   import TransactionActor._
 
   context watch connection

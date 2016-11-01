@@ -26,7 +26,8 @@ object ClusterProtocol {
       JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSS'Z'"),
       JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"),
       JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SS'Z'"),
-      JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.S'Z'"))
+      JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.S'Z'")
+    )
 
     def writes(x: DateTime) = JsString(x.toString(formats.head))
 
@@ -71,7 +72,8 @@ object ClusterProtocol {
         epochPosition = m.epochPosition,
         epochNumber = m.epochNumber,
         epochId = m.epochId,
-        nodePriority = m.nodePriority)
+        nodePriority = m.nodePriority
+      )
     }
 
     def writes(x: MemberInfo) = {
@@ -96,33 +98,35 @@ object ClusterProtocol {
         epochPosition = x.epochPosition,
         epochNumber = x.epochNumber,
         epochId = x.epochId,
-        nodePriority = x.nodePriority)
+        nodePriority = x.nodePriority
+      )
 
       MappingFormat.writes(m)
     }
 
     case class Mapping(
-      instanceId: Uuid,
-      timeStamp: DateTime,
-      state: NodeState,
-      isAlive: Boolean,
-      internalTcpIp: String,
-      internalTcpPort: Int,
+      instanceId:            Uuid,
+      timeStamp:             DateTime,
+      state:                 NodeState,
+      isAlive:               Boolean,
+      internalTcpIp:         String,
+      internalTcpPort:       Int,
       internalSecureTcpPort: Int,
-      externalTcpIp: String,
-      externalTcpPort: Int,
+      externalTcpIp:         String,
+      externalTcpPort:       Int,
       externalSecureTcpPort: Int,
-      internalHttpIp: String,
-      internalHttpPort: Int,
-      externalHttpIp: String,
-      externalHttpPort: Int,
-      lastCommitPosition: Long,
-      writerCheckpoint: Long,
-      chaserCheckpoint: Long,
-      epochPosition: Long,
-      epochNumber: Int,
-      epochId: Uuid,
-      nodePriority: Int)
+      internalHttpIp:        String,
+      internalHttpPort:      Int,
+      externalHttpIp:        String,
+      externalHttpPort:      Int,
+      lastCommitPosition:    Long,
+      writerCheckpoint:      Long,
+      chaserCheckpoint:      Long,
+      epochPosition:         Long,
+      epochNumber:           Int,
+      epochId:               Uuid,
+      nodePriority:          Int
+    )
   }
 
   implicit object ClusterInfoFormat extends Format[ClusterInfo] {
@@ -131,14 +135,16 @@ object ClusterProtocol {
     def reads(json: JsValue) = {
       for { m <- MappingFormat.reads(json) } yield ClusterInfo(
         serverAddress = m.serverIp :: m.serverPort,
-        members = m.members)
+        members = m.members
+      )
     }
 
     def writes(x: ClusterInfo) = {
       val m = Mapping(
         members = x.members,
         serverIp = x.serverAddress.getHostString,
-        serverPort = x.serverAddress.getPort)
+        serverPort = x.serverAddress.getPort
+      )
       MappingFormat.writes(m)
     }
 

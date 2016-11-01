@@ -410,7 +410,8 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
         fromNumberExclusive = eventNumber,
         resolveLinkTos = resolveLinkTos,
         credentials = credentials,
-        readBatchSize = readBatchSize)
+        readBatchSize = readBatchSize
+      )
       TestActorRef(props)
     }
 
@@ -435,7 +436,8 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       lastEventNumber = mock[EventNumber.Exact],
       endOfStream = endOfStream,
       lastCommitPosition = next,
-      direction = Forward)
+      direction = Forward
+    )
 
     def subscribeCompleted(x: Int) = SubscribeToStreamCompleted(x, Some(EventNumber.Exact(x)))
   }

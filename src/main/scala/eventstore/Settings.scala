@@ -27,22 +27,23 @@ import com.typesafe.config.{ Config, ConfigFactory }
  * @param http Url to access eventstore though the Http API
  */
 case class Settings(
-    address: InetSocketAddress = "127.0.0.1" :: 1113,
-    connectionTimeout: FiniteDuration = 1.second,
-    maxReconnections: Int = 100,
-    reconnectionDelayMin: FiniteDuration = 250.millis,
-    reconnectionDelayMax: FiniteDuration = 10.seconds,
-    defaultCredentials: Option[UserCredentials] = Some(UserCredentials.DefaultAdmin),
-    heartbeatInterval: FiniteDuration = 500.millis,
-    heartbeatTimeout: FiniteDuration = 2.seconds,
-    operationMaxRetries: Int = 10,
-    operationTimeout: FiniteDuration = 7.seconds,
-    resolveLinkTos: Boolean = false,
-    requireMaster: Boolean = true,
-    readBatchSize: Int = 500,
-    bufferSize: Int = 100000,
-    cluster: Option[ClusterSettings] = None,
-    http: HttpSettings = HttpSettings()) {
+    address:              InetSocketAddress       = "127.0.0.1" :: 1113,
+    connectionTimeout:    FiniteDuration          = 1.second,
+    maxReconnections:     Int                     = 100,
+    reconnectionDelayMin: FiniteDuration          = 250.millis,
+    reconnectionDelayMax: FiniteDuration          = 10.seconds,
+    defaultCredentials:   Option[UserCredentials] = Some(UserCredentials.DefaultAdmin),
+    heartbeatInterval:    FiniteDuration          = 500.millis,
+    heartbeatTimeout:     FiniteDuration          = 2.seconds,
+    operationMaxRetries:  Int                     = 10,
+    operationTimeout:     FiniteDuration          = 7.seconds,
+    resolveLinkTos:       Boolean                 = false,
+    requireMaster:        Boolean                 = true,
+    readBatchSize:        Int                     = 500,
+    bufferSize:           Int                     = 100000,
+    cluster:              Option[ClusterSettings] = None,
+    http:                 HttpSettings            = HttpSettings()
+) {
   require(reconnectionDelayMin > Duration.Zero, "reconnectionDelayMin must be > 0")
   require(reconnectionDelayMax > Duration.Zero, "reconnectionDelayMax must be > 0")
   require(operationTimeout > Duration.Zero, "operationTimeout must be > 0")
@@ -81,7 +82,8 @@ object Settings {
         readBatchSize = conf getInt "read-batch-size",
         bufferSize = conf getInt "buffer-size",
         cluster = cluster,
-        http = HttpSettings(conf))
+        http = HttpSettings(conf)
+      )
     }
     apply(conf getConfig "eventstore")
   }

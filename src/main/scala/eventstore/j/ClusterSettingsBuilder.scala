@@ -56,5 +56,6 @@ class ClusterSettingsBuilder extends Builder[ClusterSettings] with ChainSet[Clus
     maxDiscoverAttempts = _maxDiscoverAttempts,
     discoverAttemptInterval = _discoverAttemptInterval,
     discoveryInterval = _discoveryInterval,
-    gossipTimeout = _gossipTimeout)
+    gossipTimeout = _gossipTimeout
+  )
 }

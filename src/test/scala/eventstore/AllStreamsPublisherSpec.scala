@@ -464,7 +464,8 @@ class AllStreamsPublisherSpec extends AbstractSubscriptionActorSpec {
         fromPositionExclusive = position,
         credentials = credentials,
         settings = Settings.Default.copy(readBatchSize = readBatchSize, resolveLinkTos = resolveLinkTos),
-        infinite = infinite)
+        infinite = infinite
+      )
       val actor = system actorOf props
       val publisher = ActorPublisher[IndexedEvent](actor)
       val subscriber = ActorSubscriber[IndexedEvent](testActor)

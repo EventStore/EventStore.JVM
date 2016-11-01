@@ -38,5 +38,6 @@ class EventDataBuilder(val eventType: String) extends Builder[EventData] with Ch
     eventType = eventType,
     eventId = _eventId,
     data = _data,
-    metadata = _metadata)
+    metadata = _metadata
+  )
 }

@@ -10,13 +10,14 @@ object StreamSubscriptionActor {
 
   @deprecated("Use `props` with Settings as argument", "2.2")
   def props(
-    connection: ActorRef,
-    client: ActorRef,
-    streamId: EventStream.Id,
-    fromNumberExclusive: Option[EventNumber] = None,
-    resolveLinkTos: Boolean = Settings.Default.resolveLinkTos,
-    credentials: Option[UserCredentials] = None,
-    readBatchSize: Int = Settings.Default.readBatchSize): Props = {
+    connection:          ActorRef,
+    client:              ActorRef,
+    streamId:            EventStream.Id,
+    fromNumberExclusive: Option[EventNumber]     = None,
+    resolveLinkTos:      Boolean                 = Settings.Default.resolveLinkTos,
+    credentials:         Option[UserCredentials] = None,
+    readBatchSize:       Int                     = Settings.Default.readBatchSize
+  ): Props = {
 
     Props(new StreamSubscriptionActor(
       connection,
@@ -24,16 +25,18 @@ object StreamSubscriptionActor {
       streamId,
       fromNumberExclusive,
       credentials,
-      Settings.Default.copy(readBatchSize = readBatchSize, resolveLinkTos = resolveLinkTos)))
+      Settings.Default.copy(readBatchSize = readBatchSize, resolveLinkTos = resolveLinkTos)
+    ))
   }
 
   def props(
-    connection: ActorRef,
-    client: ActorRef,
-    streamId: EventStream.Id,
+    connection:          ActorRef,
+    client:              ActorRef,
+    streamId:            EventStream.Id,
     fromNumberExclusive: Option[EventNumber],
-    credentials: Option[UserCredentials],
-    settings: Settings): Props = {
+    credentials:         Option[UserCredentials],
+    settings:            Settings
+  ): Props = {
 
     Props(new StreamSubscriptionActor(
       connection,
@@ -41,20 +44,22 @@ object StreamSubscriptionActor {
       streamId,
       fromNumberExclusive,
       credentials,
-      settings))
+      settings
+    ))
   }
 
   /**
    * Java API
    */
   def getProps(
-    connection: ActorRef,
-    client: ActorRef,
-    streamId: EventStream.Id,
+    connection:          ActorRef,
+    client:              ActorRef,
+    streamId:            EventStream.Id,
     fromNumberExclusive: Option[EventNumber],
-    resolveLinkTos: Boolean,
-    credentials: Option[UserCredentials],
-    readBatchSize: Int): Props = {
+    resolveLinkTos:      Boolean,
+    credentials:         Option[UserCredentials],
+    readBatchSize:       Int
+  ): Props = {
 
     props(connection, client, streamId, fromNumberExclusive, resolveLinkTos, credentials, readBatchSize)
   }
@@ -63,22 +68,24 @@ object StreamSubscriptionActor {
    * Java API
    */
   def getProps(
-    connection: ActorRef,
-    client: ActorRef,
-    streamId: EventStream.Id,
-    fromNumberExclusive: Option[EventNumber]): Props = {
+    connection:          ActorRef,
+    client:              ActorRef,
+    streamId:            EventStream.Id,
+    fromNumberExclusive: Option[EventNumber]
+  ): Props = {
 
     props(connection, client, streamId, fromNumberExclusive)
   }
 }
 
 class StreamSubscriptionActor private (
-    val connection: ActorRef,
-    val client: ActorRef,
-    val streamId: EventStream.Id,
+    val connection:      ActorRef,
+    val client:          ActorRef,
+    val streamId:        EventStream.Id,
     fromNumberExclusive: Option[EventNumber],
-    val credentials: Option[UserCredentials],
-    val settings: Settings) extends AbstractSubscriptionActor[Event] {
+    val credentials:     Option[UserCredentials],
+    val settings:        Settings
+) extends AbstractSubscriptionActor[Event] {
 
   type Next = EventNumber.Exact
   type Last = Option[EventNumber.Exact]
@@ -217,7 +224,8 @@ class StreamSubscriptionActor private (
       maxCount = settings.readBatchSize,
       direction = Forward,
       resolveLinkTos = settings.resolveLinkTos,
-      requireMaster = settings.requireMaster)
+      requireMaster = settings.requireMaster
+    )
     toConnection(read)
   }
 

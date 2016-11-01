@@ -7,9 +7,10 @@ import eventstore.tcp.{ Client, PackOut }
 import scala.util.{ Failure, Success, Try }
 
 private[eventstore] case class SimpleOperation(
-    pack: PackOut,
-    client: Client,
-    inspection: Inspection) extends Operation {
+    pack:       PackOut,
+    client:     Client,
+    inspection: Inspection
+) extends Operation {
 
   def id = pack.correlationId
 

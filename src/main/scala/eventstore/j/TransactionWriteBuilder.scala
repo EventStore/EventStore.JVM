@@ -20,5 +20,6 @@ class TransactionWriteBuilder(transactionId: Long) extends Builder[TransactionWr
   def build: TransactionWrite = TransactionWrite(
     transactionId = transactionId,
     events = _events.toList,
-    requireMaster = _requireMaster)
+    requireMaster = _requireMaster
+  )
 }

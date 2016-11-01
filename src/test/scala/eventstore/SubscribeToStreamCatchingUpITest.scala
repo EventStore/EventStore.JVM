@@ -139,8 +139,9 @@ class SubscribeToStreamCatchingUpITest extends TestConnection {
 
     def newSubscription(
       fromNumberExclusive: Option[EventNumber.Exact] = None,
-      resolveLinkTos: Boolean = false,
-      client: ActorRef = testActor) = {
+      resolveLinkTos:      Boolean                   = false,
+      client:              ActorRef                  = testActor
+    ) = {
 
       val a = TestActorRef(StreamSubscriptionActor.props(
         connection = actor,
@@ -148,7 +149,8 @@ class SubscribeToStreamCatchingUpITest extends TestConnection {
         streamId = streamId,
         fromNumberExclusive = fromNumberExclusive,
         resolveLinkTos = resolveLinkTos,
-        readBatchSize = Settings.Default.readBatchSize))
+        readBatchSize = Settings.Default.readBatchSize
+      ))
       watch(a)
       a
     }

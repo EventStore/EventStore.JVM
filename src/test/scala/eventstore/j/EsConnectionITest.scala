@@ -45,7 +45,8 @@ class EsConnectionITest extends eventstore.util.ActorSpec {
 
       await_(connection.writeEvents(streamId, null, events, null))
       val result = await_(
-        connection.readStreamEventsForward(streamId, new EventNumber.Exact(0), 10, false, null))
+        connection.readStreamEventsForward(streamId, new EventNumber.Exact(0), 10, false, null)
+      )
 
       result.direction mustEqual ReadDirection.forward
       result.lastEventNumber mustEqual EventNumber.Exact(0)

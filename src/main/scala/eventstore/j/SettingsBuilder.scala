@@ -123,5 +123,6 @@ class SettingsBuilder extends Builder[Settings]
     readBatchSize = _readBatchSize,
     bufferSize = _bufferSize,
     cluster = _cluster,
-    http = _http)
+    http = _http
+  )
 }

@@ -66,7 +66,8 @@ object MarkerByte {
     0xF0 -> readerFailure(BadRequest),
     0xF1 -> readerFailure[NotHandled],
     0xF3 -> reader[Authenticated.type],
-    0xF4 -> readerFailure(NotAuthenticated)).map {
+    0xF4 -> readerFailure(NotAuthenticated)
+  ).map {
       case (key, value) => key.toByte -> value
     }
 

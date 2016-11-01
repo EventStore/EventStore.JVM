@@ -12,7 +12,8 @@ object ReadEventExample extends App {
 
   val settings = Settings(
     address = new InetSocketAddress("127.0.0.1", 1113),
-    defaultCredentials = Some(UserCredentials("admin", "changeit")))
+    defaultCredentials = Some(UserCredentials("admin", "changeit"))
+  )
 
   val connection = system.actorOf(ConnectionActor.props(settings))
   implicit val readResult = system.actorOf(Props[ReadResult])

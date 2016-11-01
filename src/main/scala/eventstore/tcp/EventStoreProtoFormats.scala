@@ -105,8 +105,10 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
           eventType = x.getEventType,
           eventId = uuid(x.getEventId),
           data = Content(byteString(x.getData), ContentType(x.getDataContentType)),
-          metadata = Content(byteString(x.getMetadata), ContentType(x.getMetadataContentType))),
-        created = option(x.hasCreatedEpoch, new DateTime(x.getCreatedEpoch)))
+          metadata = Content(byteString(x.getMetadata), ContentType(x.getMetadataContentType))
+        ),
+        created = option(x.hasCreatedEpoch, new DateTime(x.getCreatedEpoch))
+      )
     }
   }
 
@@ -116,7 +118,8 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
 
     def fromProto(x: j.ResolvedEvent) = IndexedEvent(
       event = EventReader.event(x),
-      position = position(x))
+      position = position(x)
+    )
   }
 
   implicit object EventReader extends ProtoReader[Event, j.ResolvedIndexedEvent] {
@@ -137,7 +140,8 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
 
     def event(x: JEvent): Event = event(
       EventRecordReader.fromProto(x.getEvent()),
-      option(x.hasLink(), EventRecordReader.fromProto(x.getLink())))
+      option(x.hasLink(), EventRecordReader.fromProto(x.getLink()))
+    )
   }
 
   implicit object WriteEventsWriter extends ProtoWriter[WriteEvents] {
@@ -221,7 +225,8 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
       TransactionCommitCompleted(
         transactionId = x.getTransactionId,
         numbersRange = range(x),
-        position = positionOpt(x))
+        position = positionOpt(x)
+      )
     }
   }
 
@@ -284,7 +289,8 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
         lastEventNumber = EventNumber.Exact(x.getLastEventNumber),
         endOfStream = x.getIsEndOfStream,
         lastCommitPosition = x.getLastCommitPosition,
-        direction = direction)
+        direction = direction
+      )
 
       x.getResult match {
         case Success       => Try(readStreamEventsCompleted)
@@ -331,7 +337,8 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
         position = position(x),
         events = x.getEventsList.asScala.map(IndexedEventReader.fromProto).toList,
         nextPosition = Position.Exact(commitPosition = x.getNextCommitPosition, preparePosition = x.getNextPreparePosition),
-        direction = direction)
+        direction = direction
+      )
 
       val result = if (x.hasResult) x.getResult else Success
 
@@ -368,7 +375,8 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
       case None => SubscribeToAllCompleted(x.getLastCommitPosition)
       case Some(eventNumber) => SubscribeToStreamCompleted(
         lastCommit = x.getLastCommitPosition,
-        lastEventNumber = EventNumber.Exact.opt(eventNumber))
+        lastEventNumber = EventNumber.Exact.opt(eventNumber)
+      )
     }
   }
 
@@ -404,7 +412,8 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
 
       def scavengeDatabaseCompleted = ScavengeDatabaseCompleted(
         totalTime = ToCoarsest(FiniteDuration(x.getTotalTimeMs, TimeUnit.MILLISECONDS)),
-        totalSpaceSaved = x.getTotalSpaceSaved)
+        totalSpaceSaved = x.getTotalSpaceSaved
+      )
 
       def failure(x: ScavengeError) = this.failure(x)
 
@@ -426,9 +435,10 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
       tcpAddress = x.getExternalTcpAddress :: x.getExternalTcpPort,
       httpAddress = x.getExternalHttpAddress :: x.getExternalHttpPort,
       tcpSecureAddress = for {
-        h <- option(x.hasExternalSecureTcpAddress, x.getExternalSecureTcpAddress)
-        p <- option(x.hasExternalSecureTcpPort, x.getExternalSecureTcpPort)
-      } yield h :: p)
+      h <- option(x.hasExternalSecureTcpAddress, x.getExternalSecureTcpAddress)
+      p <- option(x.hasExternalSecureTcpPort, x.getExternalSecureTcpPort)
+    } yield h :: p
+    )
 
     def masterInfo(x: Option[j.NotHandled.MasterInfo]): NotHandled.MasterInfo = {
       require(x.isDefined, "additionalInfo is not provided for NotHandled.NotMaster")

@@ -18,5 +18,6 @@ class SubscribeToBuilder extends Builder[SubscribeTo] with ResolveLinkTosSnippet
 
   def build: SubscribeTo = SubscribeTo(
     stream = _stream,
-    resolveLinkTos = _resolveLinkTos)
+    resolveLinkTos = _resolveLinkTos
+  )
 }

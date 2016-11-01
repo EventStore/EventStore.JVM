@@ -107,7 +107,8 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
         linkedStreamId,
         writeEventsCompleted(List(linkedData), streamId = linkedStreamId).get.start,
         linkedData,
-        Some(date))
+        Some(date)
+      )
       val link = append(linked.link())
 
       actor ! DeleteStream(linkedStreamId, hard = true)
@@ -128,7 +129,8 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
         linkedStreamId,
         writeEventsCompleted(List(linkedData), streamId = linkedStreamId).get.start,
         linkedData,
-        Some(date))
+        Some(date)
+      )
       val link = append(linked.link())
 
       actor ! DeleteStream(linkedStreamId, hard = true)
@@ -148,18 +150,21 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
 
     def newSubscription(
       fromPositionExclusive: Option[Position.Exact] = None,
-      resolveLinkTos: Boolean = false,
-      client: ActorRef = testActor) = TestActorRef(SubscriptionActor.props(
+      resolveLinkTos:        Boolean                = false,
+      client:                ActorRef               = testActor
+    ) = TestActorRef(SubscriptionActor.props(
       connection = actor,
       client = client,
       fromPositionExclusive = fromPositionExclusive,
       credentials = None,
-      settings = Settings.Default.copy(resolveLinkTos = resolveLinkTos)))
+      settings = Settings.Default.copy(resolveLinkTos = resolveLinkTos)
+    ))
 
     def expectEvents(
-      events: List[EventData],
-      position: Position = Position.First,
-      testKit: TestKitBase = this): List[IndexedEvent] = {
+      events:   List[EventData],
+      position: Position        = Position.First,
+      testKit:  TestKitBase     = this
+    ): List[IndexedEvent] = {
 
       def loop(events: List[EventData], position: Position): List[IndexedEvent] = events match {
         case Nil => Nil
@@ -187,8 +192,9 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
 
     @tailrec
     final def fishForLiveProcessingStarted(
-      position: Position = Position.First,
-      testKit: TestKitBase = this): Position = testKit.expectMsgType[AnyRef] match {
+      position: Position    = Position.First,
+      testKit:  TestKitBase = this
+    ): Position = testKit.expectMsgType[AnyRef] match {
       case LiveProcessingStarted => position
       case IndexedEvent(_, x) =>
         x must beGreaterThanOrEqualTo(position)

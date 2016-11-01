@@ -35,7 +35,8 @@ class ClusterDiscovererActorSpec extends util.ActorSpec with Mockito {
 
       override def settings = super.settings.copy(
         gossipSeedsOrDns = ClusterDns("test"),
-        dnsLookupTimeout = 300.millis)
+        dnsLookupTimeout = 300.millis
+      )
     }
 
     "re-discover cluster each second" in new TestScope {
@@ -433,7 +434,8 @@ class ClusterDiscovererActorSpec extends util.ActorSpec with Mockito {
     val ids = Map(
       (address, randomUuid),
       (address2, randomUuid),
-      (address3, randomUuid))
+      (address3, randomUuid)
+    )
     val failure = Failure(TestException)
 
     val futureFunc: ClusterInfo.FutureFunc = (address) => testActor.ask(address).mapTo[ClusterInfo]
@@ -448,14 +450,16 @@ class ClusterDiscovererActorSpec extends util.ActorSpec with Mockito {
       GossipSeedsOrDns.GossipSeeds(address),
       maxDiscoverAttempts = 3,
       discoverAttemptInterval = 100.millis,
-      discoveryInterval = 300.millis)
+      discoveryInterval = 300.millis
+    )
 
     def cluster(members: MemberInfo*): ClusterInfo = ClusterInfo(address, members.toList)
 
     def member(
       address: InetSocketAddress,
-      state: NodeState = NodeState.Master,
-      isAlive: Boolean = true): MemberInfo = MemberInfo(
+      state:   NodeState         = NodeState.Master,
+      isAlive: Boolean           = true
+    ): MemberInfo = MemberInfo(
       instanceId = ids(address),
       timestamp = DateTime.now,
       state = state,
@@ -472,7 +476,8 @@ class ClusterDiscovererActorSpec extends util.ActorSpec with Mockito {
       epochPosition = 0,
       epochNumber = 0,
       epochId = randomUuid,
-      nodePriority = 0)
+      nodePriority = 0
+    )
 
     def future(x: ClusterInfo) = Future.successful(x)
 

@@ -134,7 +134,8 @@ class ProjectionsClient(settings: Settings = Settings.Default, system: ActorSyst
       method = HttpMethods.POST,
       uri = Uri(createProjectionUrl(name, mode, allowEmit)),
       headers = defaultHeaders,
-      entity = HttpEntity(ContentTypes.`application/json`, javascript))
+      entity = HttpEntity(ContentTypes.`application/json`, javascript)
+    )
 
     singleRequestWithErrorHandling(request)
       .map {
@@ -154,7 +155,8 @@ class ProjectionsClient(settings: Settings = Settings.Default, system: ActorSyst
     val request = HttpRequest(
       method = HttpMethods.GET,
       uri = Uri(projectionBaseUrl(name)),
-      headers = defaultHeaders)
+      headers = defaultHeaders
+    )
 
     singleRequestWithErrorHandling(request)
       .mapAsync(1) {
@@ -191,7 +193,8 @@ class ProjectionsClient(settings: Settings = Settings.Default, system: ActorSyst
     val request = HttpRequest(
       method = HttpMethods.GET,
       uri = Uri(fetchProjectionStateUrl(name, partition)),
-      headers = defaultHeaders)
+      headers = defaultHeaders
+    )
 
     fetchProjectionData(request)
   }
@@ -207,7 +210,8 @@ class ProjectionsClient(settings: Settings = Settings.Default, system: ActorSyst
     val request = HttpRequest(
       method = HttpMethods.GET,
       uri = Uri(fetchProjectionResultUrl(name, partition)),
-      headers = defaultHeaders)
+      headers = defaultHeaders
+    )
 
     fetchProjectionData(request)
   }
@@ -217,7 +221,8 @@ class ProjectionsClient(settings: Settings = Settings.Default, system: ActorSyst
       method = HttpMethods.POST,
       uri = Uri(projectionCommandUrl(name, command)),
       headers = defaultHeaders,
-      entity = HttpEntity(ContentTypes.`application/json`, "{}"))
+      entity = HttpEntity(ContentTypes.`application/json`, "{}")
+    )
 
     singleRequestWithErrorHandling(request)
       .map {
@@ -258,7 +263,8 @@ class ProjectionsClient(settings: Settings = Settings.Default, system: ActorSyst
     val request = HttpRequest(
       method = HttpMethods.DELETE,
       uri = Uri(projectionBaseUrl(name)),
-      headers = defaultHeaders)
+      headers = defaultHeaders
+    )
 
     singleRequestWithErrorHandling(request)
       .mapAsync(1) {

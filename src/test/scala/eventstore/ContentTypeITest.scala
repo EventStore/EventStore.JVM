@@ -39,7 +39,8 @@ class ContentTypeITest extends TestConnection {
       val expected = EventData(
         eventType = s"${render(dataContentType)}/${render(metadataContentType)}",
         data = content(dataContentType),
-        metadata = content(metadataContentType))
+        metadata = content(metadataContentType)
+      )
 
       val number = append(expected).number
       val actual = readEventCompleted(number).data

@@ -9,46 +9,51 @@ object AllStreamsPublisher {
 
   @deprecated("Use `props` with Settings as argument", "2.2")
   def props(
-    connection: ActorRef,
-    fromPositionExclusive: Option[Position] = None,
-    resolveLinkTos: Boolean = Settings.Default.resolveLinkTos,
-    credentials: Option[UserCredentials] = None,
-    infinite: Boolean = true,
-    readBatchSize: Int = Settings.Default.readBatchSize): Props = {
+    connection:            ActorRef,
+    fromPositionExclusive: Option[Position]        = None,
+    resolveLinkTos:        Boolean                 = Settings.Default.resolveLinkTos,
+    credentials:           Option[UserCredentials] = None,
+    infinite:              Boolean                 = true,
+    readBatchSize:         Int                     = Settings.Default.readBatchSize
+  ): Props = {
 
     props(
       connection = connection,
       fromPositionExclusive = fromPositionExclusive,
       credentials = credentials,
       settings = Settings.Default.copy(readBatchSize = readBatchSize, resolveLinkTos = resolveLinkTos),
-      infinite = infinite)
+      infinite = infinite
+    )
   }
 
   def props(
-    connection: ActorRef,
+    connection:            ActorRef,
     fromPositionExclusive: Option[Position],
-    credentials: Option[UserCredentials],
-    settings: Settings,
-    infinite: Boolean): Props = {
+    credentials:           Option[UserCredentials],
+    settings:              Settings,
+    infinite:              Boolean
+  ): Props = {
 
     Props(new AllStreamsPublisher(
       connection = connection,
       fromPositionExclusive = fromPositionExclusive,
       credentials = credentials,
       settings = settings,
-      infinite = infinite))
+      infinite = infinite
+    ))
   }
 
   /**
    * Java API
    */
   def getProps(
-    connection: ActorRef,
+    connection:            ActorRef,
     fromPositionExclusive: Option[Position],
-    resolveLinkTos: Boolean,
-    credentials: Option[UserCredentials],
-    infinite: Boolean,
-    readBatchSize: Int): Props = {
+    resolveLinkTos:        Boolean,
+    credentials:           Option[UserCredentials],
+    infinite:              Boolean,
+    readBatchSize:         Int
+  ): Props = {
 
     props(connection, fromPositionExclusive, resolveLinkTos, credentials, infinite, readBatchSize)
   }
@@ -57,18 +62,20 @@ object AllStreamsPublisher {
    * Java API
    */
   def getProps(
-    connection: ActorRef,
+    connection:            ActorRef,
     fromPositionExclusive: Option[Position],
-    credentials: Option[UserCredentials],
-    settings: Settings,
-    infinite: Boolean): Props = {
+    credentials:           Option[UserCredentials],
+    settings:              Settings,
+    infinite:              Boolean
+  ): Props = {
 
     props(
       connection = connection,
       fromPositionExclusive = fromPositionExclusive,
       credentials = credentials,
       settings = settings,
-      infinite = infinite)
+      infinite = infinite
+    )
   }
 
   /**
@@ -80,11 +87,12 @@ object AllStreamsPublisher {
 }
 
 private class AllStreamsPublisher(
-    val connection: ActorRef,
+    val connection:        ActorRef,
     fromPositionExclusive: Option[Position],
-    val credentials: Option[UserCredentials],
-    val settings: Settings,
-    val infinite: Boolean = true) extends AbstractStreamPublisher[IndexedEvent, Position, Position.Exact] {
+    val credentials:       Option[UserCredentials],
+    val settings:          Settings,
+    val infinite:          Boolean                 = true
+) extends AbstractStreamPublisher[IndexedEvent, Position, Position.Exact] {
 
   val streamId = EventStream.All
   var last = fromPositionExclusive collect { case x: Position.Exact => x }
@@ -164,7 +172,8 @@ private class AllStreamsPublisher(
       maxCount = settings.readBatchSize,
       direction = Forward,
       resolveLinkTos = settings.resolveLinkTos,
-      requireMaster = settings.requireMaster)
+      requireMaster = settings.requireMaster
+    )
     toConnection(msg)
   }
 

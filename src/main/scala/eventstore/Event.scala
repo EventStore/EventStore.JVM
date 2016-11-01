@@ -20,7 +20,8 @@ sealed trait Event extends Ordered[Event] {
     eventType = SystemEventType.linkTo,
     eventId = eventId,
     data = Content(s"${number.value}@${streamId.value}"),
-    metadata = metadata)
+    metadata = metadata
+  )
 }
 
 object Event {
@@ -39,9 +40,10 @@ object Event {
 
 case class EventRecord(
     streamId: EventStream.Id,
-    number: EventNumber.Exact,
-    data: EventData,
-    created: Option[DateTime] = None) extends Event {
+    number:   EventNumber.Exact,
+    data:     EventData,
+    created:  Option[DateTime]  = None
+) extends Event {
   def record = this
 }
 
@@ -49,7 +51,8 @@ object EventRecord {
   val Deleted: EventRecord = EventRecord(
     streamId = EventStream.Undefined,
     number = EventNumber.First,
-    data = EventData.StreamDeleted(UUID.fromString("00000000-0000-0000-0000-000000000000")))
+    data = EventData.StreamDeleted(UUID.fromString("00000000-0000-0000-0000-000000000000"))
+  )
 }
 
 case class ResolvedEvent(linkedEvent: EventRecord, linkEvent: EventRecord) extends Event {
@@ -88,9 +91,10 @@ object Content {
 
 case class EventData(
     eventType: String,
-    eventId: Uuid = randomUuid,
-    data: Content = Content.Empty,
-    metadata: Content = Content.Empty) {
+    eventId:   Uuid    = randomUuid,
+    data:      Content = Content.Empty,
+    metadata:  Content = Content.Empty
+) {
   require(eventType != null, "eventType is null")
   require(eventType.nonEmpty, "eventType is empty")
 }

@@ -488,7 +488,8 @@ class StreamPublisherSpec extends AbstractSubscriptionActorSpec {
         fromNumberExclusive = eventNumber,
         credentials = credentials,
         settings = Settings.Default.copy(readBatchSize = readBatchSize, resolveLinkTos = resolveLinkTos),
-        infinite = infinite)
+        infinite = infinite
+      )
       val actor = system actorOf props
       val publisher = ActorPublisher[IndexedEvent](actor)
       val subscriber = ActorSubscriber[IndexedEvent](testActor)
@@ -523,7 +524,8 @@ class StreamPublisherSpec extends AbstractSubscriptionActorSpec {
       lastEventNumber = mock[EventNumber.Exact],
       endOfStream = endOfStream,
       lastCommitPosition = next,
-      direction = Forward)
+      direction = Forward
+    )
 
     def subscribeCompleted(x: Int) = SubscribeToStreamCompleted(x, Some(EventNumber.Exact(x)))
 

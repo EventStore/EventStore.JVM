@@ -63,6 +63,7 @@ class BidiLoggingSpec extends ActorSpec with Mockito {
     }
     val (source, _) = (logging join flow).runWith(
       Source.actorRef(100, OverflowStrategy.fail),
-      Sink.actorRef[PackOut](sink.ref, "completed"))
+      Sink.actorRef[PackOut](sink.ref, "completed")
+    )
   }
 }

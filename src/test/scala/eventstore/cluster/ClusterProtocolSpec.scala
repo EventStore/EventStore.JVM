@@ -44,7 +44,8 @@ class ClusterProtocolSpec extends Specification {
         epochPosition = 131149,
         epochNumber = 1,
         epochId = "b5c64b95-9c8f-4e1c-82f4-f619118edb73".uuid,
-        nodePriority = 0),
+        nodePriority = 0
+      ),
       MemberInfo(
         instanceId = "8f680215-3abe-4aed-9d06-c5725776303d".uuid,
         timestamp = new DateTime(2015, 1, 29, 10, 23, 9, 41, DateTimeZone.UTC),
@@ -62,7 +63,8 @@ class ClusterProtocolSpec extends Specification {
         epochPosition = 131149,
         epochNumber = 1,
         epochId = "b5c64b95-9c8f-4e1c-82f4-f619118edb73".uuid,
-        nodePriority = 0),
+        nodePriority = 0
+      ),
       MemberInfo(
         instanceId = "44baf256-55a4-4ccc-b6ef-7bd383c88991".uuid,
         timestamp = new DateTime(2015, 1, 26, 19, 52, 40, DateTimeZone.UTC),
@@ -80,6 +82,8 @@ class ClusterProtocolSpec extends Specification {
         epochPosition = 131149,
         epochNumber = 1,
         epochId = "b5c64b95-9c8f-4e1c-82f4-f619118edb73".uuid,
-        nodePriority = 0)))
+        nodePriority = 0
+      )
+    ))
   }
 }

@@ -47,7 +47,8 @@ class SubscriptionOperationSpec extends OperationSpec {
           Ping,
           HeartbeatRequest,
           Authenticate,
-          ScavengeDatabase)
+          ScavengeDatabase
+        )
         foreach(outs) { x => operation.inspectOut.isDefinedAt(x) must beFalse }
 
         operation.inspectOut(Unsubscribe) mustEqual OnOutgoing.Stop(unsubscribe, Try(Unsubscribed))
@@ -68,7 +69,8 @@ class SubscriptionOperationSpec extends OperationSpec {
       new SubscribingScope {
         operation.inspectIn(Try(subscribeCompleted)) mustEqual Continue(
           SubscriptionOperation.Subscribed(subscribeTo, pack, client, ongoing = true, 1),
-          Try(subscribeCompleted))
+          Try(subscribeCompleted)
+        )
       }
     }
 
@@ -193,7 +195,8 @@ class SubscriptionOperationSpec extends OperationSpec {
           Ping,
           HeartbeatRequest,
           Authenticate,
-          ScavengeDatabase)
+          ScavengeDatabase
+        )
         foreach(outs) { x => operation.inspectOut.isDefinedAt(x) must beFalse }
 
         val unsubscribing = operation.inspectOut(Unsubscribe)

@@ -31,7 +31,8 @@ object OneToMany {
       ss: Map[S, T],
       ms: Map[M, Set[S]],
       sf: T => S,
-      mf: T => M) extends OneToMany[T, S, M] {
+      mf: T => M
+  ) extends OneToMany[T, S, M] {
 
     def +(t: T) = {
       val s = sf(t)

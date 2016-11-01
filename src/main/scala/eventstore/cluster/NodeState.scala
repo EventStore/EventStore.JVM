@@ -21,7 +21,8 @@ object NodeState {
     Master,
     Manager,
     ShuttingDown,
-    Shutdown)
+    Shutdown
+  )
 
   private val map: Map[String, NodeState] = values.toSet[NodeState].map(x => x.toString -> x).toMap
 

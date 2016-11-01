@@ -21,5 +21,6 @@ class TransactionStartBuilder(streamId: String) extends Builder[TransactionStart
   def build: TransactionStart = TransactionStart(
     streamId = _streamId,
     expectedVersion = _expectVersion,
-    requireMaster = _requireMaster)
+    requireMaster = _requireMaster
+  )
 }

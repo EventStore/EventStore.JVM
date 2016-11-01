@@ -17,26 +17,29 @@ class EsConnectionImpl(connection: eventstore.EsConnection, settings: Settings) 
   import scala.concurrent.ExecutionContext.Implicits.global
 
   def writeEvents(
-    stream: String,
+    stream:          String,
     expectedVersion: ExpectedVersion,
-    events: util.Collection[EventData],
-    credentials: UserCredentials) = {
+    events:          util.Collection[EventData],
+    credentials:     UserCredentials
+  ) = {
 
     writeEvents(stream, expectedVersion, events, credentials, settings.requireMaster)
   }
 
   def writeEvents(
-    stream: String,
+    stream:          String,
     expectedVersion: ExpectedVersion,
-    events: util.Collection[EventData],
-    credentials: UserCredentials,
-    requireMaster: Boolean) = {
+    events:          util.Collection[EventData],
+    credentials:     UserCredentials,
+    requireMaster:   Boolean
+  ) = {
 
     val out = WriteEvents(
       streamId = EventStream.Id(stream),
       events = events.asScala.toList,
       expectedVersion = Option(expectedVersion) getOrElse ExpectedVersion.Any,
-      requireMaster = requireMaster)
+      requireMaster = requireMaster
+    )
 
     connection.future(out, Option(credentials)).map(x => WriteResult.opt(x).orNull)
   }
@@ -50,17 +53,19 @@ class EsConnectionImpl(connection: eventstore.EsConnection, settings: Settings) 
   }
 
   def deleteStream(
-    stream: String,
+    stream:          String,
     expectedVersion: Existing,
-    hardDelete: Boolean,
-    credentials: UserCredentials,
-    requireMaster: Boolean) = {
+    hardDelete:      Boolean,
+    credentials:     UserCredentials,
+    requireMaster:   Boolean
+  ) = {
 
     val out = DeleteStream(
       streamId = EventStream.Id(stream),
       expectedVersion = Option(expectedVersion) getOrElse ExpectedVersion.Any,
       hard = hardDelete,
-      requireMaster = requireMaster)
+      requireMaster = requireMaster
+    )
     connection.future(out, Option(credentials)).map(x => x.position.map(DeleteResult.apply).orNull)
   }
 
@@ -72,7 +77,8 @@ class EsConnectionImpl(connection: eventstore.EsConnection, settings: Settings) 
     val msg = TransactionStart(
       streamId = EventStream.Id(stream),
       expectedVersion = Option(expectedVersion) getOrElse ExpectedVersion.Any,
-      requireMaster = requireMaster)
+      requireMaster = requireMaster
+    )
     connection.startTransaction(msg, Option(credentials)).map(new EsTransactionImpl(_))
   }
 
@@ -82,47 +88,52 @@ class EsConnectionImpl(connection: eventstore.EsConnection, settings: Settings) 
   }
 
   def readEvent(
-    stream: String,
-    eventNumber: EventNumber,
+    stream:         String,
+    eventNumber:    EventNumber,
     resolveLinkTos: Boolean,
-    credentials: UserCredentials) = {
+    credentials:    UserCredentials
+  ) = {
 
     readEvent(stream, eventNumber, resolveLinkTos, credentials, settings.requireMaster)
   }
 
   def readEvent(
-    stream: String,
-    eventNumber: EventNumber,
+    stream:         String,
+    eventNumber:    EventNumber,
     resolveLinkTos: Boolean,
-    credentials: UserCredentials,
-    requireMaster: Boolean) = {
+    credentials:    UserCredentials,
+    requireMaster:  Boolean
+  ) = {
 
     val out = ReadEvent(
       streamId = EventStream.Id(stream),
       eventNumber = Option(eventNumber) getOrElse EventNumber.Last,
       resolveLinkTos = resolveLinkTos,
-      requireMaster = requireMaster)
+      requireMaster = requireMaster
+    )
 
     connection.future(out, Option(credentials)).map(_.event)
   }
 
   def readStreamEventsForward(
-    stream: String,
-    fromNumber: EventNumber.Exact,
-    count: Int,
+    stream:         String,
+    fromNumber:     EventNumber.Exact,
+    count:          Int,
     resolveLinkTos: Boolean,
-    credentials: UserCredentials) = {
+    credentials:    UserCredentials
+  ) = {
 
     readStreamEventsForward(stream, fromNumber, count, resolveLinkTos, credentials, settings.requireMaster)
   }
 
   def readStreamEventsForward(
-    stream: String,
-    fromNumber: EventNumber.Exact,
-    count: Int,
+    stream:         String,
+    fromNumber:     EventNumber.Exact,
+    count:          Int,
     resolveLinkTos: Boolean,
-    credentials: UserCredentials,
-    requireMaster: Boolean) = {
+    credentials:    UserCredentials,
+    requireMaster:  Boolean
+  ) = {
 
     val out = ReadStreamEvents(
       streamId = EventStream.Id(stream),
@@ -130,28 +141,31 @@ class EsConnectionImpl(connection: eventstore.EsConnection, settings: Settings) 
       maxCount = count,
       direction = eventstore.ReadDirection.Forward,
       resolveLinkTos = resolveLinkTos,
-      requireMaster = requireMaster)
+      requireMaster = requireMaster
+    )
 
     connection.future(out, Option(credentials))
   }
 
   def readStreamEventsBackward(
-    stream: String,
-    fromNumber: EventNumber,
-    maxCount: Int,
+    stream:         String,
+    fromNumber:     EventNumber,
+    maxCount:       Int,
     resolveLinkTos: Boolean,
-    credentials: UserCredentials) = {
+    credentials:    UserCredentials
+  ) = {
 
     readStreamEventsBackward(stream, fromNumber, maxCount, resolveLinkTos, credentials, settings.requireMaster)
   }
 
   def readStreamEventsBackward(
-    stream: String,
-    fromNumber: EventNumber,
-    maxCount: Int,
+    stream:         String,
+    fromNumber:     EventNumber,
+    maxCount:       Int,
     resolveLinkTos: Boolean,
-    credentials: UserCredentials,
-    requireMaster: Boolean) = {
+    credentials:    UserCredentials,
+    requireMaster:  Boolean
+  ) = {
 
     val out = ReadStreamEvents(
       streamId = EventStream.Id(stream),
@@ -159,115 +173,129 @@ class EsConnectionImpl(connection: eventstore.EsConnection, settings: Settings) 
       maxCount = maxCount,
       direction = eventstore.ReadDirection.Backward,
       resolveLinkTos = resolveLinkTos,
-      requireMaster = requireMaster)
+      requireMaster = requireMaster
+    )
 
     connection.future(out, Option(credentials))
   }
 
   def readAllEventsForward(
-    fromPosition: Position,
-    maxCount: Int,
+    fromPosition:   Position,
+    maxCount:       Int,
     resolveLinkTos: Boolean,
-    credentials: UserCredentials) = {
+    credentials:    UserCredentials
+  ) = {
 
     readAllEventsForward(fromPosition, maxCount, resolveLinkTos, credentials, settings.requireMaster)
   }
 
   def readAllEventsForward(
-    fromPosition: Position,
-    maxCount: Int,
+    fromPosition:   Position,
+    maxCount:       Int,
     resolveLinkTos: Boolean,
-    credentials: UserCredentials,
-    requireMaster: Boolean) = {
+    credentials:    UserCredentials,
+    requireMaster:  Boolean
+  ) = {
 
     val out = ReadAllEvents(
       fromPosition = Option(fromPosition) getOrElse Position.First,
       maxCount = maxCount,
       direction = eventstore.ReadDirection.Forward,
       resolveLinkTos = resolveLinkTos,
-      requireMaster = requireMaster)
+      requireMaster = requireMaster
+    )
 
     connection.future(out, Option(credentials))
   }
 
   def readAllEventsBackward(
-    fromPosition: Position,
-    maxCount: Int,
+    fromPosition:   Position,
+    maxCount:       Int,
     resolveLinkTos: Boolean,
-    credentials: UserCredentials) = {
+    credentials:    UserCredentials
+  ) = {
 
     readAllEventsBackward(fromPosition, maxCount, resolveLinkTos, credentials, settings.requireMaster)
   }
 
   def readAllEventsBackward(
-    fromPosition: Position,
-    maxCount: Int,
+    fromPosition:   Position,
+    maxCount:       Int,
     resolveLinkTos: Boolean,
-    credentials: UserCredentials,
-    requireMaster: Boolean) = {
+    credentials:    UserCredentials,
+    requireMaster:  Boolean
+  ) = {
 
     val out = ReadAllEvents(
       fromPosition = Option(fromPosition) getOrElse Position.Last,
       maxCount = maxCount,
       direction = eventstore.ReadDirection.Backward,
       resolveLinkTos = resolveLinkTos,
-      requireMaster = requireMaster)
+      requireMaster = requireMaster
+    )
 
     connection.future(out, Option(credentials))
   }
 
   def subscribeToStream(
-    stream: String,
-    observer: SubscriptionObserver[Event],
+    stream:         String,
+    observer:       SubscriptionObserver[Event],
     resolveLinkTos: Boolean,
-    credentials: UserCredentials) = {
+    credentials:    UserCredentials
+  ) = {
 
     connection.subscribeToStream(EventStream.Id(stream), observer, resolveLinkTos, Option(credentials))
   }
 
   def subscribeToStreamFrom(
-    stream: String,
-    observer: SubscriptionObserver[Event],
+    stream:                   String,
+    observer:                 SubscriptionObserver[Event],
     fromEventNumberExclusive: java.lang.Integer,
-    resolveLinkTos: Boolean,
-    credentials: UserCredentials) = {
+    resolveLinkTos:           Boolean,
+    credentials:              UserCredentials
+  ) = {
 
     connection.subscribeToStreamFrom(
       EventStream.Id(stream),
       observer,
       Option(fromEventNumberExclusive).map(EventNumber.Exact(_)),
       resolveLinkTos,
-      Option(credentials))
+      Option(credentials)
+    )
   }
 
   def subscribeToAll(
-    observer: SubscriptionObserver[IndexedEvent],
+    observer:       SubscriptionObserver[IndexedEvent],
     resolveLinkTos: Boolean,
-    credentials: UserCredentials) = {
+    credentials:    UserCredentials
+  ) = {
 
     connection.subscribeToAll(observer, resolveLinkTos, Option(credentials))
   }
 
   def subscribeToAllFrom(
-    observer: SubscriptionObserver[IndexedEvent],
+    observer:              SubscriptionObserver[IndexedEvent],
     fromPositionExclusive: Position.Exact,
-    resolveLinkTos: Boolean,
-    credentials: UserCredentials) = {
+    resolveLinkTos:        Boolean,
+    credentials:           UserCredentials
+  ) = {
 
     connection.subscribeToAllFrom(observer, Option(fromPositionExclusive), resolveLinkTos, Option(credentials))
   }
 
   def setStreamMetadata(
-    stream: String,
+    stream:                    String,
     expectedMetastreamVersion: ExpectedVersion,
-    metadata: Array[Byte],
-    credentials: UserCredentials) = {
+    metadata:                  Array[Byte],
+    credentials:               UserCredentials
+  ) = {
 
     connection.setStreamMetadata(
       EventStream.Id(stream),
       Content(metadata),
       Option(expectedMetastreamVersion) getOrElse ExpectedVersion.Any,
-      Option(credentials)).map(_.orNull)
+      Option(credentials)
+    ).map(_.orNull)
   }
 
   def getStreamMetadataBytes(stream: String, credentials: UserCredentials) = {
@@ -275,30 +303,34 @@ class EsConnectionImpl(connection: eventstore.EsConnection, settings: Settings) 
   }
 
   def streamPublisher(
-    stream: String,
+    stream:                   String,
     fromEventNumberExclusive: EventNumber,
-    resolveLinkTos: Boolean,
-    credentials: UserCredentials,
-    infinite: Boolean) = {
+    resolveLinkTos:           Boolean,
+    credentials:              UserCredentials,
+    infinite:                 Boolean
+  ) = {
 
     connection.streamPublisher(
       streamId = EventStream.Id(stream),
       fromNumberExclusive = Option(fromEventNumberExclusive),
       resolveLinkTos = resolveLinkTos,
       credentials = Option(credentials),
-      infinite = infinite)
+      infinite = infinite
+    )
   }
 
   def allStreamsPublisher(
     fromPositionExclusive: Position,
-    resolveLinkTos: Boolean,
-    credentials: UserCredentials,
-    infinite: Boolean) = {
+    resolveLinkTos:        Boolean,
+    credentials:           UserCredentials,
+    infinite:              Boolean
+  ) = {
 
     connection.allStreamsPublisher(
       resolveLinkTos = resolveLinkTos,
       fromPositionExclusive = Option(fromPositionExclusive),
       credentials = Option(credentials),
-      infinite = infinite)
+      infinite = infinite
+    )
   }
 }

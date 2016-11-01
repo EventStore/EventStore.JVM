@@ -14,6 +14,7 @@ object PackIn {
 }
 
 case class PackOut(
-  message: Out,
-  correlationId: Uuid = randomUuid,
-  credentials: Option[UserCredentials] = None) extends Pack
+  message:       Out,
+  correlationId: Uuid                    = randomUuid,
+  credentials:   Option[UserCredentials] = None
+) extends Pack

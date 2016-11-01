@@ -17,7 +17,8 @@ class SettingsSpec extends Specification with util.NoConversions {
           |   operation-timeout=1m
           |   operation.timeout=1s
           |}
-        """.stripMargin).withFallback(ConfigFactory.load())
+        """.stripMargin
+      ).withFallback(ConfigFactory.load())
       Settings(config).operationTimeout mustEqual 1.minute
     }
 

@@ -72,7 +72,8 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
   lazy val delayedRetry = DelayedRetry.opt(
     left = settings.maxReconnections,
     delay = settings.reconnectionDelayMin,
-    maxDelay = settings.reconnectionDelayMax)
+    maxDelay = settings.reconnectionDelayMax
+  )
 
   def receive = {
     val address = clusterDiscoverer match {
@@ -354,7 +355,8 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
     val connection = tcp.outgoingConnection(
       remoteAddress = address,
       connectTimeout = settings.connectionTimeout,
-      idleTimeout = settings.heartbeatTimeout)
+      idleTimeout = settings.heartbeatTimeout
+    )
     val source = Source.actorRef(settings.bufferSize, OverflowStrategy.fail)
     val sink = Sink.actorRef(self, Disconnected(address))
     val (ref, connected) = source.viaMat(connection.join(flow))(Keep.both).toMat(sink)(Keep.left).run()

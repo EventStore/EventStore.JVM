@@ -38,7 +38,8 @@ class EsConnectionSpec extends util.ActorSpec {
         expect(WriteEvents(
           streamId = EventStream.Id(stream),
           events = events.asScala.toList,
-          expectedVersion = Option(version) getOrElse ExpectedVersion.Any), uc)
+          expectedVersion = Option(version) getOrElse ExpectedVersion.Any
+        ), uc)
         lastSender ! WriteEventsCompleted(None, None)
         future.await_ mustEqual null
       }
@@ -55,7 +56,8 @@ class EsConnectionSpec extends util.ActorSpec {
         expect(DeleteStream(
           streamId = EventStream.Id(stream),
           expectedVersion = Option(version) getOrElse ExpectedVersion.Any,
-          hard = hd), uc)
+          hard = hd
+        ), uc)
         lastSender ! DeleteStreamCompleted(None)
         future.await_ mustEqual null
       }
@@ -72,7 +74,8 @@ class EsConnectionSpec extends util.ActorSpec {
         expect(ReadEvent(
           streamId = EventStream.Id(stream),
           eventNumber = Option(number) getOrElse EventNumber.Last,
-          resolveLinkTos = resolveLinkTos), uc)
+          resolveLinkTos = resolveLinkTos
+        ), uc)
       }
     }
 
@@ -90,7 +93,8 @@ class EsConnectionSpec extends util.ActorSpec {
           fromNumber = Option(number) getOrElse EventNumber.First,
           maxCount = count,
           direction = ReadDirection.forward,
-          resolveLinkTos = resolveLinkTos), uc)
+          resolveLinkTos = resolveLinkTos
+        ), uc)
       }
     }
 
@@ -108,7 +112,8 @@ class EsConnectionSpec extends util.ActorSpec {
           fromNumber = Option(number) getOrElse EventNumber.Last,
           maxCount = count,
           direction = ReadDirection.backward,
-          resolveLinkTos = resolveLinkTos), uc)
+          resolveLinkTos = resolveLinkTos
+        ), uc)
       }
     }
 
@@ -124,7 +129,8 @@ class EsConnectionSpec extends util.ActorSpec {
           fromPosition = Option(position) getOrElse Position.First,
           maxCount = count,
           direction = ReadDirection.forward,
-          resolveLinkTos = resolveLinkTos), uc)
+          resolveLinkTos = resolveLinkTos
+        ), uc)
       }
     }
 
@@ -140,7 +146,8 @@ class EsConnectionSpec extends util.ActorSpec {
           fromPosition = Option(position) getOrElse Position.Last,
           maxCount = count,
           direction = ReadDirection.backward,
-          resolveLinkTos = resolveLinkTos), uc)
+          resolveLinkTos = resolveLinkTos
+        ), uc)
       }
     }
 
@@ -216,7 +223,8 @@ class EsConnectionSpec extends util.ActorSpec {
         connection.startTransaction(stream, version, uc)
         val msg = TransactionStart(
           streamId = EventStream.Id(stream),
-          expectedVersion = Option(version) getOrElse ExpectedVersion.Any)
+          expectedVersion = Option(version) getOrElse ExpectedVersion.Any
+        )
         expect(msg, uc)
       }
     }
@@ -272,6 +280,7 @@ class EsConnectionSpec extends util.ActorSpec {
       EventNumber.Exact(2),
       endOfStream = true,
       0,
-      ReadDirection.forward)
+      ReadDirection.forward
+    )
   }
 }

@@ -29,5 +29,6 @@ class WriteEventsBuilder(streamId: String) extends Builder[WriteEvents]
     streamId = _streamId,
     events = _events.toList,
     expectedVersion = _expectVersion,
-    requireMaster = _requireMaster)
+    requireMaster = _requireMaster
+  )
 }

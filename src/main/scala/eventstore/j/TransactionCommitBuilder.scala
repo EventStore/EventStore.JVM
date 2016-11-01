@@ -12,5 +12,6 @@ class TransactionCommitBuilder(transactionId: Long) extends Builder[TransactionC
 
   def build: TransactionCommit = TransactionCommit(
     transactionId = transactionId,
-    requireMaster = _requireMaster)
+    requireMaster = _requireMaster
+  )
 }

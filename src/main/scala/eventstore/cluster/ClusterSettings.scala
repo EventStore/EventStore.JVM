@@ -18,12 +18,13 @@ import scala.concurrent.duration._
  * @param gossipTimeout Timeout for cluster gossip.
  */
 case class ClusterSettings(
-    gossipSeedsOrDns: GossipSeedsOrDns = GossipSeedsOrDns.GossipSeeds("127.0.0.1" :: 2113),
-    dnsLookupTimeout: FiniteDuration = 2.seconds,
-    maxDiscoverAttempts: Int = 10,
-    discoverAttemptInterval: FiniteDuration = 500.millis,
-    discoveryInterval: FiniteDuration = 1.second,
-    gossipTimeout: FiniteDuration = 1.second) {
+    gossipSeedsOrDns:        GossipSeedsOrDns = GossipSeedsOrDns.GossipSeeds("127.0.0.1" :: 2113),
+    dnsLookupTimeout:        FiniteDuration   = 2.seconds,
+    maxDiscoverAttempts:     Int              = 10,
+    discoverAttemptInterval: FiniteDuration   = 500.millis,
+    discoveryInterval:       FiniteDuration   = 1.second,
+    gossipTimeout:           FiniteDuration   = 1.second
+) {
   require(maxDiscoverAttempts >= 1, s"maxDiscoverAttempts must be >= 1, but is $maxDiscoverAttempts")
 }
 
@@ -37,7 +38,8 @@ object ClusterSettings {
       def clusterDns = option("dns", conf.getString).map { dns =>
         GossipSeedsOrDns(
           clusterDns = dns,
-          externalGossipPort = conf getInt "external-gossip-port")
+          externalGossipPort = conf getInt "external-gossip-port"
+        )
       }
 
       def gossipSeeds = option("gossip-seeds", conf.getStringList).flatMap { ss =>
@@ -62,7 +64,8 @@ object ClusterSettings {
           maxDiscoverAttempts = conf getInt "max-discover-attempts",
           discoverAttemptInterval = duration("discover-attempt-interval"),
           discoveryInterval = duration("discovery-interval"),
-          gossipTimeout = duration("gossip-timeout"))
+          gossipTimeout = duration("gossip-timeout")
+        )
       }
     }
     opt(conf getConfig "eventstore.cluster")
@@ -85,8 +88,9 @@ object GossipSeedsOrDns {
    * @param externalGossipPort The well-known endpoint on which cluster managers are running.
    */
   case class ClusterDns(
-      clusterDns: String = "localhost",
-      externalGossipPort: Int = 30778) extends GossipSeedsOrDns {
+      clusterDns:         String = "localhost",
+      externalGossipPort: Int    = 30778
+  ) extends GossipSeedsOrDns {
     require(0 < externalGossipPort && externalGossipPort < 65536, s"externalGossipPort is not valid :$externalGossipPort")
     require(clusterDns != null, "clusterDns must be not null")
     require(clusterDns.nonEmpty, "clusterDns must be not empty")

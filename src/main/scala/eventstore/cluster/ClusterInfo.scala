@@ -57,23 +57,24 @@ object ClusterInfo {
 }
 
 case class MemberInfo(
-    instanceId: Uuid,
-    timestamp: DateTime,
-    state: NodeState,
-    isAlive: Boolean,
-    internalTcp: InetSocketAddress,
-    externalTcp: InetSocketAddress,
-    internalSecureTcp: InetSocketAddress,
-    externalSecureTcp: InetSocketAddress,
-    internalHttp: InetSocketAddress,
-    externalHttp: InetSocketAddress,
+    instanceId:         Uuid,
+    timestamp:          DateTime,
+    state:              NodeState,
+    isAlive:            Boolean,
+    internalTcp:        InetSocketAddress,
+    externalTcp:        InetSocketAddress,
+    internalSecureTcp:  InetSocketAddress,
+    externalSecureTcp:  InetSocketAddress,
+    internalHttp:       InetSocketAddress,
+    externalHttp:       InetSocketAddress,
     lastCommitPosition: Long,
-    writerCheckpoint: Long,
-    chaserCheckpoint: Long,
-    epochPosition: Long,
-    epochNumber: Int,
-    epochId: Uuid,
-    nodePriority: Int) extends Ordered[MemberInfo] {
+    writerCheckpoint:   Long,
+    chaserCheckpoint:   Long,
+    epochPosition:      Long,
+    epochNumber:        Int,
+    epochId:            Uuid,
+    nodePriority:       Int
+) extends Ordered[MemberInfo] {
 
   def compare(that: MemberInfo) = this.state compare that.state
 

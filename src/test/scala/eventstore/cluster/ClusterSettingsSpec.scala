@@ -25,7 +25,8 @@ class ClusterSettingsSpec extends Specification with util.NoConversions {
         .withFallback(config)
       ClusterSettings.opt(conf) must beSome(ClusterSettings(GossipSeeds(List(
         "127.0.0.1" :: 1,
-        "127.0.0.2" :: 2))))
+        "127.0.0.2" :: 2
+      ))))
     }
 
     "return Some with dns if both gossip seeds and dns specified" in {
@@ -35,7 +36,8 @@ class ClusterSettingsSpec extends Specification with util.NoConversions {
             |   dns = "localhost"
             |   gossip-seeds = ["127.0.0.1:1", "127.0.0.2:2"]
             |}
-          """.stripMargin)
+          """.stripMargin
+        )
         .withFallback(config)
       ClusterSettings.opt(conf) must beSome(ClusterSettings(ClusterDns("localhost")))
     }

@@ -5,10 +5,11 @@ import eventstore.operations.OnIncoming._
 import scala.util.Try
 
 private[eventstore] case class RetryableOperation(
-    operation: Operation,
+    operation:   Operation,
     retriesLeft: Int,
-    maxRetries: Int,
-    ongoing: Boolean) extends Operation {
+    maxRetries:  Int,
+    ongoing:     Boolean
+) extends Operation {
 
   def id = operation.id
 

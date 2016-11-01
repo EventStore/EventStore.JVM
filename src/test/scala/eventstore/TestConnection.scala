@@ -33,13 +33,15 @@ abstract class TestConnection extends util.ActorSpec {
     def newEventData: EventData = EventData(
       "test",
       data = Content("""{"data":"data"}"""),
-      metadata = Content("""{"metadata":"metadata"}"""))
+      metadata = Content("""{"metadata":"metadata"}""")
+    )
 
     def writeEventsCompleted(
-      events: List[EventData],
+      events:          List[EventData],
       expectedVersion: ExpectedVersion = ExpectedVersion.Any,
-      streamId: EventStream.Id = streamId,
-      testKit: TestKitBase = this): Option[EventNumber.Range] = {
+      streamId:        EventStream.Id  = streamId,
+      testKit:         TestKitBase     = this
+    ): Option[EventNumber.Range] = {
       actor.!(WriteEvents(streamId, events, expectedVersion))(testKit.testActor)
       val completed = testKit.expectMsgType[WriteEventsCompleted]
       completed.position must beSome

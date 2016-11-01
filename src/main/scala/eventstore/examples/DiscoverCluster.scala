@@ -11,7 +11,8 @@ object DiscoverCluster extends App {
   val settings = ClusterSettings(GossipSeeds(
     "127.0.0.1" :: 1113,
     "127.0.0.1" :: 2113,
-    "127.0.0.1" :: 3113))
+    "127.0.0.1" :: 3113
+  ))
   val discoverer = system.actorOf(ClusterDiscovererActor.props(settings, ClusterInfo.futureFunc), "discoverer")
   system.actorOf(Props(classOf[DiscoverCluster], discoverer))
 }
