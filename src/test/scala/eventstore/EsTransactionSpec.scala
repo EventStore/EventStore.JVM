@@ -24,7 +24,7 @@ class EsTransactionSpec extends ActorSpec {
     "succeed" in new StartScope {
       val future = start
       lastSender ! TransactionId(transactionId)
-      future must beEqualTo(EsTransactionForActor(transactionId, testActor)).await
+      future.await_ mustEqual EsTransactionForActor(transactionId, testActor)
     }
   }
 
@@ -42,7 +42,7 @@ class EsTransactionSpec extends ActorSpec {
     "succeed" in new ContinueScope {
       val future = write
       lastSender ! WriteCompleted
-      future must beEqualTo(()).await
+      future.await_ must beEqualTo(())
     }
   }
 
@@ -60,7 +60,7 @@ class EsTransactionSpec extends ActorSpec {
     "succeed" in new ContinueScope {
       val future = commit
       lastSender ! Commit
-      future must beEqualTo(()).await
+      future.await_ must beEqualTo(())
     }
   }
 

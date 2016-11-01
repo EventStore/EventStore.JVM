@@ -72,7 +72,7 @@ class ProjectionsClientITest extends AbstractStreamsITest {
       }
     }
 
-    "return the running status for a continous projection" in new TestScope {
+    "return the running status for a continuous projection" in new TestScope {
       val client = new ProjectionsClient(settings, system)
       val projectionName = generateProjectionName
 
@@ -85,7 +85,7 @@ class ProjectionsClientITest extends AbstractStreamsITest {
       projectionDetails.map(_.status) should beSome(Running)
     }
 
-    "return the faulted status for a continous projection that doesnt compile" in new TestScope {
+    "return the faulted status for a continuous projection that doesnt compile" in new TestScope {
       val client = new ProjectionsClient(settings, system)
       val projectionName = generateProjectionName
 
@@ -114,7 +114,7 @@ class ProjectionsClientITest extends AbstractStreamsITest {
 
       EventuallyResults.eventually {
         val projectionState = client.fetchProjectionState(projectionName).await_(timeout)
-        projectionState.map(json => (Json.parse(json) \ "count").as[Int]) should beSome(3)
+        projectionState.map(json => (Json.parse(json) \ "count").as[Int]) should beSome(2)
       }
     }
 
@@ -148,7 +148,7 @@ class ProjectionsClientITest extends AbstractStreamsITest {
 
       EventuallyResults.eventually {
         val projectionResult = client.fetchProjectionResult(projectionName).await_(timeout)
-        projectionResult.map(json => (Json.parse(json) \ "count").as[Int]) should beSome(3)
+        projectionResult.map(json => (Json.parse(json) \ "count").as[Int]) should beSome(2)
       }
     }
 
@@ -174,7 +174,7 @@ class ProjectionsClientITest extends AbstractStreamsITest {
       }
     }
 
-    "stop a continous projection and return the stopped status for it" in new TestScope {
+    "stop a continuous projection and return the stopped status for it" in new TestScope {
       val client = new ProjectionsClient(settings, system)
       val projectionName = generateProjectionName
 

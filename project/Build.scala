@@ -43,7 +43,7 @@ object Build extends Build {
     val core = apply("core")
     val mock = apply("mock")
 
-    private def apply(x: String) = "org.specs2" %% s"specs2-$x" % "2.4.17" % "test"
+    private def apply(x: String) = "org.specs2" %% s"specs2-$x" % "3.8.5.1" % "test"
   }
 
   val typesafeConfig = "com.typesafe" % "config" % "1.3.1"

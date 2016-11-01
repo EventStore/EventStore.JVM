@@ -1,19 +1,23 @@
 package eventstore.util
 
-import com.typesafe.config.{ Config, ConfigFactory }
-import org.specs2.mutable.Specification
-import org.specs2.specification.{ Scope, Step, Fragments }
 import akka.actor.ActorSystem
 import akka.testkit.{ ImplicitSender, TestKit }
-import scala.concurrent.{ Awaitable, Await }
-import scala.concurrent.duration._
+import com.typesafe.config.{ Config, ConfigFactory }
+import org.specs2.mutable.Specification
+import org.specs2.specification.{ AfterAll, Scope }
 
-abstract class ActorSpec extends Specification with NoConversions {
+import scala.concurrent.duration._
+import scala.concurrent.{ Await, Awaitable, ExecutionContext }
+
+abstract class ActorSpec extends Specification with NoConversions with AfterAll {
   implicit lazy val system = ActorSystem("test", config)
+  implicit def ex: ExecutionContext = system.dispatcher
 
   def config: Config = ConfigFactory.load
 
-  override def map(fs: => Fragments) = super.map(fs) ^ Step(TestKit.shutdownActorSystem(system))
+  def afterAll() = {
+    TestKit.shutdownActorSystem(system)
+  }
 
   protected abstract class ActorScope extends TestKit(system) with ImplicitSender with Scope
 
