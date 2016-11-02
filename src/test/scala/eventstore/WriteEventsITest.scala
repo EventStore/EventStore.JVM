@@ -3,6 +3,8 @@ package eventstore
 import akka.testkit.TestProbe
 import ExpectedVersion._
 
+import scala.concurrent.duration._
+
 class WriteEventsITest extends TestConnection {
   "append to stream" should {
     "not fail for zero events" in new WriteEventsScope {
@@ -83,6 +85,26 @@ class WriteEventsITest extends TestConnection {
       expectMsgType[ReadStreamEventsCompleted].events.head.number mustEqual EventNumber(size * n - 1)
 
       deleteStream()
+    }
+
+    "write events sequentially" in new WriteEventsScope {
+      appendEventToCreateStream()
+
+      val n = 1000
+
+      val expected = for {
+        x <- 0 until n
+      } yield {
+        actor ! WriteEvents(streamId, List(newEventData), ExpectedVersion.Exact(x))
+        EventNumber(x + 1)
+      }
+
+      val actual = for {
+        x <- expectMsgAllClassOf(List.fill(n)(classOf[WriteEventsCompleted]): _*)
+        range <- x.numbersRange
+      } yield range.start
+
+      actual shouldEqual expected
     }
   }
 

@@ -16,7 +16,7 @@ abstract class TestConnection extends util.ActorSpec {
     val date = DateTime.now
 
     val streamMetadata = ByteString(TestConnection.this.getClass.getSimpleName)
-    val actor = TestActorRef(ConnectionActor.props())
+    val actor = system.actorOf(ConnectionActor.props())
 
     def deleteStream(expVer: ExpectedVersion.Existing = ExpectedVersion.Any, hard: Boolean = true): Unit = {
       val probe = TestProbe()
