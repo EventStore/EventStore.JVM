@@ -64,12 +64,12 @@ class UserManagementITest extends ActorSpec {
 
     val streamId = EventStream.Id(user)
 
-    def expectAuthenticated() {
+    def expectAuthenticated(): Unit = {
       actor ! Authenticate.withCredentials(user)
       expectMsg(Authenticated)
     }
 
-    def expectNotAuthenticated() {
+    def expectNotAuthenticated(): Unit = {
       def notAuthenticated = {
         actor ! Authenticate.withCredentials(user)
         expectMsgPF() {
@@ -80,7 +80,7 @@ class UserManagementITest extends ActorSpec {
       awaitCond(notAuthenticated, max = 1.second)
     }
 
-    def createUser(user: UserCredentials = user) {
+    def createUser(user: UserCredentials = user): Unit = {
       val metadata = """{
                        |  "$acl": {
                        |    "$w": "$admins",
@@ -96,7 +96,7 @@ class UserManagementITest extends ActorSpec {
       expectMsgType[WriteEventsCompleted].numbersRange must beSome(EventNumber.First to EventNumber.First)
     }
 
-    def notifyPasswordChanged() {
+    def notifyPasswordChanged(): Unit = {
       actor ! WriteEvents(EventStream.Id("$users-password-notifications"), List(passwordChanged(user.login)))
       expectMsgType[WriteEventsCompleted]
     }

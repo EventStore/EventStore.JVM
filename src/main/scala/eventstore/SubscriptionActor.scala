@@ -47,6 +47,7 @@ object SubscriptionActor {
   /**
    * Java API
    */
+  @deprecated("Use `getProps` with Settings as argument", "3.0.0")
   def getProps(
     connection:            ActorRef,
     client:                ActorRef,
@@ -62,6 +63,7 @@ object SubscriptionActor {
   /**
    * Java API
    */
+  @deprecated("Use `getProps` with Settings as argument", "3.0.0")
   def getProps(connection: ActorRef, client: ActorRef, fromPositionExclusive: Option[Position]) = {
     props(connection, client, fromPositionExclusive)
   }

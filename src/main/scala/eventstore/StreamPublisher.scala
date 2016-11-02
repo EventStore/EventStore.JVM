@@ -49,6 +49,7 @@ object StreamPublisher {
   /**
    * Java API
    */
+  @deprecated("Use `getProps` with Settings as argument", "3.0.0")
   def getProps(
     connection:          ActorRef,
     streamId:            EventStream.Id,
@@ -87,13 +88,21 @@ object StreamPublisher {
   /**
    * Java API
    */
+  @deprecated("Use `getProps` with Settings as argument", "3.0.0")
   def getProps(
     connection:          ActorRef,
     streamId:            EventStream.Id,
     fromNumberExclusive: Option[EventNumber]
   ): Props = {
 
-    props(connection, streamId, fromNumberExclusive)
+    props(
+      connection = connection,
+      streamId = streamId,
+      fromNumberExclusive = fromNumberExclusive,
+      credentials = None,
+      settings = Settings.Default,
+      infinite = true
+    )
   }
 }
 

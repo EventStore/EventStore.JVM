@@ -151,7 +151,7 @@ abstract class TestConnection extends util.ActorSpec {
       event
     }
 
-    def mustBeSorted[T](xs: List[T])(implicit direction: ReadDirection, ordering: Ordering[T]) {
+    def mustBeSorted[T](xs: List[T])(implicit direction: ReadDirection, ordering: Ordering[T]): Unit = {
       xs.map {
         case ResolvedEvent(_, link) => link.asInstanceOf[T]
         case x                      => x

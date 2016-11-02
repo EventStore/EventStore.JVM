@@ -2,7 +2,6 @@ package eventstore
 
 import akka.actor.Status.Failure
 import akka.actor.ActorRef
-import akka.stream.actor.ActorSubscriberMessage.OnError
 import akka.testkit._
 import org.specs2.mock.Mockito
 
@@ -28,7 +27,7 @@ abstract class AbstractSubscriptionActorSpec extends util.ActorSpec with Mockito
       connection.expectNoMsg(duration)
     }
 
-    def streamEventAppeared(x: Event) = StreamEventAppeared(IndexedEvent(x, Position.Exact(x.number.value)))
+    def streamEventAppeared(x: Event) = StreamEventAppeared(IndexedEvent(x, Position.Exact(x.number.value.toLong)))
 
     def subscribeTo = SubscribeTo(streamId, resolveLinkTos = resolveLinkTos)
 

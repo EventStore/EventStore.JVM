@@ -743,7 +743,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     def expectPack = Frame.readIn(expectMsgType[Tcp.Received].data)
     def expectPackOut = Frame.readOut(expectMsgType[Tcp.Received].data)
 
-    def unbind(socket: ActorRef) {
+    def unbind(socket: ActorRef): Unit = {
       socket ! Tcp.Unbind
       expectMsg(Tcp.Unbound)
     }

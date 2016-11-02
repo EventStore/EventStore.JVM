@@ -70,7 +70,7 @@ class AllStreamsPublisherSpec extends AbstractSubscriptionActorSpec {
 
     "read events until none left and subscribe to new ones" in new SubscriptionScope {
       connection expectMsg readEvents(0)
-      val nextPosition = 2
+      val nextPosition = 2L
       actor ! readCompleted(1, nextPosition, event1)
 
       expectEvent(event1)

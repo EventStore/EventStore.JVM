@@ -11,7 +11,7 @@ trait DefaultFormats {
     private val length = 16
     implicit val order = java.nio.ByteOrder.LITTLE_ENDIAN
 
-    def write(x: Uuid, builder: ByteStringBuilder) {
+    def write(x: Uuid, builder: ByteStringBuilder) = {
       builder.putLong(x.getMostSignificantBits)
       builder.putLong(x.getLeastSignificantBits)
     }

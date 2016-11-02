@@ -178,7 +178,7 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
       loop(events, position)
     }
 
-    @tailrec final def expectNoEvents() {
+    @tailrec final def expectNoEvents(): Unit = {
       receiveOne(1.second) match {
         case null =>
         case msg =>

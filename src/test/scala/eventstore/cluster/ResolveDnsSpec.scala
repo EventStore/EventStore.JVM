@@ -1,11 +1,10 @@
 package eventstore.cluster
 
-import eventstore.util.NoConversions
 import org.specs2.mutable.Specification
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class ResolveDnsSpec extends Specification with NoConversions {
+class ResolveDnsSpec extends Specification {
   val timeout = 2.seconds
 
   "ResolveDns" should {

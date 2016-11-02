@@ -259,7 +259,7 @@ class ProjectionsClientITest extends AbstractStreamsITest {
 
   def waitForProjectionStatus(client: ProjectionsClient, name: String, expectedStatus: ProjectionStatus, waitDuration: FiniteDuration = 10.seconds): Future[Boolean] = {
     val retryCount = 10
-    val retryDelay = waitDuration / retryCount
+    val retryDelay = waitDuration / retryCount.toLong
 
     Source(1 to retryCount)
       .throttle(1, retryDelay, 1, Shaping)

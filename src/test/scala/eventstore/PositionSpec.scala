@@ -7,7 +7,7 @@ import Position._
 class PositionSpec extends Specification {
   "Position" should {
     ">" in new PositionScope {
-      def verify(p1: Position, p2: Position) {
+      def verify(p1: Position, p2: Position) = {
         (p1 > p2) mustEqual ((p1, p2) match {
           case (Last, Last)                       => false
           case (_, Last)                          => false
@@ -18,7 +18,7 @@ class PositionSpec extends Specification {
     }
 
     "<" in new PositionScope {
-      def verify(p1: Position, p2: Position) {
+      def verify(p1: Position, p2: Position) = {
         (p1 < p2) mustEqual ((p1, p2) match {
           case (Last, Last)                       => false
           case (_, Last)                          => true
@@ -29,7 +29,7 @@ class PositionSpec extends Specification {
     }
 
     ">=" in new PositionScope {
-      def verify(p1: Position, p2: Position) {
+      def verify(p1: Position, p2: Position) = {
         (p1 >= p2) mustEqual ((p1, p2) match {
           case (Last, Last)                       => true
           case (_, Last)                          => false
@@ -40,7 +40,7 @@ class PositionSpec extends Specification {
     }
 
     "<=" in new PositionScope {
-      def verify(p1: Position, p2: Position) {
+      def verify(p1: Position, p2: Position) = {
         (p1 <= p2) mustEqual ((p1, p2) match {
           case (Last, Last)                       => true
           case (_, Last)                          => true
@@ -98,7 +98,7 @@ class PositionSpec extends Specification {
   }
 
   private trait PositionScope extends Scope {
-    val values = List(0, 1, Int.MaxValue)
+    val values = List[Long](0L, 1L, Int.MaxValue)
     val positions = Last :: (for {
       commitPosition <- values
       preparePosition <- values if commitPosition >= preparePosition
@@ -106,6 +106,6 @@ class PositionSpec extends Specification {
 
     for (p1 <- positions; p2 <- positions) verify(p1, p2)
 
-    def verify(p1: Position, p2: Position)
+    def verify(p1: Position, p2: Position): Unit
   }
 }

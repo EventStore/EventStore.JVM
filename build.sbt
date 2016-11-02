@@ -20,7 +20,20 @@ description := "Event Store JVM Client"
 
 startYear := Some(2013)
 
-scalacOptions := Seq("-encoding", "UTF-8", "-unchecked", "-deprecation", "-feature")
+scalacOptions ++= Seq(
+  "-encoding", "UTF-8",
+  "-feature",
+  "-unchecked",
+  "-deprecation",
+  "-Xfatal-warnings",
+  "-Xlint:-missing-interpolator",
+  "-Yno-adapted-args",
+  "-Ywarn-dead-code",
+  "-Ywarn-numeric-widen",
+  "-Xfuture"
+)
+
+scalacOptions in(Compile, doc) ++= Seq("-groups", "-implicits", "-no-link-warnings")
 
 val AkkaVersion = "2.4.11"
 val ReactiveStreamsVersion = "1.0.0"

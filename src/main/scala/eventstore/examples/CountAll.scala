@@ -1,16 +1,16 @@
 package eventstore.examples
 
 import akka.actor._
-import eventstore.LiveProcessingStarted
+import eventstore.{ IndexedEvent, LiveProcessingStarted, Settings, SubscriptionActor }
 import eventstore.tcp.ConnectionActor
-import eventstore.{ IndexedEvent, SubscriptionActor }
+
 import scala.concurrent.duration._
 
 object CountAll extends App {
   val system = ActorSystem()
   val connection = system.actorOf(ConnectionActor.props(), "connection")
   val countAll = system.actorOf(Props[CountAll], "count-all")
-  system.actorOf(SubscriptionActor.props(connection, countAll), "subscription")
+  system.actorOf(SubscriptionActor.props(connection, countAll, None, None, Settings.Default), "subscription")
 }
 
 class CountAll extends Actor with ActorLogging {

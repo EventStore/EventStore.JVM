@@ -261,7 +261,7 @@ class EsConnectionSpec extends util.ActorSpec {
       def onLiveProcessingStart(subscription: Closeable) = client.ref ! LiveProcessingStart
     }
 
-    def newEvent(x: Int) = IndexedEvent(EventRecord(streamId, EventNumber.Exact(x), EventData("event-type")), Position.Exact(x))
+    def newEvent(x: Int) = IndexedEvent(EventRecord(streamId, EventNumber.Exact(x), EventData("event-type")), Position.Exact(x.toLong))
 
     val error = new RuntimeException("test")
 

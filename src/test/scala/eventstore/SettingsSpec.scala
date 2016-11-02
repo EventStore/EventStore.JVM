@@ -4,7 +4,7 @@ import com.typesafe.config.ConfigFactory
 import org.specs2.mutable.Specification
 import scala.concurrent.duration._
 
-class SettingsSpec extends Specification with util.NoConversions {
+class SettingsSpec extends Specification {
   "Settings" should {
     "defaults should be equal to loaded from reference.conf" in {
       Settings() mustEqual Settings.Default

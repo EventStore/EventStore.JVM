@@ -9,7 +9,7 @@ trait SubscriptionObserver[T] {
    *
    * @param subscription A `Closeable` representing subscription which can be closed.
    */
-  def onLiveProcessingStart(subscription: Closeable)
+  def onLiveProcessingStart(subscription: Closeable): Unit
 
   /**
    * Method invoked when a new event is received over the subscription
@@ -17,17 +17,17 @@ trait SubscriptionObserver[T] {
    * @param event A new event pushed to the subscription
    * @param subscription A `Closeable` representing subscription which can be closed.
    */
-  def onEvent(event: T, subscription: Closeable)
+  def onEvent(event: T, subscription: Closeable): Unit
 
   /**
    * Method invoked if the subscription is dropped due to some error
    *
    * @param e An error causes subscription termination
    */
-  def onError(e: Throwable)
+  def onError(e: Throwable): Unit
 
   /**
    * Method invoked if the subscription is dropped
    */
-  def onClose()
+  def onClose(): Unit
 }

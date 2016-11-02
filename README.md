@@ -327,7 +327,7 @@ object CountAll extends App {
   val system = ActorSystem()
   val connection = system.actorOf(ConnectionActor.props(), "connection")
   val countAll = system.actorOf(Props[CountAll], "count-all")
-  system.actorOf(SubscriptionActor.props(connection, countAll), "subscription")
+  system.actorOf(SubscriptionActor.props(connection, countAll, None, None, Settings.Default), "subscription")
 }
 
 class CountAll extends Actor with ActorLogging {

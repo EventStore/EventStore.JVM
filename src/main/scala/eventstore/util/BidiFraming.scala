@@ -15,7 +15,7 @@ object BidiFraming {
       if (length >= maxFrameLength) {
         throw new FramingException(s"Maximum allowed message size is $maxFrameLength but tried to send $length bytes")
       } else {
-        val header = ByteString.newBuilder.putLongPart(length, fieldLength).result()
+        val header = ByteString.newBuilder.putLongPart(length.toLong, fieldLength).result()
         header ++ byteString
       }
     }

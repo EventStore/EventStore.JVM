@@ -411,7 +411,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
       import eventstore.{ ScavengeError => E }
 
       def scavengeDatabaseCompleted = ScavengeDatabaseCompleted(
-        totalTime = ToCoarsest(FiniteDuration(x.getTotalTimeMs, TimeUnit.MILLISECONDS)),
+        totalTime = ToCoarsest(FiniteDuration(x.getTotalTimeMs.toLong, TimeUnit.MILLISECONDS)),
         totalSpaceSaved = x.getTotalSpaceSaved
       )
 

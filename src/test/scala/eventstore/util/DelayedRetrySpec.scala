@@ -3,7 +3,7 @@ package eventstore.util
 import org.specs2.mutable.Specification
 import scala.concurrent.duration._
 
-class DelayedRetrySpec extends Specification with NoConversions {
+class DelayedRetrySpec extends Specification {
   "DelayedRetry.opt" should {
     "return none if 0 retries" in {
       DelayedRetry.opt(0, 1.second, 1.second) must beNone

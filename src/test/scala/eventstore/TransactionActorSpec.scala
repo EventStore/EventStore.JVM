@@ -152,12 +152,12 @@ class TransactionActorSpec extends ActorSpec {
     val es2 = events("2")
     val es3 = events("3")
 
-    val transactionId = 0
-    val invalid = 1
+    val transactionId = 0L
+    val invalid = 1L
     val connection = TestProbe()
     val actor = watch(TestActorRef(TransactionActor.props(connection.ref, kickOff)))
 
-    def expectNoMsgs() {
+    def expectNoMsgs(): Unit = {
       val duration = 200.millis
       expectNoMsg(duration)
       connection.expectNoMsg(duration)
@@ -170,7 +170,7 @@ class TransactionActorSpec extends ActorSpec {
 
     def expectCommit = connection.expectMsg(TransactionCommit(transactionId))
 
-    def commitCompleted(range: Option[EventNumber.Range]) {
+    def commitCompleted(range: Option[EventNumber.Range]): Unit = {
       actor ! TransactionCommitCompleted(transactionId, range)
     }
 
@@ -186,7 +186,7 @@ class TransactionActorSpec extends ActorSpec {
 
     def expectFailure = expectMsg(failure)
 
-    def verifyTransactionId() {
+    def verifyTransactionId(): Unit = {
       actor ! GetTransactionId
       expectMsg(TransactionId(transactionId))
     }

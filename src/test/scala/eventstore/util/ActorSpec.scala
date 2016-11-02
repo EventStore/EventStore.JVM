@@ -9,7 +9,7 @@ import org.specs2.specification.{ AfterAll, Scope }
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Awaitable, ExecutionContext }
 
-abstract class ActorSpec extends Specification with NoConversions with AfterAll {
+abstract class ActorSpec extends Specification with AfterAll {
   implicit lazy val system = ActorSystem("test", config)
   implicit def ex: ExecutionContext = system.dispatcher
 

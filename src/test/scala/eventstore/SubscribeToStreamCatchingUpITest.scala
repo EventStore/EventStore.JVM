@@ -148,14 +148,14 @@ class SubscribeToStreamCatchingUpITest extends TestConnection {
         client = client,
         streamId = streamId,
         fromNumberExclusive = fromNumberExclusive,
-        resolveLinkTos = resolveLinkTos,
-        readBatchSize = Settings.Default.readBatchSize
+        None,
+        Settings.Default.copy(resolveLinkTos = resolveLinkTos)
       ))
       watch(a)
       a
     }
 
-    def expectActorTerminated(actor: TestActorRef[_]) {
+    def expectActorTerminated(actor: TestActorRef[_]): Unit = {
       expectTerminated(actor)
       actor.underlying.isTerminated must beTrue
       expectNoEvents()

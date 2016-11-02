@@ -38,7 +38,7 @@ trait DefaultProtoFormats extends DefaultFormats {
 
     def toProto(x: T): Builder
 
-    def write(x: T, builder: ByteStringBuilder) {
+    def write(x: T, builder: ByteStringBuilder) = {
       builder.putBytes(toProto(x).build().toByteArray)
     }
 

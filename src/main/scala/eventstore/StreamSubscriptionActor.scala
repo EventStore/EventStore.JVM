@@ -51,6 +51,7 @@ object StreamSubscriptionActor {
   /**
    * Java API
    */
+  @deprecated("Use `getProps` with Settings as argument", "3.0.0")
   def getProps(
     connection:          ActorRef,
     client:              ActorRef,
@@ -67,6 +68,7 @@ object StreamSubscriptionActor {
   /**
    * Java API
    */
+  @deprecated("Use `getProps` with Settings as argument", "3.0.0")
   def getProps(
     connection:          ActorRef,
     client:              ActorRef,

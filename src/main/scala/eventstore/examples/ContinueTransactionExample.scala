@@ -9,7 +9,7 @@ object ContinueTransactionExample extends App {
   val system = ActorSystem()
   val connection = system.actorOf(ConnectionActor.props(), "connection")
 
-  val transactionId = 0
+  val transactionId = 0L
   val kickoff = Continue(transactionId)
   val transaction = system.actorOf(TransactionActor.props(connection, kickoff), "transaction")
   implicit val transactionResult = system.actorOf(Props[TransactionResult], "result")

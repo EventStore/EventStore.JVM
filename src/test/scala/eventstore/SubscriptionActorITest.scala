@@ -13,7 +13,7 @@ class SubscriptionActorITest extends AbstractSubscriptionActorITest {
     "subscribe from the concrete position" in new TestScope {
       connection ! ReadAllEvents(Position.Last, 2, ReadDirection.Backward)
       val position = expectMsgType[ReadAllEventsCompleted].events.last.position
-      val subscription = system.actorOf(SubscriptionActor.props(connection, testActor, Some(position)))
+      val subscription = system.actorOf(SubscriptionActor.props(connection, testActor, Some(position), None, settings))
 
       expectMsgType[IndexedEvent].position must beGreaterThan(position)
     }
@@ -56,7 +56,7 @@ class SubscriptionActorITest extends AbstractSubscriptionActorITest {
 
   trait SubscriptionScope extends TestScope {
     val duration = 10.seconds
-    val subscription = system.actorOf(SubscriptionActor.props(connection, testActor, fromPositionExclusive))
+    val subscription = system.actorOf(SubscriptionActor.props(connection, testActor, fromPositionExclusive, None, settings))
 
     def fishForLiveProcessingStarted(): Unit = {
       fishForMessage(duration) {

@@ -80,7 +80,14 @@ class StreamSubscriptionActorITest extends AbstractSubscriptionActorITest {
   }
 
   trait SubscriptionScope extends TestScope {
-    def subscribe = system.actorOf(StreamSubscriptionActor.props(connection, testActor, streamId, fromNumberExclusive))
+    def subscribe = system.actorOf(StreamSubscriptionActor.props(
+      connection,
+      testActor,
+      streamId,
+      fromNumberExclusive,
+      None,
+      settings
+    ))
 
     def fishForLiveProcessingStarted(): Unit = {
       fishForMessage(5.seconds) {

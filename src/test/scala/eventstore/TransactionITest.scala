@@ -104,12 +104,12 @@ class TransactionITest extends TestConnection {
       expectMsgType[TransactionStartCompleted].transactionId
     }
 
-    def transactionWrite(events: EventData*)(implicit transactionId: Long) {
+    def transactionWrite(events: EventData*)(implicit transactionId: Long): Unit = {
       actor ! TransactionWrite(transactionId, events.toList)
       expectMsg(TransactionWriteCompleted(transactionId))
     }
 
-    def transactionCommit(range: Option[EventNumber.Range] = None, position: Boolean = true)(implicit transactionId: Long) {
+    def transactionCommit(range: Option[EventNumber.Range] = None, position: Boolean = true)(implicit transactionId: Long): Unit = {
       actor ! TransactionCommit(transactionId)
       val result = expectMsgType[TransactionCommitCompleted]
       result.transactionId mustEqual transactionId

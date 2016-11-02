@@ -46,6 +46,7 @@ object AllStreamsPublisher {
   /**
    * Java API
    */
+  @deprecated("Use `getProps` with Settings as argument", "3.0")
   def getProps(
     connection:            ActorRef,
     fromPositionExclusive: Option[Position],
@@ -55,7 +56,13 @@ object AllStreamsPublisher {
     readBatchSize:         Int
   ): Props = {
 
-    props(connection, fromPositionExclusive, resolveLinkTos, credentials, infinite, readBatchSize)
+    props(
+      connection = connection,
+      fromPositionExclusive = fromPositionExclusive,
+      credentials = credentials,
+      settings = Settings.Default.copy(readBatchSize = readBatchSize, resolveLinkTos = resolveLinkTos),
+      infinite = infinite
+    )
   }
 
   /**
@@ -81,8 +88,9 @@ object AllStreamsPublisher {
   /**
    * Java API
    */
+  @deprecated("Use `getProps` with Settings as argument", "3.0")
   def getProps(connection: ActorRef, fromPositionExclusive: Option[Position]) = {
-    props(connection, fromPositionExclusive)
+    props(connection, fromPositionExclusive, None, Settings.Default, infinite = true)
   }
 }
 

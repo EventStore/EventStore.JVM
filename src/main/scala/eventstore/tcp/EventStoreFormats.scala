@@ -9,7 +9,7 @@ object EventStoreFormats extends EventStoreFormats
 trait EventStoreFormats extends EventStoreProtoFormats {
   abstract class EmptyFormat[T](obj: T) extends BytesFormat[T] {
     def read(bi: ByteIterator) = obj
-    def write(x: T, builder: ByteStringBuilder) {}
+    def write(x: T, builder: ByteStringBuilder) = {}
   }
 
   implicit object HeartbeatRequestFormat extends EmptyFormat(HeartbeatRequest)
@@ -22,8 +22,8 @@ trait EventStoreFormats extends EventStoreProtoFormats {
   implicit object AuthenticatedFormat extends EmptyFormat(Authenticated)
 
   implicit object UserCredentialsFormat extends BytesFormat[UserCredentials] {
-    def write(x: UserCredentials, builder: ByteStringBuilder) {
-      def putString(s: String, name: String) {
+    def write(x: UserCredentials, builder: ByteStringBuilder) = {
+      def putString(s: String, name: String) = {
         val bs = ByteString(s)
         val length = bs.length
         require(length < 256, s"$name serialized length should be less than 256 bytes, but is $length:$x")
@@ -37,7 +37,7 @@ trait EventStoreFormats extends EventStoreProtoFormats {
     def read(bi: ByteIterator) = {
       def getString = {
         val length = bi.getByte
-        val bytes = new Bytes(length)
+        val bytes = new Bytes(length.toInt)
         bi.getBytes(bytes)
         new String(bytes, "UTF-8")
       }
@@ -48,7 +48,7 @@ trait EventStoreFormats extends EventStoreProtoFormats {
   }
 
   implicit object FlagsFormat extends BytesFormat[Flags] {
-    def write(x: Flags, builder: ByteStringBuilder) {
+    def write(x: Flags, builder: ByteStringBuilder) = {
       builder.putByte(x)
     }
 
@@ -56,7 +56,7 @@ trait EventStoreFormats extends EventStoreProtoFormats {
   }
 
   implicit object PackOutWriter extends BytesWriter[PackOut] {
-    def write(x: PackOut, builder: ByteStringBuilder) {
+    def write(x: PackOut, builder: ByteStringBuilder) = {
       val (writeMarker, writeMessage) = MarkerByte.writeMessage(x.message)
       writeMarker(builder)
       val credentials = x.credentials

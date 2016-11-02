@@ -80,7 +80,7 @@ class EsConnectionSpec extends ActorSpec with Mockito {
     val events = Seq(EventData("test"))
     val connection = new EsConnection(testActor, system)
 
-    def verifyOutIn[OUT <: Out, IN <: In](out: OUT, in: In)(implicit outIn: ClassTags[OUT, IN]) {
+    def verifyOutIn[OUT <: Out, IN <: In](out: OUT, in: In)(implicit outIn: ClassTags[OUT, IN]): Unit = {
       val future = connection.future(out)(outIn = outIn)
       expectMsg(out)
       future.value must beNone

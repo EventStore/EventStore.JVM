@@ -74,10 +74,10 @@ object MarkerByte {
   type Writer = ByteStringBuilder => Unit
 
   def writer[T <: Out](markerByte: Int, x: T)(implicit writer: BytesWriter[T]): (Writer, Writer) = {
-    def writeByte(bb: ByteStringBuilder) {
+    def writeByte(bb: ByteStringBuilder): Unit = {
       bb.putByte(markerByte.toByte)
     }
-    def writeMessage(bb: ByteStringBuilder) {
+    def writeMessage(bb: ByteStringBuilder): Unit = {
       writer.write(x, bb)
     }
     (writeByte _) -> (writeMessage _)

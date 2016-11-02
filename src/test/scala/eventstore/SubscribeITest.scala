@@ -87,7 +87,7 @@ class SubscribeITest extends TestConnection {
       testKit.expectMsgType[SubscribeToStreamCompleted]
     }
 
-    def unsubscribeFromStream() {
+    def unsubscribeFromStream(): Unit = {
       actor ! Unsubscribe
       expectMsg(Unsubscribed)
     }

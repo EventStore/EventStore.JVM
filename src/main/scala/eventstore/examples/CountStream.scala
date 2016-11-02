@@ -1,16 +1,24 @@
 package eventstore.examples
 
 import akka.actor._
-import eventstore.LiveProcessingStarted
+import eventstore.{ Event, EventStream, LiveProcessingStarted, Settings, StreamSubscriptionActor }
 import eventstore.tcp.ConnectionActor
-import eventstore.{ Event, EventStream, StreamSubscriptionActor }
+
 import scala.concurrent.duration._
 
 object CountStream extends App {
   val system = ActorSystem()
   val connection = system.actorOf(ConnectionActor.props(), "connection")
   val countStream = system.actorOf(Props[CountStream], "count-stream")
-  system.actorOf(StreamSubscriptionActor.props(connection, countStream, EventStream.Id("chat-GeneralChat")), "subscription")
+  val props = StreamSubscriptionActor.props(
+    connection,
+    countStream,
+    EventStream.Id("chat-GeneralChat"),
+    None,
+    None,
+    Settings.Default
+  )
+  system.actorOf(props, "subscription")
 }
 
 class CountStream extends Actor with ActorLogging {

@@ -5,7 +5,7 @@ import com.typesafe.config.ConfigFactory
 import org.specs2.mutable.Specification
 import eventstore.cluster.GossipSeedsOrDns._
 
-class ClusterSettingsSpec extends Specification with util.NoConversions {
+class ClusterSettingsSpec extends Specification {
   lazy val config = ConfigFactory.load()
   "ClusterSettings" should {
     "return None by default" in {

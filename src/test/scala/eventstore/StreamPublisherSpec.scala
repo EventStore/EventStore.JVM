@@ -523,11 +523,11 @@ class StreamPublisherSpec extends AbstractSubscriptionActorSpec {
       nextEventNumber = EventNumber(next),
       lastEventNumber = mock[EventNumber.Exact],
       endOfStream = endOfStream,
-      lastCommitPosition = next,
+      lastCommitPosition = next.toLong,
       direction = Forward
     )
 
-    def subscribeCompleted(x: Int) = SubscribeToStreamCompleted(x, Some(EventNumber.Exact(x)))
+    def subscribeCompleted(x: Int) = SubscribeToStreamCompleted(x.toLong, Some(EventNumber.Exact(x)))
 
     override def expectTerminatedOnFailure() = {
       val failure = new ServerErrorException("test")

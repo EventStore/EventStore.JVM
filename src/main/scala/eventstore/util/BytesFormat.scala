@@ -11,7 +11,7 @@ trait BytesReader[T] {
 
 @implicitNotFound(msg = "Cannot find BytesWriter or BytesFormat type class for ${T}")
 trait BytesWriter[T] {
-  def write(x: T, builder: ByteStringBuilder)
+  def write(x: T, builder: ByteStringBuilder): Unit
 
   def toByteString(x: T): ByteString = {
     val builder = ByteString.newBuilder
