@@ -163,7 +163,7 @@ class EsConnectionITest extends eventstore.util.ActorSpec {
 
   private trait TestScope extends ActorScope {
     implicit val materializer = ActorMaterializer()
-    val connection: EsConnection = new EsConnectionImpl(eventstore.EsConnection(system), Settings.Default)
+    val connection: EsConnection = new EsConnectionImpl(eventstore.EsConnection(system), Settings.Default, system.dispatcher)
     val eventData = newEventData
     val events = List(eventData).asJava
 

@@ -7,14 +7,18 @@ import akka.actor.ActorSystem
 import eventstore.ExpectedVersion.Existing
 
 import scala.collection.JavaConverters._
+import scala.concurrent.ExecutionContext
 
 object EsConnectionImpl {
   def apply(system: ActorSystem, settings: Settings = Settings.Default): EsConnectionImpl =
-    new EsConnectionImpl(eventstore.EsConnection(system, settings), settings)
+    new EsConnectionImpl(eventstore.EsConnection(system, settings), settings, system.dispatcher)
 }
 
-class EsConnectionImpl(connection: eventstore.EsConnection, settings: Settings) extends EsConnection {
-  import scala.concurrent.ExecutionContext.Implicits.global
+class EsConnectionImpl(
+    connection:                            eventstore.EsConnection,
+    settings:                              Settings,
+    private implicit val executionContext: ExecutionContext
+) extends EsConnection {
 
   def writeEvents(
     stream:          String,
@@ -41,7 +45,7 @@ class EsConnectionImpl(connection: eventstore.EsConnection, settings: Settings) 
       requireMaster = requireMaster
     )
 
-    connection.future(out, Option(credentials)).map(x => WriteResult.opt(x).orNull)
+    connection(out, Option(credentials)).map(x => WriteResult.opt(x).orNull)
   }
 
   def deleteStream(stream: String, expectedVersion: ExpectedVersion.Existing, credentials: UserCredentials) = {
@@ -66,7 +70,7 @@ class EsConnectionImpl(connection: eventstore.EsConnection, settings: Settings) 
       hard = hardDelete,
       requireMaster = requireMaster
     )
-    connection.future(out, Option(credentials)).map(x => x.position.map(DeleteResult.apply).orNull)
+    connection(out, Option(credentials)).map(x => x.position.map(DeleteResult.apply).orNull)
   }
 
   def startTransaction(stream: String, expectedVersion: ExpectedVersion, credentials: UserCredentials) = {
@@ -112,7 +116,7 @@ class EsConnectionImpl(connection: eventstore.EsConnection, settings: Settings) 
       requireMaster = requireMaster
     )
 
-    connection.future(out, Option(credentials)).map(_.event)
+    connection(out, Option(credentials)).map(_.event)
   }
 
   def readStreamEventsForward(
@@ -144,7 +148,7 @@ class EsConnectionImpl(connection: eventstore.EsConnection, settings: Settings) 
       requireMaster = requireMaster
     )
 
-    connection.future(out, Option(credentials))
+    connection(out, Option(credentials))
   }
 
   def readStreamEventsBackward(
@@ -176,7 +180,7 @@ class EsConnectionImpl(connection: eventstore.EsConnection, settings: Settings) 
       requireMaster = requireMaster
     )
 
-    connection.future(out, Option(credentials))
+    connection(out, Option(credentials))
   }
 
   def readAllEventsForward(
@@ -205,7 +209,7 @@ class EsConnectionImpl(connection: eventstore.EsConnection, settings: Settings) 
       requireMaster = requireMaster
     )
 
-    connection.future(out, Option(credentials))
+    connection(out, Option(credentials))
   }
 
   def readAllEventsBackward(
@@ -234,7 +238,7 @@ class EsConnectionImpl(connection: eventstore.EsConnection, settings: Settings) 
       requireMaster = requireMaster
     )
 
-    connection.future(out, Option(credentials))
+    connection(out, Option(credentials))
   }
 
   def subscribeToStream(

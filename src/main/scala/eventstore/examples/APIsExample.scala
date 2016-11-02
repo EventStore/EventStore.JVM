@@ -8,8 +8,9 @@ class APIsExample {
   val system = ActorSystem()
 
   def methodCall(): Unit = {
+    import system.dispatcher
     val connection = EsConnection(system)
-    val future = connection future ReadEvent(EventStream.Id("my-stream"), EventNumber.First)
+    val future = connection apply ReadEvent(EventStream.Id("my-stream"), EventNumber.First)
   }
 
   def messageSending(): Unit = {

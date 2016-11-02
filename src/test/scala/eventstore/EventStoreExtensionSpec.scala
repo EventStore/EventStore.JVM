@@ -14,7 +14,7 @@ class EventStoreExtensionSpec extends util.ActorSpec {
     }
 
     "return connection instance" in new ActorScope {
-      val future = EventStoreExtension(system).connection.future(readEvent)
+      val future = EventStoreExtension(system).connection(readEvent)
       Await.result(future, 3.seconds) must throwAn[EsException]
     }
   }

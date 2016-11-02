@@ -66,7 +66,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
 
   val flow = EventStoreFlow(settings.heartbeatInterval, log)
 
-  implicit val materializer = ActorMaterializer()(system)
+  implicit val materializer = ActorMaterializer()(context)
 
   lazy val clusterDiscoverer: Option[ActorRef] = settings.cluster.map(newClusterDiscoverer)
   lazy val delayedRetry = DelayedRetry.opt(

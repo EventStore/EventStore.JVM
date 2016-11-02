@@ -239,7 +239,7 @@ class EsConnectionSpec extends util.ActorSpec {
 
   private trait TestScope extends ActorScope {
     val underlying = new eventstore.EsConnection(testActor, system)
-    val connection: EsConnection = new EsConnectionImpl(underlying, Settings.Default)
+    val connection: EsConnection = new EsConnectionImpl(underlying, Settings.Default, system.dispatcher)
 
     def expect(x: Out, userCredentials: UserCredentials) = Option(userCredentials) match {
       case Some(uc) => expectMsg(x.withCredentials(uc))

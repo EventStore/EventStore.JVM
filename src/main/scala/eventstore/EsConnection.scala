@@ -10,7 +10,7 @@ import eventstore.tcp.ConnectionActor
 import eventstore.util.ActorCloseable
 import org.reactivestreams.Publisher
 
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 
 /**
  * Maintains a full duplex connection to the EventStore
@@ -24,13 +24,22 @@ class EsConnection(
     factory:    ActorRefFactory,
     settings:   Settings        = Settings.Default
 ) {
-  import factory.dispatcher
 
   implicit val timeout = Timeout(settings.operationTimeout)
 
+  @deprecated("use `apply` instead", "3.0.0")
   def future[OUT <: Out, IN <: In](out: OUT, credentials: Option[UserCredentials] = None)(
     implicit
     outIn: ClassTags[OUT, IN]
+  ): Future[IN] = {
+
+    apply(out, credentials)(outIn, factory.dispatcher)
+  }
+
+  def apply[OUT <: Out, IN <: In](out: OUT, credentials: Option[UserCredentials] = None)(
+    implicit
+    outIn: ClassTags[OUT, IN],
+    ec:    ExecutionContext
   ): Future[IN] = {
 
     val future = connection ? credentials.fold[OutLike](out)(WithCredentials(out, _))
@@ -216,16 +225,16 @@ class EsConnection(
     metadata:                  Content,
     expectedMetastreamVersion: ExpectedVersion         = ExpectedVersion.Any,
     credentials:               Option[UserCredentials] = None
-  ): Future[Option[WriteResult]] = {
+  )(implicit ec: ExecutionContext): Future[Option[WriteResult]] = {
 
     val writeEvents = WriteEvents.StreamMetadata(streamId.metadata, metadata, expectedMetastreamVersion)
-    future(writeEvents, credentials).map(WriteResult.opt)
+    apply(writeEvents, credentials).map(WriteResult.opt)
   }
 
   // TODO think about replacing content with something similar to what is in the .Net client
-  def getStreamMetadata(streamId: EventStream.Id, credentials: Option[UserCredentials] = None): Future[Content] = {
+  def getStreamMetadata(streamId: EventStream.Id, credentials: Option[UserCredentials] = None)(implicit ec: ExecutionContext): Future[Content] = {
 
-    future(ReadEvent.StreamMetadata(streamId.metadata), credentials).map {
+    apply(ReadEvent.StreamMetadata(streamId.metadata), credentials).map {
       case ReadEventCompleted(Event.StreamMetadata(data)) => data
       case ReadEventCompleted(event)                      => throw NonMetadataEventException(event)
     }.recover {
