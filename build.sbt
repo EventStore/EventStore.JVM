@@ -35,9 +35,9 @@ scalacOptions ++= Seq(
 
 scalacOptions in(Compile, doc) ++= Seq("-groups", "-implicits", "-no-link-warnings")
 
-val AkkaVersion = "2.4.11"
+val AkkaVersion = "2.4.12"
 val ReactiveStreamsVersion = "1.0.0"
-val Specs2Version = "3.8.5.1"
+val Specs2Version = "3.8.6"
 
 libraryDependencies ++= Seq(
   "org.reactivestreams" % "reactive-streams" % ReactiveStreamsVersion,
@@ -46,7 +46,7 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-testkit" % AkkaVersion % Test,
   "com.typesafe.akka" %% "akka-stream" % AkkaVersion,
   "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion % Test,
-  "com.typesafe.akka" %% "akka-http-experimental" % AkkaVersion,
+  "com.typesafe.akka" %% "akka-http-experimental" % "2.4.11",
   "com.typesafe" % "config" % "1.3.1",
   "com.typesafe.play" %% "play-json" % "2.5.9",
   "org.apache.directory.studio" % "org.apache.commons.codec" % "1.8",
