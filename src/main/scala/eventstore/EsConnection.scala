@@ -236,6 +236,7 @@ class EsConnection(
 
     apply(ReadEvent.StreamMetadata(streamId.metadata), credentials).map {
       case ReadEventCompleted(Event.StreamMetadata(data)) => data
+      case ReadEventCompleted(EventRecord.Deleted)        => Content.Empty
       case ReadEventCompleted(event)                      => throw NonMetadataEventException(event)
     }.recover {
       case _: StreamNotFoundException => Content.Empty
