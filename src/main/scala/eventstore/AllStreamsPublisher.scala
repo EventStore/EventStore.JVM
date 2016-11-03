@@ -134,7 +134,7 @@ private class AllStreamsPublisher(
 
     def catchUp(subscriptionCommit: Long, stash: Queue[IndexedEvent]): Receive = {
 
-      def read(events: List[IndexedEvent], next: Position.Exact): Receive = {
+      def read(events: List[IndexedEvent], next: Position.Exact, endOfStream: Boolean): Receive = {
         enqueue(events)
         if (events.isEmpty || (events exists { _.position.commitPosition > subscriptionCommit })) {
           enqueue(stash)
@@ -185,9 +185,9 @@ private class AllStreamsPublisher(
     toConnection(msg)
   }
 
-  def rcvRead(next: Next, receive: (List[IndexedEvent], Position.Exact) => Receive): Receive = {
+  def rcvRead(next: Next, receive: (List[IndexedEvent], Position.Exact, Boolean) => Receive): Receive = {
     case ReadAllEventsCompleted(events, _, next, Forward) =>
-      context become receive(events, next)
+      context become receive(events, next, events.isEmpty)
   }
 
   def rcvSubscribed(receive: Long => Receive): Receive = {

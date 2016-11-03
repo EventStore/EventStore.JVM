@@ -53,9 +53,9 @@ private[eventstore] abstract class AbstractStreamPublisher[T, O <: Ordered[O], P
   }
 
   def reading(next: Next): Receive = {
-    def read(events: List[T], next: Next): Receive = {
+    def read(events: List[T], next: Next, endOfStream: Boolean): Receive = {
       enqueue(events)
-      if (events.isEmpty) {
+      if (endOfStream) {
         if (infinite) subscribing(next)
         else replyingBuffered()
       } else if (ready) reading(next)
@@ -82,7 +82,7 @@ private[eventstore] abstract class AbstractStreamPublisher[T, O <: Ordered[O], P
 
   def readEventsFrom(next: Next): Unit
 
-  def rcvRead(next: Next, receive: (List[T], Next) => Receive): Receive
+  def rcvRead(next: Next, receive: (List[T], Next, Boolean) => Receive): Receive
 
   def subscribing(next: Next): Receive
 
