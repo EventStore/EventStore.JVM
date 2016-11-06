@@ -27,9 +27,17 @@ object EventStoreFlow {
       .keepAlive(heartbeatInterval, () => PackOut(HeartbeatRequest))
       .mapAsync(parallelism) { x => Future { BytesWriter[PackOut].toByteString(x) } }
 
-    val autoReply = BidiReply {
-      case Ping             => Pong
-      case HeartbeatRequest => HeartbeatResponse
+    val autoReply = {
+      def reply(message: Out, byteString: ByteString): ByteString = {
+        val packIn = BytesReader[PackIn].read(byteString)
+        val packOut = PackOut(message, packIn.correlationId)
+        BytesWriter[PackOut].toByteString(packOut)
+      }
+
+      BidiReply[ByteString, ByteString] {
+        case x if x.head == 0x01 => reply(HeartbeatResponse, x)
+        case x if x.head == 0x03 => reply(Pong, x)
+      }
     }
 
     val framing = BidiFraming(fieldLength = 4, maxFrameLength = 64 * 1024 * 1024)(ByteOrder.LITTLE_ENDIAN)
@@ -38,6 +46,6 @@ object EventStoreFlow {
 
     val logging = BidiLogging(log)
 
-    framing atop serialization atop autoReply atop logging
+    framing atop autoReply atop serialization atop logging
   }
 }
