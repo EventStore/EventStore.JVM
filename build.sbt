@@ -98,6 +98,10 @@ pomExtra in Global := {
     </developers>
 }
 
+releasePublishArtifactsAction := PgpKeys.publishSigned.value
+
+SbtScalariform.scalariformSettings
+
 ScalariformKeys.preferences := ScalariformKeys.preferences.value
   .setPreference(AlignParameters, true)
   .setPreference(AlignSingleLineCaseStatements, true)
