@@ -34,6 +34,7 @@ object ConnectionActor {
     val Empty: Operations = OneToMany[Operation, Uuid, Client](_.id, _.client)
   }
 
+  private[eventstore] case class Connect(address: InetSocketAddress)
   private[eventstore] case class Connected(address: InetSocketAddress)
   private[eventstore] case class TimedOut(id: Uuid, version: Int)
   private[eventstore] case class Disconnected(address: InetSocketAddress)
@@ -65,8 +66,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
   type Reconnect = (InetSocketAddress, Operations) => Option[Receive]
 
   val flow = EventStoreFlow(settings.heartbeatInterval, log)
-
-  implicit val materializer = ActorMaterializer()(context)
+  val tcp = Tcp(system)
 
   lazy val clusterDiscoverer: Option[ActorRef] = settings.cluster.map(newClusterDiscoverer)
   lazy val delayedRetry = DelayedRetry.opt(
@@ -290,6 +290,8 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       }
       context become connected(result, connection)
 
+    case Connect(`address`) => connect(address)
+
     case x: Connected =>
       log.debug("Received unexpected {}", x)
       system stop sender()
@@ -346,12 +348,13 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       connect(address)
     } else {
       log.debug("{} to {} in {}", label, address, in)
-      system.scheduler.scheduleOnce(in)(connect(address))
+      system.scheduler.scheduleOnce(in, self, Connect(address))
     }
   }
 
   def connect(address: InetSocketAddress): Unit = {
-    val tcp = Tcp(system)
+    implicit val materializer = ActorMaterializer()(context)
+
     val connection = tcp.outgoingConnection(
       remoteAddress = address,
       connectTimeout = settings.connectionTimeout,
