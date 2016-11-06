@@ -9,8 +9,7 @@ import java.net.InetSocketAddress
 import java.nio.ByteOrder
 
 import akka.stream.StreamTcpException
-import eventstore.HeartbeatRequest
-import eventstore.NotHandled.{ MasterInfo, NotMaster, NotReady }
+import eventstore.NotHandled.{ MasterInfo, NotMaster }
 import eventstore.cluster.ClusterDiscovererActor.{ Address, GetAddress }
 import eventstore.cluster.{ ClusterException, ClusterSettings }
 import eventstore.cluster.GossipSeedsOrDns.GossipSeeds
@@ -819,7 +818,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
 
   trait TestScope extends CommonScope {
     val client = TestActorRef(new ConnectionActor(settings) {
-      override def connect(address: InetSocketAddress): Unit = tcp.ref ! Connect(address)
+      override def connect(address: InetSocketAddress): Unit = TestScope.this.tcp.ref ! Connect(address)
     })
 
     expectConnect()
@@ -909,7 +908,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
 
     val client = TestActorRef(new ConnectionActor(settings) {
       override def newClusterDiscoverer(settings: ClusterSettings) = discoverer.ref
-      override def connect(address: InetSocketAddress): Unit = tcp.ref ! Connect(address)
+      override def connect(address: InetSocketAddress): Unit = ClusterScope.this.tcp.ref ! Connect(address)
     })
 
     override def settings = super.settings.copy(cluster = Some(ClusterSettings(GossipSeeds(address))))
