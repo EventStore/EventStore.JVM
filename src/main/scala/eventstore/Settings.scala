@@ -33,8 +33,8 @@ case class Settings(
     reconnectionDelayMin: FiniteDuration          = 250.millis,
     reconnectionDelayMax: FiniteDuration          = 10.seconds,
     defaultCredentials:   Option[UserCredentials] = Some(UserCredentials.DefaultAdmin),
-    heartbeatInterval:    FiniteDuration          = 500.millis,
-    heartbeatTimeout:     FiniteDuration          = 2.seconds,
+    heartbeatInterval:    FiniteDuration          = 1.second,
+    heartbeatTimeout:     FiniteDuration          = 5.seconds,
     operationMaxRetries:  Int                     = 10,
     operationTimeout:     FiniteDuration          = 7.seconds,
     resolveLinkTos:       Boolean                 = false,
@@ -42,8 +42,7 @@ case class Settings(
     readBatchSize:        Int                     = 500,
     bufferSize:           Int                     = 100000,
     cluster:              Option[ClusterSettings] = None,
-    http:                 HttpSettings            = HttpSettings()
-) {
+    http:                 HttpSettings            = HttpSettings()) {
   require(reconnectionDelayMin > Duration.Zero, "reconnectionDelayMin must be > 0")
   require(reconnectionDelayMax > Duration.Zero, "reconnectionDelayMax must be > 0")
   require(operationTimeout > Duration.Zero, "operationTimeout must be > 0")
