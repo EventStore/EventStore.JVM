@@ -22,6 +22,6 @@ object BidiFraming {
 
     val encode = Framing.lengthField(fieldLength, 0, maxFrameLength, byteOrder) map { _ drop fieldLength }
 
-    BidiFlow.fromFlowsMat(encode, decode)(Keep.left)
+    BidiFlow.fromFlowsMat(encode, decode)(Keep.left) named "framing"
   }
 }

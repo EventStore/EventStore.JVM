@@ -33,5 +33,9 @@ class SettingsSpec extends Specification {
     "throw exception if operationTimeout <= Zero" in {
       Settings(operationTimeout = Duration.Zero) must throwAn[IllegalArgumentException]
     }
+
+    "throw exception if serializationParallelism <= 0" in {
+      Settings(serializationParallelism = 0) must throwAn[IllegalArgumentException]
+    }
   }
 }

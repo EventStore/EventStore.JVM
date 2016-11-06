@@ -10,16 +10,22 @@ import eventstore.tcp.EventStoreFormats._
 import eventstore.util.{ BidiFraming, BidiLogging, BytesReader, BytesWriter }
 
 import scala.concurrent.duration._
+import scala.concurrent.{ ExecutionContext, Future }
 
 object EventStoreFlow {
 
-  def apply(heartbeatInterval: FiniteDuration, log: LoggingAdapter): BidiFlow[ByteString, PackIn, PackOut, ByteString, NotUsed] = {
+  def apply(
+    heartbeatInterval: FiniteDuration,
+    parallelism:       Int,
+    log:               LoggingAdapter
+  )(implicit ec: ExecutionContext): BidiFlow[ByteString, PackIn, PackOut, ByteString, NotUsed] = {
 
-    val incoming = Flow[ByteString].map { BytesReader[PackIn].read }
+    val incoming = Flow[ByteString]
+      .mapAsync(parallelism) { x => Future { BytesReader[PackIn].read(x) } }
 
     val outgoing = Flow[PackOut]
       .keepAlive(heartbeatInterval, () => PackOut(HeartbeatRequest))
-      .map(BytesWriter[PackOut].toByteString)
+      .mapAsync(parallelism) { x => Future { BytesWriter[PackOut].toByteString(x) } }
 
     val autoReply = BidiReply {
       case Ping             => Pong

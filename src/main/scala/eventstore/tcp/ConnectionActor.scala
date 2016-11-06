@@ -65,7 +65,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
 
   type Reconnect = (InetSocketAddress, Operations) => Option[Receive]
 
-  val flow = EventStoreFlow(settings.heartbeatInterval, log)
+  val flow = EventStoreFlow(settings.heartbeatInterval, settings.serializationParallelism, log)
   val tcp = Tcp(system)
 
   lazy val clusterDiscoverer: Option[ActorRef] = settings.cluster.map(newClusterDiscoverer)

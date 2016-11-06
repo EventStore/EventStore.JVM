@@ -28,6 +28,6 @@ object BidiLogging {
       packOut
     }
 
-    BidiFlow.fromFunctions(logPackIn, logPackOut)
+    BidiFlow.fromFunctions(logPackIn, logPackOut) named "logging"
   }
 }
