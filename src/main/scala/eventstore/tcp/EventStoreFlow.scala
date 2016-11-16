@@ -24,8 +24,8 @@ object EventStoreFlow {
       .mapAsync(parallelism) { x => Future { BytesReader[PackIn].read(x) } }
 
     val outgoing = Flow[PackOut]
-      .keepAlive(heartbeatInterval, () => PackOut(HeartbeatRequest))
       .mapAsync(parallelism) { x => Future { BytesWriter[PackOut].toByteString(x) } }
+      .keepAlive(heartbeatInterval, () => BytesWriter[PackOut].toByteString(PackOut(HeartbeatRequest)))
 
     val autoReply = {
       def reply(message: Out, byteString: ByteString): ByteString = {

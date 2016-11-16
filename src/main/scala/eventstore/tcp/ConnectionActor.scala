@@ -5,7 +5,7 @@ import java.net.InetSocketAddress
 
 import akka.actor._
 import akka.stream.scaladsl._
-import akka.stream.{ ActorMaterializer, BufferOverflowException, OverflowStrategy, StreamTcpException }
+import akka.stream.{ ActorMaterializer, BufferOverflowException, StreamTcpException }
 import eventstore.NotHandled.NotMaster
 import eventstore.cluster.ClusterDiscovererActor.GetAddress
 import eventstore.cluster.{ ClusterDiscovererActor, ClusterException, ClusterInfo, ClusterSettings }
@@ -147,8 +147,8 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       }
 
       val rcvDisconnected: Receive = {
-        case Terminated(connection()) => reconnect("peer closed")
-        case Disconnected(`address`)  => reconnect("peer closed")
+        case Terminated(connection()) => reconnect("source terminated")
+        case Disconnected(`address`)  => reconnect("sink disconnected")
         case Disconnected(_)          =>
         case TcpFailure(x)            => reconnect(x.toString)
       }
@@ -181,14 +181,14 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
         inspectIn(msg, operation)
       } getOrElse {
         msg match {
-          case Failure(x) => log.warning("Cannot deliver {}, client not found for correlationId: {}", msg, correlationId)
+          case Failure(msg) => log.warning("Cannot deliver {}, client not found for correlationId: {}", msg, correlationId)
           case Success(msg) => msg match {
             case Pong | HeartbeatResponse | Unsubscribed =>
             case _: SubscribeCompleted | _: StreamEventAppeared =>
               log.warning("Cannot deliver {}, client not found for correlationId: {}, unsubscribing", msg, correlationId)
               send(PackOut(Unsubscribe, correlationId, settings.defaultCredentials))
 
-            case _ => log.warning("Cannot deliver {}, client not found for correlationId: {}", msg, correlationId)
+            case _ => log.warning("Cannot deliver {}, client not found for correlationId: {}", msg.getClass, correlationId)
           }
         }
         os
@@ -360,7 +360,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       connectTimeout = settings.connectionTimeout,
       idleTimeout = settings.heartbeatTimeout
     )
-    val source = Source.actorRef(settings.bufferSize, OverflowStrategy.fail)
+    val source = Source.actorRef(settings.bufferSize, settings.bufferOverflowStrategy.toAkka)
     val sink = Sink.actorRef(self, Disconnected(address))
     val (ref, connected) = source.viaMat(connection.join(flow))(Keep.both).toMat(sink)(Keep.left).run()
     for { _ <- connected } self.tell(Connected(address), ref)

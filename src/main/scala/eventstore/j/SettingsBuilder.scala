@@ -23,6 +23,7 @@ class SettingsBuilder extends Builder[Settings]
   protected var _operationTimeout = Default.operationTimeout
   protected var _readBatchSize = Default.readBatchSize
   protected var _bufferSize = Default.bufferSize
+  protected var _bufferOverflowStrategy = Default.bufferOverflowStrategy
   protected var _cluster = Default.cluster
   protected var _http = Default.http
   protected var _serializationParallelism = Default.serializationParallelism
@@ -104,6 +105,12 @@ class SettingsBuilder extends Builder[Settings]
 
   def bufferSize(x: Int): SettingsBuilder = set { _bufferSize = x }
 
+  def dropHeadWhenOverflow: SettingsBuilder = set { _bufferOverflowStrategy = OverflowStrategy.DropHead }
+  def dropTailWhenOverflow: SettingsBuilder = set { _bufferOverflowStrategy = OverflowStrategy.DropTail }
+  def dropBufferWhenOverflow: SettingsBuilder = set { _bufferOverflowStrategy = OverflowStrategy.DropBuffer }
+  def dropNewWhenOverflow: SettingsBuilder = set { _bufferOverflowStrategy = OverflowStrategy.DropNew }
+  def failWhenOverflow: SettingsBuilder = set { _bufferOverflowStrategy = OverflowStrategy.Fail }
+
   def cluster(x: ClusterSettings): SettingsBuilder = set { _cluster = Some(x) }
 
   def http(x: HttpSettings): SettingsBuilder = set { _http = x }
@@ -125,6 +132,7 @@ class SettingsBuilder extends Builder[Settings]
     requireMaster = _requireMaster,
     readBatchSize = _readBatchSize,
     bufferSize = _bufferSize,
+    bufferOverflowStrategy = _bufferOverflowStrategy,
     cluster = _cluster,
     http = _http,
     serializationParallelism = _serializationParallelism
