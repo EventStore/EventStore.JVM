@@ -24,8 +24,10 @@ import com.typesafe.config.{ Config, ConfigFactory }
  * @param requireMaster Whether or not to require Event Store to refuse serving read or write request if it is not master
  * @param readBatchSize Number of events to be retrieved by client as single message
  * @param bufferSize The size of the buffer in element count
+ * @param bufferOverflowStrategy  Strategy that is used when elements cannot fit inside the buffer
  * @param http Url to access eventstore though the Http API
  * @param serializationParallelism The number of serialization/deserialization functions to be run in parallel
+ * @param serializationOrdered Serialization done asynchronously and these futures may complete in any order, but results will be used with preserved order if set to true
  */
 case class Settings(
     address:                  InetSocketAddress       = "127.0.0.1" :: 1113,
@@ -45,7 +47,8 @@ case class Settings(
     bufferOverflowStrategy:   OverflowStrategy        = OverflowStrategy.Fail,
     cluster:                  Option[ClusterSettings] = None,
     http:                     HttpSettings            = HttpSettings(),
-    serializationParallelism: Int                     = 8
+    serializationParallelism: Int                     = 8,
+    serializationOrdered:     Boolean                 = true
 ) {
   require(reconnectionDelayMin > Duration.Zero, "reconnectionDelayMin must be > 0")
   require(reconnectionDelayMax > Duration.Zero, "reconnectionDelayMax must be > 0")
@@ -88,7 +91,8 @@ object Settings {
         bufferOverflowStrategy = OverflowStrategy(conf getString "buffer-overflow-strategy"),
         cluster = cluster,
         http = HttpSettings(conf),
-        serializationParallelism = conf getInt "serialization-parallelism"
+        serializationParallelism = conf getInt "serialization-parallelism",
+        serializationOrdered = conf getBoolean "serialization-ordered"
       )
     }
     apply(conf getConfig "eventstore")

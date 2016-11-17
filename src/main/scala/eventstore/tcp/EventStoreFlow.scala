@@ -17,14 +17,15 @@ object EventStoreFlow {
   def apply(
     heartbeatInterval: FiniteDuration,
     parallelism:       Int,
+    ordered:           Boolean,
     log:               LoggingAdapter
   )(implicit ec: ExecutionContext): BidiFlow[ByteString, PackIn, PackOut, ByteString, NotUsed] = {
 
     val incoming = Flow[ByteString]
-      .mapAsync(parallelism) { x => Future { BytesReader[PackIn].read(x) } }
+      .mapFuture(ordered, parallelism) { x => BytesReader[PackIn].read(x) }
 
     val outgoing = Flow[PackOut]
-      .mapAsync(parallelism) { x => Future { BytesWriter[PackOut].toByteString(x) } }
+      .mapFuture(ordered, parallelism) { x => BytesWriter[PackOut].toByteString(x) }
       .keepAlive(heartbeatInterval, () => BytesWriter[PackOut].toByteString(PackOut(HeartbeatRequest)))
 
     val autoReply = {
@@ -47,5 +48,12 @@ object EventStoreFlow {
     val logging = BidiLogging(log)
 
     framing atop autoReply atop serialization atop logging
+  }
+
+  private implicit class FlowOps[In](self: Flow[In, In, NotUsed]) {
+    def mapFuture[Out](ordered: Boolean, parallelism: Int)(f: In => Out)(implicit ec: ExecutionContext): Flow[In, Out, NotUsed] = {
+      if (ordered) self.mapAsync(parallelism) { x => Future { f(x) } }
+      else self.mapAsyncUnordered(parallelism) { x => Future { f(x) } }
+    }
   }
 }

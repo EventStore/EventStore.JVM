@@ -27,6 +27,7 @@ class SettingsBuilder extends Builder[Settings]
   protected var _cluster = Default.cluster
   protected var _http = Default.http
   protected var _serializationParallelism = Default.serializationParallelism
+  protected var _serializationOrdered = Default.serializationOrdered
 
   def address(x: InetSocketAddress): SettingsBuilder = set { _address = x }
 
@@ -117,6 +118,8 @@ class SettingsBuilder extends Builder[Settings]
 
   def serializationParallelism(x: Int): SettingsBuilder = set { _serializationParallelism = x }
 
+  def serializationOrdered(x: Boolean): SettingsBuilder = set { _serializationOrdered = x }
+
   def build: Settings = Settings(
     address = _address,
     maxReconnections = _maxReconnections,
@@ -135,6 +138,7 @@ class SettingsBuilder extends Builder[Settings]
     bufferOverflowStrategy = _bufferOverflowStrategy,
     cluster = _cluster,
     http = _http,
-    serializationParallelism = _serializationParallelism
+    serializationParallelism = _serializationParallelism,
+    serializationOrdered = _serializationOrdered
   )
 }
