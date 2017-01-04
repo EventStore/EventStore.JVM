@@ -22,7 +22,7 @@ import scala.util.Try
  * See : https://github.com/EventStore/EventStore/blob/release-v3.9.0/src/EventStore.ClientAPI/Projections/ProjectionsClient.cs
  */
 protected[this] trait ProjectionsUrls {
-  def createProjectionUrl(name: String, mode: ProjectionMode = Continuous, allowEmit: Boolean = true): String = {
+  protected def createProjectionUrl(name: String, mode: ProjectionMode = Continuous, allowEmit: Boolean = true): String = {
     val emit = if (allowEmit) "emit=1&checkpoints=yes" else "emit=0"
     val projectionModeStr = mode match {
       case OneTime    => "onetime"
@@ -32,15 +32,15 @@ protected[this] trait ProjectionsUrls {
     s"/projections/$projectionModeStr?name=$name&type=JS&$emit"
   }
 
-  def projectionBaseUrl(name: String): String = s"/projection/$name"
+  protected def projectionBaseUrl(name: String): String = s"/projection/$name"
 
-  def fetchProjectionStateUrl(name: String, partition: Option[String]): String =
+  protected def fetchProjectionStateUrl(name: String, partition: Option[String]): String =
     s"${projectionBaseUrl(name)}/state" + partition.fold("")(partition => s"?partition=$partition")
 
-  def fetchProjectionResultUrl(name: String, partition: Option[String]): String =
+  protected def fetchProjectionResultUrl(name: String, partition: Option[String]): String =
     s"${projectionBaseUrl(name)}/result" + partition.fold("")(partition => s"?partition=$partition")
 
-  def projectionCommandUrl(name: String, command: String): String =
+  protected def projectionCommandUrl(name: String, command: String): String =
     s"${projectionBaseUrl(name)}/command/$command"
 }
 
