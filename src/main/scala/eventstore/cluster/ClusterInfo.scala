@@ -29,7 +29,7 @@ object ClusterInfo {
 
   def futureFunc(implicit system: ActorSystem): FutureFunc = {
     import ClusterProtocol._
-    import eventstore.util.PlayJsonSupport._
+    import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
     import system.dispatcher
 
     val http = Http(system)

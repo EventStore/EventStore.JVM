@@ -1,15 +1,26 @@
 package eventstore
 
 import eventstore.ProjectionsClient.{ ProjectionMode, ProjectionStatus }
-import play.api.libs.json._
+import spray.json._
 
 object ProjectionDetails {
+  import DefaultJsonProtocol._
 
-  implicit val projectionStatusReads = implicitly[Reads[String]].map(ProjectionStatus(_))
+  implicit val projectionStatusFormat = lift(new JsonReader[ProjectionStatus] {
+    def read(json: JsValue): ProjectionStatus = json match {
+      case JsString(x) => ProjectionStatus(x)
+      case _           => deserializationError(s"expected projection status as string, got $json")
+    }
+  })
 
-  implicit val projectionModeReads = implicitly[Reads[String]].map(ProjectionMode(_))
+  implicit val projectionModeFormat = lift(new JsonReader[ProjectionMode] {
+    def read(json: JsValue): ProjectionMode = json match {
+      case JsString(x) => ProjectionMode(x)
+      case _           => deserializationError(s"expected projection mode as string, got $json")
+    }
+  })
 
-  implicit val projectionDetailsJsonFormat = Json.reads[ProjectionDetails]
+  implicit val projectionDetailsJsonFormat = jsonFormat11(ProjectionDetails.apply)
 }
 
 case class ProjectionDetails(

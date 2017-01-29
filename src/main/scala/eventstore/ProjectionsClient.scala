@@ -12,7 +12,6 @@ import eventstore.ProjectionsClient.ProjectionCreationResult._
 import eventstore.ProjectionsClient.ProjectionDeleteResult._
 import eventstore.ProjectionsClient.ProjectionMode
 import eventstore.ProjectionsClient.ProjectionMode._
-import play.api.libs.json.{ JsError, JsSuccess, Json }
 
 import scala.concurrent.Future
 import scala.util.Try
@@ -138,14 +137,14 @@ class ProjectionsClient(settings: Settings = Settings.Default, system: ActorSyst
     )
 
     singleRequestWithErrorHandling(request)
-      .map{ response =>
-          response.entity.discardBytes()
-          response.status
+      .map { response =>
+        response.entity.discardBytes()
+        response.status
       }
       .map {
-        case StatusCodes.Created => ProjectionCreated
+        case StatusCodes.Created  => ProjectionCreated
         case StatusCodes.Conflict => ProjectionAlreadyExist
-        case status => throw new ProjectionException(s"Received unexpected response status $status")
+        case status               => throw new ProjectionException(s"Received unexpected response status $status")
       }
       .runWith(Sink.head)
   }
@@ -156,6 +155,8 @@ class ProjectionsClient(settings: Settings = Settings.Default, system: ActorSyst
    * @return the Projection details if it exist. None otherwise
    */
   def fetchProjectionDetails(name: String): Future[Option[ProjectionDetails]] = {
+    import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+
     val request = HttpRequest(
       method = HttpMethods.GET,
       uri = Uri(projectionBaseUrl(name)),
@@ -167,15 +168,10 @@ class ProjectionsClient(settings: Settings = Settings.Default, system: ActorSyst
         case response if response.status == StatusCodes.NotFound =>
           response.entity.discardBytes()
           Future.successful(None)
-        case response => Unmarshal(response).to[String].map { rawJson =>
-          val json = Json.parse(rawJson)
-          Json.fromJson[ProjectionDetails](json) match {
-            case JsSuccess(details, _) => Some(details)
-            case e: JsError =>
-              val error = Json.prettyPrint(JsError.toJson(e))
-              throw new ServerErrorException(s"Invalid json for ProjectionDetails : $error")
-          }
-        }
+        case response =>
+          Unmarshal(response)
+            .to[ProjectionDetails]
+            .map(Some.apply)
       }
       .runWith(Sink.head)
   }
@@ -234,14 +230,14 @@ class ProjectionsClient(settings: Settings = Settings.Default, system: ActorSyst
     )
 
     singleRequestWithErrorHandling(request)
-      .map{ response =>
+      .map { response =>
         response.entity.discardBytes()
         response.status
       }
       .map {
         case StatusCodes.NotFound => ()
-        case StatusCodes.OK => ()
-        case status => throw new ProjectionException(s"Received unexpected reponse status : $status")
+        case StatusCodes.OK       => ()
+        case status               => throw new ProjectionException(s"Received unexpected reponse status : $status")
       }
       .runWith(Sink.head)
   }
