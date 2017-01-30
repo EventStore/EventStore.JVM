@@ -1,7 +1,5 @@
 package eventstore
 
-import play.api.libs.json.Json
-
 class ReadEventITest extends TestConnection {
 
   "read event" should {

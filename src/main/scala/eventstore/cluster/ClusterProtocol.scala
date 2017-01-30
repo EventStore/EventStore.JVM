@@ -3,21 +3,22 @@ package cluster
 
 import org.joda.time.format.{ DateTimeFormatter, DateTimeFormat => JodaFormat }
 import org.joda.time.{ DateTime, DateTimeZone }
-import play.api.libs.json._
+import spray.json._
 
 import scala.util.{ Failure, Success, Try }
 
-object ClusterProtocol {
-  implicit object UuidFormat extends Format[Uuid] {
+object ClusterProtocol extends DefaultJsonProtocol {
 
-    def writes(x: Uuid) = JsString(x.toString)
+  implicit object UuidFormat extends JsonFormat[Uuid] {
+    def write(x: Uuid): JsValue = JsString(x.toString)
 
-    def reads(json: JsValue) = {
-      for { x <- json.validate[String] } yield x.uuid
+    def read(json: JsValue): Uuid = json match {
+      case JsString(x) => x.uuid
+      case _           => deserializationError(s"expected UUID as string, got $json")
     }
   }
 
-  implicit object DateTimeFormat extends Format[DateTime] {
+  implicit object DateTimeFormat extends JsonFormat[DateTime] {
     val formats = List(
       JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'"),
       JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSSS'Z'"),
@@ -29,33 +30,40 @@ object ClusterProtocol {
       JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.S'Z'")
     )
 
-    def writes(x: DateTime) = JsString(x.toString(formats.head))
+    def write(x: DateTime): JsValue = JsString(x.toString(formats.head))
 
-    def reads(json: JsValue) = {
-      for { x <- json.validate[String] } yield {
-        def loop(h: DateTimeFormatter, t: List[DateTimeFormatter]): DateTime = Try(h.parseDateTime(x)) match {
-          case Success(x) => x.withZoneRetainFields(DateTimeZone.UTC)
-          case Failure(x) => if (t.nonEmpty) loop(t.head, t.tail) else throw x
+    def read(json: JsValue): DateTime = {
+      def loop(x: String)(h: DateTimeFormatter, t: List[DateTimeFormatter]): DateTime =
+        Try(h.parseDateTime(x)) match {
+          case Success(dt) => dt.withZoneRetainFields(DateTimeZone.UTC)
+          case Failure(_) =>
+            if (t.nonEmpty) loop(x)(t.head, t.tail)
+            else deserializationError(s"could not find a date/time format for $x")
         }
-        loop(formats.head, formats.tail)
+
+      json match {
+        case JsString(x) => loop(x)(formats.head, formats.tail)
+        case _           => deserializationError(s"expected date/time as string, got $json")
       }
     }
   }
 
-  implicit object NodeStateFormat extends Format[NodeState] {
+  implicit object NodeStateFormat extends JsonFormat[NodeState] {
+    def write(x: NodeState): JsValue = JsString(x.toString)
 
-    def writes(obj: NodeState) = JsString(obj.toString)
-
-    def reads(json: JsValue) = {
-      for { x <- json.validate[String] } yield NodeState(x)
+    def read(json: JsValue): NodeState = json match {
+      case JsString(value) => NodeState(value)
+      case _               => deserializationError(s"expected node state as string, got $json")
     }
   }
 
-  implicit object MemberInfoFormat extends Format[MemberInfo] {
-    private val MappingFormat = Json.format[Mapping]
+  implicit object MemberInfoFormat extends RootJsonFormat[MemberInfo] {
+    private val MappingFormat = jsonFormat21(Mapping)
 
-    def reads(json: JsValue) = {
-      for { m <- MappingFormat.reads(json) } yield MemberInfo(
+    def read(json: JsValue): MemberInfo = {
+      val m = MappingFormat.read(json)
+
+      MemberInfo(
         instanceId = m.instanceId,
         timestamp = m.timeStamp,
         state = m.state,
@@ -76,7 +84,7 @@ object ClusterProtocol {
       )
     }
 
-    def writes(x: MemberInfo) = {
+    def write(x: MemberInfo): JsValue = {
       val m = Mapping(
         instanceId = x.instanceId,
         timeStamp = x.timestamp,
@@ -101,7 +109,7 @@ object ClusterProtocol {
         nodePriority = x.nodePriority
       )
 
-      MappingFormat.writes(m)
+      MappingFormat.write(m)
     }
 
     case class Mapping(
@@ -129,23 +137,24 @@ object ClusterProtocol {
     )
   }
 
-  implicit object ClusterInfoFormat extends Format[ClusterInfo] {
-    private val MappingFormat = Json.format[Mapping]
+  implicit object ClusterInfoFormat extends RootJsonFormat[ClusterInfo] {
+    private val MappingFormat = jsonFormat3(Mapping)
 
-    def reads(json: JsValue) = {
-      for { m <- MappingFormat.reads(json) } yield ClusterInfo(
+    def read(json: JsValue): ClusterInfo = {
+      val m = MappingFormat.read(json)
+      ClusterInfo(
         serverAddress = m.serverIp :: m.serverPort,
         members = m.members
       )
     }
 
-    def writes(x: ClusterInfo) = {
+    def write(x: ClusterInfo): JsValue = {
       val m = Mapping(
         members = x.members,
         serverIp = x.serverAddress.getHostString,
         serverPort = x.serverAddress.getPort
       )
-      MappingFormat.writes(m)
+      MappingFormat.write(m)
     }
 
     private case class Mapping(members: List[MemberInfo], serverIp: String, serverPort: Int)
