@@ -122,8 +122,8 @@ private[eventstore] object PersistentSubscriptionOperation {
         val pack = this.pack.copy(message = Unsubscribe)
         val operation = Unsubscribing(stream, pack, client, ongoing, version + 1)
         OnOutgoing.Continue(operation, pack)
-      case Ack(subId, eventIds) =>
-        val pack = this.pack.copy(message = Ack(subId, eventIds))
+      case ack: Ack =>
+        val pack = this.pack.copy(message = ack)
         val operation = this
         OnOutgoing.Continue(operation, pack)
     }
