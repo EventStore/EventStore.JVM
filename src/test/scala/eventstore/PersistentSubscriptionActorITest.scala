@@ -17,25 +17,27 @@ class PersistentSubscriptionActorITest extends AbstractSubscriptionActorITest {
       write()
       subscribe
       expectEvent.number mustEqual EventNumber.First
+      expectLiveProcessingStarted
     }
 
     "survive reconnect" in new CreateBeforeSubscriptionScope {
-      write(100)
+      write(3)
       subscribe
+      expectEvent
+      expectEvent
+      expectEvent
       reconnect()
       fishForLiveProcessingStarted()
     }
 
-    "should read from current" in new CreateBeforeSubscriptionScope {
+    "should read events written before subscription" in new CreateBeforeSubscriptionScope {
       write(5)
 
-      override def fromNumberExclusive = Some(EventNumber.Current)
       subscribe
-      expectLiveProcessingStarted
-      expectNoMsg()
+      expectEvent
     }
 
-    "read and then subscribe" in new CreateBeforeSubscriptionScope {
+    "subscribe and then read" in new CreateBeforeSubscriptionScope {
       write()
       subscribe
       expectEvent
@@ -45,14 +47,12 @@ class PersistentSubscriptionActorITest extends AbstractSubscriptionActorITest {
     }
 
     "receive events from after having subscribed" in new CreateBeforeSubscriptionScope {
-      write(5)
-
-      override def fromNumberExclusive: Option[EventNumber] = Some(EventNumber.Current)
-
+      write(2)
       subscribe
+      expectEvent
+      expectEvent
       expectLiveProcessingStarted
       write()
-      expectEvent.number mustEqual EventNumber.Exact(5)
     }
 
     "survive reconnect after liveProcessing has already started" in new CreateBeforeSubscriptionScope {
@@ -78,6 +78,14 @@ class PersistentSubscriptionActorITest extends AbstractSubscriptionActorITest {
       system stop testActor
       probe.expectMsgPF() { case Terminated(`subscription`) => () }
     }
+
+    "read from in subscription settings" in new PersistentSubscriptionScope {
+      write(3)
+      create(settings = PersistentSubscriptionSettings.Default.copy(startFrom = EventNumber(1)))
+      expectCreated
+      subscribe
+      expectEvent.number.mustEqual(EventNumber.Exact(1))
+    }
   }
 
   trait PersistentSubscriptionScope extends TestScope {
@@ -90,7 +98,6 @@ class PersistentSubscriptionActorITest extends AbstractSubscriptionActorITest {
       testActor,
       streamId,
       groupName,
-      fromNumberExclusive,
       None,
       settings,
       autoAck = true
@@ -106,8 +113,6 @@ class PersistentSubscriptionActorITest extends AbstractSubscriptionActorITest {
     def expectEvent: Event = expectMsgType[Event]
 
     def expectCreated: PS.CreateCompleted.type = expectMsg(PS.CreateCompleted)
-
-    def fromNumberExclusive: Option[EventNumber] = None
   }
 
   trait CreateBeforeSubscriptionScope extends PersistentSubscriptionScope {
