@@ -51,7 +51,7 @@ private[eventstore] object Operation {
       case x: Ps.Update         => Some(simple(UpdatePersistentSubscriptionInspection(x)))
       case x: Ps.Delete         => Some(simple(DeletePersistentSubscriptionInspection(x)))
       case x: Ps.Ack            => None
-      case x: Ps.Nak            => ???
+      case x: Ps.Nak            => None
     }
   }
 }
