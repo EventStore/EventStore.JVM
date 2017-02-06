@@ -35,7 +35,7 @@ object PersistentSubscriptionActor {
   private case object CatchingUp extends State
 
   sealed trait Data
-  private final case class ConnectionDetails()
+  private final case object ConnectionDetails
     extends Data
   private final case class SubscriptionDetails(subscriptionId: String, lastEventNum: Option[EventNumber.Exact])
     extends Data
@@ -57,7 +57,7 @@ class PersistentSubscriptionActor private (
   type Next = EventNumber.Exact
   type Last = Option[EventNumber.Exact]
 
-  private def connectionDetails: ConnectionDetails = ConnectionDetails()
+  private def connectionDetails = ConnectionDetails
 
   private def subscriptionDetails(subId: String, lastEventNum: Last): SubscriptionDetails = SubscriptionDetails(
     subId, lastEventNum
