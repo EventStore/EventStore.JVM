@@ -2,28 +2,8 @@ package eventstore
 import akka.actor.Status.Failure
 import akka.actor.{ ActorRef, FSM, Props, Terminated }
 import eventstore.PersistentSubscription.Ack
+import eventstore.PersistentSubscriptionActor._
 import eventstore.{ PersistentSubscription => PS }
-
-object PersistentSubscriptionState {
-
-  sealed trait State
-
-  case object Unsubscribed extends State
-
-  case object LiveProcessing extends State
-
-  case object CatchingUp extends State
-
-}
-
-sealed trait Data
-final case class ConnectionDetails(connection: ActorRef, client: ActorRef, stream: EventStream, groupName: String,
-                                   credentials: Option[UserCredentials], settings: Settings, autoAck: Boolean)
-    extends Data
-final case class SubscriptionDetails(connection: ActorRef, client: ActorRef, stream: EventStream, groupName: String,
-                                     credentials: Option[UserCredentials], settings: Settings, autoAck: Boolean,
-                                     subscriptionId: String, lastEventNum: Option[EventNumber.Exact])
-    extends Data
 
 object PersistentSubscriptionActor {
   def props(
@@ -45,6 +25,20 @@ object PersistentSubscriptionActor {
       autoAck
     ))
   }
+
+  sealed trait State
+
+  private case object Unsubscribed extends State
+
+  private case object LiveProcessing extends State
+
+  private case object CatchingUp extends State
+
+  sealed trait Data
+  private final case class ConnectionDetails()
+    extends Data
+  private final case class SubscriptionDetails(subscriptionId: String, lastEventNum: Option[EventNumber.Exact])
+    extends Data
 }
 
 class PersistentSubscriptionActor private (
@@ -55,8 +49,7 @@ class PersistentSubscriptionActor private (
     val credentials: Option[UserCredentials],
     val settings:    Settings,
     val autoAck:     Boolean
-) extends AbstractPersistentSubscriptionActor[Event] with FSM[PersistentSubscriptionState.State, Data] {
-  import eventstore.{ PersistentSubscriptionState => PersistentState }
+) extends AbstractPersistentSubscriptionActor[Event] with FSM[State, Data] {
 
   context watch client
   context watch connection
@@ -64,47 +57,45 @@ class PersistentSubscriptionActor private (
   type Next = EventNumber.Exact
   type Last = Option[EventNumber.Exact]
 
-  def connectionDetails: ConnectionDetails = ConnectionDetails(connection, client, streamId, groupName, credentials, settings,
-    autoAck)
+  private def connectionDetails: ConnectionDetails = ConnectionDetails()
 
-  def subscriptionDetails(subId: String, lastEventNum: Last): SubscriptionDetails = SubscriptionDetails(
-    connection,
-    client, streamId, groupName, credentials, settings, autoAck, subId, lastEventNum
+  private def subscriptionDetails(subId: String, lastEventNum: Last): SubscriptionDetails = SubscriptionDetails(
+    subId, lastEventNum
   )
 
-  startWith(PersistentState.Unsubscribed, connectionDetails)
+  startWith(PersistentSubscriptionActor.Unsubscribed, connectionDetails)
 
   onTransition {
-    case _ -> PersistentState.Unsubscribed =>
+    case _ -> PersistentSubscriptionActor.Unsubscribed =>
       subscribeToPersistentStream() // try to (re-)connect.
-    case _ -> PersistentState.LiveProcessing =>
+    case _ -> LiveProcessing =>
       client ! LiveProcessingStarted
   }
 
-  when(PersistentState.Unsubscribed) {
+  when(PersistentSubscriptionActor.Unsubscribed) {
     case Event(PS.Connected(subId, _, eventNum), _) =>
       val subDetails = subscriptionDetails(subId, eventNum)
       eventNum match {
-        case None => goto(PersistentState.LiveProcessing) using subDetails
-        case _    => goto(PersistentState.CatchingUp) using subDetails
+        case None => goto(LiveProcessing) using subDetails
+        case _    => goto(CatchingUp) using subDetails
       }
     // Ignore events sent while unsubscribed
     case Event(PS.EventAppeared(_), _) =>
       stay
   }
 
-  when(PersistentState.LiveProcessing) {
+  when(LiveProcessing) {
     case Event(PS.EventAppeared(event), details: SubscriptionDetails) =>
-      if (autoAck) toConnection(Ack(details.subscriptionId, event.data.eventId :: Nil)) // TODO possibly batching acks?
+      if (autoAck) toConnection(Ack(details.subscriptionId, event.data.eventId :: Nil))
       client ! event
       stay
   }
 
-  when(PersistentState.CatchingUp) {
+  when(CatchingUp) {
     case Event(PS.EventAppeared(event), details: SubscriptionDetails) =>
       if (autoAck) toConnection(Ack(details.subscriptionId, event.data.eventId :: Nil))
       client ! event
-      if (details.lastEventNum.exists(_ <= event.number)) goto(PersistentState.LiveProcessing) using details
+      if (details.lastEventNum.exists(_ <= event.number)) goto(LiveProcessing) using details
       else stay
   }
 
@@ -125,7 +116,7 @@ class PersistentSubscriptionActor private (
     case Event(Unsubscribed, _) =>
       stop()
     case Event(e, s) =>
-      log.warning(s"Received unhandled $e in state $stateName")
+      log.warning(s"Received unhandled $e in state $stateName with state $s")
       stay
   }
 
