@@ -3,7 +3,7 @@
 <table border="0">
   <tr>
     <td><a href="http://www.scala-lang.org">Scala</a> </td>
-    <td>2.11.8</td>
+    <td>2.12.1/2.11.8</td>
   </tr>
   <tr>
     <td><a href="http://akka.io">Akka</a> </td>
@@ -50,7 +50,7 @@ connection ! ReadEvent(EventStream.Id("my-stream"), EventNumber.First)
 
 #### Sbt
 ```scala
-libraryDependencies += "com.geteventstore" %% "eventstore-client" % "3.0.5"
+libraryDependencies += "com.geteventstore" %% "eventstore-client" % "3.0.6"
 ```
 
 #### Maven
@@ -58,7 +58,7 @@ libraryDependencies += "com.geteventstore" %% "eventstore-client" % "3.0.5"
 <dependency>
     <groupId>com.geteventstore</groupId>
     <artifactId>eventstore-client_${scala.version}</artifactId>
-    <version>3.0.5</version>
+    <version>3.0.6</version>
 </dependency>
 ```
 
