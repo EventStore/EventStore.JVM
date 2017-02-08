@@ -1,6 +1,8 @@
 language: scala
 
-scala: 2.11.8
+scala:
+  - 2.12.1
+  - 2.11.8
 
 script: travis_retry sbt clean coverage test
 

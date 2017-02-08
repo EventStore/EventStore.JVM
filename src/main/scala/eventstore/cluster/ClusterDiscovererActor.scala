@@ -112,8 +112,8 @@ private[eventstore] class ClusterDiscovererActor(
 
       val futures = gossipSeeds.map { gossipSeed =>
         val future = clusterInfo(gossipSeed)
-        future.onFailure {
-          case x => log.debug("Failed to get cluster info from {}: {}", gossipSeed, x)
+        future.failed foreach { x =>
+          log.debug("Failed to get cluster info from {}: {}", gossipSeed, x)
         }
         future
       }
