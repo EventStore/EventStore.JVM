@@ -15,24 +15,27 @@ object TransactionActor {
     Props(classOf[TransactionActor], connection, kickoff, requireMaster, credentials)
 
   sealed trait Kickoff
-  case class Start(data: TransactionStart) extends Kickoff
-  case class Continue(transactionId: Long) extends Kickoff
+  @SerialVersionUID(1L) case class Start(data: TransactionStart) extends Kickoff
+  @SerialVersionUID(1L) case class Continue(transactionId: Long) extends Kickoff
 
-  case object GetTransactionId
-  case class TransactionId(value: Long)
+  @SerialVersionUID(1L) case object GetTransactionId
+  @SerialVersionUID(1L) case class TransactionId(value: Long)
 
   sealed trait Command
 
-  case class Write(events: List[EventData]) extends Command
+  @SerialVersionUID(1L) case class Write(events: List[EventData]) extends Command
 
   object Write {
     def apply(event: EventData, events: EventData*): Write = Write(event :: events.toList)
   }
 
-  case object WriteCompleted
+  @SerialVersionUID(1L) case object WriteCompleted
 
-  case object Commit extends Command
-  case class CommitCompleted(range: Option[EventNumber.Range] = None, position: Option[Position.Exact] = None)
+  @SerialVersionUID(1L) case object Commit extends Command
+  @SerialVersionUID(1L) case class CommitCompleted(
+    range:    Option[EventNumber.Range] = None,
+    position: Option[Position.Exact]    = None
+  )
 
   /**
    * Java API
@@ -171,5 +174,5 @@ class TransactionActor(
     connection ! credentials.fold[OutLike](x)(x.withCredentials)
   }
 
-  case class StashEntry(command: Command, client: ActorRef = sender())
+  @SerialVersionUID(1L) case class StashEntry(command: Command, client: ActorRef = sender())
 }

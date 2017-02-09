@@ -73,6 +73,18 @@ class EsConnectionSpec extends ActorSpec with Mockito {
       val event = EventRecord(streamId, EventNumber.First, EventData("test", data = Content.Empty))
       getStreamMetadata(ReadEventCompleted(event)) must throwA(NonMetadataEventException(event))
     }
+
+    "create persistent subscription" in new TestScope {
+      verifyOutIn(mock[PersistentSubscription.Create], mock[PersistentSubscription.CreateCompleted.type])
+    }
+
+    "update persistent subscription" in new TestScope {
+      verifyOutIn(mock[PersistentSubscription.Update], mock[PersistentSubscription.UpdateCompleted.type])
+    }
+
+    "delete persistent subscription" in new TestScope {
+      verifyOutIn(mock[PersistentSubscription.Delete], mock[PersistentSubscription.DeleteCompleted.type])
+    }
   }
 
   private trait TestScope extends ActorScope {

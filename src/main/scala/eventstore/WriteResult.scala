@@ -6,7 +6,7 @@ package eventstore
  * @param nextExpectedVersion The next expected version for the stream.
  * @param logPosition The position of the write in the log
  */
-case class WriteResult(nextExpectedVersion: ExpectedVersion.Exact, logPosition: Position)
+@SerialVersionUID(1L) case class WriteResult(nextExpectedVersion: ExpectedVersion.Exact, logPosition: Position)
 
 object WriteResult {
   def opt(x: WriteEventsCompleted): Option[WriteResult] = for {
@@ -20,4 +20,4 @@ object WriteResult {
  *
  * @param logPosition The position of the write in the log
  */
-case class DeleteResult(logPosition: Position)
+@SerialVersionUID(1L) case class DeleteResult(logPosition: Position)

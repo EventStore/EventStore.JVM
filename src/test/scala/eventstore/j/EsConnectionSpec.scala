@@ -1,10 +1,12 @@
 package eventstore
 package j
 
-import scala.collection.JavaConverters._
 import java.io.Closeable
+
 import akka.actor.Status.Failure
 import akka.testkit.TestProbe
+
+import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 
 class EsConnectionSpec extends util.ActorSpec {
@@ -235,6 +237,46 @@ class EsConnectionSpec extends util.ActorSpec {
       } connection.continueTransaction(1234, uc)
       expectNoMsg(1.second)
     }
+
+    "create persistent subscription" in new PsScope {
+      for {
+        stream <- streams
+        uc <- userCredentials
+        settings <- settings
+      } {
+        val future = connection.createPersistentSubscription(stream, groupName, settings, uc)
+        val expectedSettings = Option(settings) getOrElse PersistentSubscriptionSettings.Default
+        expect(PersistentSubscription.create(EventStream.Id(stream), groupName, expectedSettings), uc)
+        lastSender ! PersistentSubscription.CreateCompleted
+        future.await_
+      }
+    }
+
+    "update persistent subscription" in new PsScope {
+      for {
+        stream <- streams
+        uc <- userCredentials
+        settings <- settings
+      } {
+        val future = connection.updatePersistentSubscription(stream, groupName, settings, uc)
+        val expectedSettings = Option(settings) getOrElse PersistentSubscriptionSettings.Default
+        expect(PersistentSubscription.update(EventStream.Id(stream), groupName, expectedSettings), uc)
+        lastSender ! PersistentSubscription.UpdateCompleted
+        future.await_
+      }
+    }
+
+    "delete persistent subscription" in new PsScope {
+      for {
+        stream <- streams
+        uc <- userCredentials
+      } {
+        val future = connection.deletePersistentSubscription(stream, groupName, uc)
+        expect(PersistentSubscription.delete(EventStream.Id(stream), groupName), uc)
+        lastSender ! PersistentSubscription.DeleteCompleted
+        future.await_
+      }
+    }
   }
 
   private trait TestScope extends ActorScope {
@@ -282,5 +324,19 @@ class EsConnectionSpec extends util.ActorSpec {
       0,
       ReadDirection.forward
     )
+  }
+
+  private trait PsScope extends TestScope {
+    val groupName = "groupName"
+
+    val settings = null :: (for {
+      resolveLinkTos <- booleans
+      startFrom <- List(EventNumber.Last, EventNumber.First)
+      consumerStrategy <- ConsumerStrategy.Custom("custom") :: ConsumerStrategy.Values.toList
+    } yield PersistentSubscriptionSettings(
+      resolveLinkTos = resolveLinkTos,
+      startFrom = startFrom,
+      consumerStrategy = consumerStrategy
+    ))
   }
 }

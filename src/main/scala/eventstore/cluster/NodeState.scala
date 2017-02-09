@@ -28,67 +28,67 @@ object NodeState {
 
   def apply(x: String): NodeState = map.getOrElse(x, throw new IllegalArgumentException(s"No NodeState found for $x"))
 
-  case object Initializing extends NodeState {
+  @SerialVersionUID(1L) case object Initializing extends NodeState {
     def id = 0
     def isReplica = false
     def isAllowedToConnect = true
   }
 
-  case object Unknown extends NodeState {
+  @SerialVersionUID(1L) case object Unknown extends NodeState {
     def id = 1
     def isReplica = false
     def isAllowedToConnect = true
   }
 
-  case object PreReplica extends NodeState {
+  @SerialVersionUID(1L) case object PreReplica extends NodeState {
     def id = 2
     def isReplica = false
     def isAllowedToConnect = true
   }
 
-  case object CatchingUp extends NodeState {
+  @SerialVersionUID(1L) case object CatchingUp extends NodeState {
     def id = 3
     def isReplica = true
     def isAllowedToConnect = true
   }
 
-  case object Clone extends NodeState {
+  @SerialVersionUID(1L) case object Clone extends NodeState {
     def id = 4
     def isReplica = true
     def isAllowedToConnect = true
   }
 
-  case object Slave extends NodeState {
+  @SerialVersionUID(1L) case object Slave extends NodeState {
     def id = 5
     def isReplica = true
     def isAllowedToConnect = true
   }
 
-  case object PreMaster extends NodeState {
+  @SerialVersionUID(1L) case object PreMaster extends NodeState {
     def id = 6
     def isReplica = false
     def isAllowedToConnect = true
   }
 
-  case object Master extends NodeState {
+  @SerialVersionUID(1L) case object Master extends NodeState {
     def id = 7
     def isReplica = false
     def isAllowedToConnect = true
   }
 
-  case object Manager extends NodeState {
+  @SerialVersionUID(1L) case object Manager extends NodeState {
     def id = 8
     def isReplica = false
     def isAllowedToConnect = false
   }
 
-  case object ShuttingDown extends NodeState {
+  @SerialVersionUID(1L) case object ShuttingDown extends NodeState {
     def id = 9
     def isReplica = false
     def isAllowedToConnect = false
   }
 
-  case object Shutdown extends NodeState {
+  @SerialVersionUID(1L) case object Shutdown extends NodeState {
     def id = 10
     def isReplica = false
     def isAllowedToConnect = false
