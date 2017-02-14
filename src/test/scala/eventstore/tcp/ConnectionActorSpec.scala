@@ -367,7 +367,6 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       client ! PackIn(Try(subscribeCompleted), id)
       expectMsg(subscribeCompleted)
       system stop testActor
-      client ! Unsubscribe
       connection expectMsg PackOut(Unsubscribe, id, credentials)
       connection.expectNoMsg(duration)
     }

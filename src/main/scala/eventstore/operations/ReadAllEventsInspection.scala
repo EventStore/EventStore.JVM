@@ -1,8 +1,8 @@
 package eventstore
 package operations
 
-import ReadAllEventsError._
-import Inspection.Decision._
+import eventstore.ReadAllEventsError._
+import eventstore.operations.Inspection.Decision._
 
 private[eventstore] case class ReadAllEventsInspection(out: ReadAllEvents)
     extends ErrorInspection[ReadAllEventsCompleted, ReadAllEventsError] {

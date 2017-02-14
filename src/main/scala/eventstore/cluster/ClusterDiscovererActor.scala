@@ -112,8 +112,8 @@ private[eventstore] class ClusterDiscovererActor(
 
       val futures = gossipSeeds.map { gossipSeed =>
         val future = clusterInfo(gossipSeed)
-        future.onFailure {
-          case x => log.debug("Failed to get cluster info from {}: {}", gossipSeed, x)
+        future.failed foreach { x =>
+          log.debug("Failed to get cluster info from {}: {}", gossipSeed, x)
         }
         future
       }
@@ -163,9 +163,9 @@ private[eventstore] object ClusterDiscovererActor {
     Props(new ClusterDiscovererActor(settings, clusterInfo))
   }
 
-  case class GetAddress(failed: Option[InetSocketAddress] = None)
+  @SerialVersionUID(1L) case class GetAddress(failed: Option[InetSocketAddress] = None)
 
-  case class Address(value: InetSocketAddress)
+  @SerialVersionUID(1L) case class Address(value: InetSocketAddress)
 
   object Address {
     def apply(x: MemberInfo): Address = Address(x.externalTcp)

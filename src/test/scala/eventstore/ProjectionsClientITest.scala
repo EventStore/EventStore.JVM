@@ -8,7 +8,8 @@ import eventstore.ProjectionsClient.ProjectionMode._
 import eventstore.ProjectionsClient.ProjectionStatus._
 import eventstore.ProjectionsClient._
 import org.specs2.execute.EventuallyResults
-import play.api.libs.json.Json
+import spray.json._
+import DefaultJsonProtocol._
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -114,7 +115,8 @@ class ProjectionsClientITest extends AbstractStreamsITest {
 
       EventuallyResults.eventually {
         val projectionState = client.fetchProjectionState(projectionName).await_(timeout)
-        projectionState.map(json => (Json.parse(json) \ "count").as[Int]) should beSome(2)
+        projectionState.map(json =>
+          json.parseJson.asJsObject.fields("count").convertTo[Int]) should beSome(2)
       }
     }
 
@@ -148,7 +150,8 @@ class ProjectionsClientITest extends AbstractStreamsITest {
 
       EventuallyResults.eventually {
         val projectionResult = client.fetchProjectionResult(projectionName).await_(timeout)
-        projectionResult.map(json => (Json.parse(json) \ "count").as[Int]) should beSome(2)
+        projectionResult.map(json =>
+          json.parseJson.asJsObject.fields("count").convertTo[Int]) should beSome(2)
       }
     }
 

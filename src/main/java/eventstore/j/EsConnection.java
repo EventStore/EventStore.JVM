@@ -504,4 +504,47 @@ public interface EsConnection {
       boolean resolveLinkTos,
       UserCredentials credentials,
       boolean infinite);
+
+  /**
+   * Asynchronously create a persistent subscription group on a stream
+   *
+   * @param stream      The name of the stream to create the persistent subscription on
+   * @param groupName   The name of the group to create
+   * @param settings    The {@link PersistentSubscriptionSettings} for the subscription, or <code>null</code> for defaults
+   * @param credentials The credentials to be used for this operation
+   * @return A {@link scala.concurrent.Future} representing the operation
+   */
+  Future<scala.Unit> createPersistentSubscription(
+      String stream,
+      String groupName,
+      PersistentSubscriptionSettings settings,
+      UserCredentials credentials);
+
+  /**
+   * Asynchronously update a persistent subscription group on a stream
+   *
+   * @param stream      The name of the stream to create the persistent subscription on
+   * @param groupName   The name of the group to create
+   * @param settings    The {@link PersistentSubscriptionSettings} for the subscription, or <code>null</code> for defaults
+   * @param credentials The credentials to be used for this operation, or <code>null</code> for default
+   * @return A {@link scala.concurrent.Future} representing the operation
+   */
+  Future<scala.Unit> updatePersistentSubscription(
+      String stream,
+      String groupName,
+      PersistentSubscriptionSettings settings,
+      UserCredentials credentials);
+
+  /**
+   * Asynchronously delete a persistent subscription group on a stream
+   *
+   * @param stream      The name of the stream to create the persistent subscription on
+   * @param groupName   The name of the group to create
+   * @param credentials The credentials to be used for this operation, or <code>null</code> for default
+   * @return A {@link scala.concurrent.Future} representing the operation
+   */
+  Future<scala.Unit> deletePersistentSubscription(
+      String stream,
+      String groupName,
+      UserCredentials credentials);
 }

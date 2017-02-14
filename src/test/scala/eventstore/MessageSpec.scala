@@ -1,10 +1,10 @@
 package eventstore
 
+import eventstore.PersistentSubscription._
 import org.specs2.mock.Mockito
 import org.specs2.mutable.Specification
 
 class MessageSpec extends Specification with Mockito {
-
   "TransactionStartCompleted" should {
     "throw exception if transactionId < 0" in {
       TransactionStartCompleted(-1) must throwAn[IllegalArgumentException]
@@ -91,6 +91,66 @@ class MessageSpec extends Specification with Mockito {
   "SubscribeToStreamCompleted" should {
     "throw exception if lastCommit < 0" in {
       SubscribeToStreamCompleted(-1) must throwAn[IllegalArgumentException]
+    }
+  }
+
+  "PersistentSubscription" should {
+    "Ack" should {
+      "throw an exception if subscriptionId is null" in {
+        Ack(null, randomUuid :: Nil) must throwAn[IllegalArgumentException]
+      }
+
+      "throw an exception if subscriptionId is empty" in {
+        Ack("", randomUuid :: Nil) must throwAn[IllegalArgumentException]
+      }
+
+      "throw an exception if eventIds is empty" in {
+        Ack("test", List[Uuid]()) must throwAn[IllegalArgumentException]
+      }
+    }
+
+    "Nak" should {
+      "throw an exception if subscriptionId is null" in {
+        Nak(null, randomUuid :: Nil, Nak.Action.Stop) must throwAn[IllegalArgumentException]
+      }
+
+      "throw an exception if subscriptionId is empty" in {
+        Nak("", randomUuid :: Nil, Nak.Action.Stop) must throwAn[IllegalArgumentException]
+      }
+
+      "throw an exception if eventIds is empty" in {
+        Nak("test", List[Uuid](), Nak.Action.Stop) must throwAn[IllegalArgumentException]
+      }
+    }
+
+    "Create" should {
+      "throw an exception if groupName is null" in {
+        Create(EventStream.Id("test"), null) must throwAn[IllegalArgumentException]
+      }
+
+      "throw an exception if groupName is empty" in {
+        Create(EventStream.Id("test"), "") must throwAn[IllegalArgumentException]
+      }
+    }
+
+    "Update" should {
+      "throw an exception if groupName is null" in {
+        Update(EventStream.Id("test"), null) must throwAn[IllegalArgumentException]
+      }
+
+      "throw an exception if groupName is empty" in {
+        Update(EventStream.Id("test"), "") must throwAn[IllegalArgumentException]
+      }
+    }
+
+    "Delete" should {
+      "throw an exception if groupName is null" in {
+        Delete(EventStream.Id("test"), null) must throwAn[IllegalArgumentException]
+      }
+
+      "throw an exception if groupName is empty" in {
+        Delete(EventStream.Id("test"), "") must throwAn[IllegalArgumentException]
+      }
     }
   }
 }

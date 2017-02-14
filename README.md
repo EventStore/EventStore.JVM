@@ -1,9 +1,9 @@
-# Event Store JVM Client [![Build Status](https://api.travis-ci.org/EventStore/EventStore.JVM.svg)](https://travis-ci.org/EventStore/EventStore.JVM) [![Coverage Status](https://coveralls.io/repos/EventStore/EventStore.JVM/badge.svg)](https://coveralls.io/r/EventStore/EventStore.JVM) [![Version](https://img.shields.io/maven-central/v/com.geteventstore/eventstore-client_2.11.svg?label=version)](http://search.maven.org/#search%7Cga%7C1%7Cg%3Acom.geteventstore%20AND%20eventstore-client)
+# Event Store JVM Client [![Build Status](https://api.travis-ci.org/EventStore/EventStore.JVM.svg)](https://travis-ci.org/EventStore/EventStore.JVM) [![Coverage Status](https://coveralls.io/repos/EventStore/EventStore.JVM/badge.svg)](https://coveralls.io/r/EventStore/EventStore.JVM) [![Version](https://img.shields.io/maven-central/v/com.geteventstore/eventstore-client_2.11.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg%3Acom.geteventstore%20AND%20eventstore-client)
 
 <table border="0">
   <tr>
     <td><a href="http://www.scala-lang.org">Scala</a> </td>
-    <td>2.11.8</td>
+    <td>2.12.1/2.11.8</td>
   </tr>
   <tr>
     <td><a href="http://akka.io">Akka</a> </td>
@@ -46,6 +46,21 @@ val connection = system.actorOf(ConnectionActor.props())
 connection ! ReadEvent(EventStream.Id("my-stream"), EventNumber.First)
 ```
 
+## Setup
+
+#### Sbt
+```scala
+libraryDependencies += "com.geteventstore" %% "eventstore-client" % "3.0.7"
+```
+
+#### Maven
+```xml
+<dependency>
+    <groupId>com.geteventstore</groupId>
+    <artifactId>eventstore-client_${scala.version}</artifactId>
+    <version>3.0.7</version>
+</dependency>
+```
 
 ## Java examples
 
@@ -362,23 +377,23 @@ object EsConnectionExample extends App {
   val stream = EventStream.Id("my-stream")
 
   val readEvent: Future[ReadEventCompleted] = connection.apply(ReadEvent(stream))
-  readEvent.onSuccess {
-    case ReadEventCompleted(event) => log.info(event.toString)
+  readEvent foreach { x =>
+    log.info(x.event.toString)
   }
 
   val readStreamEvents: Future[ReadStreamEventsCompleted] = connection.apply(ReadStreamEvents(stream))
-  readStreamEvents.onSuccess {
-    case x: ReadStreamEventsCompleted => log.info(x.events.toString())
+  readStreamEvents foreach { x =>
+    log.info(x.events.toString())
   }
 
   val readAllEvents: Future[ReadAllEventsCompleted] = connection.apply(ReadAllEvents(maxCount = 5))
-  readAllEvents.onSuccess {
-    case x: ReadAllEventsCompleted => log.info(x.events.toString())
+  readAllEvents foreach { x =>
+    log.info(x.events.toString())
   }
 
   val writeEvents: Future[WriteEventsCompleted] = connection.apply(WriteEvents(stream, List(EventData("my-event"))))
-  writeEvents.onSuccess {
-    case x: WriteEventsCompleted => log.info(x.numbersRange.toString)
+  writeEvents foreach { x =>
+    log.info(x.numbersRange.toString)
   }
 }
 ```

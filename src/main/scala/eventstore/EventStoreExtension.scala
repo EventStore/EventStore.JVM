@@ -12,10 +12,20 @@ class EventStoreExtension(system: ActorSystem) extends Extension {
   val connection: EsConnection = new EsConnection(actor, system, settings)
 
   lazy val projectionsClient: ProjectionsClient = new ProjectionsClient(settings, system)
+
+  /**
+   * Java API
+   */
+  val connectionJava: j.EsConnection = j.EsConnectionImpl(system, settings)
 }
 
 object EventStoreExtension extends ExtensionId[EventStoreExtension] with ExtensionIdProvider {
   def lookup() = EventStoreExtension
 
-  def createExtension(system: ExtendedActorSystem) = new EventStoreExtension(system)
+  def createExtension(system: ExtendedActorSystem): EventStoreExtension = new EventStoreExtension(system)
+
+  /**
+   * Java API
+   */
+  override def get(system: ActorSystem): EventStoreExtension = super.get(system)
 }
