@@ -33,6 +33,20 @@ class PersistentSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       expectAck()
       expectMsg(LiveProcessingStarted)
     }
+
+    "should send manual ack" in new ManualAckPersistentSubscriptionActorScope {
+      val event: Event = newEvent(1)
+      connection.expectMsgType[Connect]
+      actor ! connected(Some(EventNumber.Exact(0)))
+      actor ! eventAppeared(event)
+
+      expectMsg(event)
+      expectMsg(LiveProcessingStarted)
+      expectNoMsg()
+
+      actor ! PersistentSubscriptionActor.ManualAck(event.data.eventId)
+      expectAck()
+    }
   }
 
   trait PersistentSubscriptionActorScope extends AbstractScope {
@@ -65,5 +79,20 @@ class PersistentSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
 
     def connected(eventNumber: Option[EventNumber.Exact] = None): Connected =
       Connected(randomUuid.toString, 5000, eventNumber)
+  }
+
+  trait ManualAckPersistentSubscriptionActorScope extends PersistentSubscriptionActorScope {
+    override def createActor(): ActorRef = {
+      val props = PersistentSubscriptionActor.props(
+        connection = connection.ref,
+        client = testActor,
+        streamId = streamId,
+        groupName = groupName,
+        settings = settings,
+        credentials = None,
+        autoAck = false
+      )
+      TestActorRef(props)
+    }
   }
 }

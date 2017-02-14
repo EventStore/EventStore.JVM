@@ -39,6 +39,8 @@ object PersistentSubscriptionActor {
     extends Data
   private final case class SubscriptionDetails(subscriptionId: String, lastEventNum: Option[EventNumber.Exact])
     extends Data
+
+  case class ManualAck(eventId: Uuid)
 }
 
 class PersistentSubscriptionActor private (
@@ -89,6 +91,9 @@ class PersistentSubscriptionActor private (
       if (autoAck) toConnection(Ack(details.subscriptionId, event.data.eventId :: Nil))
       client ! event
       stay
+    case Event(PersistentSubscriptionActor.ManualAck(eventId), details: SubscriptionDetails) =>
+      toConnection(Ack(details.subscriptionId, eventId :: Nil))
+      stay
   }
 
   when(CatchingUp) {
@@ -97,6 +102,9 @@ class PersistentSubscriptionActor private (
       client ! event
       if (details.lastEventNum.exists(_ <= event.number)) goto(LiveProcessing) using details
       else stay
+    case Event(PersistentSubscriptionActor.ManualAck(eventId), details: SubscriptionDetails) =>
+      toConnection(Ack(details.subscriptionId, eventId :: Nil))
+      stay
   }
 
   whenUnhandled {
