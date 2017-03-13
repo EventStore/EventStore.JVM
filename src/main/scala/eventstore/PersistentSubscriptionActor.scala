@@ -65,6 +65,11 @@ class PersistentSubscriptionActor private (
     subId, lastEventNum
   )
 
+  def getEventId(e: eventstore.Event): Uuid = e match {
+    case x: ResolvedEvent => x.linkEvent.data.eventId
+    case x                => x.data.eventId
+  }
+
   startWith(PersistentSubscriptionActor.Unsubscribed, connectionDetails)
 
   onTransition {
@@ -88,7 +93,7 @@ class PersistentSubscriptionActor private (
 
   when(LiveProcessing) {
     case Event(PS.EventAppeared(event), details: SubscriptionDetails) =>
-      if (autoAck) toConnection(Ack(details.subscriptionId, event.data.eventId :: Nil))
+      if (autoAck) toConnection(Ack(details.subscriptionId, getEventId(event) :: Nil))
       client ! event
       stay
     case Event(PersistentSubscriptionActor.ManualAck(eventId), details: SubscriptionDetails) =>
@@ -98,7 +103,7 @@ class PersistentSubscriptionActor private (
 
   when(CatchingUp) {
     case Event(PS.EventAppeared(event), details: SubscriptionDetails) =>
-      if (autoAck) toConnection(Ack(details.subscriptionId, event.data.eventId :: Nil))
+      if (autoAck) toConnection(Ack(details.subscriptionId, getEventId(event) :: Nil))
       client ! event
       if (details.lastEventNum.exists(_ <= event.number)) goto(LiveProcessing) using details
       else stay
