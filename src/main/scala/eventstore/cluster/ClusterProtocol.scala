@@ -20,14 +20,14 @@ object ClusterProtocol extends DefaultJsonProtocol {
 
   implicit object DateTimeFormat extends JsonFormat[DateTime] {
     val formats = List(
-      JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'"),
-      JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSSS'Z'"),
-      JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss'Z'"),
-      JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSS'Z'"),
-      JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSS'Z'"),
-      JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"),
-      JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SS'Z'"),
-      JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.S'Z'")
+      JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSSZ"),
+      JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSSSZ"),
+      JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ssZ"),
+      JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSZ"),
+      JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSZ"),
+      JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZ"),
+      JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSZ"),
+      JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SZ")
     )
 
     def write(x: DateTime): JsValue = JsString(x.toString(formats.head))
@@ -35,7 +35,7 @@ object ClusterProtocol extends DefaultJsonProtocol {
     def read(json: JsValue): DateTime = {
       def loop(x: String)(h: DateTimeFormatter, t: List[DateTimeFormatter]): DateTime =
         Try(h.parseDateTime(x)) match {
-          case Success(dt) => dt.withZoneRetainFields(DateTimeZone.UTC)
+          case Success(dt) => dt.withZone(DateTimeZone.UTC)
           case Failure(_) =>
             if (t.nonEmpty) loop(x)(t.head, t.tail)
             else deserializationError(s"could not find a date/time format for $x")
