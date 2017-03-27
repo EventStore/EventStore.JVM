@@ -21,5 +21,10 @@ class DateFormatSpec extends Specification {
       val expected = new DateTime(2015, 1, 29, 12, 28, 54, 830, DateTimeZone.UTC)
       DateTimeFormat.read(JsString("2015-01-29T12:28:54.8302665Z")) mustEqual expected
     }
+
+    "parse 2017-03-26T02:28:54.8302665Z" in {
+      val expected = new DateTime(2017, 3, 26, 2, 28, 54, 830, DateTimeZone.UTC)
+      DateTimeFormat.read(JsString("2017-03-26T02:28:54.8302665Z")) mustEqual expected
+    }
   }
 }
