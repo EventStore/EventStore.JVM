@@ -2,6 +2,7 @@ package eventstore
 package util
 
 import akka.util.{ ByteIterator, ByteStringBuilder }
+import java.nio.ByteOrder.{ BIG_ENDIAN, LITTLE_ENDIAN }
 
 object DefaultFormats extends DefaultFormats
 
@@ -9,7 +10,6 @@ trait DefaultFormats {
 
   implicit object UuidFormat extends BytesFormat[Uuid] {
     private val length = 16
-    implicit val order = java.nio.ByteOrder.BIG_ENDIAN
 
     // This is necessary because of an issue with Protobuf in .NET.
     // See also https://github.com/EventStore/EventStore.JVM/issues/78
@@ -33,15 +33,17 @@ trait DefaultFormats {
 
     def write(x: Uuid, builder: ByteStringBuilder) = {
       val mostSignificant = bitMagic(x.getMostSignificantBits)
-      builder.putLong(mostSignificant)(java.nio.ByteOrder.LITTLE_ENDIAN)
-      builder.putLong(x.getLeastSignificantBits)
+      val leastSignificant = x.getLeastSignificantBits
+      builder.putLong(mostSignificant)(LITTLE_ENDIAN)
+      builder.putLong(leastSignificant)(BIG_ENDIAN)
     }
 
     def read(bi: ByteIterator) = {
       val length = bi.len
-      val first = inverseBitMagic(bi.getLong(java.nio.ByteOrder.LITTLE_ENDIAN))
       require(length >= this.length, s"cannot parse uuid, actual length: $length, expected: ${this.length}")
-      new Uuid(first, bi.getLong)
+      val mostSignificant = inverseBitMagic(bi.getLong(LITTLE_ENDIAN))
+      val leastSignificant = bi.getLong(BIG_ENDIAN)
+      new Uuid(mostSignificant, leastSignificant)
     }
   }
 

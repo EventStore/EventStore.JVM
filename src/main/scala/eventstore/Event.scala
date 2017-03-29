@@ -64,8 +64,8 @@ object EventRecord {
 }
 
 @SerialVersionUID(1L) case class Content(
-  value:       ByteString  = ByteString.empty,
-  contentType: ContentType = ContentType.Binary
+    value:       ByteString  = ByteString.empty,
+    contentType: ContentType = ContentType.Binary
 ) {
 
   override lazy val toString = {
