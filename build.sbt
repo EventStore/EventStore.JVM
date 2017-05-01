@@ -8,9 +8,11 @@ name := "eventstore-client"
 
 organization := "com.geteventstore"
 
-scalaVersion := "2.12.1"
+scalaVersion := "2.12.2"
 
-crossScalaVersions := Seq("2.12.1", "2.11.8")
+crossScalaVersions := Seq("2.12.2", "2.11.11")
+
+releaseCrossBuild := true
 
 licenses := Seq("BSD 3-Clause" -> url("http://raw.github.com/EventStore/EventStore.JVM/master/LICENSE"))
 
@@ -27,7 +29,7 @@ scalacOptions ++= Seq(
   "-feature",
   "-unchecked",
   "-deprecation",
-  "-Xfatal-warnings",
+//  "-Xfatal-warnings",
   "-Xlint:-missing-interpolator",
   "-Yno-adapted-args",
   "-Ywarn-dead-code",
@@ -37,10 +39,10 @@ scalacOptions ++= Seq(
 
 scalacOptions in(Compile, doc) ++= Seq("-groups", "-implicits", "-no-link-warnings")
 
-val AkkaVersion = "2.4.16"
-val AkkaHttpVersion = "10.0.3"
+val AkkaVersion = "2.5.1"
+val AkkaHttpVersion = "10.0.6"
 val ReactiveStreamsVersion = "1.0.0"
-val Specs2Version = "3.8.6"
+val Specs2Version = "3.8.9"
 
 libraryDependencies ++= Seq(
   "org.reactivestreams" % "reactive-streams" % ReactiveStreamsVersion,
@@ -54,9 +56,9 @@ libraryDependencies ++= Seq(
   "io.spray" %%  "spray-json" % "1.3.3",
   "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
   "org.apache.directory.studio" % "org.apache.commons.codec" % "1.8",
-  "joda-time" % "joda-time" % "2.9.4",
+  "joda-time" % "joda-time" % "2.9.9",
   "org.joda" % "joda-convert" % "1.8.1",
-  "org.mockito" % "mockito-all" % "1.9.5" % Test,
+  "org.mockito" % "mockito-all" % "1.10.19" % Test,
   "org.specs2" %% "specs2-core" % Specs2Version % Test,
   "org.specs2" %% "specs2-mock" % Specs2Version % Test)
 
