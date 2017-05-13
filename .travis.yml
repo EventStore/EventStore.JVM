@@ -4,6 +4,8 @@ scala:
   - 2.12.2
   - 2.11.11
 
+sudo: false
+
 script: travis_retry sbt clean coverage test
 
 after_success: sbt coverageReport coveralls
