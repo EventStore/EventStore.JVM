@@ -281,6 +281,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       val result = os.flatMap { operation =>
         operation.connected match {
           case OnConnected.Retry(operation, packOut) =>
+            system.scheduler.scheduleOnce(settings.operationTimeout, self, TimedOut(packOut.correlationId, operation.version))
             connection(packOut)
             List(operation)
           case OnConnected.Stop(in) =>
