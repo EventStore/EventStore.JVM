@@ -50,7 +50,7 @@ connection ! ReadEvent(EventStream.Id("my-stream"), EventNumber.First)
 
 #### Sbt
 ```scala
-libraryDependencies += "com.geteventstore" %% "eventstore-client" % "4.1.0"
+libraryDependencies += "com.geteventstore" %% "eventstore-client" % "4.1.1"
 ```
 
 #### Maven
@@ -58,7 +58,7 @@ libraryDependencies += "com.geteventstore" %% "eventstore-client" % "4.1.0"
 <dependency>
     <groupId>com.geteventstore</groupId>
     <artifactId>eventstore-client_${scala.version}</artifactId>
-    <version>4.1.0</version>
+    <version>4.1.1</version>
 </dependency>
 ```
 
