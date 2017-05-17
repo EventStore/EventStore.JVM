@@ -334,7 +334,7 @@ object StartTransactionExample extends App {
 import akka.actor._
 import eventstore.LiveProcessingStarted
 import eventstore.tcp.ConnectionActor
-import eventstore.{ IndexedEvent, SubscriptionActor }
+import eventstore.{ IndexedEvent, Settings, SubscriptionActor }
 import scala.concurrent.duration._
 
 object CountAll extends App {
@@ -428,7 +428,7 @@ object MessagesPerSecond extends App {
   val connection = EventStoreExtension(system).connection
   val publisher = connection.allStreamsPublisher()
 
-  Source(publisher)
+  Source.fromPublisher(publisher)
     .groupedWithin(Int.MaxValue, 1.second)
     .runForeach { xs => println(f"${xs.size.toDouble / 1000}%2.1fk m/s") }
 }
@@ -449,7 +449,7 @@ object ListAllStreamsExample extends App {
   implicit val materializer = ActorMaterializer()
   val connection = EventStoreExtension(system).connection
   val publisher = connection.streamPublisher(EventStream.System.`$streams`, infinite = false, resolveLinkTos = true)
-  Source(publisher)
+  Source.fromPublisher(publisher)
     .runForeach { x => println(x.streamId.streamId) }
     .onComplete{ _ => system.terminate()}
 }
