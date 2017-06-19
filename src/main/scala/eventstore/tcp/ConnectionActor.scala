@@ -142,7 +142,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
             case PackIn(Failure(NotHandled(NotMaster(x))), _) => reconnect(x.tcpAddress, "NotMaster failure received")
             case ClusterFailure(x) =>
               log.error("Cluster failed with error: {}", x)
-              context stop self
+              throw new RetriesLimitReachedException(x.toString)
           }
       }
 
