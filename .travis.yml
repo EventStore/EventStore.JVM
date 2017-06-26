@@ -1,5 +1,8 @@
 language: scala
 
+env:
+  - AKKA_TEST_TIMEFACTOR=2.0
+
 scala:
   - 2.12.2
   - 2.11.11
