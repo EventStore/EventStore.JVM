@@ -2,7 +2,7 @@ package eventstore
 package operations
 
 import eventstore.NotHandled.{ NotReady, TooBusy }
-import eventstore.PersistentSubscription.{ Ack, Connect, EventAppeared }
+import eventstore.PersistentSubscription.{ Ack, Connect, EventAppeared, Nak }
 import eventstore.tcp.{ Client, PackOut }
 import eventstore.SubscriptionDropped._
 import eventstore.operations.OnIncoming._
@@ -124,6 +124,10 @@ private[eventstore] object PersistentSubscriptionOperation {
         OnOutgoing.Continue(operation, pack)
       case ack: Ack =>
         val pack = this.pack.copy(message = ack)
+        val operation = this
+        OnOutgoing.Continue(operation, pack)
+      case nak: Nak =>
+        val pack = this.pack.copy(message = nak)
         val operation = this
         OnOutgoing.Continue(operation, pack)
     }

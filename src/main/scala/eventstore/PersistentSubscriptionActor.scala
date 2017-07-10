@@ -1,7 +1,8 @@
 package eventstore
 import akka.actor.Status.Failure
 import akka.actor.{ ActorRef, FSM, Props, Terminated }
-import eventstore.PersistentSubscription.Ack
+import eventstore.PersistentSubscription.Nak.Action.Retry
+import eventstore.PersistentSubscription.{ Ack, Nak }
 import eventstore.PersistentSubscriptionActor._
 import eventstore.{ PersistentSubscription => PS }
 
@@ -41,6 +42,7 @@ object PersistentSubscriptionActor {
     extends Data
 
   case class ManualAck(eventId: Uuid)
+  case class ManualNak(eventId: Uuid)
 }
 
 class PersistentSubscriptionActor private (
@@ -99,6 +101,9 @@ class PersistentSubscriptionActor private (
     case Event(PersistentSubscriptionActor.ManualAck(eventId), details: SubscriptionDetails) =>
       toConnection(Ack(details.subscriptionId, eventId :: Nil))
       stay
+    case Event(PersistentSubscriptionActor.ManualNak(eventId), details: SubscriptionDetails) =>
+      toConnection(Nak(details.subscriptionId, List(eventId), Retry, None))
+      stay
   }
 
   when(CatchingUp) {
@@ -109,6 +114,9 @@ class PersistentSubscriptionActor private (
       else stay
     case Event(PersistentSubscriptionActor.ManualAck(eventId), details: SubscriptionDetails) =>
       toConnection(Ack(details.subscriptionId, eventId :: Nil))
+      stay
+    case Event(PersistentSubscriptionActor.ManualNak(eventId), details: SubscriptionDetails) =>
+      toConnection(Nak(details.subscriptionId, List(eventId), Retry, None))
       stay
   }
 
