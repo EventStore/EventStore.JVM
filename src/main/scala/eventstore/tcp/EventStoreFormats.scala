@@ -16,6 +16,7 @@ trait EventStoreFormats extends EventStoreProtoFormats {
   implicit object HeartbeatResponseFormat extends EmptyFormat(HeartbeatResponse)
   implicit object PingFormat extends EmptyFormat(Ping)
   implicit object PongFormat extends EmptyFormat(Pong)
+  implicit object ClientIdentifiedFormat extends EmptyFormat(ClientIdentified)
   implicit object UnsubscribeFromStreamFormat extends EmptyFormat(Unsubscribe)
   implicit object ScavengeDatabaseFormat extends EmptyFormat(ScavengeDatabase)
   implicit object AuthenticateFormat extends EmptyFormat(Authenticate)

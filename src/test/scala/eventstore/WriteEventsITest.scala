@@ -71,7 +71,7 @@ class WriteEventsITest extends TestConnection {
       val size = 100
       appendMany(size = size)
       actor ! ReadStreamEvents(streamId, EventNumber.Last, 1, ReadDirection.Backward)
-      expectMsgType[ReadStreamEventsCompleted].events.head.number mustEqual EventNumber(size - 1)
+      expectMsgType[ReadStreamEventsCompleted].events.head.number mustEqual EventNumber(size - 1L)
       deleteStream()
     }
 
@@ -82,7 +82,7 @@ class WriteEventsITest extends TestConnection {
       Seq.fill(n)(TestProbe()).foreach(x => appendMany(size = size, testKit = x))
 
       actor ! ReadStreamEvents(streamId, EventNumber.Last, 1, ReadDirection.Backward)
-      expectMsgType[ReadStreamEventsCompleted].events.head.number mustEqual EventNumber(size * n - 1)
+      expectMsgType[ReadStreamEventsCompleted].events.head.number mustEqual EventNumber(size * n - 1L)
 
       deleteStream()
     }
@@ -95,8 +95,8 @@ class WriteEventsITest extends TestConnection {
       val expected = for {
         x <- 0 until n
       } yield {
-        actor ! WriteEvents(streamId, List(newEventData), ExpectedVersion.Exact(x))
-        EventNumber(x + 1)
+        actor ! WriteEvents(streamId, List(newEventData), ExpectedVersion.Exact(x.toLong))
+        EventNumber(x + 1L)
       }
 
       val actual = for {

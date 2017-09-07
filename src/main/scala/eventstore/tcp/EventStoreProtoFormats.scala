@@ -1,12 +1,13 @@
 package eventstore
 package tcp
 
+import java.io.InputStream
 import java.util.concurrent.TimeUnit
 
 import eventstore.ReadDirection.{ Backward, Forward }
-import eventstore.proto.{ EventStoreMessages => j, _ }
+import eventstore.proto.{ EventStoreMessages ⇒ j, _ }
 import eventstore.util.{ DefaultFormats, ToCoarsest }
-import eventstore.{ PersistentSubscription => Ps }
+import eventstore.{ PersistentSubscription ⇒ Ps }
 import org.joda.time.DateTime
 
 import scala.collection.JavaConverters._
@@ -25,8 +26,8 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
   }
 
   type HasRange = {
-    def getFirstEventNumber(): Int
-    def getLastEventNumber(): Int
+    def getFirstEventNumber(): Long
+    def getLastEventNumber(): Long
   }
 
   private def range(x: HasRange): Option[EventNumber.Range] =
@@ -78,6 +79,15 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
     }
 
     def success(x: P): T
+  }
+
+  implicit object IdentifyClientWriter extends ProtoWriter[IdentifyClient] {
+    def toProto(x: IdentifyClient) = {
+      val builder = j.IdentifyClient.newBuilder()
+      builder.setVersion(x.version)
+      x.connectionName.foreach(builder.setConnectionName)
+      builder
+    }
   }
 
   implicit object EventDataWriter extends ProtoWriter[EventData] {
@@ -653,7 +663,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
     }
   }
 
-  private def expectedVersion(x: ExpectedVersion): Int = {
+  private def expectedVersion(x: ExpectedVersion): Long = {
     import ExpectedVersion._
     x match {
       case NoStream => -1
@@ -667,14 +677,14 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
     def to(x: B): A
   }
 
-  private object EventNumberConverter extends Converter[EventNumber, Int] {
+  private object EventNumberConverter extends Converter[EventNumber, Long] {
     import EventNumber._
 
-    def from(x: EventNumber): Int = x match {
+    def from(x: EventNumber): Long = x match {
       case Exact(value) => value
       case Last         => -1
     }
 
-    def to(x: Int) = EventNumber(x)
+    def to(x: Long) = EventNumber(x)
   }
 }

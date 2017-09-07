@@ -377,7 +377,7 @@ public interface EsConnection {
   Closeable subscribeToStreamFrom(
       String stream,
       SubscriptionObserver<Event> observer,
-      Integer fromEventNumberExclusive,
+      Long fromEventNumberExclusive,
       boolean resolveLinkTos,
       UserCredentials credentials);
 

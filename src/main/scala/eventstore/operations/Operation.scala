@@ -42,6 +42,7 @@ private[eventstore] object Operation {
       case Unsubscribe          => Some(simple(UnsubscribeInspection))
       case ScavengeDatabase     => Some(simple(ScavengeDatabaseInspection))
       case Authenticate         => Some(simple(AuthenticateInspection))
+      case _: IdentifyClient    => Some(simple(IdentifyClientInspection))
       case Ping                 => Some(simple(PingInspection))
       case Pong                 => None
       case HeartbeatRequest     => Some(simple(HeartbeatRequestInspection))
@@ -50,8 +51,8 @@ private[eventstore] object Operation {
       case x: Ps.Create         => Some(simple(CreatePersistentSubscriptionInspection(x)))
       case x: Ps.Update         => Some(simple(UpdatePersistentSubscriptionInspection(x)))
       case x: Ps.Delete         => Some(simple(DeletePersistentSubscriptionInspection(x)))
-      case x: Ps.Ack            => None
-      case x: Ps.Nak            => None
+      case _: Ps.Ack            => None
+      case _: Ps.Nak            => None
     }
   }
 }

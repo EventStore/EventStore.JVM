@@ -69,7 +69,7 @@ class PersistentSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
 
     def expectAck(): Unit = connection.expectMsgType[Ack]
 
-    def newEvent(number: Int): Event = EventRecord(streamId, EventNumber.Exact(number), mock[EventData])
+    def newEvent(number: Long): Event = EventRecord(streamId, EventNumber.Exact(number), mock[EventData])
 
     def eventAppeared(event: Event) =
       EventAppeared(event)

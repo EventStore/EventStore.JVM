@@ -27,7 +27,7 @@ sealed trait Event extends Ordered[Event] {
 object Event {
   object StreamDeleted {
     def unapply(x: Event): Boolean = cond(x.record) {
-      case EventRecord(_, EventNumber.Exact(Int.MaxValue), EventData.StreamDeleted(), _) => true
+      case EventRecord(_, EventNumber.Exact(Long.MaxValue), EventData.StreamDeleted(), _) => true
     }
   }
 

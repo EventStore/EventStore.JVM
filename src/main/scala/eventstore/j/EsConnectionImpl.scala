@@ -254,7 +254,7 @@ class EsConnectionImpl(
   def subscribeToStreamFrom(
     stream:                   String,
     observer:                 SubscriptionObserver[Event],
-    fromEventNumberExclusive: java.lang.Integer,
+    fromEventNumberExclusive: java.lang.Long,
     resolveLinkTos:           Boolean,
     credentials:              UserCredentials
   ) = {
