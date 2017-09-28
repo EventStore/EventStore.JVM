@@ -1,17 +1,41 @@
+jdk: oraclejdk8
+
 language: scala
 
 scala:
   - 2.12.4
   - 2.11.12
 
-env:
-  global:
-    - AKKA_TEST_TIMEFACTOR=2.0
+sudo: required
 
-sudo: false
+services:
+  - docker
 
-script: travis_retry sbt clean coverage test
+script:
+  - travis_retry sbt clean coverage test
 
-after_success: sbt coverageReport coveralls
+after_success:
+  - sbt coverageReport coveralls
 
-jdk: oraclejdk8
+jobs:
+  include:
+    - stage: integration
+      scala: 2.12.4
+      env: AKKA_TEST_TIMEFACTOR=1.5 AKKA_TEST_LOGLEVEL=OFF
+      before_install:
+        - docker pull eventstore/eventstore
+        - docker run -d --rm --name eventstore-node -p 2113:2113 -p 1113:1113 -e EVENTSTORE_MEM_DB=True -e EVENTSTORE_STATS_PERIOD_SEC=1200 eventstore/eventstore
+      script:
+        - sbt test:compile
+        - travis_retry sbt it:test
+
+cache:
+  # These directories are cached to S3 at the end of the build
+  directories:
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt/boot/
+
+before_cache:
+  # Tricks to avoid unnecessary cache updates
+  - find $HOME/.sbt -name "*.lock" | xargs rm
+  - find $HOME/.ivy2 -name "ivydata-*.properties" | xargs rm

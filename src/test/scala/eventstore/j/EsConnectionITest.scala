@@ -165,7 +165,7 @@ class EsConnectionITest extends eventstore.util.ActorSpec {
 
     "publish stream events" in new TestScope {
       val streamId = s"java-publish-$randomUuid"
-      val publisher = connection.streamPublisher(streamId, null, false, null, false)
+      def publisher = connection.streamPublisher(streamId, null, false, null, false)
       await_(connection.writeEvents(streamId, null, events, null))
       Source.fromPublisher(publisher)
         .map(_.data)
