@@ -48,7 +48,7 @@ abstract class TestConnection extends util.ActorSpec {
       val range = completed.numbersRange
       if (expectedVersion == ExpectedVersion.NoStream) events match {
         case Nil => range must beNone
-        case xs  => range must beSome(EventNumber.First to EventNumber.Exact(xs.size - 1))
+        case xs  => range must beSome(EventNumber.First to EventNumber.Exact(xs.size - 1L))
       }
       range
     }

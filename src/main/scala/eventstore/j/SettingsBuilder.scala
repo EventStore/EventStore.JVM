@@ -28,10 +28,13 @@ class SettingsBuilder extends Builder[Settings]
   protected var _http = Default.http
   protected var _serializationParallelism = Default.serializationParallelism
   protected var _serializationOrdered = Default.serializationOrdered
+  protected var _connectionName = Default.connectionName
 
   def address(x: InetSocketAddress): SettingsBuilder = set { _address = x }
 
   def address(host: String): SettingsBuilder = address(host :: Default.address.getPort)
+
+  def connectionName(name: String): SettingsBuilder = set { _connectionName = Option(name) }
 
   def connectionTimeout(x: FiniteDuration): SettingsBuilder = set { _connectionTimeout = x }
 
@@ -139,6 +142,7 @@ class SettingsBuilder extends Builder[Settings]
     cluster = _cluster,
     http = _http,
     serializationParallelism = _serializationParallelism,
-    serializationOrdered = _serializationOrdered
+    serializationOrdered = _serializationOrdered,
+    connectionName = _connectionName
   )
 }

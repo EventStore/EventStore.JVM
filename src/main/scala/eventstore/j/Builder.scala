@@ -15,7 +15,7 @@ object Builder {
 
     def expectNoStream: T = expectVersion(ExpectedVersion.NoStream)
     def expectAnyVersion: T = expectVersion(ExpectedVersion.Any)
-    def expectVersion(x: Int): T = expectVersion(ExpectedVersion.Exact(x))
+    def expectVersion(x: Long): T = expectVersion(ExpectedVersion.Exact(x))
     def expectVersion(x: ExpectedVersion): T = set {
       _expectVersion = x
     }

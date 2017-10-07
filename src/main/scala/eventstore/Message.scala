@@ -29,6 +29,15 @@ sealed trait InOut extends In with Out
 @SerialVersionUID(1L) case object Ping extends InOut
 @SerialVersionUID(1L) case object Pong extends InOut
 
+@SerialVersionUID(1L) case class IdentifyClient(
+    version:        Int,
+    connectionName: Option[String]
+) extends Out {
+  require(version >= 0, s"version must be >= 0, but is $version")
+}
+
+@SerialVersionUID(1L) case object ClientIdentified extends In
+
 @SerialVersionUID(1L) case class WriteEvents(
   streamId:        EventStream.Id,
   events:          List[EventData],

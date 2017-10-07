@@ -18,7 +18,7 @@ class SubscribeITest extends TestConnection {
     "succeed for deleted stream but should not receive any events" in new SubscribeScope {
       appendEventToCreateStream()
       deleteStream()
-      subscribeToStream().lastEventNumber must beSome(EventNumber(Int.MaxValue)) // TODO WHY?
+      subscribeToStream().lastEventNumber must beSome(EventNumber(Long.MaxValue)) // TODO WHY?
     }
 
     "be able to subscribe to non existing stream and then catch new event" in new SubscribeScope {
@@ -30,7 +30,7 @@ class SubscribeITest extends TestConnection {
         case (event, index) =>
           val indexedEvent = expectStreamEventAppeared()
           indexedEvent.position.commitPosition must >(subscribed.lastCommit)
-          indexedEvent.event mustEqual EventRecord(streamId, EventNumber.Exact(index), event, Some(date))
+          indexedEvent.event mustEqual EventRecord(streamId, EventNumber.Exact(index.toLong), event, Some(date))
       }
     }
 

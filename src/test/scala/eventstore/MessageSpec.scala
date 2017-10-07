@@ -49,6 +49,12 @@ class MessageSpec extends Specification with Mockito {
     }
   }
 
+  "IdentifyClient" should {
+    "throw exception if version < 0" in {
+      IdentifyClient(-1, None) must throwAn[IllegalArgumentException]
+    }
+  }
+
   "ReadStreamEventsCompleted" should {
     "throw exception if reading forward and nextEventNumber is EventNumber.Last" in {
       ReadStreamEventsCompleted(Nil, EventNumber.Last, EventNumber.Exact(0), endOfStream = false, 0,

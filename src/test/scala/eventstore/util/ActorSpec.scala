@@ -21,9 +21,9 @@ abstract class ActorSpec extends Specification with AfterAll {
 
   protected abstract class ActorScope extends TestKit(system) with ImplicitSender with Scope
 
-  def await_[T](awaitable: Awaitable[T], atMost: Duration = 3.seconds): T = awaitable.await_(atMost)
+  def await_[T](awaitable: Awaitable[T], atMost: Duration = 6.seconds): T = awaitable.await_(atMost)
 
   implicit class RichAwaitable[T](val awaitable: Awaitable[T]) {
-    def await_(implicit atMost: Duration = 3.seconds) = Await.result(awaitable, atMost)
+    def await_(implicit atMost: Duration = 6.seconds) = Await.result(awaitable, atMost)
   }
 }

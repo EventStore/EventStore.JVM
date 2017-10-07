@@ -27,7 +27,7 @@ abstract class AbstractSubscriptionActorSpec extends util.ActorSpec with Mockito
       connection.expectNoMsg(duration)
     }
 
-    def streamEventAppeared(x: Event) = StreamEventAppeared(IndexedEvent(x, Position.Exact(x.number.value.toLong)))
+    def streamEventAppeared(x: Event) = StreamEventAppeared(IndexedEvent(x, Position.Exact(x.number.value)))
 
     def subscribeTo = SubscribeTo(streamId, resolveLinkTos = resolveLinkTos)
 

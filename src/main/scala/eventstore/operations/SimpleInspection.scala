@@ -16,3 +16,5 @@ private[eventstore] case object PingInspection extends SimpleInspection(Pong)
 private[eventstore] case object UnsubscribeInspection extends SimpleInspection(Unsubscribed)
 
 private[eventstore] case object HeartbeatRequestInspection extends SimpleInspection(HeartbeatResponse)
+
+private[eventstore] case object IdentifyClientInspection extends SimpleInspection(ClientIdentified)

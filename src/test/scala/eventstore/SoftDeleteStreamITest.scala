@@ -48,8 +48,8 @@ class SoftDeleteStreamITest extends TestConnection {
 
     "preserve metadata except $tb when recreated" in new SoftDeleteScope {
       appendEventToCreateStream()
-      // Int.MaxValue = 2147483647
-      writeMetadata("""{"$tb":2147483647,"test":"test"}""")
+      // Long.MaxValue = 9223372036854775807
+      writeMetadata("""{"$tb":9223372036854775807,"test":"test"}""")
       appendEventToRecreate()
       readMetadata() mustEqual """{"$tb":1,"test":"test"}"""
     }

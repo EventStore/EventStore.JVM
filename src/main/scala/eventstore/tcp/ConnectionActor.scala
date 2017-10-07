@@ -68,6 +68,8 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
   val flow = EventStoreFlow(settings.heartbeatInterval, settings.serializationParallelism, settings.serializationOrdered, log)
   val tcp = Tcp(system)
 
+  val identifyClient = IdentifyClient(version = 1, connectionName = settings.connectionName)
+
   lazy val clusterDiscoverer: Option[ActorRef] = settings.cluster.map(newClusterDiscoverer)
   lazy val delayedRetry = DelayedRetry.opt(
     left = settings.maxReconnections,
@@ -277,7 +279,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
     case Connected(`address`) =>
       log.info("Connected to {}", address)
       val connection = Connection(address, sender(), context)
-
+      connection(PackOut(identifyClient))
       val result = os.flatMap { operation =>
         operation.connected match {
           case OnConnected.Retry(operation, packOut) =>

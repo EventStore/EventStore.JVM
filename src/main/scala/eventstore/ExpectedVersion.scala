@@ -5,7 +5,7 @@ sealed trait ExpectedVersion
 object ExpectedVersion {
   val First: Exact = Exact(0)
 
-  def apply(expectedVersion: Int): ExpectedVersion = expectedVersion match {
+  def apply(expectedVersion: Long): ExpectedVersion = expectedVersion match {
     case -1 => ExpectedVersion.NoStream
     case -2 => ExpectedVersion.Any
     case _  => ExpectedVersion.Exact(expectedVersion)
@@ -24,7 +24,7 @@ object ExpectedVersion {
   }
 
   // States that the last event written to the stream should have a sequence number matching your expected value.
-  @SerialVersionUID(1L) case class Exact(value: Int) extends Existing {
+  @SerialVersionUID(1L) case class Exact(value: Long) extends Existing {
     require(value >= 0, s"expected version must be >= 0, but is $value")
 
     override def toString = s"Expected.Version($value)"

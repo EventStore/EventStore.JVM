@@ -18,7 +18,7 @@ class WriteEventsBuilder(streamId: String) extends Builder[WriteEvents]
 
   override def expectNoStream: WriteEventsBuilder = super.expectNoStream
   override def expectAnyVersion: WriteEventsBuilder = super.expectAnyVersion
-  override def expectVersion(x: Int): WriteEventsBuilder = super.expectVersion(x)
+  override def expectVersion(x: Long): WriteEventsBuilder = super.expectVersion(x)
   override def expectVersion(x: ExpectedVersion): WriteEventsBuilder = super.expectVersion(x)
 
   override def performOnAnyNode: WriteEventsBuilder = super.performOnAnyNode

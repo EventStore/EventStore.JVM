@@ -16,7 +16,7 @@ class DeleteStreamBuilder(streamId: String) extends Builder[DeleteStream]
 
   def expectAnyVersion: DeleteStreamBuilder = expectVersion(ExpectedVersion.Any)
 
-  def expectVersion(x: Int): DeleteStreamBuilder = expectVersion(ExpectedVersion.Exact(x))
+  def expectVersion(x: Long): DeleteStreamBuilder = expectVersion(ExpectedVersion.Exact(x))
 
   def expectVersion(x: ExpectedVersion.Existing): DeleteStreamBuilder = set {
     _expectVersion = x

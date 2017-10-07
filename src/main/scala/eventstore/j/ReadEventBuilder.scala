@@ -14,7 +14,7 @@ class ReadEventBuilder(streamId: String) extends Builder[ReadEvent]
     _eventNumber = x
   }
 
-  def number(x: Int): ReadEventBuilder = number(EventNumber(x))
+  def number(x: Long): ReadEventBuilder = number(EventNumber(x))
 
   def first: ReadEventBuilder = number(EventNumber.First)
 

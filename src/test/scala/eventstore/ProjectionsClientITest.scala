@@ -267,7 +267,7 @@ class ProjectionsClientITest extends AbstractStreamsITest {
     Source(1 to retryCount)
       .throttle(1, retryDelay, 1, Shaping)
       .mapAsync(1)(_ => client.fetchProjectionDetails(name))
-      .takeWhile(_ != expectedStatus)
+      .takeWhile(pd => !pd.map(_.status).contains(expectedStatus))
       .runFold(0) { case (sum, _) => sum + 1 }
       .map(failedCount => failedCount != retryCount)
   }

@@ -16,7 +16,7 @@ class ReadStreamEventsBuilder(streamId: String) extends Builder[ReadStreamEvents
     _fromNumber = x
   }
 
-  def fromNumber(x: Int): ReadStreamEventsBuilder = fromNumber(if (x < 0) EventNumber.Last else EventNumber(x))
+  def fromNumber(x: Long): ReadStreamEventsBuilder = fromNumber(if (x < 0) EventNumber.Last else EventNumber(x))
 
   def fromFirst: ReadStreamEventsBuilder = fromNumber(EventNumber.First)
 

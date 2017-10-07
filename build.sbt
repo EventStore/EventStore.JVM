@@ -8,9 +8,9 @@ name := "eventstore-client"
 
 organization := "com.geteventstore"
 
-scalaVersion := "2.12.2"
+scalaVersion := "2.12.3"
 
-crossScalaVersions := Seq("2.12.2", "2.11.11")
+crossScalaVersions := Seq("2.12.3", "2.11.11")
 
 releaseCrossBuild := true
 
@@ -39,10 +39,10 @@ scalacOptions ++= Seq(
 
 scalacOptions in(Compile, doc) ++= Seq("-groups", "-implicits", "-no-link-warnings")
 
-val AkkaVersion = "2.5.1"
-val AkkaHttpVersion = "10.0.6"
-val ReactiveStreamsVersion = "1.0.0"
-val Specs2Version = "3.8.9"
+val AkkaVersion = "2.5.4"
+val AkkaHttpVersion = "10.0.10"
+val ReactiveStreamsVersion = "1.0.1"
+val Specs2Version = "3.8.6" // Because of concurrency issues with specs2 3.8.7+
 
 libraryDependencies ++= Seq(
   "org.reactivestreams" % "reactive-streams" % ReactiveStreamsVersion,
@@ -57,7 +57,7 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
   "org.apache.directory.studio" % "org.apache.commons.codec" % "1.8",
   "joda-time" % "joda-time" % "2.9.9",
-  "org.joda" % "joda-convert" % "1.8.1",
+  "org.joda" % "joda-convert" % "1.8.3",
   "org.mockito" % "mockito-all" % "1.10.19" % Test,
   "org.specs2" %% "specs2-core" % Specs2Version % Test,
   "org.specs2" %% "specs2-mock" % Specs2Version % Test)
