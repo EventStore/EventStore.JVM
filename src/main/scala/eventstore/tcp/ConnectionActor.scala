@@ -183,14 +183,14 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
         inspectIn(msg, operation)
       } getOrElse {
         msg match {
-          case Failure(msg) => log.warning("Cannot deliver {}, client not found for correlationId: {}", msg, correlationId)
-          case Success(msg) => msg match {
-            case Pong | HeartbeatResponse | Unsubscribed =>
+          case Failure(m) => log.warning("Cannot deliver {}, client not found for correlationId: {}", m, correlationId)
+          case Success(m) => m match {
+            case Pong | HeartbeatResponse | Unsubscribed | ClientIdentified =>
             case _: SubscribeCompleted | _: StreamEventAppeared =>
-              log.warning("Cannot deliver {}, client not found for correlationId: {}, unsubscribing", msg, correlationId)
+              log.warning("Cannot deliver {}, client not found for correlationId: {}, unsubscribing", m, correlationId)
               send(PackOut(Unsubscribe, correlationId, settings.defaultCredentials))
 
-            case _ => log.warning("Cannot deliver {}, client not found for correlationId: {}", msg.getClass, correlationId)
+            case _ => log.warning("Cannot deliver {}, client not found for correlationId: {}", m.getClass, correlationId)
           }
         }
         os
