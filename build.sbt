@@ -42,7 +42,7 @@ scalacOptions in(Compile, doc) ++= Seq("-groups", "-implicits", "-no-link-warnin
 val AkkaVersion = "2.5.11"
 val AkkaHttpVersion = "10.1.0"
 val ReactiveStreamsVersion = "1.0.2"
-val Specs2Version = "4.0.3"
+val Specs2Version = "3.8.6" // Because of concurrency issues with specs2 3.8.7+
 
 libraryDependencies ++= Seq(
   "org.reactivestreams" % "reactive-streams" % ReactiveStreamsVersion,
