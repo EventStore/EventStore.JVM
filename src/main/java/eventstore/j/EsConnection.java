@@ -1,5 +1,7 @@
 package eventstore.j;
 
+import akka.NotUsed;
+import akka.stream.javadsl.Source;
 import eventstore.*;
 import org.reactivestreams.Publisher;
 import scala.concurrent.Future;
@@ -479,6 +481,30 @@ public interface EsConnection {
       UserCredentials credentials,
       boolean infinite);
 
+  /**
+   * Creates a Source you can use to subscribe to a single event stream. Existing events from
+   * event number onwards are read from the stream and presented to the user of
+   * <code>Source</code> as if they had been pushed.
+   * <p>
+   * Once the end of the stream is read the <code>Source</code> transparently (to the user)
+   * switches to push new events as they are written.
+   * <p>
+   * If events have already been received and resubscription from the same point
+   * is desired, use the event number of the last event processed.
+   *
+   * @param stream                   The stream to subscribe to
+   * @param fromEventNumberExclusive The event number from which to start, or <code>null</code> to read all events.
+   * @param resolveLinkTos           Whether to resolve LinkTo events automatically
+   * @param credentials              The optional user credentials to perform operation with
+   * @param infinite                 Whether to subscribe to the future events upon reading all current
+   * @return A {@link akka.stream.javadsl.Source} representing the stream
+   */
+   Source<Event, NotUsed> streamSource(
+      String stream,
+      EventNumber fromEventNumberExclusive,
+      boolean resolveLinkTos,
+      UserCredentials credentials,
+      boolean infinite);
 
   /**
    * Creates Publisher you can use to subscribes to a all events. Existing events from position
@@ -500,6 +526,29 @@ public interface EsConnection {
    * @return A {@link org.reactivestreams.Publisher} representing all streams
    */
   Publisher<IndexedEvent> allStreamsPublisher(
+      Position fromPositionExclusive,
+      boolean resolveLinkTos,
+      UserCredentials credentials,
+      boolean infinite);
+
+  /**
+   * Creates a Source you can use to subscribes to all events. Existing events from position
+   * onwards are read from the Event Store and presented to the user of
+   * <code>Source</code> as if they had been pushed.
+   * <p>
+   * Once the end of the stream is read the <code>Source</code> transparently (to the user)
+   * switches to push new events as they are written.
+   * <p>
+   * If events have already been received and resubscription from the same point
+   * is desired, use the position representing the last event processed.
+   *
+   * @param fromPositionExclusive The position from which to start, or <code>null</code> to read all events
+   * @param resolveLinkTos        Whether to resolve LinkTo events automatically
+   * @param credentials           The optional user credentials to perform operation with
+   * @param infinite              Whether to subscribe to the future events upon reading all current
+   * @return A {@link akka.stream.javadsl.Source} representing all streams
+   */
+  Source<IndexedEvent, NotUsed> allStreamsSource(
       Position fromPositionExclusive,
       boolean resolveLinkTos,
       UserCredentials credentials,
