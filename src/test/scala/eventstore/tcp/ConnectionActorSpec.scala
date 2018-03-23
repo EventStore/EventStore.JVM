@@ -127,7 +127,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     "use reconnectionDelay from settings" in new TestScope {
       connectedAndIdentified()
       client ! tcpException
-      tcp.expectNoMsg(200.millis)
+      tcp.expectNoMsg(100.millis)
       verifyReconnections(settings.maxReconnections)
 
       override def settings = Settings(maxReconnections = 3, reconnectionDelayMin = 500.millis)

@@ -151,6 +151,16 @@ abstract class TestConnection extends util.ActorSpec {
       event
     }
 
+    def expectNonSystemStreamEventAppeared(testKit: TestKitBase = this, max: Duration = Duration.Undefined) = {
+
+      val sea = testKit.fishForSpecificMessage[StreamEventAppeared](max) {
+        case sea @ StreamEventAppeared(IndexedEvent(e, _)) if e.isPlainEvent ⇒ sea.fixDate
+      }
+
+      sea.event.event.streamId mustEqual streamId
+      sea.event
+    }
+
     def mustBeSorted[T](xs: List[T])(implicit direction: ReadDirection, ordering: Ordering[T]): Unit = {
       xs.map {
         case ResolvedEvent(_, link) => link.asInstanceOf[T]
@@ -213,6 +223,8 @@ abstract class TestConnection extends util.ActorSpec {
         case x: EventRecord   => x.fixDate
         case x: ResolvedEvent => x.copy(linkedEvent = x.linkedEvent.fixDate, linkEvent = x.linkEvent.fixDate)
       }
+
+      def isPlainEvent: Boolean = !(self.streamId.isSystem || self.streamId.isMetadata)
     }
 
     implicit class RichIndexedEvent(self: IndexedEvent) {

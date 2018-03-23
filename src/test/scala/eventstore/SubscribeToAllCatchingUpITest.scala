@@ -64,10 +64,10 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
     "read link events if resolveLinkTos = false" in new SubscribeToAllCatchingUpScope {
       val last = lastPosition
       val (linked, link) = linkedAndLink()
-      newSubscription(Some(last), resolveLinkTos = false)
-      expectIndexedEvent.event mustEqual linked
-      expectIndexedEvent
-      expectIndexedEvent.event mustEqual link
+      newSubscription(Some(last))
+      expectPlainIndexedEvent().event mustEqual linked
+      expectPlainIndexedEvent()
+      expectPlainIndexedEvent().event mustEqual link
       fishForLiveProcessingStarted(last)
     }
 
@@ -75,28 +75,30 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
       val last = lastPosition
       val (linked, link) = linkedAndLink()
       newSubscription(Some(last), resolveLinkTos = true)
-      expectIndexedEvent.event mustEqual linked
-      expectIndexedEvent
-      expectIndexedEvent.event mustEqual ResolvedEvent(linked, link)
+      expectPlainIndexedEvent().event mustEqual linked
+      expectPlainIndexedEvent()
+      expectPlainIndexedEvent().event mustEqual ResolvedEvent(linked, link)
       fishForLiveProcessingStarted(last)
     }
 
     "catch link events if resolveLinkTos = false" in new SubscribeToAllCatchingUpScope {
-      newSubscription(Some(lastPosition), resolveLinkTos = false)
-      fishForLiveProcessingStarted()
+      val last = lastPosition
+      newSubscription(Some(last))
+      fishForLiveProcessingStarted(last)
       val (linked, link) = linkedAndLink()
-      expectIndexedEvent.event mustEqual linked
-      expectIndexedEvent
-      expectIndexedEvent.event mustEqual link
+      expectPlainIndexedEvent().event mustEqual linked
+      expectPlainIndexedEvent()
+      expectPlainIndexedEvent().event mustEqual link
     }
 
     "catch link events if resolveLinkTos = true" in new SubscribeToAllCatchingUpScope {
-      newSubscription(Some(lastPosition), resolveLinkTos = true)
-      fishForLiveProcessingStarted()
+      val last = lastPosition
+      newSubscription(Some(last), resolveLinkTos = true)
+      fishForLiveProcessingStarted(last)
       val (linked, link) = linkedAndLink()
-      expectIndexedEvent.event mustEqual linked
-      expectIndexedEvent
-      expectIndexedEvent.event mustEqual ResolvedEvent(linked, link)
+      expectPlainIndexedEvent().event mustEqual linked
+      expectPlainIndexedEvent()
+      expectPlainIndexedEvent().event mustEqual ResolvedEvent(linked, link)
     }
 
     "read link events if resolveLinkTos = false and deleted linked" in new SubscribeToAllCatchingUpScope {
@@ -114,9 +116,9 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
       actor ! DeleteStream(linkedStreamId, hard = true)
       expectMsgType[DeleteStreamCompleted]
 
-      newSubscription(Some(last), resolveLinkTos = false)
-      expectIndexedEvent.event mustEqual linked
-      expectIndexedEvent.event mustEqual link
+      newSubscription(Some(last))
+      expectPlainIndexedEvent().event mustEqual linked
+      expectPlainIndexedEvent().event mustEqual link
       fishForLiveProcessingStarted(last)
     }
 
@@ -137,8 +139,8 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
       expectMsgType[DeleteStreamCompleted]
 
       newSubscription(Some(last), resolveLinkTos = true)
-      expectIndexedEvent.event mustEqual linked
-      expectIndexedEvent.event mustEqual ResolvedEvent(EventRecord.Deleted, link).fixDate
+      expectPlainIndexedEvent().event mustEqual linked
+      expectPlainIndexedEvent().event mustEqual ResolvedEvent(EventRecord.Deleted, link).fixDate
       fishForLiveProcessingStarted(last)
     }
 
@@ -210,9 +212,19 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
       events
     }
 
+    def expectPlainIndexedEvent(max: Duration = Duration.Undefined): IndexedEvent =
+      new RichTestKitBase(this).expectPlainIndexedEvent(max)
+
     def expectIndexedEvent: IndexedEvent = new RichTestKitBase(this).expectIndexedEvent
 
     implicit class RichTestKitBase(self: TestKitBase) {
+
+      def expectPlainIndexedEvent(max: Duration = Duration.Undefined): IndexedEvent = {
+        self.fishForSpecificMessage[IndexedEvent](max) {
+          case e: IndexedEvent if e.event.isPlainEvent ⇒ e.fixDate
+        }
+      }
+
       def expectIndexedEvent: IndexedEvent = self.expectMsgType[IndexedEvent].fixDate
     }
   }
