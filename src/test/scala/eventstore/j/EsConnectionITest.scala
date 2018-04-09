@@ -183,6 +183,29 @@ class EsConnectionITest extends eventstore.util.ActorSpec {
 
       probe.expectNextN(3)
     }
+
+    "publish stream events (source)" in new TestScope {
+      val streamId = s"java-source-stream-$randomUuid"
+      val source = connection.streamSource(streamId, null, false, null, false)
+      await_(connection.writeEvents(streamId, null, events, null))
+      source
+        .map(_.data)
+        .runWith(TestSink.probe[EventData], materializer)
+        .request(1)
+        .expectNext(eventData)
+        .expectComplete()
+    }
+
+    "publish all streams (source)" in new TestScope {
+      val streamId = s"java-source-stream-$randomUuid"
+      val source = connection.allStreamsSource(Position.First, false, null, true)
+      await_(connection.writeEvents(streamId, null, eventsM, null))
+      source
+        .runWith(TestSink.probe[IndexedEvent], materializer)
+        .request(15)
+        .expectNextN(10)
+    }
+
   }
 
   private trait TestScope extends ActorScope {
@@ -190,6 +213,7 @@ class EsConnectionITest extends eventstore.util.ActorSpec {
     val connection: EsConnection = new EsConnectionImpl(eventstore.EsConnection(system), Settings.Default, system.dispatcher)
     val eventData = newEventData
     val events = List(eventData).asJava
+    val eventsM = List.fill(20)(newEventData).asJava
 
     def eventType = "java-test"
     def newEventData = EventData(eventType = eventType, data = Content("data"), metadata = Content("metadata"))

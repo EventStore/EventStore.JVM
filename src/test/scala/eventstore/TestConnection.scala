@@ -60,8 +60,8 @@ abstract class TestConnection extends util.ActorSpec {
       event
     }
 
-    def append(x: EventData): EventRecord = {
-      EventRecord(streamId, writeEventsCompleted(List(x), testKit = TestProbe()).get.start, x, Some(date))
+    def append(x: EventData, sid: EventStream.Id = streamId): EventRecord = {
+      EventRecord(sid, writeEventsCompleted(List(x), testKit = TestProbe()).get.start, x, Some(date))
     }
 
     def linkedAndLink(): (EventRecord, EventRecord) = {
@@ -71,9 +71,9 @@ abstract class TestConnection extends util.ActorSpec {
       (linked, link)
     }
 
-    def appendMany(size: Int = 10, testKit: TestKitBase = this): List[EventData] = {
+    def appendMany(size: Int = 10, testKit: TestKitBase = this, sid: EventStream.Id = streamId): List[EventData] = {
       val events = (1 to size).map(_ => newEventData).toList
-      actor.!(WriteEvents(streamId, events, ExpectedVersion.Any))(testKit.testActor)
+      actor.!(WriteEvents(sid, events, ExpectedVersion.Any))(testKit.testActor)
       testKit.expectMsgType[WriteEventsCompleted]
       events
     }
