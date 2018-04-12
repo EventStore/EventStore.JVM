@@ -2,6 +2,9 @@ jdk: oraclejdk8
 
 language: scala
 
+env:
+  - AKKA_TEST_TIMEFACTOR=2.0
+
 scala:
   - 2.12.4
   - 2.11.12
