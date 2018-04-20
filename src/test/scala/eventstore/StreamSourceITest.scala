@@ -8,9 +8,28 @@ class StreamSourceITest extends TestConnection {
   implicit val materializer = ActorMaterializer()
 
   "StreamSource" should {
+
     "subscribe to stream" in new Scope {
       val events = appendMany(3)
       val src = source().map { _.data }
+      src.runWith(TestSink.probe[EventData])
+        .request(events.size.toLong)
+        .expectNextN(events)
+    }
+
+    "subscribe to category stream" in new Scope {
+
+      val category = "category" + scala.util.Random.nextDouble()
+
+      val s1 = EventStream.Plain(s"$category-1")
+      val s2 = EventStream.Plain(s"$category-2")
+
+      val e1 = appendMany(2, sid = s1)
+      val e2 = appendMany(2, sid = s2)
+      val e3 = appendMany(2, sid = s1)
+      val events = e1 ++ e2 ++ e3
+
+      val src = categorySource(category).map { _.data }
       src.runWith(TestSink.probe[EventData])
         .request(events.size.toLong)
         .expectNextN(events)
@@ -193,5 +212,11 @@ class StreamSourceITest extends TestConnection {
     def source(eventNumber: Option[EventNumber] = None, infinite: Boolean = true) = {
       connection.streamSource(streamId, eventNumber, infinite = infinite, readBatchSize = 10)
     }
+
+    def categorySource(streamCategory: String, eventNumber: Option[EventNumber] = None, infinite: Boolean = true) = {
+      val sid = EventStream.System(s"ce-$streamCategory")
+      connection.streamSource(sid, eventNumber, infinite = infinite, readBatchSize = 10, resolveLinkTos = true)
+    }
+
   }
 }
