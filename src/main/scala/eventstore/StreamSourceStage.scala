@@ -31,7 +31,7 @@ private[eventstore] class StreamSourceStage(
       final val first: Exact = First
       final val eventFrom: IndexedEvent ⇒ Event = _.event
       final val pointerFrom: Exact ⇒ Long = _.value
-      final val positionFrom: Event ⇒ Exact = _.number
+      final val positionFrom: Event ⇒ Exact = _.record.number
 
       final def positionExclusive: Option[StreamPointer] = fromNumberExclusive map {
         case Last     ⇒ StreamPointer.Last
