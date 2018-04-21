@@ -68,7 +68,7 @@ private[eventstore] abstract class SourceStageLogic[T, O <: Ordered[O], P <: O](
   def subscribingFromLast: Receive = {
     if (infinite) {
       subscribeToStream()
-      rcvSubscribed(_ ⇒ become(subscribed)) or rcvUnsubscribed or rcvRequest()
+      rcvSubscribed(_ ⇒ become(subscribed)) or rcvRequest() or rcvUnexpectedUnsubscribed
     } else {
       completeStage()
       emptyBehavior
@@ -85,7 +85,7 @@ private[eventstore] abstract class SourceStageLogic[T, O <: Ordered[O], P <: O](
     }
 
     subscribeToStream()
-    rcvSubscribed(subscribed) or rcvUnsubscribed or rcvRequest()
+    rcvSubscribed(subscribed) or rcvRequest() or rcvUnexpectedUnsubscribed
   }
 
   def unsubscribing: Receive = {
@@ -108,8 +108,8 @@ private[eventstore] abstract class SourceStageLogic[T, O <: Ordered[O], P <: O](
     }
 
     rcvEventAppeared(eventAppeared) or
-      rcvUnsubscribed or
-      rcvRequest()
+      rcvRequest() or
+      rcvUnexpectedUnsubscribed
   }
 
   def catchingUp(next: P, subscriptionNumber: P, stash: Queue[T]): Receive = {
@@ -136,8 +136,8 @@ private[eventstore] abstract class SourceStageLogic[T, O <: Ordered[O], P <: O](
 
       rcvRead(next, read) or
         rcvEventAppeared(eventAppeared) or
-        rcvUnsubscribed or
-        rcvRequest()
+        rcvRequest() or
+        rcvUnexpectedUnsubscribed
     }
 
     readEventsFrom(next)
@@ -164,8 +164,8 @@ private[eventstore] abstract class SourceStageLogic[T, O <: Ordered[O], P <: O](
 
   def push(): Unit = if (isAvailable(out) && buffer.nonEmpty) {
     val event = buffer.dequeue()
-    last = Some(positionFrom(event))
     push(out, event)
+    last = Some(positionFrom(event))
   }
 
   /// StageActor Related
@@ -196,8 +196,11 @@ private[eventstore] abstract class SourceStageLogic[T, O <: Ordered[O], P <: O](
     case Unsubscribed ⇒ become(receive)
   }
 
-  def rcvUnsubscribed(): Receive = {
-    case Unsubscribed ⇒ completeStage()
+  def rcvUnexpectedUnsubscribed(): Receive = {
+    case Unsubscribed ⇒
+      def esLast = positionExclusive collect { case StreamPointer.Last ⇒ subscribingFromLast }
+      val action = last.map(subscribing).getOrElse(esLast.getOrElse(subscribing(first)))
+      become(action)
   }
 
   def rcvEventAppeared(receive: IndexedEvent ⇒ Receive): Receive = {
