@@ -299,6 +299,68 @@ class AllStreamsSourceSpec extends SourceSpec {
       override def position = Some(Position(0))
     }
 
+    "resubscribe correctly if unexpectedly unsubscribed" in new SourceScope {
+      connection expectMsg readEvents(0)
+      connection reply readCompleted(0, 0)
+      connection expectMsg subscribeTo
+      connection reply subscribeCompleted(0)
+      connection expectMsg readEvents(0)
+      connection reply readCompleted(3, 3, event0, event1, event2)
+      expectEvent(event0)
+      expectEvent(event1)
+      expectEvent(event2)
+      connection reply Unsubscribed
+      connection expectMsg subscribeTo
+      connection reply subscribeCompleted(10)
+      connection expectMsg readEvents(2)
+    }
+
+    "resubscribe correctly if unexpectedly unsubscribed and last pushed is not set" in new SourceScope {
+
+      val testEvent1 = newEvent(1337)
+      val testEvent2 = newEvent(1338)
+
+      connection expectMsg subscribeTo
+      connection reply Unsubscribed
+      connection expectMsg subscribeTo
+      connection reply subscribeCompleted(1336)
+      connection.expectNoMessage()
+      connection reply StreamEventAppeared(testEvent1)
+      expectEvent(testEvent1)
+      connection reply Unsubscribed
+      connection expectMsg subscribeTo
+      connection reply subscribeCompleted(1339)
+      connection expectMsg readEvents(1337)
+      connection reply readCompleted(1339, 1339, testEvent1, testEvent2)
+      expectEvent(testEvent2)
+
+      override def position = Some(Position.Last)
+    }
+
+    "resubscribe correctly if unexpectedly unsubscribed while catching up" in new SourceScope {
+
+      connection expectMsg readEvents(0)
+      connection reply readCompleted(0, 0)
+      connection expectMsg subscribeTo
+      connection reply subscribeCompleted(2)
+      connection expectMsg readEvents(0)
+      connection reply readCompleted(2, 2, event0, event1)
+      connection expectMsg readEvents(2)
+
+      expectEvent(event0)
+      expectEvent(event1)
+
+      connection reply Unsubscribed
+      connection expectMsg subscribeTo
+      connection reply subscribeCompleted(3)
+      connection expectMsg readEvents(1)
+      connection reply readCompleted(4, 4, event2, event3)
+
+      expectEvent(event2)
+      expectEvent(event3)
+
+    }
+
     "ignore resubscribed while catching up" in new SourceScope {
       connection expectMsg readEvents(0)
       connection reply readCompleted(0, 0)
