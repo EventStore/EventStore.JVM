@@ -163,7 +163,7 @@ class StreamSubscriptionActor private (
       }
 
       def subscribed(number: Last) = {
-        catchUp(subscriptionNumber, Queue())
+        catchUp(number.getOrElse(subscriptionNumber), Queue())
       }
 
       rcvEventAppeared(eventAppeared) or
