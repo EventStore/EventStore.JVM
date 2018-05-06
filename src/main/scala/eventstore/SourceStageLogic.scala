@@ -12,229 +12,260 @@ import akka.stream.stage.GraphStageLogic.StageActor
 import akka.stream.SourceShape
 
 private[eventstore] abstract class SourceStageLogic[T, O <: Ordered[O], P <: O](
-    shape:       SourceShape[T],
-    out:         Outlet[T],
-    streamId:    EventStream,
-    connection:  ActorRef,
-    credentials: Option[UserCredentials],
-    settings:    Settings,
-    infinite:    Boolean
-) extends GraphStageLogic(shape) with StageLogging {
+  shape:       SourceShape[T],
+  out:         Outlet[T],
+  streamId:    EventStream,
+  connection:  ActorRef,
+  credentials: Option[UserCredentials],
+  settings:    Settings,
+  infinite:    Boolean
+) extends GraphStageLogic(shape)
+    with StageLogging {
 
   def first: P
   def eventFrom: IndexedEvent ⇒ T
   def positionFrom: T ⇒ P
   def pointerFrom: P ⇒ Long
-  def positionExclusive: Option[StreamPointer]
+  def operation: ReadFrom
 
-  ///
+  private var state: State = State.from(operation)
 
-  private var last: Option[P] = positionExclusive collect { case StreamPointer.Exact(p) ⇒ p }
-  private val buffer = mutable.Queue.empty[T]
-  private val emptyBehavior = PartialFunction.empty
-  private def ready = buffer.size <= settings.readBatchSize
-
-  ///
+  setHandler(out, new OutHandler {
+    def onPull(): Unit = push()
+  })
 
   override def preStart(): Unit = {
-
     super.preStart()
 
-    become(emptyBehavior).watch(connection)
+    stageActorBecome(ignoring).watch(connection)
 
-    positionExclusive match {
-      case Some(StreamPointer.Last)     ⇒ become(subscribingFromLast)
-      case Some(StreamPointer.Exact(p)) ⇒ become(reading(p))
-      case None                         ⇒ become(reading(first))
+    operation match {
+      case ReadFrom.Beginning       ⇒ readFrom(first)
+      case ReadFrom.Exact(position) ⇒ readFrom(position)
+      case ReadFrom.End             ⇒ if (infinite) subscribe() else completeStage()
     }
-
   }
 
-  def reading(next: P): Receive = {
+  def readFrom(position: P): Unit = {
 
-    def read(events: List[T], next: P, endOfStream: Boolean): Unit = become {
+    def onReadCompleted(events: List[T], next: P, endOfStream: Boolean): Unit = {
+
       enqueueAndPush(events: _*)
+
       if (endOfStream) {
-        if (infinite) subscribing(next)
+        if (infinite) subscribe()
         else drainAndComplete()
-      } else if (ready) reading(next)
-      else rcvRequest(reading(next))
+      } else {
+        if (state.bufferAvailable) readFrom(next)
+        else waitUntilBufferAvailable(() ⇒ readFrom(next))
+      }
     }
 
-    readEventsFrom(next)
-    rcvRead(next, read) or rcvRequest()
+    def onStreamNotExists(): Unit =
+      if (infinite) subscribe() else completeStage()
+
+    stageActorBecome {
+      rcvRead(onReadCompleted, onStreamNotExists())
+    }
+
+    readEventsFrom(position)
   }
 
-  def subscribingFromLast: Receive = {
-    if (infinite) {
-      subscribeToStream()
-      rcvSubscribed(_ ⇒ become(subscribed)) or rcvRequest() or rcvUnexpectedUnsubscribed
-    } else {
-      completeStage()
-      emptyBehavior
+  def subscribe(): Unit = {
+    stageActorBecome {
+      rcvSubscribed(onSubscriptionCompleted)
     }
-  }
-
-  def subscribing(next: P): Receive = {
-
-    def subscribed(subscriptionNumber: Option[P]): Unit = become {
-      subscriptionNumber
-        .filter(sn ⇒ last.forall(l ⇒ pointerFrom(sn) > pointerFrom(l)))
-        .map(sn ⇒ catchingUp(next, sn, Queue()))
-        .getOrElse(this.subscribed)
-    }
-
     subscribeToStream()
-    rcvSubscribed(subscribed) or rcvRequest() or rcvUnexpectedUnsubscribed
   }
 
-  def unsubscribing: Receive = {
+  def onSubscriptionCompleted(subscribedFromExcl: Option[P]): Unit = (subscribedFromExcl, state.lastIn) match {
+    case (Some(sn), Some(l)) if pointerFrom(sn) > pointerFrom(l) ⇒ catchup(l, sn)
+    case (Some(sn), None) if operation.isFirst ⇒ catchup(first, sn)
+    case _ ⇒ subscribed()
+  }
 
-    def unsubscribed = {
-      def reading = this.reading(last getOrElse first)
-      if (ready) reading
-      else rcvRequest(reading)
+  def subscribed(): Unit = {
+
+    def onEventAppeared(idxEvent: IndexedEvent): Unit = {
+      enqueueAndPush(eventFrom(idxEvent))
+      if (state.bufferFull) unsubscribe()
     }
 
-    unsubscribe()
-    rcvUnsubscribed(unsubscribed) or rcvRequest()
-  }
-
-  def subscribed: Receive = {
-
-    def eventAppeared(event: IndexedEvent) = {
-      enqueueAndPush(eventFrom(event))
-      if (ready) subscribed else unsubscribing
+    stageActorBecome {
+      rcvEventAppeared(onEventAppeared) or
+        rcvUnsubscribed(onUnsubscribeCompleted()) or
+        rcvSubscribed(onSubscriptionCompleted)
     }
-
-    rcvEventAppeared(eventAppeared) or
-      rcvRequest() or
-      rcvUnexpectedUnsubscribed
   }
 
-  def catchingUp(next: P, subscriptionNumber: P, stash: Queue[T]): Receive = {
+  def catchup(from: P, to: P, stash: Queue[T] = Queue.empty[T]): Unit = {
 
-    def catchUp(subscriptionNumber: P, stash: Queue[T]): Receive = {
+    def doCatchUp(to: P, stash: Queue[T]): Unit = {
 
-      val subPos = pointerFrom(subscriptionNumber)
-      val evtPos = positionFrom andThen pointerFrom
+      def onReadCompleted(events: List[T], next: P, endOfStream: Boolean): Unit = {
 
-      def read(es: List[T], next: P, eos: Boolean): Unit = become {
-        enqueueAndPush(es: _*)
-        if (es.isEmpty || es.exists(evtPos(_) > subPos)) {
+        enqueueAndPush(events: _*)
+
+        val evtPos = positionFrom andThen pointerFrom
+
+        if (events.isEmpty || events.exists(evtPos(_) >= pointerFrom(to))) {
           enqueueAndPush(stash: _*)
-          subscribed
+          subscribed()
         } else {
-          if (ready)
-            catchingUp(next, subscriptionNumber, stash)
-          else unsubscribing
+          if (state.bufferFull) unsubscribe()
+          else catchup(next, to, stash)
         }
       }
 
-      def eventAppeared(event: IndexedEvent) =
-        catchUp(subscriptionNumber, stash enqueue eventFrom(event))
+      def onEventAppeared(idxEvent: IndexedEvent): Unit = {
+        doCatchUp(to, stash enqueue eventFrom(idxEvent))
+      }
 
-      rcvRead(next, read) or
-        rcvEventAppeared(eventAppeared) or
-        rcvRequest() or
-        rcvUnexpectedUnsubscribed
+      def onResubscribed(subscribedFromExcl: Option[P]): Unit = {
+        subscribedFromExcl.filter(_ > to).foreach(p ⇒ doCatchUp(p, Queue.empty[T]))
+      }
+
+      stageActorBecome {
+        rcvRead(onReadCompleted, subscribed()) or
+          rcvEventAppeared(onEventAppeared) or
+          rcvSubscribed(onResubscribed) or
+          rcvUnsubscribed(onUnsubscribeCompleted())
+      }
     }
 
-    readEventsFrom(next)
-    catchUp(subscriptionNumber, stash)
+    readEventsFrom(from)
+    doCatchUp(to, stash)
   }
 
-  def drainAndComplete(): Receive = {
-    emitMultiple(out, buffer.iterator, () ⇒ completeStage())
-    emptyBehavior
+  def unsubscribe(): Unit = {
+    stageActorBecome(
+      rcvUnsubscribed(onUnsubscribeCompleted())
+    )
+    unsubscribeFromStream()
   }
 
-  /// State related
+  def onUnsubscribeCompleted(): Unit = {
+    if (state.bufferAvailable) subscribe()
+    else waitUntilBufferAvailable(() ⇒ subscribe())
+  }
+
+  ///
+
+  def drainAndComplete(): Unit = {
+    val (events, newState) = state.dequeueAll
+    state = newState
+    emitMultiple(out, events.iterator, () ⇒ completeStage())
+    stageActorBecome(ignoring)
+  }
+
+  def waitUntilBufferAvailable(action: () ⇒ Unit): Unit = {
+    state = state.copy(onBufferAvailable = Some(action))
+    stageActorBecome(ignoring)
+  }
 
   def enqueueAndPush(events: T*): Unit = {
-
-    def enqueue(event: T): Unit = {
-      val lastIn = buffer.lastOption.map(positionFrom).orElse(last)
-      if (lastIn.forall(_ < positionFrom(event))) buffer.enqueue(event)
-    }
-
-    events.foreach(enqueue)
+    state = events.foldLeft(state)((s, e) ⇒ s.enqueue(e))
     push()
   }
 
-  def push(): Unit = if (isAvailable(out) && buffer.nonEmpty) {
-    val event = buffer.dequeue()
-    push(out, event)
-    last = Some(positionFrom(event))
+  def push(): Unit = if (isAvailable(out)) {
+    state.dequeue.foreach {
+      case (event, newState) ⇒
+        state = newState
+        push(out, event)
+    }
+
+    if (state.bufferAvailable) state.onBufferAvailable.foreach { action ⇒
+      state = state.copy(onBufferAvailable = None)
+      action()
+    }
   }
 
   /// StageActor Related
 
-  private def become(receive: Receive): StageActor = getStageActor {
+  private def stageActorBecome(receive: Receive): StageActor = getStageActor {
     case (_, m) if receive.isDefinedAt(m) ⇒ receive(m)
     case (_, Terminated(`connection`))    ⇒ completeStage()
     case (_, Failure(failure))            ⇒ failStage(failure)
-    case (r, m)                           ⇒ log.warning(s"unhandled from message $r: $m")
+    case (r, m)                           ⇒ log.error(s"unhandled from message $r: $m")
   }
 
-  /// Messages from OutHandler
-
-  def rcvRequest(): Receive = {
-    case Pump ⇒ push()
-  }
-
-  def rcvRequest(receive: ⇒ Receive): Receive = {
-    case Pump ⇒ push(); if (ready) become(receive)
-  }
+  private val ignoring = PartialFunction.empty
 
   /// Messages from Connection
 
-  def rcvRead(next: P, onRead: (List[T], P, Boolean) ⇒ Unit): Receive
-  def rcvSubscribed(receive: Option[P] ⇒ Unit): Receive
+  def rcvRead(onRead: (List[T], P, Boolean) ⇒ Unit, onNotExists: ⇒ Unit): Receive
 
-  def rcvUnsubscribed(receive: ⇒ Receive): Receive = {
-    case Unsubscribed ⇒ become(receive)
+  def rcvSubscribed(onSubscribed: Option[P] ⇒ Unit): Receive
+
+  def rcvUnsubscribed(onUnsubscribed: ⇒ Unit): Receive = {
+    case Unsubscribed ⇒ onUnsubscribed
   }
 
-  def rcvUnexpectedUnsubscribed(): Receive = {
-    case Unsubscribed ⇒
-      def esLast = positionExclusive collect { case StreamPointer.Last ⇒ subscribingFromLast }
-      val action = last.map(subscribing).getOrElse(esLast.getOrElse(subscribing(first)))
-      become(action)
-  }
-
-  def rcvEventAppeared(receive: IndexedEvent ⇒ Receive): Receive = {
-    case StreamEventAppeared(x) ⇒ become(receive(x))
+  def rcvEventAppeared(onEventAppeared: IndexedEvent ⇒ Unit): Receive = {
+    case StreamEventAppeared(event) ⇒ onEventAppeared(event)
   }
 
   /// Messages to Connection
 
   def buildReadEventsFrom(p: P): Out
 
-  def readEventsFrom(next: P): Unit = {
+  def readEventsFrom(next: P): Unit =
     toConnection(buildReadEventsFrom(next))
-  }
+
+  def subscribeToStream(): Unit =
+    toConnection(SubscribeTo(streamId, resolveLinkTos = settings.resolveLinkTos))
+
+  def unsubscribeFromStream(): Unit =
+    toConnection(Unsubscribe)
 
   def toConnection(x: Out) =
     connection.tell(credentials.fold[OutLike](x)(x.withCredentials), stageActor.ref)
 
-  def subscribeToStream() =
-    toConnection(SubscribeTo(streamId, resolveLinkTos = settings.resolveLinkTos))
-
-  def unsubscribe() = toConnection(Unsubscribe)
-
   ///
 
-  setHandler(out, new OutHandler {
-    def onPull(): Unit = stageActor.ref ! Pump
-  })
-
-  case object Pump
-
-  sealed trait StreamPointer extends Product with Serializable
-  object StreamPointer {
-    case object Last extends StreamPointer
-    case class Exact(p: P) extends StreamPointer
+  sealed trait ReadFrom extends Product with Serializable {
+    def isFirst: Boolean = false
   }
 
+  object ReadFrom {
+    case object End extends ReadFrom
+    case class Exact(positionExclusive: P) extends ReadFrom
+    case object Beginning extends ReadFrom {
+      override def isFirst: Boolean = true
+    }
+  }
+
+  case class State(
+      lastIn:            Option[P],
+      buffer:            immutable.Queue[T] = Queue.empty[T],
+      onBufferAvailable: Option[() ⇒ Unit]  = None
+  ) {
+
+    def bufferAvailable: Boolean = buffer.size <= settings.readBatchSize
+    def bufferFull: Boolean = !bufferAvailable
+
+    def enqueue(event: T): State = {
+      def alreadyEnqueued(e: T) = lastIn.exists(_ >= positionFrom(e))
+
+      if (alreadyEnqueued(event)) this
+      else copy(buffer = buffer.enqueue(event), lastIn = Some(positionFrom(event)))
+    }
+
+    def dequeue: Option[(T, State)] =
+      buffer.dequeueOption.map { case (e, b) ⇒ (e, copy(buffer = b)) }
+
+    def dequeueAll: (List[T], State) =
+      (buffer.toList, copy(buffer = Queue.empty[T]))
+  }
+
+  object State {
+    def from(operation: ReadFrom): State = {
+      val fromPositionExclusive = operation match {
+        case ReadFrom.Exact(p) ⇒ Some(p)
+        case _                 ⇒ None
+      }
+      State(fromPositionExclusive)
+    }
+  }
 }

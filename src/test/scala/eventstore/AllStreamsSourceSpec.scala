@@ -108,14 +108,14 @@ class AllStreamsSourceSpec extends SourceSpec {
 
       connection reply subscribeCompleted(4)
 
-      connection expectMsg readEvents(2)
+      connection expectMsg readEvents(1)
 
       connection reply StreamEventAppeared(event2)
       connection reply StreamEventAppeared(event3)
       connection reply StreamEventAppeared(event4)
       expectNoEvent()
 
-      connection reply readCompleted(2, 3, event1, event2)
+      connection reply readCompleted(1, 3, event1, event2)
       expectEvent(event2)
 
       connection expectMsg readEvents(3)
@@ -320,8 +320,6 @@ class AllStreamsSourceSpec extends SourceSpec {
       val testEvent1 = newEvent(1337)
       val testEvent2 = newEvent(1338)
 
-      connection expectMsg subscribeTo
-      connection reply Unsubscribed
       connection expectMsg subscribeTo
       connection reply subscribeCompleted(1336)
       connection.expectNoMessage()
