@@ -32,16 +32,17 @@ private[eventstore] class AllStreamsSourceStage(
       final val positionFrom: IndexedEvent ⇒ Exact = _.position
       final val pointerFrom: Exact ⇒ Long = _.commitPosition
 
-      final def positionExclusive: Option[StreamPointer] = fromPositionExclusive map {
-        case Last     ⇒ StreamPointer.Last
-        case e: Exact ⇒ StreamPointer.Exact(e)
+      final def operation: ReadFrom = fromPositionExclusive match {
+        case Some(Last)     ⇒ ReadFrom.End
+        case Some(e: Exact) ⇒ ReadFrom.Exact(e)
+        case None           ⇒ ReadFrom.Beginning
       }
 
       final def buildReadEventsFrom(next: Exact): Out = ReadAllEvents(
         next, readBatchSize, Forward, resolveLinkTos, requireMaster
       )
 
-      final def rcvRead(next: Exact, onRead: (List[IndexedEvent], Exact, Boolean) ⇒ Unit): Receive = {
+      final def rcvRead(onRead: (List[IndexedEvent], Exact, Boolean) => Unit, onNotExists: => Unit): Receive = {
         case ReadAllEventsCompleted(events, _, n, Forward) ⇒ onRead(events, n, events.isEmpty)
       }
 

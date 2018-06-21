@@ -125,14 +125,15 @@ class StreamSourceSpec extends SourceSpec {
 
       connection reply subscribeCompleted(4)
 
-      connection expectMsg readEvents(2)
+      connection expectMsg readEvents(1)
 
+      connection reply streamEventAppeared(event1)
       connection reply streamEventAppeared(event2)
       connection reply streamEventAppeared(event3)
       connection reply streamEventAppeared(event4)
       expectNoEvent()
 
-      connection reply readCompleted(3, false, event1, event2)
+      connection reply readCompleted(3, false, event2)
       expectEvent(event2)
 
       connection expectMsg readEvents(3)
@@ -216,7 +217,7 @@ class StreamSourceSpec extends SourceSpec {
       connection reply readCompleted(1, endOfStream = true)
 
       connection expectMsg subscribeTo
-      connection reply subscribeCompleted(2)
+      connection reply subscribeCompleted(3)
 
       connection expectMsg readEvents(1)
       connection reply readCompleted(1, endOfStream = true)
@@ -290,30 +291,6 @@ class StreamSourceSpec extends SourceSpec {
       override def eventNumber = Some(EventNumber(0))
     }
 
-    "resubscribe from same position" in new SourceScope {
-      connection expectMsg readEvents(0)
-      connection reply readCompleted(0, endOfStream = true)
-      connection expectMsg subscribeTo
-      connection reply subscribeCompleted(0)
-      expectNoActivity()
-
-      override def eventNumber = Some(EventNumber(0))
-    }
-
-    "resubscribe from different position" in new SourceScope {
-      connection expectMsg readEvents(0)
-      connection reply readCompleted(0, endOfStream = true)
-      connection expectMsg subscribeTo
-      connection reply subscribeCompleted(1)
-      connection reply streamEventAppeared(event1)
-      connection reply streamEventAppeared(event2)
-      connection reply readCompleted(3, false, event0, event1, event2)
-      expectEvent(event1)
-      expectEvent(event2)
-
-      override def eventNumber = Some(EventNumber(0))
-    }
-
     "resubscribe correctly if unexpectedly unsubscribed" in new SourceScope {
       connection expectMsg readEvents(0)
       connection reply readCompleted(0, endOfStream = true)
@@ -335,8 +312,6 @@ class StreamSourceSpec extends SourceSpec {
       val testEvent1 = newEvent(1337)
       val testEvent2 = newEvent(1338)
 
-      connection expectMsg subscribeTo
-      connection reply Unsubscribed
       connection expectMsg subscribeTo
       connection reply subscribeCompleted(1336)
       connection.expectNoMessage()
@@ -369,34 +344,84 @@ class StreamSourceSpec extends SourceSpec {
       connection expectMsg subscribeTo
       connection reply subscribeCompleted(3)
       connection expectMsg readEvents(1)
-      connection reply readCompleted(4, endOfStream = false, event2, event3)
+      connection reply readCompleted(4, endOfStream = false, event1, event2, event3)
 
       expectEvent(event2)
       expectEvent(event3)
 
     }
 
-    "ignore resubscribe while catching up" in new SourceScope {
+    "handle unexpected resubscribe while subscribed" in new SourceScope {
       connection expectMsg readEvents(0)
-      connection reply readCompleted(0, endOfStream = true)
+      connection reply readCompleted(1, endOfStream = true)
       connection expectMsg subscribeTo
-      connection reply subscribeCompleted(1)
-      connection expectMsg readEvents(0)
-      connection reply streamEventAppeared(event0)
+      connection reply subscribeCompleted(0)
       connection reply streamEventAppeared(event1)
-      connection reply streamEventAppeared(event2)
-      connection reply streamEventAppeared(event3)
-      connection reply subscribeCompleted(2)
-      connection reply streamEventAppeared(event1)
-      connection reply streamEventAppeared(event2)
-      connection reply streamEventAppeared(event3)
-      connection reply readCompleted(0, true, event0, event1, event2)
+      connection reply subscribeCompleted(3)
+      connection expectMsg readEvents(1)
+      connection reply streamEventAppeared(event4)
+      connection reply readCompleted(4, false, event1, event2, event3)
 
       expectEvent(event1)
       expectEvent(event2)
       expectEvent(event3)
+      expectEvent(event4)
 
       override def eventNumber = Some(EventNumber(0))
+    }
+
+    "handle unexpected resubscribe while catching up" in new SourceScope {
+      connection expectMsg readEvents(0)
+      connection reply readCompleted(0, endOfStream = true)
+      connection expectMsg subscribeTo
+      connection reply subscribeCompleted(2)
+      connection expectMsg readEvents(0)
+      connection reply subscribeCompleted(3)
+      connection reply streamEventAppeared(event4)
+      connection reply readCompleted(3, false, event0, event1, event2)
+      connection expectMsg readEvents(3)
+      connection reply readCompleted(4, false, event3)
+
+      expectEvent(event1)
+      expectEvent(event2)
+      expectEvent(event3)
+      expectEvent(event4)
+
+      override def eventNumber = Some(EventNumber(0))
+    }
+
+    "temporarily unsubscribe when buffer is full" in new SourceScope {
+      connection expectMsg subscribeTo
+      connection reply subscribeCompleted(0)
+      connection reply streamEventAppeared(event1)
+      connection reply streamEventAppeared(event2)
+      connection reply streamEventAppeared(event3)
+      connection expectMsg Unsubscribe
+      connection reply Unsubscribed
+      expectEvent(event1)
+      expectEvent(event2)
+
+      connection expectMsg subscribeTo
+      connection reply subscribeCompleted(5)
+      connection expectMsg readEvents(3)
+      connection reply readCompleted(6, false, event3, event4, event5)
+      expectEvent(event3)
+      expectEvent(event4)
+      expectEvent(event5)
+
+      override def eventNumber = Some(EventNumber.Last)
+    }
+
+    "temporarily halt reading when buffer is full" in new SourceScope {
+      connection expectMsg readEvents(0)
+      connection reply readCompleted(3, false, event0, event1, event2)
+      connection expectNoMessage ()
+      expectEvent(event0)
+      expectEvent(event1)
+      connection expectMsg readEvents(3)
+      connection reply readCompleted(4, endOfStream = true, event3)
+      expectEvent(event2)
+      expectEvent(event3)
     }
 
     "use credentials if given" in new SourceScope {
