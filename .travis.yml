@@ -12,10 +12,10 @@ services:
   - docker
 
 script:
-  - travis_retry sbt clean coverage test
+  - sbt ++$TRAVIS_SCALA_VERSION clean coverage test
 
 after_success:
-  - sbt coverageReport coveralls
+  - sbt ++$TRAVIS_SCALA_VERSION coverageReport coverageAggregate coveralls
 
 jobs:
   include:
