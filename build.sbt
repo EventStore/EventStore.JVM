@@ -104,3 +104,5 @@ pomExtra in Global := {
 }
 
 releasePublishArtifactsAction := PgpKeys.publishSigned.value
+
+publishTo := sonatypePublishTo.value
