@@ -3,11 +3,11 @@
 <table border="0">
   <tr>
     <td><a href="http://www.scala-lang.org">Scala</a> </td>
-    <td>2.12.4/2.11.12</td>
+    <td>2.12.6/2.11.12</td>
   </tr>
   <tr>
     <td><a href="http://akka.io">Akka</a> </td>
-    <td>2.5.11</td>
+    <td>2.5.13</td>
   </tr>
   <tr>
     <td><a href="https://eventstore.org">Event Store</a></td>

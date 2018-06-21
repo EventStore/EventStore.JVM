@@ -3,7 +3,7 @@ jdk: oraclejdk8
 language: scala
 
 scala:
-  - 2.12.4
+  - 2.12.6
   - 2.11.12
 
 sudo: required
@@ -20,7 +20,7 @@ after_success:
 jobs:
   include:
     - stage: integration
-      scala: 2.12.4
+      scala: 2.12.6
       env: AKKA_TEST_TIMEFACTOR=1.5 AKKA_TEST_LOGLEVEL=OFF
       before_install:
         - docker pull eventstore/eventstore
