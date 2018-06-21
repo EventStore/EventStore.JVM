@@ -19,7 +19,7 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
     "subscribe if last position given" in new SubscriptionScope {
       connection expectMsg subscribeTo
       actor ! subscribeCompleted(0)
-      connection.expectNoMsg()
+      connection.expectNoMessage()
       actor ! StreamEventAppeared(event1)
       actor ! StreamEventAppeared(event0)
       actor ! StreamEventAppeared(event2)
@@ -49,7 +49,7 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
 
       actor ! readCompleted(3, 5, event0, event1, event2, event3, event4)
 
-      expectNoMsg(duration)
+      expectNoMessage(duration)
       connection expectMsg readEvents(5)
     }
 
@@ -58,7 +58,7 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
 
       actor ! readCompleted(0, 3, event0, event1, event2)
       expectEvent(event2)
-      expectNoMsg(duration)
+      expectNoMessage(duration)
 
       connection expectMsg readEvents(3)
 
@@ -108,7 +108,7 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       connection expectMsg readEvents(2)
       actor ! readCompleted(2, 2)
 
-      expectNoMsg(duration)
+      expectNoMessage(duration)
       connection.expectMsg(subscribeTo)
 
       actor ! subscribeCompleted(4)
@@ -118,7 +118,7 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       actor ! StreamEventAppeared(event2)
       actor ! StreamEventAppeared(event3)
       actor ! StreamEventAppeared(event4)
-      expectNoMsg(duration)
+      expectNoMessage(duration)
 
       actor ! readCompleted(2, 3, event1, event2)
       expectEvent(event2)
@@ -127,7 +127,7 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
 
       actor ! StreamEventAppeared(event5)
       actor ! StreamEventAppeared(event6)
-      expectNoMsg(duration)
+      expectNoMessage(duration)
 
       actor ! readCompleted(3, 6, event3, event4, event5)
 
@@ -172,7 +172,7 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
 
       actor ! readCompleted(2, 2)
 
-      expectNoMsg(duration)
+      expectNoMessage(duration)
       connection.expectMsg(subscribeTo)
 
       actor ! subscribeCompleted(5)
@@ -191,7 +191,7 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       actor ! readCompleted(0, 0)
 
       connection.expectMsg(subscribeTo)
-      expectNoMsg(duration)
+      expectNoMessage(duration)
 
       actor ! subscribeCompleted(1)
 
@@ -210,7 +210,7 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
         actor ! readCompleted(1, 1)
 
         connection.expectMsg(subscribeTo)
-        expectNoMsg(duration)
+        expectNoMessage(duration)
 
         actor ! subscribeCompleted(1)
 
@@ -226,7 +226,7 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       actor ! readCompleted(0, 0)
 
       connection.expectMsg(subscribeTo)
-      expectNoMsg(duration)
+      expectNoMessage(duration)
 
       actor ! subscribeCompleted(1)
 
@@ -238,7 +238,7 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       actor ! StreamEventAppeared(event1)
       expectEvent(event1)
 
-      expectNoMsg(duration)
+      expectNoMessage(duration)
 
       actor ! StreamEventAppeared(event2)
       actor ! StreamEventAppeared(event3)
@@ -270,7 +270,7 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       actor ! StreamEventAppeared(event5)
       expectEvent(event5)
       actor ! StreamEventAppeared(event4)
-      expectNoMsg(duration)
+      expectNoMessage(duration)
 
       override def position = Some(Position(1))
     }

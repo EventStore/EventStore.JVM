@@ -48,7 +48,7 @@ class PersistentSubscriptionITest extends TestConnection {
       actor ! Connect(streamId, groupName)
       val connected = expectMsgType[Connected]
       connected.subscriptionId shouldEqual s"${streamId.streamId}::$groupName"
-      expectNoMsg(1.seconds)
+      expectNoMessage(1.seconds)
     }
 
     "connect to stream with pending event" in new PsScope {
@@ -82,7 +82,7 @@ class PersistentSubscriptionITest extends TestConnection {
       actor ! Connect(stream, groupName)
       val connected = expectMsgType[Connected]
       connected.subscriptionId shouldEqual s"${stream.streamId}::$groupName"
-      expectNoMsg(1.seconds)
+      expectNoMessage(1.seconds)
     }
   }
 

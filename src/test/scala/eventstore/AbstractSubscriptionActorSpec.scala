@@ -23,8 +23,8 @@ abstract class AbstractSubscriptionActorSpec extends util.ActorSpec with Mockito
     def streamId: EventStream
 
     def expectNoActivity(): Unit = {
-      expectNoMsg(duration)
-      connection.expectNoMsg(duration)
+      expectNoMessage(duration)
+      connection.expectNoMessage(duration)
     }
 
     def streamEventAppeared(x: Event) = StreamEventAppeared(IndexedEvent(x, Position.Exact(x.number.value)))
@@ -41,8 +41,8 @@ abstract class AbstractSubscriptionActorSpec extends util.ActorSpec with Mockito
       expectMsg(failure)
       expectTerminated(actor)
       val duration = 1.seconds
-      expectNoMsg(duration)
-      connection.expectNoMsg(duration)
+      expectNoMessage(duration)
+      connection.expectNoMessage(duration)
     }
 
     def notHandled(x: NotHandled.Reason) = Failure(NotHandled(x))

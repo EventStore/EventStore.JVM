@@ -23,7 +23,7 @@ class AllStreamsPublisherSpec extends AbstractSubscriptionActorSpec {
     "subscribe if last position given" in new SubscriptionScope {
       connection expectMsg subscribeTo
       actor ! subscribeCompleted(0)
-      connection.expectNoMsg(duration)
+      connection.expectNoMessage(duration)
       actor ! StreamEventAppeared(event1)
       actor ! StreamEventAppeared(event0)
       actor ! StreamEventAppeared(event2)
@@ -52,7 +52,7 @@ class AllStreamsPublisherSpec extends AbstractSubscriptionActorSpec {
 
       actor ! readCompleted(3, 5, event0, event1, event2, event3, event4)
 
-      expectNoMsg(duration)
+      expectNoMessage(duration)
       connection expectMsg readEvents(5)
     }
 
@@ -61,7 +61,7 @@ class AllStreamsPublisherSpec extends AbstractSubscriptionActorSpec {
 
       actor ! readCompleted(0, 3, event0, event1, event2)
       expectEvent(event2)
-      expectNoMsg(duration)
+      expectNoMessage(duration)
 
       connection expectMsg readEvents(3)
 
@@ -110,7 +110,7 @@ class AllStreamsPublisherSpec extends AbstractSubscriptionActorSpec {
       connection expectMsg readEvents(2)
       actor ! readCompleted(2, 2)
 
-      expectNoMsg(duration)
+      expectNoMessage(duration)
       connection.expectMsg(subscribeTo)
 
       actor ! subscribeCompleted(4)
@@ -120,7 +120,7 @@ class AllStreamsPublisherSpec extends AbstractSubscriptionActorSpec {
       actor ! StreamEventAppeared(event2)
       actor ! StreamEventAppeared(event3)
       actor ! StreamEventAppeared(event4)
-      expectNoMsg(duration)
+      expectNoMessage(duration)
 
       actor ! readCompleted(2, 3, event1, event2)
       expectEvent(event2)
@@ -129,7 +129,7 @@ class AllStreamsPublisherSpec extends AbstractSubscriptionActorSpec {
 
       actor ! StreamEventAppeared(event5)
       actor ! StreamEventAppeared(event6)
-      expectNoMsg(duration)
+      expectNoMessage(duration)
 
       actor ! readCompleted(3, 6, event3, event4, event5)
 
@@ -175,7 +175,7 @@ class AllStreamsPublisherSpec extends AbstractSubscriptionActorSpec {
 
       actor ! readCompleted(2, 2)
 
-      expectNoMsg(duration)
+      expectNoMessage(duration)
       connection.expectMsg(subscribeTo)
 
       actor ! subscribeCompleted(5)
@@ -195,7 +195,7 @@ class AllStreamsPublisherSpec extends AbstractSubscriptionActorSpec {
       actor ! readCompleted(0, 0)
 
       connection.expectMsg(subscribeTo)
-      expectNoMsg(duration)
+      expectNoMessage(duration)
 
       actor ! subscribeCompleted(1)
 
@@ -212,7 +212,7 @@ class AllStreamsPublisherSpec extends AbstractSubscriptionActorSpec {
         actor ! readCompleted(1, 1)
 
         connection.expectMsg(subscribeTo)
-        expectNoMsg(duration)
+        expectNoMessage(duration)
 
         actor ! subscribeCompleted(1)
 
@@ -226,7 +226,7 @@ class AllStreamsPublisherSpec extends AbstractSubscriptionActorSpec {
       actor ! readCompleted(0, 0)
 
       connection.expectMsg(subscribeTo)
-      expectNoMsg(duration)
+      expectNoMessage(duration)
 
       actor ! subscribeCompleted(1)
 
@@ -236,7 +236,7 @@ class AllStreamsPublisherSpec extends AbstractSubscriptionActorSpec {
       actor ! StreamEventAppeared(event1)
       expectEvent(event1)
 
-      expectNoMsg(duration)
+      expectNoMessage(duration)
 
       actor ! StreamEventAppeared(event2)
       actor ! StreamEventAppeared(event3)
@@ -266,7 +266,7 @@ class AllStreamsPublisherSpec extends AbstractSubscriptionActorSpec {
       actor ! StreamEventAppeared(event5)
       expectEvent(event5)
       actor ! StreamEventAppeared(event4)
-      expectNoMsg(duration)
+      expectNoMessage(duration)
 
       override def position = Some(Position(1))
     }
@@ -430,7 +430,7 @@ class AllStreamsPublisherSpec extends AbstractSubscriptionActorSpec {
   "AllStreamsPublisher finite" should {
 
     "stop immediately if last position passed" in new FiniteSubscriptionScope {
-      connection.expectNoMsg(duration)
+      connection.expectNoMessage(duration)
       expectMsg(OnComplete)
       expectTerminated(actor)
 
@@ -508,8 +508,8 @@ class AllStreamsPublisherSpec extends AbstractSubscriptionActorSpec {
       expectMsg(OnError(failure))
       expectTerminated(actor)
       val duration = 1.seconds
-      expectNoMsg(duration)
-      connection.expectNoMsg(duration)
+      expectNoMessage(duration)
+      connection.expectNoMessage(duration)
     }
   }
 

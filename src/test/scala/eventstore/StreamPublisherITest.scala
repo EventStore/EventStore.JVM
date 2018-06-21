@@ -70,7 +70,7 @@ class StreamPublisherITest extends TestConnection {
       val src = source(Some(EventNumber.First)) map { _.data }
       src.runWith(TestSink.probe[EventData])
         .request(1)
-        .expectNoMsg(300.millis)
+        .expectNoMessage(300.millis)
     }
 
     "subscribe to truncated stream" in new Scope {

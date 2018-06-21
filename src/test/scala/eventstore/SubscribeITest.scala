@@ -61,7 +61,7 @@ class SubscribeITest extends TestConnection {
       indexedEvent.event must beLike {
         case Event.StreamDeleted() => ok
       }
-      expectNoMsg(1.second)
+      expectNoMessage(1.second)
     }
 
     "not catch linked events if resolveLinkTos = false" in new SubscribeScope {

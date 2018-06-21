@@ -159,8 +159,8 @@ class TransactionActorSpec extends ActorSpec {
 
     def expectNoMsgs(): Unit = {
       val duration = 200.millis
-      expectNoMsg(duration)
-      connection.expectNoMsg(duration)
+      expectNoMessage(duration)
+      connection.expectNoMessage(duration)
     }
 
     def startCompleted() = actor ! TransactionStartCompleted(transactionId)

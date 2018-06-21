@@ -184,7 +184,7 @@ class AllStreamsSourceSpec extends SourceSpec {
       expectEvent(event1)
 
       expectNoEvent()
-      //      expectNoMsg(duration)
+      //      expectNoMessage(duration)
 
       connection reply StreamEventAppeared(event2)
       connection reply StreamEventAppeared(event3)

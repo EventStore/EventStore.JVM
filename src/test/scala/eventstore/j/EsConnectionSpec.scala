@@ -235,7 +235,7 @@ class EsConnectionSpec extends util.ActorSpec {
       for {
         uc <- userCredentials
       } connection.continueTransaction(1234, uc)
-      expectNoMsg(1.second)
+      expectNoMessage(1.second)
     }
 
     "create persistent subscription" in new PsScope {

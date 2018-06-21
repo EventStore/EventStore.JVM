@@ -135,7 +135,7 @@ class SubscribeToStreamCatchingUpITest extends TestConnection {
   }
 
   private trait SubscribeCatchingUpScope extends TestConnectionScope {
-    def expectNoEvents() = expectNoMsg(1.second)
+    def expectNoEvents() = expectNoMessage(1.second)
 
     def newSubscription(
       fromNumberExclusive: Option[EventNumber.Exact] = None,
