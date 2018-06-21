@@ -55,7 +55,7 @@ libraryDependencies ++= Seq(
   "io.spray" %%  "spray-json" % "1.3.4",
   "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
   "org.apache.directory.studio" % "org.apache.commons.codec" % "1.8",
-  "joda-time" % "joda-time" % "2.10.",
+  "joda-time" % "joda-time" % "2.10",
   "org.joda" % "joda-convert" % "2.1",
   "org.mockito" % "mockito-all" % "1.10.19" % Test,
   "org.specs2" %% "specs2-core" % Specs2Version % Test,
