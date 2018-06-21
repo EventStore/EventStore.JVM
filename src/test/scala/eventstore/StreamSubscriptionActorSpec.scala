@@ -356,10 +356,42 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       actor ! subscribeCompleted(1)
       actor ! streamEventAppeared(event1)
       actor ! streamEventAppeared(event2)
+      connection expectMsg readEvents(0)
       actor ! readCompleted(3, false, event0, event1, event2)
       expectEvent(event1)
       expectMsg(LiveProcessingStarted)
       expectEvent(event2)
+
+      override def eventNumber = Some(EventNumber(0))
+    }
+
+    "resubscribe from different position while catching up" in new SubscriptionScope {
+      connection expectMsg readEvents(0)
+      actor ! readCompleted(1, endOfStream = true, event0)
+
+      connection expectMsg subscribeTo
+      actor ! subscribeCompleted(2)
+      actor ! streamEventAppeared(event3)
+
+      connection expectMsg readEvents(1)
+      actor ! readCompleted(3, false, event1, event2)
+
+      actor ! subscribeCompleted(5)
+      actor ! streamEventAppeared(event6)
+
+      connection expectMsg readEvents(3)
+      actor ! readCompleted(5, false, event3, event4)
+
+      connection expectMsg readEvents(5)
+      actor ! readCompleted(7, false, event5, event6)
+
+      expectEvent(event1)
+      expectEvent(event2)
+      expectEvent(event3)
+      expectEvent(event4)
+      expectEvent(event5)
+      expectMsg(LiveProcessingStarted)
+      expectEvent(event6)
 
       override def eventNumber = Some(EventNumber(0))
     }
