@@ -1,6 +1,7 @@
 package eventstore
 package j
 
+import akka.japi.function
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
@@ -189,7 +190,7 @@ class EsConnectionITest extends eventstore.util.ActorSpec {
       val source = connection.streamSource(streamId, null, false, null, false)
       await_(connection.writeEvents(streamId, null, events, null))
       source
-        .map(_.data)
+        .map(new function.Function[Event, EventData] { def apply(event: Event) = event.data } )
         .runWith(TestSink.probe[EventData], materializer)
         .request(1)
         .expectNext(eventData)
