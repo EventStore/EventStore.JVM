@@ -412,50 +412,63 @@ EventStoreExtension(system).actor ! ReadEvent(EventStream.Id("stream"))
 EventStoreExtension(system).connection(ReadEvent(EventStream.Id("stream")))
 ```
 
-### Reactive Streams
+### Streams
 
-Client provides ability to use generic [Reactive Streams](http://www.reactive-streams.org) `Publisher` interface for EventStore subscriptions.
-You can find two methods `allStreamsPublisher` and `streamPublisher` available in Java and Scala APIs.
+The client provides Akka Streams interface for EventStore subscriptions.
+You can find two methods `allStreamsSource` and `streamSource` available in Java and Scala APIs.
+
 Here is a short example on how to use it:
-
-```scala
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-import akka.stream.scaladsl._
-import eventstore.EventStoreExtension
-
-import scala.concurrent.duration._
-
-object MessagesPerSecond extends App {
-  implicit val system = ActorSystem()
-  implicit val materializer = ActorMaterializer()
-  val connection = EventStoreExtension(system).connection
-  val publisher = connection.allStreamsPublisher()
-
-  Source.fromPublisher(publisher)
-    .groupedWithin(Int.MaxValue, 1.second)
-    .runForeach { xs => println(f"${xs.size.toDouble / 1000}%2.1fk m/s") }
-}
-
-```
 
 ### List all streams
 
 ```scala
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.Source
-import eventstore.{EventStoreExtension, EventStream}
+import eventstore.{ EventStoreExtension, EventStream }
 
 object ListAllStreamsExample extends App {
   implicit val system = ActorSystem()
   import system.dispatcher
   implicit val materializer = ActorMaterializer()
   val connection = EventStoreExtension(system).connection
-  val publisher = connection.streamPublisher(EventStream.System.`$streams`, infinite = false, resolveLinkTos = true)
-  Source.fromPublisher(publisher)
+  val source = connection.streamSource(EventStream.System.`$streams`, infinite = false, resolveLinkTos = true)
+
+  source
     .runForeach { x => println(x.streamId.streamId) }
-    .onComplete{ _ => system.terminate()}
+    .onComplete { _ => system.terminate() }
+}
+```
+
+### Reactive Streams
+
+You can use generic [Reactive Streams](http://www.reactive-streams.org) `Publisher` interface for EventStore subscriptions, 
+by converting an Akka Stream to Publisher. See: [Integrating Akka Streams with Reactive Streams](https://doc.akka.io/docs/akka/2.5.3/scala/stream/stream-integrations.html#integrating-with-reactive-streams)
+
+Here is a short example on how to accomplish that:
+
+```scala
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl._
+import eventstore.EventStoreExtension
+import org.reactivestreams.{Publisher, Subscriber}
+import scala.concurrent.duration._
+
+object MessagesPerSecondReactiveStreams extends App {
+  implicit val system = ActorSystem()
+  implicit val materializer = ActorMaterializer()
+  val connection = EventStoreExtension(system).connection
+
+  val publisher: Publisher[String] = connection.allStreamsSource()
+    .groupedWithin(Int.MaxValue, 1.second)
+    .map { xs => f"${xs.size.toDouble / 1000}%2.1fk m/s" }
+    .runWith(Sink.asPublisher(fanout = false))
+
+  val subscriber: Subscriber[String] = Source.asSubscriber[String]
+    .to(Sink.foreach(println))
+    .run()
+
+  publisher.subscribe(subscriber)
 }
 ```
 

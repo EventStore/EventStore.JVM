@@ -307,6 +307,7 @@ class EsConnectionImpl(
     connection.getStreamMetadata(EventStream.Id(stream), Option(credentials)).map(_.value.toArray)
   }
 
+  @deprecated("Use `streamSource(..).runWith(Sink.asPublisher(..))` instead.", since = "5.0.8")
   def streamPublisher(
     stream:                   String,
     fromEventNumberExclusive: EventNumber,
@@ -342,6 +343,7 @@ class EsConnectionImpl(
 
   }
 
+  @deprecated("Use `allStreamsSource(..).runWith(Sink.asPublisher(..))` instead.", since = "5.0.8")
   def allStreamsPublisher(
     fromPositionExclusive: Position,
     resolveLinkTos:        Boolean,
