@@ -5,8 +5,8 @@ import scala.concurrent.{ ExecutionContext, Future }
 import akka.NotUsed
 import akka.actor._
 import akka.pattern.ask
+import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
-import akka.stream.actor.ActorPublisher
 import akka.util.Timeout
 import org.reactivestreams.Publisher
 import eventstore.tcp.ConnectionActor
@@ -24,6 +24,7 @@ class EsConnection(
     factory:    ActorRefFactory,
     settings:   Settings        = Settings.Default
 ) {
+  private val materializer = ActorMaterializer()(factory)
 
   implicit val timeout = Timeout(settings.operationTimeout)
 
@@ -266,6 +267,7 @@ class EsConnection(
    * @param readBatchSize       Number of events to be retrieved by client as single message
    * @return A [[org.reactivestreams.Publisher]] representing stream
    */
+  @deprecated("Use `streamSource(..).runWith(Sink.asPublisher(..))` instead.", since = "5.0.8")
   def streamPublisher(
     streamId:            EventStream.Id,
     fromNumberExclusive: Option[EventNumber]     = None,
@@ -275,16 +277,14 @@ class EsConnection(
     readBatchSize:       Int                     = settings.readBatchSize
   ): Publisher[Event] = {
 
-    val props = StreamPublisher.props(
-      connection = connection,
-      streamId = streamId,
-      fromNumberExclusive = fromNumberExclusive,
-      credentials = credentials,
-      settings = settings.copy(resolveLinkTos = resolveLinkTos, readBatchSize = readBatchSize),
-      infinite = infinite
-    )
-    val actor = factory actorOf props
-    ActorPublisher(actor)
+    streamSource(
+      streamId,
+      fromNumberExclusive,
+      resolveLinkTos,
+      credentials,
+      infinite,
+      readBatchSize
+    ).runWith(Sink.asPublisher(fanout = true))(materializer)
   }
 
   /**
@@ -344,6 +344,7 @@ class EsConnection(
    * @param readBatchSize         Number of events to be retrieved by client as single message
    * @return A [[org.reactivestreams.Publisher]] representing all streams
    */
+  @deprecated("Use `allStreamsSource(..).runWith(Sink.asPublisher(..))` instead.", since = "5.0.8")
   def allStreamsPublisher(
     resolveLinkTos:        Boolean                 = settings.resolveLinkTos,
     fromPositionExclusive: Option[Position]        = None,
@@ -352,16 +353,13 @@ class EsConnection(
     readBatchSize:         Int                     = settings.readBatchSize
   ): Publisher[IndexedEvent] = {
 
-    val props = AllStreamsPublisher.props(
-      connection = connection,
-      fromPositionExclusive = fromPositionExclusive,
-      credentials = credentials,
-      settings = settings.copy(resolveLinkTos = resolveLinkTos, readBatchSize = readBatchSize),
-      infinite = infinite
-    )
-
-    val actor = factory actorOf props
-    ActorPublisher(actor)
+    allStreamsSource(
+      resolveLinkTos,
+      fromPositionExclusive,
+      credentials,
+      infinite,
+      readBatchSize
+    ).runWith(Sink.asPublisher(fanout = true))(materializer)
   }
 
   /**
