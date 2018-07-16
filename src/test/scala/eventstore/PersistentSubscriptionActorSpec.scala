@@ -34,6 +34,19 @@ class PersistentSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       expectMsg(LiveProcessingStarted)
     }
 
+    "should send manual ack when catching up" in new ManualAckPersistentSubscriptionActorScope {
+      val event: Event = newEvent(1)
+      connection.expectMsgType[Connect]
+      actor ! connected(Some(EventNumber.Exact(50)))
+      actor ! eventAppeared(event)
+
+      expectMsg(event)
+      expectNoMessage()
+
+      actor ! PersistentSubscriptionActor.ManualAck(event.data.eventId)
+      expectAck()
+    }
+
     "should send manual ack" in new ManualAckPersistentSubscriptionActorScope {
       val event: Event = newEvent(1)
       connection.expectMsgType[Connect]
@@ -46,6 +59,19 @@ class PersistentSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
 
       actor ! PersistentSubscriptionActor.ManualAck(event.data.eventId)
       expectAck()
+    }
+
+    "should send manual nak when catching up" in new ManualNakPersistentSubscriptionActorScope {
+      val event: Event = newEvent(1)
+      connection.expectMsgType[Connect]
+      actor ! connected(Some(EventNumber.Exact(50)))
+      actor ! eventAppeared(event)
+
+      expectMsg(event)
+      expectNoMessage()
+
+      actor ! PersistentSubscriptionActor.ManualNak(event.data.eventId)
+      expectNak()
     }
 
     "should send manual nak" in new ManualNakPersistentSubscriptionActorScope {
