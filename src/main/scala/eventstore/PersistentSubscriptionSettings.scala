@@ -48,7 +48,7 @@ object PersistentSubscriptionSettings {
 
       def startFrom = {
         val path = "start-from"
-        try EventNumber(conf getInt path) catch {
+        try EventNumber(conf getLong path) catch {
           case e: ConfigException.WrongType => conf getString path match {
             case "last" | "current" => EventNumber.Last
             case "first"            => EventNumber.First

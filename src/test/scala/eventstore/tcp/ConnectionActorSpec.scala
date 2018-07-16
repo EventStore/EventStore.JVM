@@ -33,7 +33,8 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     }
 
     "receive PackIn while connected" in new TestScope {
-      sendConnected()
+
+      connectedAndIdentified()
 
       client ! Authenticate
       val correlationId = connection.expectMsgPF() {
@@ -41,14 +42,16 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       }
 
       client ! PackIn(Success(Authenticated))
-      expectNoMsg(duration)
+      expectNoMessage(duration)
 
       client ! PackIn(Success(Authenticated), correlationId)
       expectMsg(Authenticated)
     }
 
     "receive PackIn while reconnecting" in new TestScope {
-      sendConnected()
+
+      connectedAndIdentified()
+
       client ! Authenticate
       val correlationId = connection.expectMsgPF() {
         case PackOut(Authenticate, x, `credentials`) => x
@@ -57,10 +60,19 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       expectConnect()
 
       client ! PackIn(Success(Authenticated))
-      expectNoMsg(duration)
+      expectNoMessage(duration)
 
       client ! PackIn(Success(Authenticated), correlationId)
       expectMsg(Authenticated)
+    }
+
+    "identify client version after connected" in new TestScope {
+
+      sendConnected()
+
+      connection.expectMsgPF() {
+        case PackOut(IdentifyClient(1, _), id, credentials) ⇒ client ! ClientIdentified
+      }
     }
 
     "not reconnect if never connected before" in new TestScope {
@@ -70,10 +82,10 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     }
 
     "not reconnect when connection lost if maxReconnections == 0" in new TcpScope {
-      val (_, tcpConnection) = connect(settings.copy(maxReconnections = 0))
+      val (c, tcpConnection) = connect(settings.copy(maxReconnections = 0))
       tcpConnection ! Tcp.Abort
       expectMsg(Tcp.Aborted)
-      expectNoMsg()
+      expectNoMessage()
     }
 
     "reconnect when connection lost" in new TcpScope {
@@ -84,7 +96,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     }
 
     "reconnect when connection actor died" in new TestScope {
-      sendConnected()
+      connectedAndIdentified()
       system stop connection.ref
       expectTerminated(connection.ref)
       verifyReconnections(settings.maxReconnections)
@@ -94,7 +106,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     }
 
     "reconnect when pipeline actor died" in new TestScope {
-      sendConnected()
+      connectedAndIdentified()
       system stop connection.ref
       expectTerminated(connection.ref)
       verifyReconnections(settings.maxReconnections)
@@ -104,7 +116,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     }
 
     "keep trying to reconnect for maxReconnections times" in new TestScope {
-      sendConnected()
+      connectedAndIdentified()
       client ! tcpException
       verifyReconnections(settings.maxReconnections)
       expectNoMsgs()
@@ -113,9 +125,9 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     }
 
     "use reconnectionDelay from settings" in new TestScope {
-      sendConnected()
+      connectedAndIdentified()
       client ! tcpException
-      tcp.expectNoMsg(200.millis)
+      tcp.expectNoMessage(100.millis)
       verifyReconnections(settings.maxReconnections)
 
       override def settings = Settings(maxReconnections = 3, reconnectionDelayMin = 500.millis)
@@ -171,19 +183,19 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
 
     "stash Out message while connecting for the first time" in new TestScope {
       client ! Ping
-      sendConnected()
+      connectedAndIdentified()
       connection.expectMsgPF() { case PackOut(Ping, _, _) => }
     }
 
     "stash PackOut message while connecting for the first time" in new TestScope {
       val pack = PackOut(Ping)
       client ! pack
-      sendConnected()
+      connectedAndIdentified()
       connection.expectMsg(pack)
     }
 
     "reply with OperationTimedOut if no reply received" in new OperationTimedOutScope {
-      sendConnected()
+      connectedAndIdentified()
       val ping = PackOut(Ping, id, credentials)
       client ! ping
       client ! PackIn(Try(Pong))
@@ -191,10 +203,10 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       client ! Authenticate
       client ! PackIn(Try(Authenticated))
 
-      expectNoMsg(100.millis)
+      expectNoMessage(100.millis)
       expectOperationTimedOut(ping, Authenticate)
       client ! PackIn(Try(Pong), id)
-      expectNoMsg(100.millis)
+      expectNoMessage(100.millis)
     }
 
     "reply with OperationTimedOut if not connected within timeout" in new OperationTimedOutScope {
@@ -205,14 +217,14 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       client ! Authenticate
       client ! PackIn(Try(Authenticated))
 
-      expectNoMsg(100.millis)
+      expectNoMessage(100.millis)
       expectOperationTimedOut(ping, Authenticate)
       client ! PackIn(Try(Pong), id)
-      expectNoMsg(100.millis)
+      expectNoMessage(100.millis)
     }
 
     "reply with OperationTimedOut if not reconnected within timeout" in new OperationTimedOutScope {
-      sendConnected()
+      connectedAndIdentified()
       client ! tcpException
 
       val ping = PackOut(Ping, id, credentials)
@@ -224,14 +236,14 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
 
       client ! tcpException
 
-      expectNoMsg(100.millis)
+      expectNoMessage(100.millis)
       expectOperationTimedOut(ping, Authenticate)
       client ! PackIn(Try(Pong), id)
-      expectNoMsg(100.millis)
+      expectNoMessage(100.millis)
     }
 
     "reply with OperationTimedOut if no reply received" in new OperationTimedOutScope {
-      sendConnected()
+      connectedAndIdentified()
       val ping = PackOut(Ping, id, credentials)
       client ! ping
       client ! PackIn(Try(Pong))
@@ -241,10 +253,10 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
 
       client ! tcpException
 
-      expectNoMsg(100.millis)
+      expectNoMessage(100.millis)
       expectOperationTimedOut(ping, Authenticate)
       client ! PackIn(Try(Pong), id)
-      expectNoMsg(100.millis)
+      expectNoMessage(100.millis)
     }
 
     "reply with OperationTimedOut if not subscribed within timeout" in new OperationTimedOutScope {
@@ -252,31 +264,31 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       client ! subscribeTo
       client ! PackIn(Try(SubscribeToAllCompleted(0)))
 
-      expectNoMsg(100.millis)
+      expectNoMessage(100.millis)
       expectOperationTimedOut(subscribeTo)
 
       client ! PackIn(Try(SubscribeToAllCompleted(0)), id)
 
-      expectNoMsg(100.millis)
+      expectNoMessage(100.millis)
     }
 
     "reply with OperationTimedOut if not unsubscribed within timeout" in new OperationTimedOutScope {
-      sendConnected()
+      connectedAndIdentified()
       val subscribeTo = PackOut(SubscribeTo(EventStream.All), id, credentials)
       client ! subscribeTo
       client ! PackIn(Try(SubscribeToAllCompleted(0)))
       client ! PackIn(Try(SubscribeToAllCompleted(0)), id)
 
       expectMsg(SubscribeToAllCompleted(0))
-      expectNoMsg(operationTimeout + 100.millis)
+      expectNoMessage(operationTimeout + 100.millis)
 
       client ! PackOut(Unsubscribe, id, credentials)
-      expectNoMsg(100.millis)
+      expectNoMessage(100.millis)
       expectOperationTimedOut(Unsubscribe)
 
       client ! PackIn(Try(Unsubscribed))
       client ! PackIn(Try(Unsubscribed), id)
-      expectNoMsg(100.millis)
+      expectNoMessage(100.millis)
     }
 
     "bind actor to correlationId temporarily" in new TcpScope {
@@ -290,7 +302,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       tcpConnection ! write(PackOut(Pong, correlationId))
       probe expectMsg Pong
       tcpConnection ! write(PackOut(Pong, correlationId))
-      probe.expectNoMsg(1.second)
+      probe.expectNoMessage(1.second)
     }
 
     "unbind actor when stopped" in new TcpScope {
@@ -319,8 +331,8 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       }
 
       tcpConnection ! write(res)
-      probe expectNoMsg 1.second
-      deathProbe expectNoMsg 1.second
+      probe expectNoMessage 1.second
+      deathProbe expectNoMessage 1.second
     }
 
     "unsubscribe if not yet subscribed and unsubscribe received" in new SubscriptionScope {
@@ -329,15 +341,15 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       connection.expectMsg(PackOut(Unsubscribe, id, credentials))
       client ! PackIn(Try(Unsubscribed), id)
       expectMsg(Unsubscribed)
-      expectNoMsg(duration)
+      expectNoMessage(duration)
     }
 
     "not unsubscribe if not yet subscribed and client died" in new TestScope {
       val probe = TestProbe()
       client.tell(SubscribeTo(EventStream.All), probe.ref)
       system stop probe.ref
-      sendConnected()
-      expectNoMsg(duration)
+      connectedAndIdentified()
+      expectNoMessage(duration)
     }
 
     "unsubscribe if client died" in new SubscriptionScope {
@@ -349,7 +361,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     "unsubscribe if not subscribed and client died" in new SubscriptionScope {
       system stop testActor
       connection.expectMsg(PackOut(Unsubscribe, id, credentials))
-      expectNoMsg()
+      expectNoMessage()
     }
 
     "not unsubscribe twice" in new SubscriptionScope {
@@ -359,7 +371,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
         system stop probe.ref
         client.tell(Unsubscribe, probe.ref)
         connection.expectMsg(PackOut(Unsubscribe, id, uc))
-        expectNoMsg(duration)
+        expectNoMessage(duration)
       }
     }
 
@@ -368,14 +380,14 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       expectMsg(subscribeCompleted)
       system stop testActor
       connection expectMsg PackOut(Unsubscribe, id, credentials)
-      connection.expectNoMsg(duration)
+      connection.expectNoMessage(duration)
     }
 
     "re-subscribe after reconnected" in new SubscriptionScope {
       client ! PackIn(Try(subscribeCompleted), id)
       client ! tcpException
       expectConnect()
-      sendConnected()
+      connectedAndIdentified()
       connection.expectMsg(PackOut(subscribeTo, id, credentials))
     }
 
@@ -387,8 +399,8 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       expectConnect()
       client ! Unsubscribe
       expectMsg(Unsubscribed)
-      sendConnected()
-      connection.expectNoMsg(duration)
+      connectedAndIdentified()
+      connection.expectNoMessage(duration)
     }
 
     "ignore subscribed while reconnecting" in new SubscriptionScope {
@@ -397,8 +409,8 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       val completed = subscribeCompleted
       val completedEvent = PackIn(Try(completed), id)
       client ! completedEvent
-      expectNoMsg(duration)
-      sendConnected()
+      expectNoMessage(duration)
+      connectedAndIdentified()
       connection expectMsg PackOut(subscribeTo, id, credentials)
       client ! completedEvent
       expectMsg(completed)
@@ -413,12 +425,12 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       client ! tcpException
       expectConnect()
       expectMsg(Unsubscribed)
-      sendConnected()
-      connection.expectNoMsg(duration)
+      connectedAndIdentified()
+      connection.expectNoMessage(duration)
     }
 
     "unsubscribe if event appeared and no bound operation found" in new TestScope {
-      sendConnected()
+      connectedAndIdentified()
       val id = randomUuid
       val eventRecord = EventRecord(EventStream.Id("streamId"), EventNumber.First, EventData("test"))
       val indexedEvent = IndexedEvent(eventRecord, Position.First)
@@ -447,7 +459,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     }
 
     "unsubscribe when received SubscribeCompleted but client not found" in new TestScope {
-      sendConnected()
+      connectedAndIdentified()
       forall(List(SubscribeToAllCompleted(0), SubscribeToStreamCompleted(0))) {
         in =>
           val pack = PackIn(Try(in))
@@ -458,26 +470,26 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     }
 
     "retry operation after reconnected" in new TestScope {
-      sendConnected()
+      connectedAndIdentified()
       client ! Authenticate
       val cmd = connection.expectMsgPF() {
         case x @ PackOut(Authenticate, _, `credentials`) => x
       }
       client ! tcpException
       expectConnect()
-      sendConnected()
+      connectedAndIdentified()
 
       connection expectMsg cmd
 
       client ! tcpException
       expectConnect()
-      sendConnected()
+      connectedAndIdentified()
 
       connection expectMsg cmd
     }
 
     "retry operation if TooBusy" in new TestScope {
-      sendConnected()
+      connectedAndIdentified()
       client ! Authenticate
       val (cmd, id) = connection.expectMsgPF() {
         case x @ PackOut(Authenticate, id, `credentials`) => (x, id)
@@ -488,7 +500,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     }
 
     "retry operation if NotReady" in new TestScope {
-      sendConnected()
+      connectedAndIdentified()
       client ! Authenticate
       val (cmd, id) = connection.expectMsgPF() {
         case x @ PackOut(Authenticate, id, `credentials`) => (x, id)
@@ -499,7 +511,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     }
 
     "retry operation after connected but NotReady" in new TestScope {
-      sendConnected()
+      connectedAndIdentified()
       client ! Authenticate
 
       val (cmd, id) = connection.expectMsgPF() {
@@ -510,7 +522,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     }
 
     "keep retrying until max retries reached" in new TestScope {
-      sendConnected()
+      connectedAndIdentified()
       client ! Authenticate
       val (cmd, id) = connection.expectMsgPF() {
         case x @ PackOut(Authenticate, id, `credentials`) => (x, id)
@@ -530,7 +542,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     }
 
     "keep retrying subscription until max retries reached" in new TestScope {
-      sendConnected()
+      connectedAndIdentified()
       client ! SubscribeTo(EventStream.Id("stream"))
       val (cmd, id) = connection.expectMsgPF() {
         case x @ PackOut(subscribeTo, id, `credentials`) => (x, id)
@@ -551,7 +563,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     }
 
     "should process messages from single client in parallel" in new TestScope {
-      sendConnected()
+      connectedAndIdentified()
 
       def tell(msg: Out) = {
         client ! msg
@@ -571,7 +583,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     }
 
     "process messages from different clients in parallel" in new TestScope {
-      sendConnected()
+      connectedAndIdentified()
 
       def tell(msg: Out, probe: TestProbe) = {
         client.tell(msg, probe.ref)
@@ -625,7 +637,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       discoverer expectMsg GetAddress()
       client ! Address(address)
       tcp expectMsg connect(address)
-      sendConnected(address)
+      connectedAndIdentified(address)
 
       client ! Address(address)
       expectNoMsgs()
@@ -635,7 +647,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       discoverer expectMsg GetAddress()
       client ! Address(address)
       tcp expectMsg connect(address)
-      sendConnected(address)
+      connectedAndIdentified(address)
 
       val notMaster = NotHandled(NotMaster(MasterInfo(address, new InetSocketAddress(0))))
       client ! PackIn(Failure(notMaster))
@@ -665,13 +677,13 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     }
 
     "ignore Disconnected" in new TestScope {
-      sendConnected()
+      connectedAndIdentified()
       client ! Disconnected(new InetSocketAddress(0))
       expectNoMsgs()
     }
 
     "handle Disconnect" in new TestScope {
-      sendConnected()
+      connectedAndIdentified()
       client ! Disconnected(settings.address)
       expectConnect()
     }
@@ -684,14 +696,14 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     }
 
     "automatically reply on Ping" in new TestScope {
-      sendConnected()
+      connectedAndIdentified()
       val ping = PackIn(Ping)
       client ! ping
       connection.expectMsg(PackOut(Pong, ping.correlationId))
     }
 
     "automatically reply on HeartbeatRequest" in new TestScope {
-      sendConnected()
+      connectedAndIdentified()
       val heartbeatRequest = PackIn(HeartbeatRequest)
       client ! heartbeatRequest
       connection.expectMsg(PackOut(HeartbeatResponse, heartbeatRequest.correlationId))
@@ -715,6 +727,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     def connect(settings: Settings = settings): (TestActorRef[ConnectionActor], ActorRef) = {
       val connection = newConnection(settings)
       val tcpConnection = newTcpConnection()
+      receiveN(1) // IdentifyClient (no reader as it used just used for Out to ES)
       expectPack.message mustEqual Success(HeartbeatRequest)
       connection -> tcpConnection
     }
@@ -808,7 +821,7 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
     val subscribeTo = SubscribeTo(stream)
     val subscribeCompleted = SubscribeToStreamCompleted(0)
 
-    sendConnected()
+    connectedAndIdentified()
     client ! subscribeTo
     val id = connection.expectMsgPF() { case PackOut(`subscribeTo`, id, `credentials`) => id }
 
@@ -852,10 +865,17 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
       client.tell(ConnectionActor.Connected(address), connection.ref)
     }
 
+    def connectedAndIdentified(address: InetSocketAddress = settings.address): Unit = {
+      sendConnected(address)
+      connection.expectMsgPF() {
+        case PackOut(IdentifyClient(1, _), _, _) ⇒ client ! ClientIdentified
+      }
+    }
+
     def expectNoMsgs(): Unit = {
-      tcp.expectNoMsg(duration)
-      connection.expectNoMsg(duration)
-      expectNoMsg(duration)
+      tcp.expectNoMessage(duration)
+      connection.expectNoMessage(duration)
+      expectNoMessage(duration)
     }
 
     def expectTerminated(): Unit = {

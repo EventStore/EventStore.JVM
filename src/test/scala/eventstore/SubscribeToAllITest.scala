@@ -16,7 +16,7 @@ class SubscribeToAllITest extends TestConnection {
 
       clients.foreach {
         case (client, commitPosition) =>
-          val indexedEvent = expectStreamEventAppeared(client)
+          val indexedEvent = expectNonSystemStreamEventAppeared(client)
           indexedEvent.position.commitPosition must >(commitPosition)
           val event = indexedEvent.event
           event.number mustEqual EventNumber(1)
@@ -27,10 +27,10 @@ class SubscribeToAllITest extends TestConnection {
     "catch created and deleted events as well" in new SubscribeToAll {
       val lastCommitPosition = subscribeToAll()
       appendEventToCreateStream()
-      expectStreamEventAppeared().event.number mustEqual EventNumber.First
+      expectNonSystemStreamEventAppeared().event.number mustEqual EventNumber.First
       deleteStream()
 
-      val indexedEvent = expectStreamEventAppeared()
+      val indexedEvent = expectNonSystemStreamEventAppeared()
       indexedEvent.position.commitPosition must >(lastCommitPosition)
       indexedEvent.event must beLike {
         case Event.StreamDeleted() => ok
@@ -40,17 +40,17 @@ class SubscribeToAllITest extends TestConnection {
     "not catch linked events if resolveLinkTos = false" in new SubscribeToAll {
       subscribeToAll(resolveLinkTos = false)
       val (linked, link) = linkedAndLink()
-      expectStreamEventAppeared().event mustEqual linked
-      expectStreamEventAppeared()
-      expectStreamEventAppeared().event mustEqual link
+      expectNonSystemStreamEventAppeared().event mustEqual linked
+      expectNonSystemStreamEventAppeared()
+      expectNonSystemStreamEventAppeared().event mustEqual link
     }
 
     "catch linked events if resolveLinkTos = true" in new SubscribeToAll {
       subscribeToAll(resolveLinkTos = true)
       val (linked, link) = linkedAndLink()
-      expectStreamEventAppeared().event mustEqual linked
-      expectStreamEventAppeared()
-      expectStreamEventAppeared().event mustEqual ResolvedEvent(linked, link)
+      expectNonSystemStreamEventAppeared().event mustEqual linked
+      expectNonSystemStreamEventAppeared()
+      expectNonSystemStreamEventAppeared().event mustEqual ResolvedEvent(linked, link)
     }
   }
 

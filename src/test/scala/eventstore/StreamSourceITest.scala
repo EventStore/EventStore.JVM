@@ -1,15 +1,13 @@
 package eventstore
 
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
-
 import scala.concurrent.duration._
 
-class StreamPublisherITest extends TestConnection {
+class StreamSourceITest extends TestConnection {
   implicit val materializer = ActorMaterializer()
 
-  "StreamPublisher" should {
+  "StreamSource" should {
     "subscribe to stream" in new Scope {
       val events = appendMany(3)
       val src = source().map { _.data }
@@ -28,17 +26,17 @@ class StreamPublisherITest extends TestConnection {
 
     "subscribe to non-existing stream" in new Scope {
       val src = source().map { _.data }
+      val probe = src.runWith(TestSink.probe[EventData])
       val events = appendMany(3)
-      src.runWith(TestSink.probe[EventData])
-        .request(events.size.toLong)
+      probe.request(events.size.toLong)
         .expectNextN(events)
     }
 
     "subscribe to non-existing stream from number" in new Scope {
       val src = source(Some(EventNumber.First)).map { _.data }
+      val probe = src.runWith(TestSink.probe[EventData])
       val events = appendMany(3).drop(1)
-      src.runWith(TestSink.probe[EventData])
-        .request(events.size.toLong)
+      probe.request(events.size.toLong)
         .expectNextN(events)
     }
 
@@ -70,7 +68,7 @@ class StreamPublisherITest extends TestConnection {
       val src = source(Some(EventNumber.First)) map { _.data }
       src.runWith(TestSink.probe[EventData])
         .request(1)
-        .expectNoMsg(300.millis)
+        .expectNoMessage(300.millis)
     }
 
     "subscribe to truncated stream" in new Scope {
@@ -95,7 +93,7 @@ class StreamPublisherITest extends TestConnection {
     }
   }
 
-  "StreamPublisher finite" should {
+  "StreamSource finite" should {
     "subscribe to stream" in new Scope {
       val events = appendMany(3)
       val src = source(infinite = false).map { _.data }
@@ -193,7 +191,7 @@ class StreamPublisherITest extends TestConnection {
     val connection = new EsConnection(actor, system)
 
     def source(eventNumber: Option[EventNumber] = None, infinite: Boolean = true) = {
-      Source.fromPublisher(connection.streamPublisher(streamId, eventNumber, infinite = infinite, readBatchSize = 10))
+      connection.streamSource(streamId, eventNumber, infinite = infinite, readBatchSize = 10)
     }
   }
 }

@@ -11,7 +11,7 @@ class TransactionStartBuilder(streamId: String) extends Builder[TransactionStart
 
   override def expectNoStream: TransactionStartBuilder = super.expectNoStream
   override def expectAnyVersion: TransactionStartBuilder = super.expectAnyVersion
-  override def expectVersion(x: Int): TransactionStartBuilder = super.expectVersion(x)
+  override def expectVersion(x: Long): TransactionStartBuilder = super.expectVersion(x)
   override def expectVersion(x: ExpectedVersion): TransactionStartBuilder = super.expectVersion(x)
 
   override def performOnAnyNode: TransactionStartBuilder = super.performOnAnyNode

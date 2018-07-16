@@ -11,7 +11,7 @@ object EventNumber {
     case ReadDirection.Backward => Last
   }
 
-  def apply(eventNumber: Int): EventNumber = if (eventNumber < 0) Last else Exact(eventNumber)
+  def apply(eventNumber: Long): EventNumber = if (eventNumber < 0) Last else Exact(eventNumber)
 
   @SerialVersionUID(1L) case object Last extends EventNumber {
     def compare(that: EventNumber) = that match {
@@ -22,7 +22,7 @@ object EventNumber {
     override def toString = "EventNumber.Last"
   }
 
-  @SerialVersionUID(1L) case class Exact(value: Int) extends EventNumber {
+  @SerialVersionUID(1L) case class Exact(value: Long) extends EventNumber {
     require(value >= 0, s"event number must be >= 0, but is $value")
 
     def compare(that: EventNumber) = that match {
@@ -40,7 +40,7 @@ object EventNumber {
 
     def apply(expectedVersion: ExpectedVersion.Exact): Exact = Exact(expectedVersion.value)
 
-    def opt(proto: Int): Option[EventNumber.Exact] = if (proto >= 0) Some(Exact(proto)) else None
+    def opt(proto: Long): Option[EventNumber.Exact] = if (proto >= 0) Some(Exact(proto)) else None
   }
 
   @SerialVersionUID(1L) case class Range(start: Exact, end: Exact) {
@@ -52,11 +52,11 @@ object EventNumber {
   object Range {
     def apply(number: Exact): Range = Range(number, number)
 
-    def apply(start: Int, end: Int): Range = Range(Exact(start), Exact(end))
+    def apply(start: Long, end: Long): Range = Range(Exact(start), Exact(end))
 
-    def apply(start: Int): Range = Range(Exact(start))
+    def apply(start: Long): Range = Range(Exact(start))
 
-    def opt(first: Int, last: Int): Option[Range] = {
+    def opt(first: Long, last: Long): Option[Range] = {
       if (first > last) None
       else for {
         f <- Exact.opt(first)

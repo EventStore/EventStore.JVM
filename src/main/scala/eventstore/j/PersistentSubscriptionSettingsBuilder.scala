@@ -35,7 +35,7 @@ class PersistentSubscriptionSettingsBuilder
     _startFrom = x
   }
 
-  def startFrom(x: Int): PersistentSubscriptionSettingsBuilder = {
+  def startFrom(x: Long): PersistentSubscriptionSettingsBuilder = {
     startFrom(EventNumber(x))
   }
 

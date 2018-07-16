@@ -1,16 +1,16 @@
 package eventstore
 
 import java.io.Closeable
-
+import scala.concurrent.{ ExecutionContext, Future }
+import akka.NotUsed
 import akka.actor._
 import akka.pattern.ask
-import akka.stream.actor.ActorPublisher
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl._
 import akka.util.Timeout
+import org.reactivestreams.Publisher
 import eventstore.tcp.ConnectionActor
 import eventstore.util.ActorCloseable
-import org.reactivestreams.Publisher
-
-import scala.concurrent.{ ExecutionContext, Future }
 
 /**
  * Maintains a full duplex connection to the EventStore
@@ -24,6 +24,7 @@ class EsConnection(
     factory:    ActorRefFactory,
     settings:   Settings        = Settings.Default
 ) {
+  private val materializer = ActorMaterializer()(factory)
 
   implicit val timeout = Timeout(settings.operationTimeout)
 
@@ -266,6 +267,7 @@ class EsConnection(
    * @param readBatchSize       Number of events to be retrieved by client as single message
    * @return A [[org.reactivestreams.Publisher]] representing stream
    */
+  @deprecated("Use `streamSource(..).runWith(Sink.asPublisher(..))` instead.", since = "5.0.8")
   def streamPublisher(
     streamId:            EventStream.Id,
     fromNumberExclusive: Option[EventNumber]     = None,
@@ -275,17 +277,52 @@ class EsConnection(
     readBatchSize:       Int                     = settings.readBatchSize
   ): Publisher[Event] = {
 
-    val props = StreamPublisher.props(
+    streamSource(
+      streamId,
+      fromNumberExclusive,
+      resolveLinkTos,
+      credentials,
+      infinite,
+      readBatchSize
+    ).runWith(Sink.asPublisher(fanout = true))(materializer)
+  }
+
+  /**
+   * Creates a [[Source]] you can use to subscribe to a single event stream. Existing events from
+   * event number onwards are read from the stream and presented to the user of
+   * [[Source]] as if they had been pushed.
+   * <p>
+   * Once the end of the stream is read the [[Source]] transparently (to the user)
+   * switches to push new events as they are written.
+   * <p>
+   * If events have already been received and resubscription from the same point
+   * is desired, use the event number of the last event processed.
+   *
+   * @param streamId                 The stream to subscribe to
+   * @param fromEventNumberExclusive The event number from which to start, or [[None]] to read all events.
+   * @param resolveLinkTos           Whether to resolve LinkTo events automatically
+   * @param credentials              The optional user credentials to perform operation with
+   * @param infinite                 Whether to subscribe to the future events upon reading all current
+   * @param readBatchSize            Number of events to be retrieved by client as single message
+   * @return A [[akka.stream.scaladsl.Source]] representing the stream
+   */
+  def streamSource(
+    streamId:                 EventStream.Id,
+    fromEventNumberExclusive: Option[EventNumber]     = None,
+    resolveLinkTos:           Boolean                 = settings.resolveLinkTos,
+    credentials:              Option[UserCredentials] = None,
+    infinite:                 Boolean                 = true,
+    readBatchSize:            Int                     = settings.readBatchSize
+  ): Source[Event, NotUsed] = Source.fromGraph(
+    new StreamSourceStage(
       connection = connection,
       streamId = streamId,
-      fromNumberExclusive = fromNumberExclusive,
+      fromNumberExclusive = fromEventNumberExclusive,
       credentials = credentials,
       settings = settings.copy(resolveLinkTos = resolveLinkTos, readBatchSize = readBatchSize),
       infinite = infinite
     )
-    val actor = factory actorOf props
-    ActorPublisher(actor)
-  }
+  )
 
   /**
    * Creates Publisher you can use to subscribes to a all events. Existing events from position
@@ -307,6 +344,7 @@ class EsConnection(
    * @param readBatchSize         Number of events to be retrieved by client as single message
    * @return A [[org.reactivestreams.Publisher]] representing all streams
    */
+  @deprecated("Use `allStreamsSource(..).runWith(Sink.asPublisher(..))` instead.", since = "5.0.8")
   def allStreamsPublisher(
     resolveLinkTos:        Boolean                 = settings.resolveLinkTos,
     fromPositionExclusive: Option[Position]        = None,
@@ -315,17 +353,49 @@ class EsConnection(
     readBatchSize:         Int                     = settings.readBatchSize
   ): Publisher[IndexedEvent] = {
 
-    val props = AllStreamsPublisher.props(
+    allStreamsSource(
+      resolveLinkTos,
+      fromPositionExclusive,
+      credentials,
+      infinite,
+      readBatchSize
+    ).runWith(Sink.asPublisher(fanout = true))(materializer)
+  }
+
+  /**
+   * Creates a [[Source]] you can use to subscribes to all events. Existing events from position
+   * onwards are read from the Event Store and presented to the user of
+   * [[Source]] as if they had been pushed.
+   * <p>
+   * Once the end of the stream is read the [[Source]] transparently (to the user)
+   * switches to push new events as they are written.
+   * <p>
+   * If events have already been received and resubscription from the same point
+   * is desired, use the position representing the last event processed.
+   *
+   * @param resolveLinkTos        Whether to resolve LinkTo events automatically
+   * @param fromPositionExclusive The position from which to start, or [[None]] to read all events
+   * @param credentials           The optional user credentials to perform operation with
+   * @param infinite              Whether to subscribe to the future events upon reading all current
+   * @param readBatchSize         Number of events to be retrieved by client as single message
+   * @return A [[akka.stream.scaladsl.Source]] representing all streams
+   */
+  def allStreamsSource(
+    resolveLinkTos:        Boolean                 = settings.resolveLinkTos,
+    fromPositionExclusive: Option[Position]        = None,
+    credentials:           Option[UserCredentials] = None,
+    infinite:              Boolean                 = true,
+    readBatchSize:         Int                     = settings.readBatchSize
+  ): Source[IndexedEvent, NotUsed] = Source.fromGraph(
+    new AllStreamsSourceStage(
       connection = connection,
       fromPositionExclusive = fromPositionExclusive,
       credentials = credentials,
       settings = settings.copy(resolveLinkTos = resolveLinkTos, readBatchSize = readBatchSize),
       infinite = infinite
     )
+  )
 
-    val actor = factory actorOf props
-    ActorPublisher(actor)
-  }
 }
 
 object EsConnection {

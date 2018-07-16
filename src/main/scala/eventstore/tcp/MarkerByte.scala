@@ -75,7 +75,9 @@ object MarkerByte {
     0xF0 -> readerFailure(BadRequest),
     0xF1 -> readerFailure[NotHandled],
     0xF3 -> reader[Authenticated.type],
-    0xF4 -> readerFailure(NotAuthenticated)
+    0xF4 -> readerFailure(NotAuthenticated),
+
+    0xF6 -> reader[ClientIdentified.type]
   ).map {
       case (key, value) => key.toByte -> value
     }
@@ -122,16 +124,18 @@ object MarkerByte {
       case Backward => writer(0xB8, x)
     }
 
-    case x: Ps.Connect    => writer(0xC5, x)
-    case x: Ps.Ack        => writer(0xCC, x)
-    case x: Ps.Nak        => writer(0xCD, x)
-    case x: Ps.Create     => writer(0xC8, x)
-    case x: Ps.Delete     => writer(0xCA, x)
-    case x: Ps.Update     => writer(0xCE, x)
+    case x: Ps.Connect     => writer(0xC5, x)
+    case x: Ps.Ack         => writer(0xCC, x)
+    case x: Ps.Nak         => writer(0xCD, x)
+    case x: Ps.Create      => writer(0xC8, x)
+    case x: Ps.Delete      => writer(0xCA, x)
+    case x: Ps.Update      => writer(0xCE, x)
 
-    case x: SubscribeTo   => writer(0xC0, x)
-    case Unsubscribe      => writer(0xC3, Unsubscribe)
-    case ScavengeDatabase => writer(0xD0, ScavengeDatabase)
-    case Authenticate     => writer(0xF2, Authenticate)
+    case x: SubscribeTo    => writer(0xC0, x)
+    case Unsubscribe       => writer(0xC3, Unsubscribe)
+    case ScavengeDatabase  => writer(0xD0, ScavengeDatabase)
+    case Authenticate      => writer(0xF2, Authenticate)
+
+    case x: IdentifyClient => writer(0xF5, x)
   }
 }

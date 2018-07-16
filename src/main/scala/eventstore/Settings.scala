@@ -28,6 +28,7 @@ import com.typesafe.config.{ Config, ConfigFactory }
  * @param http Url to access eventstore though the Http API
  * @param serializationParallelism The number of serialization/deserialization functions to be run in parallel
  * @param serializationOrdered Serialization done asynchronously and these futures may complete in any order, but results will be used with preserved order if set to true
+ * @param connectionName Client identifier used to show a friendly name of client in Event Store.
  */
 @SerialVersionUID(1L)
 case class Settings(
@@ -49,7 +50,8 @@ case class Settings(
     cluster:                  Option[ClusterSettings] = None,
     http:                     HttpSettings            = HttpSettings(),
     serializationParallelism: Int                     = 8,
-    serializationOrdered:     Boolean                 = true
+    serializationOrdered:     Boolean                 = true,
+    connectionName:           Option[String]          = Some("jvm-client")
 ) {
   require(reconnectionDelayMin > Duration.Zero, "reconnectionDelayMin must be > 0")
   require(reconnectionDelayMax > Duration.Zero, "reconnectionDelayMax must be > 0")
@@ -93,7 +95,8 @@ object Settings {
         cluster = cluster,
         http = HttpSettings(conf),
         serializationParallelism = conf getInt "serialization-parallelism",
-        serializationOrdered = conf getBoolean "serialization-ordered"
+        serializationOrdered = conf getBoolean "serialization-ordered",
+        connectionName = Option(conf getString "connection-name").filter(_.nonEmpty)
       )
     }
     apply(conf getConfig "eventstore")

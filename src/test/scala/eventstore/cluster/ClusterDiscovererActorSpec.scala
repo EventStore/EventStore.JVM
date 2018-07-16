@@ -159,7 +159,7 @@ class ClusterDiscovererActorSpec extends util.ActorSpec with Mockito {
       lastSender ! cluster(member(address2))
 
       expectMsg(Address(address2))
-      expectNoMsg(100.millis)
+      expectNoMessage(100.millis)
     }
 
     "return best node to all clients" in new TestScope {

@@ -2,8 +2,9 @@ package eventstore
 package j
 
 import java.util
-
+import akka.NotUsed
 import akka.actor.ActorSystem
+import akka.stream.javadsl.Source
 import eventstore.ExpectedVersion.Existing
 
 import scala.collection.JavaConverters._
@@ -254,7 +255,7 @@ class EsConnectionImpl(
   def subscribeToStreamFrom(
     stream:                   String,
     observer:                 SubscriptionObserver[Event],
-    fromEventNumberExclusive: java.lang.Integer,
+    fromEventNumberExclusive: java.lang.Long,
     resolveLinkTos:           Boolean,
     credentials:              UserCredentials
   ) = {
@@ -306,6 +307,7 @@ class EsConnectionImpl(
     connection.getStreamMetadata(EventStream.Id(stream), Option(credentials)).map(_.value.toArray)
   }
 
+  @deprecated("Use `streamSource(..).runWith(Sink.asPublisher(..))` instead.", since = "5.0.8")
   def streamPublisher(
     stream:                   String,
     fromEventNumberExclusive: EventNumber,
@@ -323,6 +325,25 @@ class EsConnectionImpl(
     )
   }
 
+  def streamSource(
+    stream:                   String,
+    fromEventNumberExclusive: EventNumber,
+    resolveLinkTos:           Boolean,
+    credentials:              UserCredentials,
+    infinite:                 Boolean
+  ): Source[Event, NotUsed] = {
+
+    connection.streamSource(
+      streamId = EventStream.Id(stream),
+      fromEventNumberExclusive = Option(fromEventNumberExclusive),
+      resolveLinkTos = resolveLinkTos,
+      credentials = Option(credentials),
+      infinite = infinite
+    ).asJava
+
+  }
+
+  @deprecated("Use `allStreamsSource(..).runWith(Sink.asPublisher(..))` instead.", since = "5.0.8")
   def allStreamsPublisher(
     fromPositionExclusive: Position,
     resolveLinkTos:        Boolean,
@@ -336,6 +357,22 @@ class EsConnectionImpl(
       credentials = Option(credentials),
       infinite = infinite
     )
+  }
+
+  def allStreamsSource(
+    fromPositionExclusive: Position,
+    resolveLinkTos:        Boolean,
+    credentials:           UserCredentials,
+    infinite:              Boolean
+  ): Source[IndexedEvent, NotUsed] = {
+
+    connection.allStreamsSource(
+      resolveLinkTos = resolveLinkTos,
+      fromPositionExclusive = Option(fromPositionExclusive),
+      credentials = Option(credentials),
+      infinite = infinite
+    ).asJava
+
   }
 
   def createPersistentSubscription(

@@ -20,7 +20,7 @@ class PersistentSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
     "should subscribe if last event was passed in" in new PersistentSubscriptionActorScope {
       connection.expectMsgType[Connect]
       actor ! connected(Some(EventNumber.Exact(0)))
-      connection.expectNoMsg()
+      connection.expectNoMessage()
     }
 
     "should trigger LiveProcessingStarted and Ack" in new PersistentSubscriptionActorScope {
@@ -42,7 +42,7 @@ class PersistentSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
 
       expectMsg(event)
       expectMsg(LiveProcessingStarted)
-      expectNoMsg()
+      expectNoMessage()
 
       actor ! PersistentSubscriptionActor.ManualAck(event.data.eventId)
       expectAck()
@@ -85,7 +85,7 @@ class PersistentSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
 
     def expectNak(): Unit = connection.expectMsgType[Nak]
 
-    def newEvent(number: Int): Event = EventRecord(streamId, EventNumber.Exact(number), mock[EventData])
+    def newEvent(number: Long): Event = EventRecord(streamId, EventNumber.Exact(number), mock[EventData])
 
     def eventAppeared(event: Event) =
       EventAppeared(event)

@@ -48,7 +48,7 @@ abstract class TestConnection extends util.ActorSpec {
       val range = completed.numbersRange
       if (expectedVersion == ExpectedVersion.NoStream) events match {
         case Nil => range must beNone
-        case xs  => range must beSome(EventNumber.First to EventNumber.Exact(xs.size - 1))
+        case xs  => range must beSome(EventNumber.First to EventNumber.Exact(xs.size - 1L))
       }
       range
     }
@@ -60,8 +60,8 @@ abstract class TestConnection extends util.ActorSpec {
       event
     }
 
-    def append(x: EventData): EventRecord = {
-      EventRecord(streamId, writeEventsCompleted(List(x), testKit = TestProbe()).get.start, x, Some(date))
+    def append(x: EventData, sid: EventStream.Id = streamId): EventRecord = {
+      EventRecord(sid, writeEventsCompleted(List(x), testKit = TestProbe()).get.start, x, Some(date))
     }
 
     def linkedAndLink(): (EventRecord, EventRecord) = {
@@ -71,9 +71,9 @@ abstract class TestConnection extends util.ActorSpec {
       (linked, link)
     }
 
-    def appendMany(size: Int = 10, testKit: TestKitBase = this): List[EventData] = {
+    def appendMany(size: Int = 10, testKit: TestKitBase = this, sid: EventStream.Id = streamId): List[EventData] = {
       val events = (1 to size).map(_ => newEventData).toList
-      actor.!(WriteEvents(streamId, events, ExpectedVersion.Any))(testKit.testActor)
+      actor.!(WriteEvents(sid, events, ExpectedVersion.Any))(testKit.testActor)
       testKit.expectMsgType[WriteEventsCompleted]
       events
     }
@@ -151,6 +151,16 @@ abstract class TestConnection extends util.ActorSpec {
       event
     }
 
+    def expectNonSystemStreamEventAppeared(testKit: TestKitBase = this, max: Duration = Duration.Undefined) = {
+
+      val sea = testKit.fishForSpecificMessage[StreamEventAppeared](max) {
+        case sea @ StreamEventAppeared(IndexedEvent(e, _)) if e.isPlainEvent ⇒ sea.fixDate
+      }
+
+      sea.event.event.streamId mustEqual streamId
+      sea.event
+    }
+
     def mustBeSorted[T](xs: List[T])(implicit direction: ReadDirection, ordering: Ordering[T]): Unit = {
       xs.map {
         case ResolvedEvent(_, link) => link.asInstanceOf[T]
@@ -213,6 +223,8 @@ abstract class TestConnection extends util.ActorSpec {
         case x: EventRecord   => x.fixDate
         case x: ResolvedEvent => x.copy(linkedEvent = x.linkedEvent.fixDate, linkEvent = x.linkEvent.fixDate)
       }
+
+      def isPlainEvent: Boolean = !(self.streamId.isSystem || self.streamId.isMetadata)
     }
 
     implicit class RichIndexedEvent(self: IndexedEvent) {
