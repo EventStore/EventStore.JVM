@@ -1,7 +1,7 @@
 package eventstore
 import akka.actor.ActorRef
 import akka.testkit.TestActorRef
-import eventstore.PersistentSubscription.{ Ack, Connect, Connected, EventAppeared }
+import eventstore.PersistentSubscription._
 import eventstore.ReadDirection.Forward
 
 class PersistentSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
@@ -34,6 +34,19 @@ class PersistentSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
       expectMsg(LiveProcessingStarted)
     }
 
+    "should send manual ack when catching up" in new ManualAckPersistentSubscriptionActorScope {
+      val event: Event = newEvent(1)
+      connection.expectMsgType[Connect]
+      actor ! connected(Some(EventNumber.Exact(50)))
+      actor ! eventAppeared(event)
+
+      expectMsg(event)
+      expectNoMessage()
+
+      actor ! PersistentSubscriptionActor.ManualAck(event.data.eventId)
+      expectAck()
+    }
+
     "should send manual ack" in new ManualAckPersistentSubscriptionActorScope {
       val event: Event = newEvent(1)
       connection.expectMsgType[Connect]
@@ -46,6 +59,33 @@ class PersistentSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
 
       actor ! PersistentSubscriptionActor.ManualAck(event.data.eventId)
       expectAck()
+    }
+
+    "should send manual nak when catching up" in new ManualNakPersistentSubscriptionActorScope {
+      val event: Event = newEvent(1)
+      connection.expectMsgType[Connect]
+      actor ! connected(Some(EventNumber.Exact(50)))
+      actor ! eventAppeared(event)
+
+      expectMsg(event)
+      expectNoMessage()
+
+      actor ! PersistentSubscriptionActor.ManualNak(event.data.eventId)
+      expectNak()
+    }
+
+    "should send manual nak" in new ManualNakPersistentSubscriptionActorScope {
+      val event: Event = newEvent(1)
+      connection.expectMsgType[Connect]
+      actor ! connected(Some(EventNumber.Exact(0)))
+      actor ! eventAppeared(event)
+
+      expectMsg(event)
+      expectMsg(LiveProcessingStarted)
+      expectNoMsg()
+
+      actor ! PersistentSubscriptionActor.ManualNak(event.data.eventId)
+      expectNak()
     }
   }
 
@@ -69,6 +109,8 @@ class PersistentSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
 
     def expectAck(): Unit = connection.expectMsgType[Ack]
 
+    def expectNak(): Unit = connection.expectMsgType[Nak]
+
     def newEvent(number: Long): Event = EventRecord(streamId, EventNumber.Exact(number), mock[EventData])
 
     def eventAppeared(event: Event) =
@@ -82,6 +124,21 @@ class PersistentSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
   }
 
   trait ManualAckPersistentSubscriptionActorScope extends PersistentSubscriptionActorScope {
+    override def createActor(): ActorRef = {
+      val props = PersistentSubscriptionActor.props(
+        connection = connection.ref,
+        client = testActor,
+        streamId = streamId,
+        groupName = groupName,
+        settings = settings,
+        credentials = None,
+        autoAck = false
+      )
+      TestActorRef(props)
+    }
+  }
+
+  trait ManualNakPersistentSubscriptionActorScope extends PersistentSubscriptionActorScope {
     override def createActor(): ActorRef = {
       val props = PersistentSubscriptionActor.props(
         connection = connection.ref,
