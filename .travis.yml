@@ -3,7 +3,7 @@ jdk: oraclejdk8
 language: scala
 
 scala:
-  - 2.12.6
+  - 2.12.8
   - 2.11.12
 
 sudo: required
