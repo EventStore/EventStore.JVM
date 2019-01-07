@@ -82,7 +82,7 @@ class PersistentSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
 
       expectMsg(event)
       expectMsg(LiveProcessingStarted)
-      expectNoMsg()
+      expectNoMessage()
 
       actor ! PersistentSubscriptionActor.ManualNak(event.data.eventId)
       expectNak()
