@@ -7,7 +7,7 @@ organization := "com.geteventstore"
 
 scalaVersion := crossScalaVersions.value.last
 
-crossScalaVersions := Seq("2.11.12", "2.12.6")
+crossScalaVersions := Seq("2.11.12", "2.12.8")
 
 releaseCrossBuild := true
 
@@ -38,8 +38,8 @@ scalacOptions in(Compile, doc) ++= Seq("-groups", "-implicits", "-no-link-warnin
 
 enablePlugins(ProtobufPlugin)
 
-val AkkaVersion = "2.5.13"
-val AkkaHttpVersion = "10.1.3"
+val AkkaVersion = "2.5.19"
+val AkkaHttpVersion = "10.1.6"
 val ReactiveStreamsVersion = "1.0.2"
 val Specs2Version = "3.8.6" // Because of concurrency issues with specs2 3.8.7+
 
@@ -52,11 +52,11 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion % Test,
   "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
   "com.typesafe" % "config" % "1.3.3",
-  "io.spray" %%  "spray-json" % "1.3.4",
+  "io.spray" %%  "spray-json" % "1.3.5",
   "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
   "org.apache.directory.studio" % "org.apache.commons.codec" % "1.8",
-  "joda-time" % "joda-time" % "2.10",
-  "org.joda" % "joda-convert" % "2.1",
+  "joda-time" % "joda-time" % "2.10.1",
+  "org.joda" % "joda-convert" % "2.1.2",
   "org.mockito" % "mockito-all" % "1.10.19" % Test,
   "org.specs2" %% "specs2-core" % Specs2Version % Test,
   "org.specs2" %% "specs2-mock" % Specs2Version % Test)
