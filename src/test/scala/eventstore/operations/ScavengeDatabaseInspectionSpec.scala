@@ -1,7 +1,7 @@
 package eventstore
 package operations
 
-import eventstore.ScavengeError.{ InProgress, Failed }
+import eventstore.ScavengeError.{ InProgress, Unauthorized }
 import eventstore.operations.Inspection.Decision.{ Fail, Stop }
 import org.specs2.mock.Mockito
 import org.specs2.mutable.Specification
@@ -13,7 +13,7 @@ class ScavengeDatabaseInspectionSpec extends Specification with Mockito {
   "ScavengeDatabaseInspection" should {
 
     "handle ScavengeDatabaseCompleted" in {
-      inspection(Success(mock[ScavengeDatabaseCompleted])) mustEqual Stop
+      inspection(Success(mock[ScavengeDatabaseResponse])) mustEqual Stop
     }
 
     "handle InProgress" in {
@@ -21,9 +21,8 @@ class ScavengeDatabaseInspectionSpec extends Specification with Mockito {
     }
 
     "handle Failed" in {
-      inspection(Failure(Failed(None))) must beLike {
-        case Fail(_: ScavengeFailedException) => ok
-      }
+      inspection(Failure(Unauthorized)) mustEqual Fail(ScavengeUnauthorizedException)
     }
+
   }
 }

@@ -609,27 +609,26 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
     }
   }
 
-  implicit object ScavengeDatabaseCompletedReader extends ProtoTryReader[ScavengeDatabaseCompleted, j.ScavengeDatabaseCompleted] {
+  implicit object ScavengeDatabaseCompletedReader extends ProtoTryReader[ScavengeDatabaseResponse, j.ScavengeDatabaseResponse] {
 
-    import j.ScavengeDatabaseCompleted.ScavengeResult._
+    import j.ScavengeDatabaseResponse.ScavengeResult._
 
-    def parse = j.ScavengeDatabaseCompleted.parseFrom
+    def parse = j.ScavengeDatabaseResponse.parseFrom
 
-    def fromProto(x: j.ScavengeDatabaseCompleted) = {
+    def fromProto(x: j.ScavengeDatabaseResponse) = {
       import eventstore.{ ScavengeError => E }
 
-      def scavengeDatabaseCompleted = ScavengeDatabaseCompleted(
-        totalTime = ToCoarsest(FiniteDuration(x.getTotalTimeMs.toLong, TimeUnit.MILLISECONDS)),
-        totalSpaceSaved = x.getTotalSpaceSaved
+      def scavengeDatabaseResponse = ScavengeDatabaseResponse(
+        option(x.hasScavengeId, x.getScavengeId)
       )
 
       def failure(x: ScavengeError) = this.failure(x)
 
       // TODO test this
       x.getResult match {
-        case Success    => Try(scavengeDatabaseCompleted)
-        case InProgress => failure(E.InProgress)
-        case Failed     => failure(E.Failed(message(option(x.hasError, x.getError))))
+        case Started      => Try(scavengeDatabaseResponse)
+        case InProgress   => failure(E.InProgress)
+        case Unauthorized => failure(E.Unauthorized)
       }
     }
   }

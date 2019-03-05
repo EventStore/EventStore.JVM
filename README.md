@@ -11,7 +11,7 @@
   </tr>
   <tr>
     <td><a href="https://eventstore.org">Event Store</a></td>
-    <td>v4.0.0 and higher is supported</td>
+    <td>v5.0.0 and higher is supported</td>
   </tr>  
 </table>
 
@@ -54,7 +54,7 @@ connection ! ReadEvent(EventStream.Id("my-stream"), EventNumber.First)
 
 #### Sbt
 ```scala
-libraryDependencies += "com.geteventstore" %% "eventstore-client" % "5.0.10"
+libraryDependencies += "com.geteventstore" %% "eventstore-client" % "6.0.0"
 ```
 
 #### Maven
@@ -62,7 +62,7 @@ libraryDependencies += "com.geteventstore" %% "eventstore-client" % "5.0.10"
 <dependency>
     <groupId>com.geteventstore</groupId>
     <artifactId>eventstore-client_${scala.version}</artifactId>
-    <version>5.0.10</version>
+    <version>6.0.0</version>
 </dependency>
 ```
 

@@ -331,7 +331,7 @@ sealed trait SubscribeCompleted extends In
   def getInstance = this
 }
 
-@SerialVersionUID(1L) case class ScavengeDatabaseCompleted(totalTime: FiniteDuration, totalSpaceSaved: Long) extends In
+@SerialVersionUID(1L) case class ScavengeDatabaseResponse(scavengeId: Option[String]) extends In
 
 @SerialVersionUID(1L) case object Authenticate extends Out {
   /**
