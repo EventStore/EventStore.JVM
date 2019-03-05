@@ -38,8 +38,8 @@ scalacOptions in(Compile, doc) ++= Seq("-groups", "-implicits", "-no-link-warnin
 
 enablePlugins(ProtobufPlugin)
 
-val AkkaVersion = "2.5.19"
-val AkkaHttpVersion = "10.1.6"
+val AkkaVersion = "2.5.21"
+val AkkaHttpVersion = "10.1.7"
 val ReactiveStreamsVersion = "1.0.2"
 val Specs2Version = "3.8.6" // Because of concurrency issues with specs2 3.8.7+
 
@@ -56,7 +56,7 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
   "org.apache.directory.studio" % "org.apache.commons.codec" % "1.8",
   "joda-time" % "joda-time" % "2.10.1",
-  "org.joda" % "joda-convert" % "2.1.2",
+  "org.joda" % "joda-convert" % "2.2.0",
   "org.mockito" % "mockito-all" % "1.10.19" % Test,
   "org.specs2" %% "specs2-core" % Specs2Version % Test,
   "org.specs2" %% "specs2-mock" % Specs2Version % Test)

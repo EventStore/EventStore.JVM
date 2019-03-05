@@ -273,6 +273,35 @@ class AllStreamsSourceSpec extends SourceSpec {
       override def position = Some(Position(0))
     }
 
+    "unsubscribe when buffer is full and ignore appearing events" in new SourceScope {
+
+      val testEvent1 = newEvent(1337)
+      val testEvent2 = newEvent(1338)
+      val testEvent3 = newEvent(1339)
+      val testEvent4 = newEvent(1340)
+
+      connection expectMsg subscribeTo
+      connection reply subscribeCompleted(1336)
+      connection.expectNoMessage()
+      connection reply StreamEventAppeared(testEvent1)
+      connection reply StreamEventAppeared(testEvent2)
+      connection reply StreamEventAppeared(testEvent3)
+      connection expectMsg Unsubscribe
+      connection reply StreamEventAppeared(testEvent4)
+      connection reply Unsubscribed
+      expectEvent(testEvent1)
+      expectEvent(testEvent2)
+      connection expectMsg subscribeTo
+      connection reply subscribeCompleted(1340)
+      connection expectMsg readEvents(1339)
+      connection reply readCompleted(1340, 1341, testEvent3, testEvent4)
+      connection.expectNoMessage()
+      expectEvent(testEvent3)
+      expectEvent(testEvent4)
+
+      override def position = Some(Position.Last)
+    }
+
     "resubscribe from same position" in new SourceScope {
       connection expectMsg readEvents(0)
       connection reply readCompleted(0, 0)
