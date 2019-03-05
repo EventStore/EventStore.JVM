@@ -10,6 +10,7 @@ import akka.stream._
 import akka.stream.stage._
 import akka.stream.stage.GraphStageLogic.StageActor
 import akka.stream.SourceShape
+import SourceStageLogic.UnhandledMessage
 
 private[eventstore] abstract class SourceStageLogic[T, O <: Ordered[O], P <: O](
   shape:       SourceShape[T],
@@ -139,7 +140,8 @@ private[eventstore] abstract class SourceStageLogic[T, O <: Ordered[O], P <: O](
 
   def unsubscribe(): Unit = {
     stageActorBecome(
-      rcvUnsubscribed(onUnsubscribeCompleted())
+      rcvUnsubscribed(onUnsubscribeCompleted()) or
+      rcvEventAppeared(_ => ())
     )
     unsubscribeFromStream()
   }
@@ -187,7 +189,7 @@ private[eventstore] abstract class SourceStageLogic[T, O <: Ordered[O], P <: O](
     case (_, m) if receive.isDefinedAt(m) ⇒ receive(m)
     case (_, Terminated(`connection`))    ⇒ completeStage()
     case (_, Failure(failure))            ⇒ failStage(failure)
-    case (r, m)                           ⇒ log.error(s"unhandled from message $r: $m")
+    case (r, m)                           ⇒ failStage(UnhandledMessage(r, m))
   }
 
   private val ignoring = PartialFunction.empty
@@ -268,4 +270,9 @@ private[eventstore] abstract class SourceStageLogic[T, O <: Ordered[O], P <: O](
       State(fromPositionExclusive)
     }
   }
+}
+
+object SourceStageLogic {
+  final case class UnhandledMessage(ref: ActorRef, msg: Any)
+    extends RuntimeException(s"Unhandled from message: $msg from $ref")
 }

@@ -390,13 +390,15 @@ class StreamSourceSpec extends SourceSpec {
       override def eventNumber = Some(EventNumber(0))
     }
 
-    "temporarily unsubscribe when buffer is full" in new SourceScope {
+    "temporarily unsubscribe when buffer is full and ignore appearing events" in new SourceScope {
       connection expectMsg subscribeTo
       connection reply subscribeCompleted(0)
       connection reply streamEventAppeared(event1)
       connection reply streamEventAppeared(event2)
       connection reply streamEventAppeared(event3)
       connection expectMsg Unsubscribe
+      connection reply streamEventAppeared(event4)
+      connection reply streamEventAppeared(event5)
       connection reply Unsubscribed
       expectEvent(event1)
       expectEvent(event2)
