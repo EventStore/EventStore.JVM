@@ -46,8 +46,7 @@ case class StreamNotFoundException(streamId: EventStream.Id) extends EsException
   extends EsException(s"Operation hasn't got response from server for $pack")
 
 @SerialVersionUID(1L) case object ScavengeInProgressException extends EsException
-
-@SerialVersionUID(1L) class ScavengeFailedException(message: String) extends EsException(message)
+@SerialVersionUID(1L) case object ScavengeUnauthorizedException extends EsException
 
 @SerialVersionUID(1L) class CommandNotExpectedException(message: String) extends EsException(message)
 

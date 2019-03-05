@@ -89,7 +89,7 @@ sealed trait ScavengeError extends SystemError
 
 object ScavengeError {
   @SerialVersionUID(1L) case object InProgress extends ScavengeError
-  @SerialVersionUID(1L) case class Failed(error: Option[String]) extends ScavengeError
+  @SerialVersionUID(1L) case object Unauthorized extends ScavengeError
 }
 
 sealed trait CreatePersistentSubscriptionError extends SystemError

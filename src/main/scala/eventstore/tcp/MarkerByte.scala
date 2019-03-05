@@ -70,7 +70,7 @@ object MarkerByte {
     0xC2 -> reader[StreamEventAppeared],
     0xC4 -> readerTry[Unsubscribed.type],
 
-    0xD1 -> readerTry[ScavengeDatabaseCompleted],
+    0xD1 -> readerTry[ScavengeDatabaseResponse],
 
     0xF0 -> readerFailure(BadRequest),
     0xF1 -> readerFailure[NotHandled],
