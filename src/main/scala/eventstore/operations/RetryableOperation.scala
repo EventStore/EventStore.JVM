@@ -4,12 +4,12 @@ package operations
 import eventstore.operations.OnIncoming._
 import scala.util.Try
 
-private[eventstore] case class RetryableOperation(
-    operation:   Operation,
+private[eventstore] case class RetryableOperation[C](
+    operation:   Operation[C],
     retriesLeft: Int,
     maxRetries:  Int,
     ongoing:     Boolean
-) extends Operation {
+) extends Operation[C] {
 
   def id = operation.id
 
@@ -53,15 +53,15 @@ private[eventstore] case class RetryableOperation(
       else Stop(new RetriesLimitReachedException(s"Operation $pack reached retries limit: $maxRetries"))
   }
 
-  private def decrement(x: Operation) = copy(operation = x, retriesLeft = retriesLeft - 1)
+  private def decrement(x: Operation[C]) = copy(operation = x, retriesLeft = retriesLeft - 1)
 
-  private def reset(x: Operation) = copy(operation = x, retriesLeft = maxRetries)
+  private def reset(x: Operation[C]) = copy(operation = x, retriesLeft = maxRetries)
 
-  private def wrap(x: Operation) = copy(operation = x)
+  private def wrap(x: Operation[C]) = copy(operation = x)
 }
 
 private[eventstore] object RetryableOperation {
-  def apply(operation: Operation, maxRetries: Int, ongoing: Boolean): RetryableOperation = {
+  def apply[C](operation: Operation[C], maxRetries: Int, ongoing: Boolean): RetryableOperation[C] = {
     RetryableOperation(operation, maxRetries, maxRetries, ongoing)
   }
 }

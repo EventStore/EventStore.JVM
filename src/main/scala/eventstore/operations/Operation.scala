@@ -1,32 +1,28 @@
 package eventstore
 package operations
 
-import eventstore.tcp.{ Client, PackOut }
+import eventstore.tcp.PackOut
 import eventstore.{ PersistentSubscription => Ps }
 
 import scala.util.{ Failure, Try }
 
-private[eventstore] trait Operation {
+private[eventstore] trait Operation[C] {
+  type Self = Operation[C]
+
   def id: Uuid
-
-  def client: Client
-
-  def inspectOut: PartialFunction[Out, OnOutgoing]
-
-  def inspectIn(in: Try[In]): OnIncoming
-
-  def disconnected: OnDisconnected
-
-  def connected: OnConnected
-
+  def client: C
+  def inspectOut: PartialFunction[Out, OnOutgoing[Self]]
+  def inspectIn(in: Try[In]): OnIncoming[Self]
+  def disconnected: OnDisconnected[Self]
+  def connected: OnConnected[Self]
   def clientTerminated: Option[PackOut]
-
   def version: Int
+
 }
 
 private[eventstore] object Operation {
-  def opt(pack: PackOut, client: Client, connected: Boolean, maxRetries: Int): Option[Operation] = {
-    def retryable(x: Operation) = RetryableOperation(x, maxRetries, connected)
+  def opt[C](pack: PackOut, client: C, connected: Boolean, maxRetries: Int): Option[Operation[C]] = {
+    def retryable(x: Operation[C]) = RetryableOperation(x, maxRetries, connected)
     def simple(x: Inspection) = retryable(SimpleOperation(pack, client, x))
 
     pack.message match {
@@ -57,38 +53,38 @@ private[eventstore] object Operation {
   }
 }
 
-sealed trait OnConnected
+sealed trait OnConnected[+A]
 
 object OnConnected {
-  case class Retry(operation: Operation, out: PackOut) extends OnConnected
-  case class Stop(in: Try[In]) extends OnConnected
+  case class Retry[A](a: A, out: PackOut) extends OnConnected[A]
+  case class Stop(in: Try[In]) extends OnConnected[Nothing]
 }
 
-sealed trait OnIncoming
+sealed trait OnIncoming[+A]
 
 object OnIncoming {
-  case class Stop(in: Try[In]) extends OnIncoming
+  case class Stop(in: Try[In]) extends OnIncoming[Nothing]
 
   object Stop {
     def apply(x: EsException): Stop = Stop(Failure(x))
     def apply(x: In): Stop = Stop(Try(x))
   }
 
-  case class Retry(operation: Operation, pack: PackOut) extends OnIncoming
-  case class Continue(operation: Operation, in: Try[In]) extends OnIncoming
-  case object Ignore extends OnIncoming
+  case class Retry[A](a: A, pack: PackOut) extends OnIncoming[A]
+  case class Continue[A](a: A, in: Try[In]) extends OnIncoming[A]
+  case object Ignore extends OnIncoming[Nothing]
 }
 
-sealed trait OnOutgoing
+sealed trait OnOutgoing[+A]
 
 object OnOutgoing {
-  case class Stop(out: PackOut, in: Try[In]) extends OnOutgoing
-  case class Continue(operation: Operation, out: PackOut) extends OnOutgoing
+  case class Stop(out: PackOut, in: Try[In]) extends OnOutgoing[Nothing]
+  case class Continue[A](a: A, out: PackOut) extends OnOutgoing[A]
 }
 
-sealed trait OnDisconnected
+sealed trait OnDisconnected[+A]
 
 object OnDisconnected {
-  case class Continue(operation: Operation) extends OnDisconnected
-  case class Stop(in: Try[In]) extends OnDisconnected
+  case class Continue[A](a: A) extends OnDisconnected[A]
+  case class Stop(in: Try[In]) extends OnDisconnected[Nothing]
 }

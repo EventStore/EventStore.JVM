@@ -6,7 +6,6 @@ import org.specs2.mutable.Specification
 import org.specs2.specification.Scope
 import eventstore.tcp.PackOut
 import eventstore.operations.OnIncoming._
-
 import scala.util.control.NoStackTrace
 import scala.util.{ Try, Random, Failure }
 
@@ -28,7 +27,7 @@ class RetryableOperationSpec extends Specification with Mockito {
     }
 
     "wrap underlying connected result if Retry" in new TestScope {
-      val result = mock[Operation]
+      val result = mock[OP]
       underlying.connected returns OnConnected.Retry(result, pack)
       val expected = operation.copy(operation = result)
       operation.copy(ongoing = false).connected mustEqual OnConnected.Retry(expected, pack)
@@ -45,7 +44,7 @@ class RetryableOperationSpec extends Specification with Mockito {
     }
 
     "wrap underlying on disconnected result if Continue" in new TestScope {
-      val result = mock[Operation]
+      val result = mock[OP]
       underlying.disconnected returns OnDisconnected.Continue(result)
       operation.disconnected mustEqual OnDisconnected.Continue(operation.copy(operation = result, ongoing = false))
       there was one(underlying).disconnected
@@ -57,8 +56,8 @@ class RetryableOperationSpec extends Specification with Mockito {
     }
 
     "wrap underlying inspectOut result if Some" in new TestScope {
-      val result = mock[Operation]
-      val pf: PartialFunction[Out, OnOutgoing] = {
+      val result = mock[OP]
+      val pf: PartialFunction[Out, OnOutgoing[OP]] = {
         case `out` => OnOutgoing.Continue(result, pack)
       }
       underlying.inspectOut returns pf
@@ -103,6 +102,9 @@ class RetryableOperationSpec extends Specification with Mockito {
   }
 
   private trait TestScope extends Scope {
+
+    type OP = Operation[Unit]
+
     val forceRetry = Failure(new TestException)
     val forceContinue = Failure(new TestException)
     val out = mock[Out]
@@ -110,7 +112,7 @@ class RetryableOperationSpec extends Specification with Mockito {
     val pack = PackOut(out)
     val inspectOut = spy(new InspectOut)
     val underlying = {
-      val operation = mock[Operation]
+      val operation = mock[OP]
       operation.clientTerminated returns None
       operation.id returns randomUuid
       operation.version returns Random.nextInt()
@@ -128,7 +130,7 @@ class RetryableOperationSpec extends Specification with Mockito {
     class TestException extends Exception with NoStackTrace
   }
 
-  class InspectOut extends PartialFunction[Out, OnOutgoing] {
+  class InspectOut extends PartialFunction[Out, OnOutgoing[Nothing]] {
     def isDefinedAt(x: Out) = false
     def apply(v1: Out) = sys.error("")
   }

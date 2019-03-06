@@ -3,8 +3,9 @@ package eventstore
 import ContentType._
 
 class ContentTypeITest extends TestConnection {
+
   // TODO report issue to @gregoryyoung
-  val broken = "Does not work in 3.0.0rc9, EventStore always returns Data's ContentType for Metadata"
+  val broken = "Does not work in 5.0.0, EventStore always returns Data's ContentType for Metadata"
 
   "content type" should {
     "be correctly stored and retrieved for Binary/Binary" in new ContentTypeScope {
