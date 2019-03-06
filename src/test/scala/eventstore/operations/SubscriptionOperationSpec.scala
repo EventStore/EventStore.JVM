@@ -166,7 +166,7 @@ class SubscriptionOperationSpec extends OperationSpec {
     "become subscribing on disconnected" in foreach(streams) { implicit stream =>
       new SubscribedScope {
         operation.disconnected must beLike {
-          case OnDisconnected.Continue(x: SubscriptionOperation.Subscribing) if x.version == 1 => ok
+          case OnDisconnected.Continue(x: SubscriptionOperation.Subscribing[Client]) if x.version == 1 => ok
         }
       }
     }
@@ -174,7 +174,7 @@ class SubscriptionOperationSpec extends OperationSpec {
     "become subscribing on connected and retry" in foreach(streams) { implicit stream =>
       new SubscribedScope {
         operation.connected must beLike {
-          case OnConnected.Retry(x: SubscriptionOperation.Subscribing, `pack`) if x.version == 1 => ok
+          case OnConnected.Retry(x: SubscriptionOperation.Subscribing[Client], `pack`) if x.version == 1 => ok
         }
       }
     }

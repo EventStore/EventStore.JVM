@@ -124,13 +124,13 @@ class PersistentSubscriptionOperationSpec extends OperationSpec {
 
     "become connecting on disconnected" in new ConnectedScope {
       operation.disconnected must beLike {
-        case OnDisconnected.Continue(x: PersistentSubscriptionOperation.Connecting) if x.version == 1 => ok // Should be Connecting <= Persistent's version of subscribing.
+        case OnDisconnected.Continue(x: PersistentSubscriptionOperation.Connecting[Client]) if x.version == 1 => ok // Should be Connecting <= Persistent's version of subscribing.
       }
     }
 
     "become connected on connected and retry" in new ConnectedScope {
       operation.connected must beLike {
-        case OnConnected.Retry(x: PersistentSubscriptionOperation.Connecting, `pack`) if x.version == 1 => ok
+        case OnConnected.Retry(x: PersistentSubscriptionOperation.Connecting[Client], `pack`) if x.version == 1 => ok
       }
     }
 

@@ -2,48 +2,48 @@ package eventstore
 package operations
 
 import eventstore.NotHandled.{ NotReady, TooBusy }
-import eventstore.tcp.{ Client, PackOut }
+import eventstore.tcp.PackOut
 import eventstore.SubscriptionDropped.AccessDenied
 import eventstore.operations.OnIncoming._
 
 import scala.util.{ Failure, Success, Try }
 
-private[eventstore] sealed trait SubscriptionOperation extends Operation {
+private[eventstore] sealed trait SubscriptionOperation[C] extends Operation[C] {
   def stream: EventStream
 
   def pack: PackOut
 
   def id = pack.correlationId
 
-  protected def unexpected(actual: Any, expectedClass: Class[_]): OnIncoming = {
+  protected def unexpected(actual: Any, expectedClass: Class[_]): OnIncoming[Operation[C]] = {
     val expected = expectedClass.getSimpleName
     val msg = s"Expected: $expected, actual: $actual"
     Stop(new CommandNotExpectedException(msg))
   }
 
-  protected def retry: OnIncoming = Retry(this, pack)
+  protected def retry: OnIncoming[Operation[C]] = Retry(this, pack)
 
-  protected def accessDenied(msg: String): OnIncoming = Stop(new AccessDeniedException(msg))
+  protected def accessDenied(msg: String): OnIncoming[Operation[C]] = Stop(new AccessDeniedException(msg))
 }
 
 private[eventstore] object SubscriptionOperation {
 
-  def apply(
+  def apply[C](
     subscribeTo: SubscribeTo,
     pack:        PackOut,
-    client:      Client,
+    client:      C,
     ongoing:     Boolean
-  ): Operation = {
+  ): Operation[C] = {
     Subscribing(subscribeTo, pack, client, ongoing, 0)
   }
 
-  case class Subscribing(
+  case class Subscribing[C](
       subscribeTo: SubscribeTo,
       pack:        PackOut,
-      client:      Client,
+      client:      C,
       ongoing:     Boolean,
       version:     Int
-  ) extends SubscriptionOperation {
+  ) extends SubscriptionOperation[C] {
 
     def stream = subscribeTo.stream
 
@@ -98,17 +98,17 @@ private[eventstore] object SubscriptionOperation {
     }
   }
 
-  case class Subscribed(
+  case class Subscribed[C](
       subscribeTo: SubscribeTo,
       pack:        PackOut,
-      client:      Client,
+      client:      C,
       ongoing:     Boolean,
       version:     Int
-  ) extends SubscriptionOperation {
+  ) extends SubscriptionOperation[C] {
 
     def stream = subscribeTo.stream
 
-    def inspectIn(in: Try[In]): OnIncoming = {
+    def inspectIn(in: Try[In]): OnIncoming[Operation[C]] = {
       def unexpected(x: Any) = this.unexpected(x, classOf[StreamEventAppeared])
 
       in match {
@@ -140,13 +140,13 @@ private[eventstore] object SubscriptionOperation {
     }
   }
 
-  case class Unsubscribing(
+  case class Unsubscribing[C](
       stream:  EventStream,
       pack:    PackOut,
-      client:  Client,
+      client:  C,
       ongoing: Boolean,
       version: Int
-  ) extends SubscriptionOperation {
+  ) extends SubscriptionOperation[C] {
 
     def inspectIn(in: Try[In]) = {
       def unexpected(x: Any) = this.unexpected(x, Unsubscribed.getClass)

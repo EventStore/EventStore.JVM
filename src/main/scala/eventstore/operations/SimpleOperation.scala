@@ -2,21 +2,21 @@ package eventstore
 package operations
 
 import NotHandled.{ NotReady, TooBusy }
-import eventstore.tcp.{ Client, PackOut }
+import eventstore.tcp.PackOut
 
 import scala.util.{ Failure, Success, Try }
 
-private[eventstore] case class SimpleOperation(
+private[eventstore] case class SimpleOperation[C](
     pack:       PackOut,
-    client:     Client,
+    client:     C,
     inspection: Inspection
-) extends Operation {
+) extends Operation[C] {
 
   def id = pack.correlationId
 
   def inspectOut = PartialFunction.empty
 
-  def inspectIn(in: Try[In]): OnIncoming = {
+  def inspectIn(in: Try[In]): OnIncoming[Operation[C]] = {
     import OnIncoming._
 
     def retry = Retry(this, pack)
@@ -31,7 +31,7 @@ private[eventstore] case class SimpleOperation(
       Stop(new CommandNotExpectedException(msg))
     }
 
-    def fallback(in: Try[In]): OnIncoming = in match {
+    def fallback(in: Try[In]): OnIncoming[Operation[C]] = in match {
       case Success(x)                    => unexpected()
       case Failure(NotHandled(NotReady)) => retry
       case Failure(NotHandled(TooBusy))  => retry

@@ -3,48 +3,48 @@ package operations
 
 import eventstore.NotHandled.{ NotReady, TooBusy }
 import eventstore.PersistentSubscription.{ Ack, Connect, EventAppeared, Nak }
-import eventstore.tcp.{ Client, PackOut }
+import eventstore.tcp.PackOut
 import eventstore.SubscriptionDropped._
 import eventstore.operations.OnIncoming._
 
 import scala.util.{ Failure, Success, Try }
 
-private[eventstore] sealed trait PersistentSubscriptionOperation extends Operation {
+private[eventstore] sealed trait PersistentSubscriptionOperation[C] extends Operation[C] {
   def stream: EventStream
 
   def pack: PackOut
 
   def id = pack.correlationId
 
-  protected def unexpected(actual: Any, expectedClass: Class[_]): OnIncoming = {
+  protected def unexpected(actual: Any, expectedClass: Class[_]): OnIncoming[Operation[C]] = {
     val expected = expectedClass.getSimpleName
     val msg = s"Expected: $expected, actual: $actual"
     Stop(new CommandNotExpectedException(msg))
   }
 
-  protected def retry: OnIncoming = Retry(this, pack)
+  protected def retry: OnIncoming[Operation[C]] = Retry(this, pack)
 
-  protected def accessDenied(msg: String): OnIncoming = Stop(new AccessDeniedException(msg))
+  protected def accessDenied(msg: String): OnIncoming[Operation[C]] = Stop(new AccessDeniedException(msg))
 }
 
 private[eventstore] object PersistentSubscriptionOperation {
 
-  def apply(
+  def apply[C](
     connect: Connect,
     pack:    PackOut,
-    client:  Client,
+    client:  C,
     ongoing: Boolean
-  ): Operation = {
+  ): Operation[C] = {
     Connecting(connect, pack, client, ongoing, 0)
   }
 
-  case class Connecting(
+  case class Connecting[C](
       connect: Connect,
       pack:    PackOut,
-      client:  Client,
+      client:  C,
       ongoing: Boolean,
       version: Int
-  ) extends PersistentSubscriptionOperation {
+  ) extends PersistentSubscriptionOperation[C] {
 
     def stream = connect.streamId
 
@@ -55,7 +55,7 @@ private[eventstore] object PersistentSubscriptionOperation {
         if (!ongoing) Ignore
         else Continue(Connected(connect, pack, client, ongoing, version + 1), in)
 
-      def unexpected(x: Any) = this.unexpected(x, classOf[Connected])
+      def unexpected(x: Any) = this.unexpected(x, classOf[Connected[C]])
 
       in match {
         case Success(Completed())          => subscribed
@@ -93,17 +93,17 @@ private[eventstore] object PersistentSubscriptionOperation {
     }
   }
 
-  case class Connected(
+  case class Connected[C](
       connect: Connect,
       pack:    PackOut,
-      client:  Client,
+      client:  C,
       ongoing: Boolean,
       version: Int
-  ) extends PersistentSubscriptionOperation {
+  ) extends PersistentSubscriptionOperation[C] {
 
     def stream = connect.streamId
 
-    def inspectIn(in: Try[In]): OnIncoming = {
+    def inspectIn(in: Try[In]): OnIncoming[Operation[C]] = {
       def unexpected(x: Any) = this.unexpected(x, classOf[EventAppeared])
 
       in match {
@@ -143,13 +143,13 @@ private[eventstore] object PersistentSubscriptionOperation {
     }
   }
 
-  case class Unsubscribing(
+  case class Unsubscribing[C](
       stream:  EventStream,
       pack:    PackOut,
-      client:  Client,
+      client:  C,
       ongoing: Boolean,
       version: Int
-  ) extends PersistentSubscriptionOperation {
+  ) extends PersistentSubscriptionOperation[C] {
 
     def inspectIn(in: Try[In]) = {
       def unexpected(x: Any) = this.unexpected(x, Unsubscribed.getClass)

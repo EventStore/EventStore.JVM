@@ -28,10 +28,10 @@ object ConnectionActor {
    */
   def getProps(settings: Settings): Props = props(settings)
 
-  private[eventstore]type Operations = OneToMany[Operation, Uuid, Client]
+  private[eventstore]type Operations = OneToMany[Operation[Client], Uuid, Client]
 
   private[eventstore] object Operations {
-    val Empty: Operations = OneToMany[Operation, Uuid, Client](_.id, _.client)
+    val Empty: Operations = OneToMany[Operation[Client], Uuid, Client](_.id, _.client)
   }
 
   private[eventstore] case class Connect(address: InetSocketAddress)
@@ -164,7 +164,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
   def rcvPack(os: Operations, rcv: Operations => Receive, connection: Option[Connection]): Receive = {
     def send(packOut: PackOut) = for { connection <- connection } connection(packOut)
 
-    def inspectIn(msg: Try[In], operation: Operation) = operation.inspectIn(msg) match {
+    def inspectIn(msg: Try[In], operation: Operation[Client]) = operation.inspectIn(msg) match {
       case OnIncoming.Ignore   => os
       case OnIncoming.Stop(in) => stopOperation(operation, os, in)
       case OnIncoming.Retry(operation, packOut) =>
@@ -208,7 +208,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       val id = packOut.correlationId
       val client = Client(sender())
 
-      def isDefined(x: Iterable[Operation]) = x.find(_.inspectOut.isDefinedAt(msg))
+      def isDefined(x: Iterable[Operation[Client]]) = x.find(_.inspectOut.isDefinedAt(msg))
       def forId = isDefined(os.single(id))
       def forMsg = isDefined(os.many(client))
 
@@ -380,7 +380,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
     connectionFailed(msg, new CannotEstablishConnectionException(msg), os)
   }
 
-  def stopOperation(operation: Operation, os: Operations, in: Try[In]): Operations = {
+  def stopOperation(operation: Operation[Client], os: Operations, in: Try[In]): Operations = {
     val client = operation.client
     client(in)
     val result = os - operation
