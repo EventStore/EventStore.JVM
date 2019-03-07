@@ -1,9 +1,10 @@
 package eventstore
 
+import scala.util.Success
 import akka.actor.Status.Failure
 import org.specs2.mock.Mockito
-import scala.util.Success
 import util.ActorSpec
+import util.ByteStringSupport._
 
 class EsConnectionSpec extends ActorSpec with Mockito {
   "EventStoreConnection.future" should {
@@ -44,7 +45,7 @@ class EsConnectionSpec extends ActorSpec with Mockito {
     }
 
     "set stream metadata" in new TestScope {
-      val content = Content(ByteString(1, 2, 3))
+      val content = Content(byteStringInt8(1, 2, 3))
       val sId = streamId.metadata
       val future = connection.setStreamMetadata(streamId, content)
 
@@ -56,7 +57,7 @@ class EsConnectionSpec extends ActorSpec with Mockito {
     }
 
     "get stream metadata" in new GetMetadataScope {
-      val content = Content(ByteString(1, 2, 3))
+      val content = Content(byteStringInt8(1, 2, 3))
       val metadata = EventRecord(streamId.metadata, EventNumber.First, EventData(SystemEventType.metadata, data = content))
       getStreamMetadata(ReadEventCompleted(metadata)) mustEqual content
     }
@@ -88,6 +89,7 @@ class EsConnectionSpec extends ActorSpec with Mockito {
   }
 
   private trait TestScope extends ActorScope {
+
     val streamId = EventStream.Id("streamId")
     val events = Seq(EventData("test"))
     val connection = new EsConnection(testActor, system)

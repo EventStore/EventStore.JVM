@@ -2,15 +2,15 @@ package eventstore
 package tcp
 
 import java.nio.ByteOrder
-
+import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, Future}
 import akka.NotUsed
+import akka.util.{ByteString => ABS}
 import akka.event.LoggingAdapter
 import akka.stream.scaladsl._
 import eventstore.tcp.EventStoreFormats._
-import eventstore.util.{ BidiFraming, BidiLogging, BytesReader, BytesWriter }
-
-import scala.concurrent.duration._
-import scala.concurrent.{ ExecutionContext, Future }
+import eventstore.util.{BidiFraming, BidiLogging, BytesReader, BytesWriter}
+import scodec.bits.ByteVector
 
 object EventStoreFlow {
 
@@ -19,35 +19,37 @@ object EventStoreFlow {
     parallelism:       Int,
     ordered:           Boolean,
     log:               LoggingAdapter
-  )(implicit ec: ExecutionContext): BidiFlow[ByteString, PackIn, PackOut, ByteString, NotUsed] = {
+  )(implicit ec: ExecutionContext): BidiFlow[ABS, PackIn, PackOut, ABS, NotUsed] = {
 
-    val incoming = Flow[ByteString]
-      .mapFuture(ordered, parallelism) { x => BytesReader[PackIn].read(x) }
+    val incoming = Flow[ByteVector]
+      .mapFuture(ordered, parallelism)(BytesReader[PackIn].read(_).unsafe.value)
 
     val outgoing = Flow[PackOut]
-      .mapFuture(ordered, parallelism) { x => BytesWriter[PackOut].toByteString(x) }
-      .keepAlive(heartbeatInterval, () => BytesWriter[PackOut].toByteString(PackOut(HeartbeatRequest)))
+      .mapFuture(ordered, parallelism)(BytesWriter[PackOut].write)
+      .keepAlive(heartbeatInterval, () => BytesWriter[PackOut].write(PackOut(HeartbeatRequest)))
 
     val autoReply = {
-      def reply(message: Out, byteString: ByteString): ByteString = {
-        val packIn = BytesReader[PackIn].read(byteString)
+
+      def reply(message: Out, bv: ByteVector): ByteVector = {
+
+        val packIn  = BytesReader[PackIn].read(bv).unsafe.value
         val packOut = PackOut(message, packIn.correlationId)
-        BytesWriter[PackOut].toByteString(packOut)
+
+        BytesWriter[PackOut].write(packOut)
       }
 
-      BidiReply[ByteString, ByteString] {
+      BidiReply[ByteVector, ByteVector] {
         case x if x.head == 0x01 => reply(HeartbeatResponse, x)
         case x if x.head == 0x03 => reply(Pong, x)
       }
     }
 
-    val framing = BidiFraming(fieldLength = 4, maxFrameLength = 64 * 1024 * 1024)(ByteOrder.LITTLE_ENDIAN)
-
+    val framing       = BidiFraming(fieldLength = 4, maxFrameLength = 64 * 1024 * 1024)(ByteOrder.LITTLE_ENDIAN)
+    val convert       = BidiFlow.fromFunctions((bs: ABS) => ByteVector.view(bs.toArray), (bv: ByteVector) => ABS(bv.toArray))
     val serialization = BidiFlow.fromFlows(incoming, outgoing)
+    val logging       = BidiLogging(log)
 
-    val logging = BidiLogging(log)
-
-    framing atop autoReply atop serialization atop logging
+    framing atop convert atop autoReply atop serialization atop logging
   }
 
   private implicit class FlowOps[In](self: Flow[In, In, NotUsed]) {

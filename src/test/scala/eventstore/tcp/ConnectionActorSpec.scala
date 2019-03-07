@@ -1,23 +1,19 @@
 package eventstore
 package tcp
 
-import akka.actor.{ ActorRef, Status, Terminated }
-import akka.io.{ IO, Tcp }
-import akka.testkit.{ TestActorRef, TestProbe }
-import akka.util.ByteIterator
+import akka.actor.{ActorRef, Status, Terminated}
+import akka.io.{IO, Tcp}
+import akka.testkit.{TestActorRef, TestProbe}
 import java.net.InetSocketAddress
-import java.nio.ByteOrder
-
 import akka.stream.StreamTcpException
-import eventstore.NotHandled.{ MasterInfo, NotMaster }
-import eventstore.cluster.ClusterDiscovererActor.{ Address, GetAddress }
-import eventstore.cluster.{ ClusterException, ClusterSettings }
+import eventstore.NotHandled.{MasterInfo, NotMaster}
+import eventstore.cluster.ClusterDiscovererActor.{Address, GetAddress}
+import eventstore.cluster.{ClusterException, ClusterSettings}
 import eventstore.cluster.GossipSeedsOrDns.GossipSeeds
 import eventstore.tcp.ConnectionActor.Disconnected
 import org.specs2.mock.Mockito
-
 import scala.concurrent.duration._
-import scala.util.{ Failure, Success, Try }
+import scala.util.{Failure, Success, Try}
 
 class ConnectionActorSpec extends util.ActorSpec with Mockito {
 
@@ -762,42 +758,39 @@ class ConnectionActorSpec extends util.ActorSpec with Mockito {
 
   object Frame {
 
+    import akka.util.{ByteString => ABS}
+    import util.BytesReader
+    import scodec.bits.{ByteVector, ByteOrdering}
     import EventStoreFormats._
 
-    implicit val byteOrder = ByteOrder.LITTLE_ENDIAN
+    val byteOrder = ByteOrdering.LittleEndian
 
-    def readIn(bs: ByteString): PackIn = {
-      val iterator = bs.iterator
-      val length = iterator.getInt
-      PackInReader.read(iterator)
+    def readIn(bs: ABS): PackIn = {
+      PackInReader.read(ByteVector(bs.toArray).drop(4)).unsafe.value
     }
 
-    def readOut(bs: ByteString): PackOut = {
-      def readPack(bi: ByteIterator) = {
-        import util.BytesReader
-        val readMessage = MarkerByte.readMessage(bi)
+    def readOut(bs: ABS): PackOut = {
 
-        val flags = BytesReader[Flags].read(bi)
-        val correlationId = BytesReader[Uuid].read(bi)
-        val credentials =
-          if ((flags & Flag.Auth) == 0) None
-          else Some(BytesReader[UserCredentials].read(bi))
+      val readPack = for {
+            mb <- BytesReader[MarkerByte]
+        reader <- BytesReader.lift(MarkerBytes.readerBy(mb))
+        flags  <- BytesReader[Flags]
+        corrId <- BytesReader[Uuid]
+        creds  <- if ((flags & Flag.Auth) == 0) BytesReader.pure[Option[UserCredentials]](None)
+                  else BytesReader[UserCredentials].map(Option(_))
+           msg <- reader
+      } yield PackOut(msg.get.asInstanceOf[Out], corrId, creds)
 
-        val message = readMessage(bi)
-        PackOut(message.get.asInstanceOf[Out], correlationId, credentials)
-      }
-
-      val iterator = bs.iterator
-      val length = iterator.getInt
-      readPack(iterator)
+      readPack.read(ByteVector(bs.toArray).drop(4)).unsafe.value
     }
 
-    def toByteString(pack: PackOut): ByteString = {
-      val bb = ByteString.newBuilder
-      val data = util.BytesWriter[PackOut].toByteString(pack)
-      bb.putInt(data.length)
-      bb.append(data)
-      bb.result()
+    def toByteString(pack: PackOut): ABS = {
+
+      val data   = util.BytesWriter[PackOut].write(pack)
+      val length = ByteVector.fromInt(data.size.toInt, ordering = byteOrder)
+
+      ABS((length ++ data).toArray)
+
     }
   }
 

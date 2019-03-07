@@ -7,7 +7,7 @@ organization := "com.geteventstore"
 
 scalaVersion := crossScalaVersions.value.last
 
-crossScalaVersions := Seq("2.11.12", "2.12.8")
+crossScalaVersions := Seq("2.12.8")
 
 releaseCrossBuild := true
 
@@ -57,6 +57,7 @@ libraryDependencies ++= Seq(
   "org.apache.directory.studio" % "org.apache.commons.codec" % "1.8",
   "joda-time" % "joda-time" % "2.10.1",
   "org.joda" % "joda-convert" % "2.2.0",
+  "org.scodec" %% "scodec-bits" % "1.1.9",
   "org.mockito" % "mockito-all" % "1.10.19" % Test,
   "org.specs2" %% "specs2-core" % Specs2Version % Test,
   "org.specs2" %% "specs2-mock" % Specs2Version % Test)
@@ -85,7 +86,7 @@ coverageExcludedPackages :=
   "eventstore.examples;eventstore.j;" +
     "eventstore.proto;" +
     "eventstore.tcp.EventStoreProtoFormats;" +
-    "eventstore.tcp.MarkerByte;" +
+    "eventstore.tcp.MarkerBytes;" +
     "eventstore.util.ToCoarsest"
 
 pomExtra in Global := {
