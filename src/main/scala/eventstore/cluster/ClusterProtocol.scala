@@ -1,50 +1,28 @@
 package eventstore
 package cluster
 
-import org.joda.time.format.{ DateTimeFormatter, DateTimeFormat => JodaFormat }
-import org.joda.time.{ DateTime, DateTimeZone }
-import spray.json._
+import java.time.{ZoneOffset, ZonedDateTime}
+import java.time.format.DateTimeFormatter
 
-import scala.util.{ Failure, Success, Try }
+import scala.util.Try
+import spray.json._
 
 object ClusterProtocol extends DefaultJsonProtocol {
 
   implicit object UuidFormat extends JsonFormat[Uuid] {
     def write(x: Uuid): JsValue = JsString(x.toString)
-
     def read(json: JsValue): Uuid = json match {
       case JsString(x) => x.uuid
       case _           => deserializationError(s"expected UUID as string, got $json")
     }
   }
 
-  implicit object DateTimeFormat extends JsonFormat[DateTime] {
-    val formats = List(
-      JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSSZ"),
-      JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSSSZ"),
-      JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ssZ"),
-      JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSZ"),
-      JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSZ"),
-      JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZ"),
-      JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSZ"),
-      JodaFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SZ")
-    )
-
-    def write(x: DateTime): JsValue = JsString(x.toString(formats.head))
-
-    def read(json: JsValue): DateTime = {
-      def loop(x: String)(h: DateTimeFormatter, t: List[DateTimeFormatter]): DateTime =
-        Try(h.parseDateTime(x)) match {
-          case Success(dt) => dt.withZone(DateTimeZone.UTC)
-          case Failure(_) =>
-            if (t.nonEmpty) loop(x)(t.head, t.tail)
-            else deserializationError(s"could not find a date/time format for $x")
-        }
-
-      json match {
-        case JsString(x) => loop(x)(formats.head, formats.tail)
-        case _           => deserializationError(s"expected date/time as string, got $json")
-      }
+  implicit object DateTimeFormat extends JsonFormat[ZonedDateTime] {
+    def write(x: ZonedDateTime): JsValue = JsString(x.toString)
+    def read(json: JsValue): ZonedDateTime = json match {
+      case JsString(x) => Try(ZonedDateTime.parse(x).withZoneSameInstant(ZoneOffset.UTC)).
+                          getOrElse(deserializationError(s"could not find a date/time format for $x"))
+      case _           => deserializationError(s"expected date/time as string, got $json")
     }
   }
 
@@ -114,7 +92,7 @@ object ClusterProtocol extends DefaultJsonProtocol {
 
     case class Mapping(
       instanceId:            Uuid,
-      timeStamp:             DateTime,
+      timeStamp:             ZonedDateTime,
       state:                 NodeState,
       isAlive:               Boolean,
       internalTcpIp:         String,

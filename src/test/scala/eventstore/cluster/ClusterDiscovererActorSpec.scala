@@ -2,11 +2,11 @@ package eventstore
 package cluster
 
 import java.net.InetSocketAddress
+import java.time.ZonedDateTime
 import akka.testkit.TestProbe
 import akka.util.Timeout
 import akka.actor.Status.Failure
 import akka.pattern.ask
-import org.joda.time.DateTime
 import org.specs2.mock.Mockito
 import ClusterDiscovererActor._
 import GossipSeedsOrDns.ClusterDns
@@ -461,7 +461,7 @@ class ClusterDiscovererActorSpec extends util.ActorSpec with Mockito {
       isAlive: Boolean           = true
     ): MemberInfo = MemberInfo(
       instanceId = ids(address),
-      timestamp = DateTime.now,
+      timestamp = ZonedDateTime.now,
       state = state,
       isAlive = isAlive,
       internalTcp = address,
