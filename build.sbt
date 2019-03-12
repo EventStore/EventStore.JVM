@@ -54,7 +54,6 @@ libraryDependencies ++= Seq(
   "com.typesafe" % "config" % "1.3.3",
   "io.spray" %%  "spray-json" % "1.3.5",
   "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
-  "org.apache.directory.studio" % "org.apache.commons.codec" % "1.8",
   "joda-time" % "joda-time" % "2.10.1",
   "org.joda" % "joda-convert" % "2.2.0",
   "org.scodec" %% "scodec-bits" % "1.1.9",

@@ -1,6 +1,9 @@
 package eventstore
 package util
 
+import java.nio.charset.StandardCharsets
+import java.util.Base64
+
 trait PasswordHashAlgorithm {
   type Hash = String
   type Salt = String
@@ -14,9 +17,18 @@ object PasswordHashAlgorithm {
   def apply(): PasswordHashAlgorithm = Rfc2898
 
   private object Rfc2898 extends PasswordHashAlgorithm {
+
+    private val encoder64 = Base64.getEncoder
+    private val decoder64 = Base64.getDecoder
+
+    private def encode64(value: Array[Byte]) =
+      new String(encoder64.encode(value), StandardCharsets.UTF_8)
+
+    private def decode64(value: String): Array[Byte] =
+      decoder64.decode(value.getBytes(StandardCharsets.UTF_8))
+
     val random = java.security.SecureRandom.getInstance("SHA1PRNG")
     val factory = javax.crypto.SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1")
-    val base64 = new org.apache.commons.codec.binary.Base64()
 
     def hash(password: String): (Hash, Salt) = {
       val salt = new Array[Byte](16)
@@ -25,7 +37,7 @@ object PasswordHashAlgorithm {
       }
       val spec = new javax.crypto.spec.PBEKeySpec(password.toCharArray, salt, 1000, 20 * 8)
       val hash = factory.generateSecret(spec).getEncoded
-      base64.encodeToString(hash) -> base64.encodeToString(salt)
+      encode64(hash) -> encode64(salt)
     }
 
     def isValid(password: Password, hash: Hash, salt: Salt) = {
@@ -35,7 +47,7 @@ object PasswordHashAlgorithm {
         val diff = hash.length ^ test.length
         (hash zip test).foldLeft(diff) { case (d, (x, y)) => d | x ^ y } == 0
       }
-      isValid(base64.decode(hash), base64.decode(salt))
+      isValid(decode64(hash), decode64(salt))
     }
   }
 }
