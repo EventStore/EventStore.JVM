@@ -1,35 +1,26 @@
 package eventstore
 package tcp
 
-import akka.util.{ ByteIterator, ByteStringBuilder }
 import eventstore.ReadDirection._
 import eventstore.tcp.EventStoreFormats._
-import eventstore.util.{ BytesReader, BytesWriter }
-import eventstore.{ PersistentSubscription => Ps }
+import eventstore.util._
+import eventstore.{PersistentSubscription => Ps}
+import scodec.bits.ByteVector
+import scala.util.{Failure, Try}
 
-import scala.util.control.NonFatal
-import scala.util.{ Failure, Try }
+object MarkerBytes {
 
-object MarkerByte {
-  type Reader = ByteIterator => Try[In]
+  type Reader = BytesReader[Try[In]]
 
-  def readMessage(bi: ByteIterator): Reader = {
-    val markerByte = bi.getByte
-    readers.getOrElse(markerByte, sys.error(s"unknown marker byte: 0x%02X".format(markerByte)))
-  }
+  def readerBy(marker: MarkerByte): Attempt[Reader] =
+    readers.get(marker).toRight(s"unknown marker byte: 0x%02X".format(marker))
 
-  def reader[T <: In](implicit reader: BytesReader[T]): Reader = (bi: ByteIterator) => Try(reader.read(bi))
-
-  def readerTry[T <: In](implicit reader: BytesReader[Try[T]]): Reader =
-    (bi: ByteIterator) => try reader.read(bi) catch {
-      case NonFatal(e) => Failure(e)
-    }
-
-  def readerFailure(x: ServerError): Reader = (_: ByteIterator) => Failure(x)
-
-  def readerFailure[T <: ServerError](implicit reader: BytesReader[T]): Reader = (x: ByteIterator) => Failure(reader.read(x))
-
-  val readers: Map[Byte, Reader] = Map[Int, Reader](
+  private def reader[T <: In](implicit reader: BytesReader[T]): Reader            = reader.map(Try(_))
+  private def readerTry[T <: In](implicit r: BytesReader[Try[T]]): Reader         = r
+  private def readerFailure(x: ServerError): Reader                               = BytesReader.pure(Failure(x))
+  private def readerFailure[T <: ServerError](implicit r: BytesReader[T]): Reader = r.map(Failure(_))
+  
+  private val readers: Map[Byte, Reader] = Map[Int, Reader](
     0x01 -> reader[HeartbeatRequest.type],
     0x02 -> reader[HeartbeatResponse.type],
     0x03 -> reader[Ping.type],
@@ -45,7 +36,7 @@ object MarkerByte {
     //    CreateChunk = 0x11,
     //    PhysicalChunkBulk = 0x12,
     //    LogicalChunkBulk = 0x13,
-    //
+
     0x83 -> readerTry[WriteEventsCompleted],
     0x85 -> readerTry[TransactionStartCompleted],
     0x87 -> readerTry[TransactionWriteCompleted],
@@ -82,23 +73,17 @@ object MarkerByte {
       case (key, value) => key.toByte -> value
     }
 
-  type Writer = ByteStringBuilder => Unit
+  type Writer = ByteVector
 
-  def writer[T <: Out](markerByte: Int, x: T)(implicit writer: BytesWriter[T]): (Writer, Writer) = {
-    def writeByte(bb: ByteStringBuilder): Unit = {
-      bb.putByte(markerByte.toByte)
-    }
-    def writeMessage(bb: ByteStringBuilder): Unit = {
-      writer.write(x, bb)
-    }
-    (writeByte _) -> (writeMessage _)
-  }
+  private def writer[T <: Out](marker: Int, x: T)(implicit writer: BytesWriter[T]): (Writer, Writer) =
+    ByteVector(marker) -> writer.write(x)
 
   def writeMessage(out: Out): (Writer, Writer) = out match {
     case HeartbeatRequest     => writer(0x01, HeartbeatRequest)
     case HeartbeatResponse    => writer(0x02, HeartbeatResponse)
     case Ping                 => writer(0x03, Ping)
     case Pong                 => writer(0x04, Pong)
+
     //    PrepareAck = 0x05,
     //    CommitAck = 0x06,
     //
@@ -109,6 +94,7 @@ object MarkerByte {
     //    CreateChunk = 0x11,
     //    PhysicalChunkBulk = 0x12,
     //    LogicalChunkBulk = 0x 13,
+
     case x: WriteEvents       => writer(0x82, x)
     case x: TransactionStart  => writer(0x84, x)
     case x: TransactionWrite  => writer(0x86, x)

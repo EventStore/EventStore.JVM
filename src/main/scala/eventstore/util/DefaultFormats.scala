@@ -1,8 +1,7 @@
 package eventstore
 package util
 
-import akka.util.{ ByteIterator, ByteStringBuilder }
-import java.nio.ByteOrder.{ BIG_ENDIAN, LITTLE_ENDIAN }
+import scodec.bits.{ByteOrdering, ByteVector}
 
 object DefaultFormats extends DefaultFormats
 
@@ -31,20 +30,32 @@ trait DefaultFormats {
       (a << 48) | (b << 32) | (c << 16) | d
     }
 
-    def write(x: Uuid, builder: ByteStringBuilder) = {
+    def write(x: Uuid): ByteVector = {
       val mostSignificant = bitMagic(x.getMostSignificantBits)
       val leastSignificant = x.getLeastSignificantBits
-      builder.putLong(mostSignificant)(LITTLE_ENDIAN)
-      builder.putLong(leastSignificant)(BIG_ENDIAN)
+      ByteVector.fromLong(mostSignificant, size = 8, ByteOrdering.LittleEndian) ++
+      ByteVector.fromLong(leastSignificant, size = 8, ByteOrdering.BigEndian)
     }
 
-    def read(bi: ByteIterator) = {
-      val length = bi.len
-      require(length >= this.length, s"cannot parse uuid, actual length: $length, expected: ${this.length}")
-      val mostSignificant = inverseBitMagic(bi.getLong(LITTLE_ENDIAN))
-      val leastSignificant = bi.getLong(BIG_ENDIAN)
-      new Uuid(mostSignificant, leastSignificant)
+    def read(bi: ByteVector): Attempt[ReadResult[Uuid]] = {
+
+      def fail: String = s"cannot parse uuid, actual length: $length, expected: ${this.length}"
+
+      def readUuid: ReadResult[Uuid] = {
+
+        val most      = bi.take(8)
+        val least     = bi.drop(8).take(8)
+        val remainder = bi.drop(16)
+
+        val mostSignificant  = inverseBitMagic(most.toLong(signed = true, ByteOrdering.LittleEndian))
+        val leastSignificant = least.toLong(signed = true, ByteOrdering.BigEndian)
+
+        ReadResult(new Uuid(mostSignificant, leastSignificant), remainder)
+      }
+
+      Either.cond(bi.length >= this.length, readUuid, fail)
+
     }
+
   }
-
 }

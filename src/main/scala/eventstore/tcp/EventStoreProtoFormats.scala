@@ -1,17 +1,12 @@
 package eventstore
 package tcp
 
-import java.io.InputStream
-import java.util.concurrent.TimeUnit
-
 import eventstore.ReadDirection.{ Backward, Forward }
 import eventstore.proto.{ EventStoreMessages ⇒ j, _ }
-import eventstore.util.{ DefaultFormats, ToCoarsest }
+import eventstore.util.DefaultFormats
 import eventstore.{ PersistentSubscription ⇒ Ps }
 import org.joda.time.DateTime
-
 import scala.collection.JavaConverters._
-import scala.concurrent.duration.FiniteDuration
 import scala.language.reflectiveCalls
 import scala.util.Try
 
@@ -116,7 +111,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
         number = EventNumber.Exact(x.getEventNumber),
         data = EventData(
           eventType = x.getEventType,
-          eventId = uuid(x.getEventId),
+          eventId = uuidUnsafe(x.getEventId),
           data = Content(byteString(x.getData), ContentType(x.getDataContentType)),
           metadata = Content(byteString(x.getMetadata), ContentType(x.getMetadataContentType))
         ),

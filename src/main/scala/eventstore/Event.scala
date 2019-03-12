@@ -1,10 +1,7 @@
 package eventstore
 
 import java.util.UUID
-
-import eventstore.util.ByteStringToString
 import org.joda.time.DateTime
-
 import scala.PartialFunction.{ cond, condOpt }
 
 sealed trait Event extends Ordered[Event] {
@@ -71,7 +68,7 @@ object EventRecord {
   override lazy val toString = {
     val data = contentType match {
       case ContentType.Json if value.nonEmpty => value.utf8String
-      case _                                  => ByteStringToString(value)
+      case _                                  => value.show
     }
     s"Content($data,$contentType)"
   }

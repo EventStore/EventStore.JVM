@@ -1,15 +1,16 @@
 package eventstore
 package tcp
 
-import util.{ BytesWriter, BytesReader, BytesFormat }
-import akka.util.{ ByteStringBuilder, ByteIterator }
+import scodec.bits.ByteVector
+import util.{BytesFormat, BytesWriter, BytesReader, ReadResult, uint8}
 
 object EventStoreFormats extends EventStoreFormats
 
 trait EventStoreFormats extends EventStoreProtoFormats {
+
   abstract class EmptyFormat[T](obj: T) extends BytesFormat[T] {
-    def read(bi: ByteIterator) = obj
-    def write(x: T, builder: ByteStringBuilder) = {}
+    def read(bv: ByteVector)    = Right(ReadResult(obj))
+    def write(x: T): ByteVector = ByteVector.empty
   }
 
   implicit object HeartbeatRequestFormat extends EmptyFormat(HeartbeatRequest)
@@ -23,60 +24,64 @@ trait EventStoreFormats extends EventStoreProtoFormats {
   implicit object AuthenticatedFormat extends EmptyFormat(Authenticated)
 
   implicit object UserCredentialsFormat extends BytesFormat[UserCredentials] {
-    def write(x: UserCredentials, builder: ByteStringBuilder) = {
-      def putString(s: String, name: String) = {
-        val bs = ByteString(s)
-        val length = bs.length
-        require(length < 256, s"$name serialized length should be less than 256 bytes, but is $length:$x")
-        builder.putByte(bs.size.toByte)
-        builder.append(bs)
+
+    def write(uc: UserCredentials): ByteVector = {
+
+      def putString(s: String, name: String): ByteVector = {
+        val bvs = ByteVector.encodeUtf8(s).orError
+        require(bvs.size < 256, s"$name serialized length should be less than 256 bytes, but is ${bvs.size}:$uc")
+        val size = uint8(bvs.size.toInt).unsafe
+        size ++ bvs
       }
-      putString(x.login, "login")
-      putString(x.password, "password")
+
+      putString(uc.login, "login") ++ putString(uc.password, "password")
+
     }
 
-    def read(bi: ByteIterator) = {
-      def getString = {
-        val length = bi.getByte
-        val bytes = new Bytes(length.toInt)
-        bi.getBytes(bytes)
-        new String(bytes, "UTF-8")
+    def read(bv: ByteVector): Attempt[ReadResult[UserCredentials]] = {
+
+      val getString: BytesReader[String] = bv => {
+        val length = bv.take(1).toInt(signed = false)
+        bv.tail.consume(length.toLong)(_.decodeUtf8.leftMap(_.toString)).map {
+          case (rem, a) => ReadResult(a, rem)
+        }
       }
-      val login = getString
-      val password = getString
-      UserCredentials(login, password)
+
+      val reader = for {
+           login <- getString
+        password <- getString
+      } yield UserCredentials(login, password)
+
+      reader.read(bv)
+    }
+
+  }
+
+  implicit object ByteFormat extends BytesFormat[Byte] {
+    def write(b: Byte): ByteVector                      = ByteVector(b)
+    def read(bv: ByteVector): Attempt[ReadResult[Byte]] = bv.headOption match {
+      case Some(h) => Right(ReadResult(h, bv.tail))
+      case None    => Left("ByteVector empty")
     }
   }
 
-  implicit object FlagsFormat extends BytesFormat[Flags] {
-    def write(x: Flags, builder: ByteStringBuilder) = {
-      builder.putByte(x)
-    }
+  implicit val PackOutWriter: BytesWriter[PackOut] = (x: PackOut) => {
 
-    def read(bi: ByteIterator) = bi.getByte
+    val (marker, message) = MarkerBytes.writeMessage(x.message)
+
+    val flags       = BytesWriter[Flags].write(Flags(x.credentials))
+    val correlation = BytesWriter[Uuid].write(x.correlationId)
+    val credentials = x.credentials.fold(ByteVector.empty)(BytesWriter[UserCredentials].write)
+
+    marker ++ flags ++ correlation ++ credentials ++ message
   }
 
-  implicit object PackOutWriter extends BytesWriter[PackOut] {
-    def write(x: PackOut, builder: ByteStringBuilder) = {
-      val (writeMarker, writeMessage) = MarkerByte.writeMessage(x.message)
-      writeMarker(builder)
-      val credentials = x.credentials
-      BytesWriter[Flags].write(Flags(credentials), builder)
-      BytesWriter[Uuid].write(x.correlationId, builder)
-      credentials.foreach(x => BytesWriter[UserCredentials].write(x, builder))
-      writeMessage(builder)
-    }
-  }
+  implicit val PackInReader: BytesReader[PackIn] = for {
+         mb <- BytesReader[MarkerByte]
+    readMsg <- BytesReader.lift(MarkerBytes.readerBy(mb))
+    _       <- BytesReader[Flags]
+    corr    <- BytesReader[Uuid]
+    msg     <- readMsg
+  } yield PackIn(msg, corr)
 
-  implicit object PackInReader extends BytesReader[PackIn] {
-    def read(bi: ByteIterator): PackIn = {
-      val readMessage = MarkerByte.readMessage(bi)
-
-      val flags = BytesReader[Flags].read(bi)
-      val correlationId = BytesReader[Uuid].read(bi)
-      val message = readMessage(bi)
-
-      PackIn(message, correlationId)
-    }
-  }
 }

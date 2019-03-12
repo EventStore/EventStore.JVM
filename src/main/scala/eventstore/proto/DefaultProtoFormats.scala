@@ -1,11 +1,10 @@
 package eventstore
 package proto
 
-import akka.util.{ ByteStringBuilder, ByteIterator }
-import com.google.protobuf.{ ByteString => ProtoByteString }
+import com.google.protobuf.{ByteString => PBS}
 import com.google.protobuf.Message.Builder
-import scala.language.reflectiveCalls
-import util.{ BytesWriter, BytesReader, DefaultFormats }
+import scodec.bits.ByteVector
+import util.{DefaultFormats, BytesWriter, BytesReader, ReadResult}
 
 object DefaultProtoFormats extends DefaultProtoFormats
 
@@ -15,19 +14,15 @@ trait DefaultProtoFormats extends DefaultFormats {
 
   trait ProtoReader[T, P <: Message] extends BytesReader[T] {
 
-    def parse: (java.io.InputStream => P)
-
+    def parse: Array[Byte] => P
     def fromProto(x: P): T
 
-    def read(bi: ByteIterator): T = fromProto(parse(bi.asInputStream))
+    final def read(bi: ByteVector)                     = Right(ReadResult(fromProto(parse(bi.toArray))))
+    final def byteString(bs: PBS): ByteString          = ByteString(bs.asReadOnlyByteBuffer())
+    final def byteString(bs: Option[PBS]): ByteString  = bs.fold(ByteString.empty)(x => ByteString(x.asReadOnlyByteBuffer()))
+    final def uuidUnsafe(bs: PBS): Uuid                = BytesReader[Uuid].read(ByteVector(bs.toByteArray)).unsafe.value
 
-    def byteString(bs: ProtoByteString): ByteString = ByteString(bs.asReadOnlyByteBuffer())
-
-    def byteString(bs: Option[ProtoByteString]): ByteString = bs.fold(ByteString.empty)(x => ByteString(x.asReadOnlyByteBuffer()))
-
-    def uuid(bs: ProtoByteString): Uuid = BytesReader[Uuid].read(byteString(bs))
-
-    def message(x: Option[String]): Option[String] = x match {
+    final def message(x: Option[String]): Option[String] = x match {
       case Some("")                  => None
       case Some(s) if s.trim.isEmpty => None
       case _                         => x
@@ -38,15 +33,10 @@ trait DefaultProtoFormats extends DefaultFormats {
 
     def toProto(x: T): Builder
 
-    def write(x: T, builder: ByteStringBuilder) = {
-      builder.putBytes(toProto(x).build().toByteArray)
-    }
-
-    def protoByteString(bs: ByteString) = ProtoByteString.copyFrom(bs.toByteBuffer)
-
-    def protoByteString(uuid: Uuid) = ProtoByteString.copyFrom(BytesWriter[Uuid].toByteString(uuid).toByteBuffer)
-
-    def protoByteStringOption(bs: ByteString) = if (bs.isEmpty) None else Some(protoByteString(bs))
+    final def write(x: T): ByteVector                            = ByteVector(toProto(x).build().toByteArray)
+    final def protoByteString(bs: ByteString)                    = PBS.copyFrom(bs.toByteBuffer)
+    final def protoByteString(uuid: Uuid)                        = PBS.copyFrom(BytesWriter[Uuid].write(uuid).toByteBuffer)
+    final def protoByteStringOption(bs: ByteString): Option[PBS] = if (!bs.nonEmpty) None else Some(protoByteString(bs))
   }
 
   def option[T](b: Boolean, f: => T): Option[T] = if (b) Some(f) else None
