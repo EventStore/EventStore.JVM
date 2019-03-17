@@ -4,7 +4,7 @@ import akka.actor.Status.Failure
 import akka.testkit._
 import eventstore.ReadDirection._
 import eventstore.tcp.ConnectionActor
-import org.joda.time.DateTime
+import java.time.ZonedDateTime
 import spray.json.{ JsNumber, JsObject }
 
 import scala.concurrent.duration._
@@ -13,7 +13,7 @@ abstract class TestConnection extends util.ActorSpec {
 
   abstract class TestConnectionScope extends ActorScope {
     val streamId = newStreamId
-    val date = DateTime.now
+    val date = ZonedDateTime.now
 
     val streamMetadata = ByteString(TestConnection.this.getClass.getSimpleName)
     val actor = system.actorOf(ConnectionActor.props())

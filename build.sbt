@@ -54,8 +54,6 @@ libraryDependencies ++= Seq(
   "com.typesafe" % "config" % "1.3.3",
   "io.spray" %%  "spray-json" % "1.3.5",
   "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
-  "joda-time" % "joda-time" % "2.10.1",
-  "org.joda" % "joda-convert" % "2.2.0",
   "org.scodec" %% "scodec-bits" % "1.1.9",
   "org.mockito" % "mockito-all" % "1.10.19" % Test,
   "org.specs2" %% "specs2-core" % Specs2Version % Test,

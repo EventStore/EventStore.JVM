@@ -1,14 +1,14 @@
 package eventstore
 package tcp
 
-import eventstore.ReadDirection.{ Backward, Forward }
-import eventstore.proto.{ EventStoreMessages ⇒ j, _ }
-import eventstore.util.DefaultFormats
-import eventstore.{ PersistentSubscription ⇒ Ps }
-import org.joda.time.DateTime
+import java.time.{Instant, ZoneId, ZonedDateTime}
 import scala.collection.JavaConverters._
 import scala.language.reflectiveCalls
 import scala.util.Try
+import eventstore.ReadDirection.{Backward, Forward}
+import eventstore.proto.{EventStoreMessages => j, _}
+import eventstore.util.DefaultFormats
+import eventstore.{PersistentSubscription => Ps}
 
 object EventStoreProtoFormats extends EventStoreProtoFormats
 
@@ -115,7 +115,9 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
           data = Content(byteString(x.getData), ContentType(x.getDataContentType)),
           metadata = Content(byteString(x.getMetadata), ContentType(x.getMetadataContentType))
         ),
-        created = option(x.hasCreatedEpoch, new DateTime(x.getCreatedEpoch))
+        created = option(
+          x.hasCreatedEpoch, ZonedDateTime.ofInstant(Instant.ofEpochMilli(x.getCreatedEpoch), ZoneId.systemDefault)
+        )
       )
     }
   }

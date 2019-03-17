@@ -1,7 +1,7 @@
 package eventstore
 
 import java.util.UUID
-import org.joda.time.DateTime
+import java.time.ZonedDateTime
 import scala.PartialFunction.{ cond, condOpt }
 
 sealed trait Event extends Ordered[Event] {
@@ -9,7 +9,7 @@ sealed trait Event extends Ordered[Event] {
   def number: EventNumber.Exact
   def data: EventData
   def record: EventRecord
-  def created: Option[DateTime]
+  def created: Option[ZonedDateTime]
 
   def compare(that: Event) = this.number.value compare that.number.value
 
@@ -39,7 +39,7 @@ object Event {
     streamId: EventStream.Id,
     number:   EventNumber.Exact,
     data:     EventData,
-    created:  Option[DateTime]  = None
+    created:  Option[ZonedDateTime]  = None
 ) extends Event {
   def record = this
 }

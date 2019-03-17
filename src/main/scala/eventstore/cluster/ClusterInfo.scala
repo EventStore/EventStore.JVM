@@ -2,7 +2,7 @@ package eventstore
 package cluster
 
 import java.net.InetSocketAddress
-
+import java.time.ZonedDateTime
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http.HostConnectionPool
 import akka.stream.ActorMaterializer
@@ -10,8 +10,6 @@ import akka.stream.scaladsl._
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import org.joda.time.DateTime
-
 import scala.collection.concurrent.TrieMap
 import scala.concurrent._
 import scala.util.Try
@@ -60,7 +58,7 @@ object ClusterInfo {
 @SerialVersionUID(1L)
 case class MemberInfo(
     instanceId:         Uuid,
-    timestamp:          DateTime,
+    timestamp:          ZonedDateTime,
     state:              NodeState,
     isAlive:            Boolean,
     internalTcp:        InetSocketAddress,

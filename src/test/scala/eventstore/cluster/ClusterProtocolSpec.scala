@@ -2,7 +2,7 @@ package eventstore
 package cluster
 
 import eventstore.cluster.NodeState.{ Master, Slave }
-import org.joda.time.{ DateTime, DateTimeZone }
+import java.time.{ZonedDateTime, ZoneOffset}
 import org.specs2.mutable.Specification
 import org.specs2.specification.Scope
 import spray.json._
@@ -37,7 +37,7 @@ class ClusterProtocolSpec extends Specification {
     val clusterInfo = ClusterInfo("127.0.0.1" :: 2113, List(
       MemberInfo(
         instanceId = "4534f211-10af-45f1-87c0-8398215328be".uuid,
-        timestamp = new DateTime(2014, 9, 24, 19, 53, 18, 590, DateTimeZone.UTC),
+        timestamp = ZonedDateTime.of(2014, 9, 24, 19, 53, 18, 590550000, ZoneOffset.UTC),
         state = Slave,
         isAlive = false,
         internalTcp = "127.0.0.1" :: 3111,
@@ -56,7 +56,7 @@ class ClusterProtocolSpec extends Specification {
       ),
       MemberInfo(
         instanceId = "8f680215-3abe-4aed-9d06-c5725776303d".uuid,
-        timestamp = new DateTime(2015, 1, 29, 10, 23, 9, 41, DateTimeZone.UTC),
+        timestamp = ZonedDateTime.of(2015, 1, 29, 10, 23, 9, 41562100, ZoneOffset.UTC),
         state = Master,
         isAlive = true,
         internalTcp = "127.0.0.1" :: 2111,
@@ -75,7 +75,7 @@ class ClusterProtocolSpec extends Specification {
       ),
       MemberInfo(
         instanceId = "44baf256-55a4-4ccc-b6ef-7bd383c88991".uuid,
-        timestamp = new DateTime(2015, 1, 26, 19, 52, 40, DateTimeZone.UTC),
+        timestamp = ZonedDateTime.of(2015, 1, 26, 19, 52, 40, 0, ZoneOffset.UTC),
         state = Slave,
         isAlive = true,
         internalTcp = "127.0.0.1" :: 1111,
