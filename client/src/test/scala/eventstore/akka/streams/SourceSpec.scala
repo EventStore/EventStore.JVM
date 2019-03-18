@@ -8,9 +8,8 @@ import _root_.akka.stream.ActorMaterializer
 import _root_.akka.stream.scaladsl._
 import _root_.akka.stream.testkit.scaladsl._
 import _root_.akka.testkit._
-import org.specs2.mock.Mockito
 
-abstract class SourceSpec extends ActorSpec with Mockito {
+abstract class SourceSpec extends ActorSpec {
 
   abstract class AbstractSourceScope[T] extends ActorScope {
 

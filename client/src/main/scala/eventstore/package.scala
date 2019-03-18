@@ -7,31 +7,34 @@ import java.{util => ju}
 package object eventstore {
 
   private val sinceVersion = "7.0.0"
-  private def updateMsg(name: String) =
-    s"$name has been moved from eventstore.$name to eventstore.akka.$name. " +
-    s"Please update your imports, as this deprecated type alias will be " +
-    s"removed in a future version of EventStore.JVM."
 
   type Uuid                = ju.UUID
 
-  @deprecated(updateMsg("EsConnection"), since = sinceVersion)
+  @deprecated(a.deprecationMsg("EsConnection"), since = sinceVersion)
   type EsConnection        = a.EsConnection
   val EsConnection         = a.EsConnection
 
-  @deprecated(updateMsg("EventStoreExtension"), since = sinceVersion)
+  @deprecated(a.deprecationMsg("EventStoreExtension"), since = sinceVersion)
   type EventStoreExtension = a.EventStoreExtension
   val EventStoreExtension  = a.EventStoreExtension
 
-  @deprecated(updateMsg("OverflowStrategy"), since = sinceVersion)
+  @deprecated(a.deprecationMsg("OverflowStrategy"), since = sinceVersion)
   type OverflowStrategy    = a.OverflowStrategy
   val OverflowStrategy     = a.OverflowStrategy
 
-  @deprecated(updateMsg("EsTransaction"), since = sinceVersion)
+  @deprecated(a.deprecationMsg("EsTransaction"), since = sinceVersion)
   type EsTransaction       = a.EsTransaction
   val EsTransaction        = a.EsTransaction
 
-  @deprecated(updateMsg("ProjectionsClient"), since = sinceVersion)
+  @deprecated(a.deprecationMsg("ProjectionsClient"), since = sinceVersion)
   type ProjectionsClient   = a.ProjectionsClient
   val ProjectionsClient    = a.ProjectionsClient
+
+  @deprecated(a.deprecationMsg("PersistentSubscriptionActor"), since = sinceVersion)
+  val PersistentSubscriptionActor  = a.PersistentSubscriptionActor
+
+  @deprecated(a.deprecationMsg("LiveProcessingStarted"), since = sinceVersion)
+  type LiveProcessingStarted = a.LiveProcessingStarted.type
+  val LiveProcessingStarted  = a.LiveProcessingStarted
 
 }

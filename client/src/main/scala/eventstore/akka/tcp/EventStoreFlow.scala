@@ -14,7 +14,7 @@ import eventstore.tcp._
 import eventstore.tcp.EventStoreFormats._
 import eventstore.syntax._
 
-object EventStoreFlow {
+private[eventstore] object EventStoreFlow {
 
   def apply(
     heartbeatInterval: FiniteDuration,

@@ -9,6 +9,7 @@ import eventstore.PersistentSubscription.{Ack, Nak}
 import eventstore.akka.PersistentSubscriptionActor._
 
 object PersistentSubscriptionActor {
+
   def props(
     connection:  ActorRef,
     client:      ActorRef,
@@ -47,7 +48,7 @@ object PersistentSubscriptionActor {
   final case class ManualNak(eventId: Uuid)
 }
 
-class PersistentSubscriptionActor private (
+private[eventstore] class PersistentSubscriptionActor private (
     val connection:  ActorRef,
     val client:      ActorRef,
     val streamId:    EventStream,

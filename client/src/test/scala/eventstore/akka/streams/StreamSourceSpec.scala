@@ -512,7 +512,7 @@ class StreamSourceSpec extends SourceSpec {
       ))
 
     def newEvent(number: Long): Event =
-      EventRecord(streamId, EventNumber.Exact(number), mock[EventData])
+      EventRecord(streamId, EventNumber.Exact(number), TestData.eventData)
 
     def readEvents(x: Long) =
       ReadStreamEvents(streamId, EventNumber(x), readBatchSize, Forward, resolveLinkTos = resolveLinkTos)
@@ -520,7 +520,7 @@ class StreamSourceSpec extends SourceSpec {
     def readCompleted(next: Long, endOfStream: Boolean, events: Event*) = ReadStreamEventsCompleted(
       events = events.toList,
       nextEventNumber = EventNumber(next),
-      lastEventNumber = mock[EventNumber.Exact],
+      lastEventNumber = EventNumber.Exact(1L),
       endOfStream = endOfStream,
       lastCommitPosition = next.toLong,
       direction = Forward

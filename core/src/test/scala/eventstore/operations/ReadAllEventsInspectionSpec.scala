@@ -2,18 +2,18 @@ package eventstore
 package operations
 
 import scala.util.{ Failure, Success }
-import org.specs2.mock.Mockito
 import org.specs2.mutable.Specification
 import ReadAllEventsError._
 import Inspection.Decision.{Stop, Fail}
+import TestData._
 
-class ReadAllEventsInspectionSpec extends Specification with Mockito {
-  val inspection = ReadAllEventsInspection(mock[ReadAllEvents]).pf
+class ReadAllEventsInspectionSpec extends Specification {
+  val inspection = ReadAllEventsInspection(readAllEvents).pf
 
   "ReadAllEventsInspection" should {
 
     "handle ReadAllEventsCompleted" in {
-      inspection(Success(mock[ReadAllEventsCompleted])) mustEqual Stop
+      inspection(Success(readAllEventsCompleted)) mustEqual Stop
     }
 
     "handle Error" in {

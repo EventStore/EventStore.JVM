@@ -9,7 +9,6 @@ import _root_.akka.actor.{ActorRef, Status, Terminated}
 import _root_.akka.io.{IO, Tcp}
 import _root_.akka.testkit.{TestActorRef, TestProbe}
 import _root_.akka.stream.StreamTcpException
-import org.specs2.mock.Mockito
 import NotHandled.{MasterInfo, NotMaster}
 import eventstore.syntax._
 import eventstore.tcp._
@@ -19,7 +18,7 @@ import eventstore.akka.ActorSpec
 import eventstore.akka.cluster.ClusterDiscovererActor.{Address, GetAddress}
 import eventstore.akka.tcp.ConnectionActor.Disconnected
 
-class ConnectionActorSpec extends ActorSpec with Mockito {
+class ConnectionActorSpec extends ActorSpec {
 
   val off = 1.minute
 
@@ -889,7 +888,7 @@ class ConnectionActorSpec extends ActorSpec with Mockito {
       verifyReconnections(n - 1)
     }
 
-    final case class Connect(address: InetSocketAddress)
+    case class Connect(address: InetSocketAddress)
   }
 
   trait OperationTimedOutScope extends TestScope {

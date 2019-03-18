@@ -11,14 +11,13 @@ import _root_.akka.testkit.TestProbe
 import _root_.akka.util.Timeout
 import _root_.akka.actor.Status.Failure
 import _root_.akka.pattern.ask
-import org.specs2.mock.Mockito
 import eventstore.syntax._
 import eventstore.cluster._
 import eventstore.cluster.GossipSeedsOrDns.ClusterDns
 import eventstore.cluster.NodeState._
 import ClusterDiscovererActor._
 
-class ClusterDiscovererActorSpec extends ActorSpec with Mockito {
+class ClusterDiscovererActorSpec extends ActorSpec {
   "ClusterDiscovererActor" should {
     "discover cluster from dns" in new TestScope {
       actor ! GetAddress()

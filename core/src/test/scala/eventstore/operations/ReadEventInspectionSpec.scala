@@ -2,18 +2,18 @@ package eventstore
 package operations
 
 import scala.util.{ Failure, Success }
-import org.specs2.mock.Mockito
 import org.specs2.mutable.Specification
 import ReadEventError._
 import Inspection.Decision.{Stop, Fail}
+import TestData._
 
-class ReadEventInspectionSpec extends Specification with Mockito {
-  val inspection = ReadEventInspection(ReadEvent(EventStream.Id("test"))).pf
+class ReadEventInspectionSpec extends Specification {
+  val inspection = ReadEventInspection(readEvent).pf
 
   "ReadEventInspection" should {
 
     "handle ReadEventCompleted" in {
-      inspection(Success(ReadEventCompleted(mock[Event]))) mustEqual Stop
+      inspection(Success(readEventCompleted)) mustEqual Stop
     }
 
     "handle StreamNotFound" in {

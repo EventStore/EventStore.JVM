@@ -4,7 +4,7 @@ package akka
 import _root_.akka.actor.{Actor, ActorLogging, ActorRef}
 import eventstore.{PersistentSubscription => PS}
 
-trait AbstractPersistentSubscriptionActor[T] extends Actor with ActorLogging {
+private[eventstore] trait AbstractPersistentSubscriptionActor[T] extends Actor with ActorLogging {
   def groupName: String
   def client: ActorRef
   def connection: ActorRef

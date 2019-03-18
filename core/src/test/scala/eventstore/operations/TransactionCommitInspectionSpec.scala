@@ -2,18 +2,18 @@ package eventstore
 package operations
 
 import scala.util.{ Failure, Success }
-import org.specs2.mock.Mockito
 import org.specs2.mutable.Specification
 import Inspection.Decision.{Retry, Stop, Fail}
 import OperationError._
+import TestData._
 
-class TransactionCommitInspectionSpec extends Specification with Mockito {
-  val inspection = TransactionCommitInspection(mock[TransactionCommit]).pf
+class TransactionCommitInspectionSpec extends Specification {
+  val inspection = TransactionCommitInspection(transactionCommit).pf
 
   "TransactionCommitInspection" should {
 
     "handle TransactionCommitCompleted" in {
-      inspection(Success(mock[TransactionCommitCompleted])) mustEqual Stop
+      inspection(Success(transactionCommitCompleted)) mustEqual Stop
     }
 
     "handle PrepareTimeout" in {

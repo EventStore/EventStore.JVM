@@ -5,9 +5,8 @@ import scala.concurrent.duration._
 import _root_.akka.actor.Status.Failure
 import _root_.akka.actor.ActorRef
 import _root_.akka.testkit._
-import org.specs2.mock.Mockito
 
-abstract class AbstractSubscriptionActorSpec extends ActorSpec with Mockito {
+abstract class AbstractSubscriptionActorSpec extends ActorSpec {
 
   abstract class AbstractScope extends ActorScope {
     val duration = 1.second

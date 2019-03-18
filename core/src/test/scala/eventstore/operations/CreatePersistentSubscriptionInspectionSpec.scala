@@ -3,13 +3,13 @@ package operations
 
 import scala.util.{ Failure, Success }
 import org.specs2.mutable.Specification
-import org.specs2.mock.Mockito
 import CreatePersistentSubscriptionError._
-import PersistentSubscription.{Create, CreateCompleted}
+import PersistentSubscription.CreateCompleted
 import Inspection.Decision._
+import TestData._
 
-class CreatePersistentSubscriptionInspectionSpec extends Specification with Mockito {
-  val inspection = CreatePersistentSubscriptionInspection(mock[Create]).pf
+class CreatePersistentSubscriptionInspectionSpec extends Specification {
+  val inspection = CreatePersistentSubscriptionInspection(psCreate).pf
 
   "CreatePersistentSubscriptionInspection" should {
 

@@ -8,7 +8,7 @@ import eventstore.syntax._
 import eventstore.cluster.{ClusterInfo, MemberInfo, NodeState}
 import spray.json._
 
-object ClusterJsonProtocol extends DefaultJsonProtocol {
+private[eventstore] object ClusterJsonProtocol extends DefaultJsonProtocol {
 
   implicit object UuidFormat extends JsonFormat[Uuid] {
     def write(x: Uuid): JsValue = JsString(x.toString)

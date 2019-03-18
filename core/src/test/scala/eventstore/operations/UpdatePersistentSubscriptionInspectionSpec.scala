@@ -3,13 +3,13 @@ package operations
 
 import scala.util.{ Failure, Success }
 import org.specs2.mutable.Specification
-import org.specs2.mock.Mockito
 import UpdatePersistentSubscriptionError._
-import PersistentSubscription.{Update, UpdateCompleted}
+import PersistentSubscription.UpdateCompleted
 import Inspection.Decision._
+import TestData._
 
-class UpdatePersistentSubscriptionInspectionSpec extends Specification with Mockito {
-  val inspection = UpdatePersistentSubscriptionInspection(mock[Update]).pf
+class UpdatePersistentSubscriptionInspectionSpec extends Specification {
+  val inspection = UpdatePersistentSubscriptionInspection(psUpdate).pf
 
   "UpdatePersistentSubscriptionInspection" should {
 
