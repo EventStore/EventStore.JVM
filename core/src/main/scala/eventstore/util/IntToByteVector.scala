@@ -7,7 +7,7 @@ import eventstore.syntax.Attempt
 // This code is inspired by scodec's `IntCodec`, see:
 // https://github.com/scodec/scodec/blob/series/1.11.x/shared/src/main/scala/scodec/codecs/IntCodec.scala
 
-private[eventstore]final class IntToByteVector(bits: Int, signed: Boolean, ordering: ByteOrdering) {
+private[eventstore] final class IntToByteVector(bits: Int, signed: Boolean, ordering: ByteOrdering) {
 
   require(bits > 0 && bits <= (if (signed) 32 else 31),
     "bits must be in range [1, 32] for signed and [1, 31] for unsigned"

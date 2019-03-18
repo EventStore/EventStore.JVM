@@ -14,7 +14,7 @@ object TransactionActor {
     requireMaster: Boolean                 = Settings.Default.requireMaster,
     credentials:   Option[UserCredentials] = None
   ): Props =
-    Props(classOf[TransactionActor], connection, kickoff, requireMaster, credentials)
+    Props(new TransactionActor(connection, kickoff, requireMaster, credentials))
 
   sealed trait Kickoff
   @SerialVersionUID(1L) final case class Start(data: TransactionStart) extends Kickoff
@@ -38,6 +38,8 @@ object TransactionActor {
     range:    Option[EventNumber.Range] = None,
     position: Option[Position.Exact]    = None
   )
+
+  @SerialVersionUID(1L) private[eventstore] final case class StashEntry(command: Command, client: ActorRef)
 
   /**
    * Java API
@@ -95,7 +97,7 @@ object TransactionActor {
   def commitCompleted: CommitCompleted.type = CommitCompleted
 }
 
-class TransactionActor(
+private[eventstore] class TransactionActor(
     connection:    ActorRef,
     kickoff:       TransactionActor.Kickoff,
     requireMaster: Boolean,
@@ -113,7 +115,7 @@ class TransactionActor(
   }
 
   def starting(stash: Queue[StashEntry], awaitingId: Queue[ActorRef]): Receive = {
-    case x: Command       => context become starting(stash enqueue StashEntry(x), awaitingId)
+    case x: Command       => context become starting(stash enqueue stashEntry(x), awaitingId)
     case GetTransactionId => context become starting(stash, awaitingId enqueue sender())
     case TransactionStartCompleted(transactionId) =>
       awaitingId.foreach(_ ! TransactionId(transactionId))
@@ -155,7 +157,7 @@ class TransactionActor(
     }
 
     def writing(client: ActorRef, stash: Queue[StashEntry]): Receive = common or failure(client) or {
-      case x: Command => context become writing(client, stash enqueue StashEntry(x))
+      case x: Command => context become writing(client, stash enqueue stashEntry(x))
       case TransactionWriteCompleted(`transactionId`) =>
         client ! WriteCompleted
         context become apply(stash)
@@ -176,5 +178,5 @@ class TransactionActor(
     connection ! credentials.fold[OutLike](x)(x.withCredentials)
   }
 
-  @SerialVersionUID(1L) case class StashEntry(command: Command, client: ActorRef = sender())
+  def stashEntry(command: Command): StashEntry = StashEntry(command, sender())
 }

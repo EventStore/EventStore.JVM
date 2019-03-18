@@ -41,7 +41,7 @@ private[eventstore] class ClusterDiscovererActor(
         val client = sender()
         addClient(client)
         failed match {
-          case Some(failed) if bestNode.externalTcp == failed =>
+          case Some(addr) if bestNode.externalTcp == addr =>
             log.info("Cluster best node {} failed, reported by {}", bestNode, client)
             context become recovering(bestNode, members)
 
@@ -85,15 +85,15 @@ private[eventstore] class ClusterDiscovererActor(
     def attemptFailed(e: Option[Throwable] = None) = {
       if (attempt < maxDiscoverAttempts) {
         e match {
-          case Some(e) => log.info("Discovering cluster: attempt {}/{} failed with error: {}", attempt, maxDiscoverAttempts, e)
-          case None    => log.info("Discovering cluster: attempt {}/{} failed: no candidate found", attempt, maxDiscoverAttempts)
+          case Some(th) => log.info("Discovering cluster: attempt {}/{} failed with error: {}", attempt, maxDiscoverAttempts, th)
+          case None     => log.info("Discovering cluster: attempt {}/{} failed: no candidate found", attempt, maxDiscoverAttempts)
         }
         context.system.scheduler.scheduleOnce(discoverAttemptInterval, self, Tick)
         context become discovering(attempt + 1, failed)
       } else {
         val msg = e match {
-          case Some(e) => s"Failed to discover candidate in $maxDiscoverAttempts attempts with error: $e"
-          case None    => s"Failed to discover candidate in $maxDiscoverAttempts attempts"
+          case Some(th) => s"Failed to discover candidate in $maxDiscoverAttempts attempts with error: $th"
+          case None     => s"Failed to discover candidate in $maxDiscoverAttempts attempts"
         }
         log.error(msg)
         broadcast(Failure(new ClusterException(msg, e)))
@@ -107,8 +107,8 @@ private[eventstore] class ClusterDiscovererActor(
         else {
           val candidates = GossipCandidates(settings)
           failed.fold(candidates)(failed => seeds.filterNot(_ == failed)) match {
-            case Nil   => candidates
-            case seeds => seeds
+            case Nil => candidates
+            case ss  => ss
           }
         }
       }
@@ -124,11 +124,11 @@ private[eventstore] class ClusterDiscovererActor(
       val future = Future.find(futures)(_.bestNode.isDefined)
       Await.result(future, gossipTimeout) match {
         case None => attemptFailed(None)
-        case Some(clusterInfo) =>
-          val bestNode = clusterInfo.bestNode.get
+        case Some(ci) =>
+          val bestNode = ci.bestNode.get
           log.info("Discovering cluster: attempt {}/{} successful: best candidate is {}", attempt, maxDiscoverAttempts, bestNode)
           broadcast(Address(bestNode))
-          context become discovered(bestNode, clusterInfo.members)
+          context become discovered(bestNode, ci.members)
       }
     } catch { case NonFatal(e) => attemptFailed(Some(e)) }
   }
@@ -162,6 +162,7 @@ private[eventstore] class ClusterDiscovererActor(
 }
 
 private[eventstore] object ClusterDiscovererActor {
+
   def props(settings: ClusterSettings, clusterInfo: ClusterInfoOf.FutureFunc): Props = {
     Props(new ClusterDiscovererActor(settings, clusterInfo))
   }

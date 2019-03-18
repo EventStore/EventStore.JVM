@@ -4,8 +4,7 @@ package akka
 import _root_.akka.actor.Status.Failure
 import _root_.akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, Identify}
 
-
-trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
+private[eventstore] trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
   def client: ActorRef
   def connection: ActorRef
   def streamId: EventStream
@@ -65,11 +64,4 @@ trait AbstractSubscriptionActor[T] extends Actor with ActorLogging {
     if (ready) receive
     else rcvFailure or rcvReady(receive)
   }
-}
-
-@SerialVersionUID(1L) case object LiveProcessingStarted {
-  /**
-   * Java API
-   */
-  def getInstance = this
 }

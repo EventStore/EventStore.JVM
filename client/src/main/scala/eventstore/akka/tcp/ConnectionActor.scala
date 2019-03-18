@@ -18,7 +18,8 @@ import eventstore.akka.cluster.ClusterDiscovererActor
 import eventstore.akka.cluster.ClusterInfoOf
 
 object ConnectionActor {
-  def props(settings: Settings = Settings.Default): Props = Props(classOf[ConnectionActor], settings)
+
+  def props(settings: Settings = Settings.Default): Props = Props(new ConnectionActor(settings))
 
   /**
    * Java API
@@ -81,8 +82,8 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
 
   def receive = {
     val address = clusterDiscoverer match {
-      case Some(clusterDiscoverer) =>
-        clusterDiscoverer ! ClusterDiscovererActor.GetAddress()
+      case Some(cd) =>
+        cd ! ClusterDiscovererActor.GetAddress()
         None
       case None =>
         connect("Connecting", Duration.Zero)
@@ -95,8 +96,8 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
     def connecting(os: Operations) = this.connecting(address, os, recover)
 
     val rcvAddressOrConnected: Receive = address match {
-      case Some(address) => rcvConnected(address, os, recover)
-      case None          => rcvAddress(os, address => this.connecting(Some(address), os, recover))
+      case Some(addr) => rcvConnected(addr, os, recover)
+      case None       => rcvAddress(os, address => this.connecting(Some(address), os, recover))
     }
 
     rcvAddressOrConnected or rcvPack(os, connecting, None)
@@ -120,20 +121,20 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
 
       val rcvAddress: Receive = clusterDiscoverer match {
         case None => PartialFunction.empty
-        case Some(clusterDiscoverer) =>
+        case Some(cd) =>
           def reconnect(newAddress: InetSocketAddress, reason: String): Unit = if (newAddress != address) {
             log.info("Address changed from {} to {}: {}", address, newAddress, reason)
             connection.stop()
 
             val result = os.flatMap { operation =>
               operation.disconnected match {
-                case OnDisconnected.Continue(operation) => List(operation)
-                case OnDisconnected.Stop(in)            => operation.client(in); Nil
+                case OnDisconnected.Continue(op) => List(op)
+                case OnDisconnected.Stop(in)     => operation.client(in); Nil
               }
             }
 
             def renewAddress(address: InetSocketAddress, os: Operations): Option[Receive] = {
-              clusterDiscoverer ! GetAddress()
+              cd ! GetAddress()
               Some(connecting(None, os, renewAddress))
             }
 
@@ -169,12 +170,12 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
     def inspectIn(msg: Try[In], operation: Operation[Client]) = operation.inspectIn(msg) match {
       case OnIncoming.Ignore   => os
       case OnIncoming.Stop(in) => stopOperation(operation, os, in)
-      case OnIncoming.Retry(operation, packOut) =>
+      case OnIncoming.Retry(op, packOut) =>
         send(packOut)
-        os + operation
-      case OnIncoming.Continue(operation, in) =>
-        operation.client(in)
-        os + operation
+        os + op
+      case OnIncoming.Continue(op, in) =>
+        op.client(in)
+        os + op
     }
 
     def onPackIn(packIn: PackIn) = {
@@ -218,14 +219,14 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       val result = forId orElse forMsg match {
         case Some(operation) =>
           operation.inspectOut(msg) match {
-            case OnOutgoing.Stop(packOut, in) =>
-              send(packOut)
+            case OnOutgoing.Stop(po, in) =>
+              send(po)
               stopOperation(operation, os, in)
 
-            case OnOutgoing.Continue(operation, packOut) =>
-              send(packOut)
-              system.scheduler.scheduleOnce(settings.operationTimeout, self, TimedOut(id, operation.version))
-              os + operation
+            case OnOutgoing.Continue(op, po) =>
+              send(po)
+              system.scheduler.scheduleOnce(settings.operationTimeout, self, TimedOut(id, op.version))
+              os + op
           }
 
         case None =>
@@ -284,10 +285,10 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
       connection(PackOut(identifyClient))
       val result = os.flatMap { operation =>
         operation.connected match {
-          case OnConnected.Retry(operation, packOut) =>
-            system.scheduler.scheduleOnce(settings.operationTimeout, self, TimedOut(packOut.correlationId, operation.version))
+          case OnConnected.Retry(op, packOut) =>
+            system.scheduler.scheduleOnce(settings.operationTimeout, self, TimedOut(packOut.correlationId, op.version))
             connection(packOut)
-            List(operation)
+            List(op)
           case OnConnected.Stop(in) =>
             operation.client(in)
             Nil
@@ -314,15 +315,15 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
   def reconnect(address: InetSocketAddress, os: Operations, retry: Option[DelayedRetry] = delayedRetry): Option[Receive] = {
     val result = os.flatMap { operation =>
       operation.disconnected match {
-        case OnDisconnected.Continue(operation) => List(operation)
-        case OnDisconnected.Stop(in)            => operation.client(in); Nil
+        case OnDisconnected.Continue(op) => List(op)
+        case OnDisconnected.Stop(in)     => operation.client(in); Nil
       }
     }
 
     clusterDiscoverer match {
-      case Some(clusterDiscoverer) =>
+      case Some(cd) =>
         def reconnect(address: InetSocketAddress, os: Operations): Option[Receive] = {
-          clusterDiscoverer ! GetAddress(Some(address))
+          cd ! GetAddress(Some(address))
           Some(connecting(None, os, reconnect))
         }
         reconnect(address, result)

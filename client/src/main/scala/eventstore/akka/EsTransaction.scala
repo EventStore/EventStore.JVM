@@ -12,7 +12,7 @@ trait EsTransaction {
   def commit(): Future[Unit]
 }
 
-object EsTransaction {
+private[eventstore] object EsTransaction {
   implicit def executionContext: ExecutionContext = ExecutionContext.Implicits.global
 
   def start(actor: ActorRef)(implicit timeout: Timeout): Future[EsTransaction] = {
@@ -25,7 +25,9 @@ object EsTransaction {
     EsTransactionForActor(transactionId, actor)
 }
 
-final case class EsTransactionForActor(transactionId: Long, actor: ActorRef)(implicit timeout: Timeout) extends EsTransaction {
+private[eventstore] final case class EsTransactionForActor(
+  transactionId: Long, actor: ActorRef)(implicit timeout: Timeout
+) extends EsTransaction {
 
   import TransactionActor._
   import EsTransaction.executionContext

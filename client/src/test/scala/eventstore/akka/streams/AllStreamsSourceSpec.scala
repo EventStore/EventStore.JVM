@@ -463,7 +463,7 @@ class AllStreamsSourceSpec extends SourceSpec {
     ///
 
     def newEvent(x: Long) =
-      IndexedEvent(mock[Event], Position.Exact(x))
+      IndexedEvent(TestData.eventRecord, Position.Exact(x))
 
     def readEvents(x: Long) =
       ReadAllEvents(Position(x), readBatchSize, Forward, resolveLinkTos = resolveLinkTos)

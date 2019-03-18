@@ -8,7 +8,7 @@ import _root_.akka.stream.scaladsl.Framing.FramingException
 import _root_.akka.stream.scaladsl.{BidiFlow, Flow, Framing, Keep}
 import _root_.akka.util.ByteString
 
-object BidiFraming {
+private[eventstore] object BidiFraming {
 
   def apply(fieldLength: Int, maxFrameLength: Int)(implicit byteOrder: ByteOrder): BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] = {
 

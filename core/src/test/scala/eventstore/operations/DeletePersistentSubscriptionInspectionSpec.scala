@@ -3,13 +3,13 @@ package operations
 
 import scala.util.{ Failure, Success }
 import org.specs2.mutable.Specification
-import org.specs2.mock.Mockito
 import DeletePersistentSubscriptionError._
-import PersistentSubscription.{Delete, DeleteCompleted}
+import PersistentSubscription.DeleteCompleted
 import Inspection.Decision._
+import TestData._
 
-class DeletePersistentSubscriptionInspectionSpec extends Specification with Mockito {
-  val inspection = DeletePersistentSubscriptionInspection(mock[Delete]).pf
+class DeletePersistentSubscriptionInspectionSpec extends Specification {
+  val inspection = DeletePersistentSubscriptionInspection(psDelete).pf
 
   "DeletePersistentSubscriptionInspection" should {
 

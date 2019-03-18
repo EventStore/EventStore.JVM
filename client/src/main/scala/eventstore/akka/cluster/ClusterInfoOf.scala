@@ -16,7 +16,7 @@ import _root_.akka.http.scaladsl.unmarshalling.Unmarshal
 import _root_.akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import eventstore.cluster.ClusterInfo
 
-object ClusterInfoOf {
+private[eventstore] object ClusterInfoOf {
 
   type FutureFunc = InetSocketAddress => Future[ClusterInfo]
 

@@ -9,27 +9,6 @@ import scala.collection.immutable.Queue
 
 object StreamSubscriptionActor {
 
-  @deprecated("Use `props` with Settings as argument", "2.2")
-  def props(
-    connection:          ActorRef,
-    client:              ActorRef,
-    streamId:            EventStream.Id,
-    fromNumberExclusive: Option[EventNumber]     = None,
-    resolveLinkTos:      Boolean                 = Settings.Default.resolveLinkTos,
-    credentials:         Option[UserCredentials] = None,
-    readBatchSize:       Int                     = Settings.Default.readBatchSize
-  ): Props = {
-
-    Props(new StreamSubscriptionActor(
-      connection,
-      client,
-      streamId,
-      fromNumberExclusive,
-      credentials,
-      Settings.Default.copy(readBatchSize = readBatchSize, resolveLinkTos = resolveLinkTos)
-    ))
-  }
-
   def props(
     connection:          ActorRef,
     client:              ActorRef,
@@ -52,6 +31,25 @@ object StreamSubscriptionActor {
   /**
    * Java API
    */
+  def getProps(
+    connection:            ActorRef,
+    client:                ActorRef,
+    streamId:              String,
+    fromPositionExclusive: java.lang.Long,
+    credentials:           UserCredentials,
+    settings:              Settings
+  ): Props = props(
+    connection,
+    client,
+    EventStream.Id(streamId),
+    Option(fromPositionExclusive).map(EventNumber.Exact(_)),
+    Option(credentials),
+    Option(settings).getOrElse(Settings.Default)
+  )
+
+  /**
+   * Java API
+   */
   @deprecated("Use `getProps` with Settings as argument", "3.0.0")
   def getProps(
     connection:          ActorRef,
@@ -62,8 +60,8 @@ object StreamSubscriptionActor {
     credentials:         Option[UserCredentials],
     readBatchSize:       Int
   ): Props = {
-
-    props(connection, client, streamId, fromNumberExclusive, resolveLinkTos, credentials, readBatchSize)
+    val settings = Settings.Default.copy(readBatchSize = readBatchSize, resolveLinkTos = resolveLinkTos)
+    props(connection, client, streamId, fromNumberExclusive, credentials, settings)
   }
 
   /**
@@ -76,12 +74,11 @@ object StreamSubscriptionActor {
     streamId:            EventStream.Id,
     fromNumberExclusive: Option[EventNumber]
   ): Props = {
-
-    props(connection, client, streamId, fromNumberExclusive)
+    props(connection, client, streamId, fromNumberExclusive, None, Settings.Default)
   }
 }
 
-class StreamSubscriptionActor private (
+private[eventstore] class StreamSubscriptionActor private (
     val connection:      ActorRef,
     val client:          ActorRef,
     val streamId:        EventStream.Id,
@@ -196,8 +193,8 @@ class StreamSubscriptionActor private (
 
       def subscribed(number: Last) = {
         (number, last) match {
-          case (Some(number), Some(last)) if number > last => catchingUp(Some(last), last, number, Queue())
-          case _ => liveProcessing(last, n, ready)
+          case (Some(nr), Some(l)) if nr > l => catchingUp(Some(l), l, nr, Queue())
+          case _                             => liveProcessing(last, n, ready)
         }
       }
 

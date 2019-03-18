@@ -1,12 +1,12 @@
 package eventstore
 
-import org.specs2.mock.Mockito
 import org.specs2.mutable.Specification
 import eventstore.constants.MaxBatchSize
 import eventstore.util.uuid.randomUuid
 import PersistentSubscription._
+import TestData.{eventRecord, indexedEvent}
 
-class MessageSpec extends Specification with Mockito {
+class MessageSpec extends Specification {
 
   "TransactionStartCompleted" should {
 
@@ -73,8 +73,7 @@ class MessageSpec extends Specification with Mockito {
     }
 
     "throw exception if events.size > MaxBatchSize" in {
-      val event = mock[Event]
-      val events = List.fill(MaxBatchSize + 1)(event)
+      val events = List.fill(MaxBatchSize + 1)(eventRecord)
       ReadStreamEventsCompleted(events, EventNumber.Exact(1), EventNumber.Exact(0), endOfStream = false, 0,
         ReadDirection.Forward) must throwAn[IllegalArgumentException]
     }
@@ -94,8 +93,7 @@ class MessageSpec extends Specification with Mockito {
   "ReadAllEventsCompleted" should {
 
     "throw exception if events.size > MaxBatchSize" in {
-      val event = mock[IndexedEvent]
-      val events = List.fill(MaxBatchSize + 1)(event)
+      val events = List.fill(MaxBatchSize + 1)(indexedEvent)
       val position = Position.Exact(1)
       ReadAllEventsCompleted(events, position, position, ReadDirection.Forward) must throwAn[IllegalArgumentException]
     }

@@ -2,18 +2,18 @@ package eventstore
 package operations
 
 import scala.util.{ Failure, Success }
-import org.specs2.mock.Mockito
 import org.specs2.mutable.Specification
 import OperationError._
 import Inspection.Decision.{Retry, Stop, Fail}
+import TestData._
 
-class DeleteStreamInspectionSpec extends Specification with Mockito {
-  val inspection = DeleteStreamInspection(mock[DeleteStream]).pf
+class DeleteStreamInspectionSpec extends Specification {
+  val inspection = DeleteStreamInspection(deleteStream).pf
 
   "DeleteStreamInspection" should {
 
     "handle DeleteStreamCompleted" in {
-      inspection(Success(mock[DeleteStreamCompleted])) mustEqual Stop
+      inspection(Success(deleteStreamCompleted)) mustEqual Stop
     }
 
     "handle PrepareTimeout" in {

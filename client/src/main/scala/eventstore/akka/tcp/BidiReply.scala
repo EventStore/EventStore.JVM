@@ -6,7 +6,7 @@ import _root_.akka.NotUsed
 import _root_.akka.stream.BidiShape
 import _root_.akka.stream.scaladsl.{ BidiFlow, Broadcast, Flow, GraphDSL, Merge }
 
-object BidiReply {
+private[eventstore] object BidiReply {
   def apply[I, O](pf: PartialFunction[I, O]): BidiFlow[I, I, O, O, NotUsed] = BidiFlow.fromGraph {
     GraphDSL.create() { implicit builder =>
       import GraphDSL.Implicits._

@@ -2,18 +2,18 @@ package eventstore
 package operations
 
 import scala.util.{ Failure, Success }
-import org.specs2.mock.Mockito
 import org.specs2.mutable.Specification
 import OperationError._
 import Inspection.Decision.{Stop, Retry, Fail}
+import TestData._
 
-class WriteEventsInspectionSpec extends Specification with Mockito {
-  val inspection = WriteEventsInspection(mock[WriteEvents]).pf
+class WriteEventsInspectionSpec extends Specification {
+  val inspection = WriteEventsInspection(writeEvents).pf
 
   "WriteEventsInspection" should {
 
     "handle WriteEventsCompleted" in {
-      inspection(Success(mock[WriteEventsCompleted])) mustEqual Stop
+      inspection(Success(writeEventsCompleted)) mustEqual Stop
     }
 
     "handle PrepareTimeout" in {

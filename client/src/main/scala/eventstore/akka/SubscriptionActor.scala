@@ -4,28 +4,9 @@ package akka
 import scala.annotation.tailrec
 import scala.collection.immutable.Queue
 import _root_.akka.actor.{ActorRef, Props}
-import eventstore.ReadDirection.Forward
+import ReadDirection.Forward
 
 object SubscriptionActor {
-
-  @deprecated("Use `props` with Settings as argument", "2.2")
-  def props(
-    connection:            ActorRef,
-    client:                ActorRef,
-    fromPositionExclusive: Option[Position]        = None,
-    resolveLinkTos:        Boolean                 = Settings.Default.resolveLinkTos,
-    credentials:           Option[UserCredentials] = None,
-    readBatchSize:         Int                     = Settings.Default.readBatchSize
-  ): Props = {
-
-    props(
-      connection = connection,
-      client = client,
-      fromPositionExclusive = fromPositionExclusive,
-      credentials = credentials,
-      settings = Settings.Default.copy(resolveLinkTos = resolveLinkTos, readBatchSize = readBatchSize)
-    )
-  }
 
   def props(
     connection:            ActorRef,
@@ -47,6 +28,23 @@ object SubscriptionActor {
   /**
    * Java API
    */
+  def getProps(
+    connection:            ActorRef,
+    client:                ActorRef,
+    fromPositionExclusive: Position.Exact,
+    credentials:           UserCredentials,
+    settings:              Settings
+  ): Props = props(
+    connection,
+    client,
+    Option(fromPositionExclusive),
+    Option(credentials),
+    Option(settings).getOrElse(Settings.Default)
+  )
+
+  /**
+   * Java API
+   */
   @deprecated("Use `getProps` with Settings as argument", "3.0.0")
   def getProps(
     connection:            ActorRef,
@@ -56,8 +54,8 @@ object SubscriptionActor {
     credentials:           Option[UserCredentials],
     readBatchSize:         Int
   ): Props = {
-
-    props(connection, client, fromPositionExclusive, resolveLinkTos, credentials, readBatchSize)
+    val settings  = Settings.Default.copy(resolveLinkTos = resolveLinkTos, readBatchSize = readBatchSize)
+    props(connection, client, fromPositionExclusive, credentials, settings)
   }
 
   /**
@@ -65,11 +63,12 @@ object SubscriptionActor {
    */
   @deprecated("Use `getProps` with Settings as argument", "3.0.0")
   def getProps(connection: ActorRef, client: ActorRef, fromPositionExclusive: Option[Position]) = {
-    props(connection, client, fromPositionExclusive)
+    props(connection, client, fromPositionExclusive, None, Settings.Default)
   }
+
 }
 
-class SubscriptionActor(
+private[eventstore] class SubscriptionActor(
     val connection:        ActorRef,
     val client:            ActorRef,
     fromPositionExclusive: Option[Position],
@@ -183,8 +182,8 @@ class SubscriptionActor(
 
       def subscribed(position: Long) = {
         last match {
-          case Some(last) if position > last.commitPosition => catchingUp(Some(last), last, position, Queue())
-          case _ => liveProcessing(last, n, ready)
+          case Some(l) if position > l.commitPosition => catchingUp(Some(l), l, position, Queue())
+          case _                                      => liveProcessing(last, n, ready)
         }
       }
 

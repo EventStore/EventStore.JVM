@@ -3,46 +3,46 @@ package akka
 
 import scala.util.Success
 import _root_.akka.actor.Status.Failure
-import org.specs2.mock.Mockito
 import testutil._
+import TestData._
 
-class EsConnectionSpec extends ActorSpec with Mockito {
+class EsConnectionSpec extends ActorSpec {
 
   "EventStoreConnection.future" should {
     "write events" in new TestScope {
-      verifyOutIn(mock[WriteEvents], mock[WriteEventsCompleted])
+      verifyOutIn(writeEvents, writeEventsCompleted)
     }
 
     "delete stream" in new TestScope {
-      verifyOutIn(mock[DeleteStream], DeleteStreamCompleted())
+      verifyOutIn(deleteStream, deleteStreamCompleted)
     }
 
     "transaction start" in new TestScope {
-      verifyOutIn(mock[TransactionStart], mock[TransactionStartCompleted])
+      verifyOutIn(transactionStart, transactionStartCompleted)
     }
 
     "transaction write" in new TestScope {
-      verifyOutIn(mock[TransactionWrite], mock[TransactionWriteCompleted])
+      verifyOutIn(transactionWrite, transactionWriteCompleted)
     }
 
     "transaction commit" in new TestScope {
-      verifyOutIn(mock[TransactionCommit], mock[TransactionCommitCompleted])
+      verifyOutIn(transactionCommit, transactionCommitCompleted)
     }
 
     "read event" in new TestScope {
-      verifyOutIn(mock[ReadEvent], mock[ReadEventCompleted])
+      verifyOutIn(readEvent, readEventCompleted)
     }
 
     "read stream events" in new TestScope {
-      verifyOutIn(mock[ReadStreamEvents], mock[ReadStreamEventsCompleted])
+      verifyOutIn(readStreamEvents, readStreamEventsCompleted)
     }
 
     "read all events" in new TestScope {
-      verifyOutIn(mock[ReadAllEvents], mock[ReadAllEventsCompleted])
+      verifyOutIn(readAllEvents, readAllEventsCompleted)
     }
 
     "subscribe to" in new TestScope {
-      verifyOutIn(mock[SubscribeTo], mock[SubscribeToStreamCompleted])
+      verifyOutIn(subscribeTo, subscribeToStreamCompleted)
     }
 
     "set stream metadata" in new TestScope {
@@ -77,15 +77,15 @@ class EsConnectionSpec extends ActorSpec with Mockito {
     }
 
     "create persistent subscription" in new TestScope {
-      verifyOutIn(mock[PersistentSubscription.Create], mock[PersistentSubscription.CreateCompleted.type])
+      verifyOutIn(psCreate, psCreateCompleted)
     }
 
     "update persistent subscription" in new TestScope {
-      verifyOutIn(mock[PersistentSubscription.Update], mock[PersistentSubscription.UpdateCompleted.type])
+      verifyOutIn(psUpdate, psUpdateCompleted)
     }
 
     "delete persistent subscription" in new TestScope {
-      verifyOutIn(mock[PersistentSubscription.Delete], mock[PersistentSubscription.DeleteCompleted.type])
+      verifyOutIn(psDelete, psDeleteCompleted)
     }
   }
 

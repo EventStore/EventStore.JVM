@@ -458,7 +458,7 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
 
     def expectEvent(x: Event) = expectMsg(x)
 
-    def newEvent(number: Long): Event = EventRecord(streamId, EventNumber.Exact(number), mock[EventData])
+    def newEvent(number: Long): Event = EventRecord(streamId, EventNumber.Exact(number),TestData.eventData)
 
     def readEvents(x: Long) =
       ReadStreamEvents(streamId, EventNumber(x), readBatchSize, Forward, resolveLinkTos = resolveLinkTos)
@@ -466,7 +466,7 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
     def readCompleted(next: Long, endOfStream: Boolean, events: Event*) = ReadStreamEventsCompleted(
       events = events.toList,
       nextEventNumber = EventNumber(next),
-      lastEventNumber = mock[EventNumber.Exact],
+      lastEventNumber = EventNumber.Exact(1L),
       endOfStream = endOfStream,
       lastCommitPosition = next.toLong,
       direction = Forward

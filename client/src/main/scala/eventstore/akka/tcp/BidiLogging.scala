@@ -8,7 +8,7 @@ import _root_.akka.event.LoggingAdapter
 import _root_.akka.stream.scaladsl.BidiFlow
 import eventstore.tcp.{PackIn, PackOut}
 
-object BidiLogging {
+private[eventstore] object BidiLogging {
 
   def apply(log: LoggingAdapter): BidiFlow[PackIn, PackIn, PackOut, PackOut, NotUsed] = {
 

@@ -4,6 +4,7 @@ package akka
 import _root_.akka.actor.ActorRef
 import _root_.akka.testkit.TestActorRef
 import PersistentSubscription._
+import TestData.eventData
 
 class PersistentSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
   "PersistentSubscriptionActor" should {
@@ -112,7 +113,7 @@ class PersistentSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
 
     def expectNak(): Unit = connection.expectMsgType[Nak]
 
-    def newEvent(number: Long): Event = EventRecord(streamId, EventNumber.Exact(number), mock[EventData])
+    def newEvent(number: Long): Event = EventRecord(streamId, EventNumber.Exact(number), eventData)
 
     def eventAppeared(event: Event) =
       EventAppeared(event)

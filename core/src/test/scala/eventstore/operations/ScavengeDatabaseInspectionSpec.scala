@@ -2,18 +2,18 @@ package eventstore
 package operations
 
 import scala.util.{ Failure, Success }
-import org.specs2.mock.Mockito
 import org.specs2.mutable.Specification
 import ScavengeError.{InProgress, Unauthorized}
 import Inspection.Decision.{Fail, Stop}
+import TestData._
 
-class ScavengeDatabaseInspectionSpec extends Specification with Mockito {
+class ScavengeDatabaseInspectionSpec extends Specification {
   val inspection = ScavengeDatabaseInspection.pf
 
   "ScavengeDatabaseInspection" should {
 
     "handle ScavengeDatabaseCompleted" in {
-      inspection(Success(mock[ScavengeDatabaseResponse])) mustEqual Stop
+      inspection(Success(scavengeDatabaseResponse)) mustEqual Stop
     }
 
     "handle InProgress" in {

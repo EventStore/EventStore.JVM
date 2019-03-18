@@ -29,15 +29,6 @@ class EsConnection(
 
   implicit val timeout = Timeout(settings.operationTimeout)
 
-  @deprecated("use `apply` instead", "3.0.0")
-  def future[OUT <: Out, IN <: In](out: OUT, credentials: Option[UserCredentials] = None)(
-    implicit
-    outIn: ClassTags[OUT, IN]
-  ): Future[IN] = {
-
-    apply(out, credentials)(outIn, factory.dispatcher)
-  }
-
   def apply[OUT <: Out, IN <: In](out: OUT, credentials: Option[UserCredentials] = None)(
     implicit
     outIn: ClassTags[OUT, IN],
