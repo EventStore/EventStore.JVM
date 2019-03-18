@@ -3,7 +3,7 @@ package operations
 
 import scala.util.Try
 
-private[eventstore] case class RetryableOperation[C](
+private[eventstore] final case class RetryableOperation[C](
   operation:   Operation[C],
   retriesLeft: Int,
   maxRetries:  Int,

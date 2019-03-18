@@ -23,7 +23,7 @@ import eventstore.util.ConfigHelpers._
  * @param maxSubscriberCount The maximum number of subscribers allowed.
  * @param consumerStrategy The [[ConsumerStrategy]] to use for distributing events to client consumers.
  */
-@SerialVersionUID(1L) case class PersistentSubscriptionSettings(
+@SerialVersionUID(1L) final case class PersistentSubscriptionSettings(
   resolveLinkTos:     Boolean          = false,
   startFrom:          EventNumber      = EventNumber.Last,
   extraStatistics:    Boolean          = false,

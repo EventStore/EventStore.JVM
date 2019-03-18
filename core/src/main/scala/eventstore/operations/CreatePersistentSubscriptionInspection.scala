@@ -5,7 +5,7 @@ import CreatePersistentSubscriptionError._
 import PersistentSubscription.{Create, CreateCompleted}
 import Inspection.Decision.Fail
 
-private[eventstore] case class CreatePersistentSubscriptionInspection(out: Create)
+private[eventstore] final case class CreatePersistentSubscriptionInspection(out: Create)
     extends ErrorInspection[CreateCompleted.type, CreatePersistentSubscriptionError] {
 
   def decision(error: CreatePersistentSubscriptionError) = {

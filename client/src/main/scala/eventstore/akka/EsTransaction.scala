@@ -25,7 +25,7 @@ object EsTransaction {
     EsTransactionForActor(transactionId, actor)
 }
 
-case class EsTransactionForActor(transactionId: Long, actor: ActorRef)(implicit timeout: Timeout) extends EsTransaction {
+final case class EsTransactionForActor(transactionId: Long, actor: ActorRef)(implicit timeout: Timeout) extends EsTransaction {
 
   import TransactionActor._
   import EsTransaction.executionContext

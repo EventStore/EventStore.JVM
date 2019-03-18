@@ -56,35 +56,35 @@ private[eventstore] object Operation {
 sealed trait OnConnected[+A]
 
 object OnConnected {
-  case class Retry[A](a: A, out: PackOut) extends OnConnected[A]
-  case class Stop(in: Try[In]) extends OnConnected[Nothing]
+  final case class Retry[A](a: A, out: PackOut) extends OnConnected[A]
+  final case class Stop(in: Try[In]) extends OnConnected[Nothing]
 }
 
 sealed trait OnIncoming[+A]
 
 object OnIncoming {
-  case class Stop(in: Try[In]) extends OnIncoming[Nothing]
+  final case class Stop(in: Try[In]) extends OnIncoming[Nothing]
 
   object Stop {
     def apply(x: EsException): Stop = Stop(Failure(x))
     def apply(x: In): Stop = Stop(Try(x))
   }
 
-  case class Retry[A](a: A, pack: PackOut) extends OnIncoming[A]
-  case class Continue[A](a: A, in: Try[In]) extends OnIncoming[A]
+  final case class Retry[A](a: A, pack: PackOut) extends OnIncoming[A]
+  final case class Continue[A](a: A, in: Try[In]) extends OnIncoming[A]
   case object Ignore extends OnIncoming[Nothing]
 }
 
 sealed trait OnOutgoing[+A]
 
 object OnOutgoing {
-  case class Stop(out: PackOut, in: Try[In]) extends OnOutgoing[Nothing]
-  case class Continue[A](a: A, out: PackOut) extends OnOutgoing[A]
+  final case class Stop(out: PackOut, in: Try[In]) extends OnOutgoing[Nothing]
+  final case class Continue[A](a: A, out: PackOut) extends OnOutgoing[A]
 }
 
 sealed trait OnDisconnected[+A]
 
 object OnDisconnected {
-  case class Continue[A](a: A) extends OnDisconnected[A]
-  case class Stop(in: Try[In]) extends OnDisconnected[Nothing]
+  final case class Continue[A](a: A) extends OnDisconnected[A]
+  final case class Stop(in: Try[In]) extends OnDisconnected[Nothing]
 }

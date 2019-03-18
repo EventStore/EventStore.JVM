@@ -43,8 +43,8 @@ object PersistentSubscriptionActor {
   private final case class SubscriptionDetails(subscriptionId: String, lastEventNum: Option[EventNumber.Exact])
     extends Data
 
-  case class ManualAck(eventId: Uuid)
-  case class ManualNak(eventId: Uuid)
+  final case class ManualAck(eventId: Uuid)
+  final case class ManualNak(eventId: Uuid)
 }
 
 class PersistentSubscriptionActor private (

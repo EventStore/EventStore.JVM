@@ -17,15 +17,15 @@ object TransactionActor {
     Props(classOf[TransactionActor], connection, kickoff, requireMaster, credentials)
 
   sealed trait Kickoff
-  @SerialVersionUID(1L) case class Start(data: TransactionStart) extends Kickoff
-  @SerialVersionUID(1L) case class Continue(transactionId: Long) extends Kickoff
+  @SerialVersionUID(1L) final case class Start(data: TransactionStart) extends Kickoff
+  @SerialVersionUID(1L) final case class Continue(transactionId: Long) extends Kickoff
 
   @SerialVersionUID(1L) case object GetTransactionId
-  @SerialVersionUID(1L) case class TransactionId(value: Long)
+  @SerialVersionUID(1L) final case class TransactionId(value: Long)
 
   sealed trait Command
 
-  @SerialVersionUID(1L) case class Write(events: List[EventData]) extends Command
+  @SerialVersionUID(1L) final case class Write(events: List[EventData]) extends Command
 
   object Write {
     def apply(event: EventData, events: EventData*): Write = Write(event :: events.toList)
@@ -34,7 +34,7 @@ object TransactionActor {
   @SerialVersionUID(1L) case object WriteCompleted
 
   @SerialVersionUID(1L) case object Commit extends Command
-  @SerialVersionUID(1L) case class CommitCompleted(
+  @SerialVersionUID(1L) final case class CommitCompleted(
     range:    Option[EventNumber.Range] = None,
     position: Option[Position.Exact]    = None
   )

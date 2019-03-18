@@ -889,7 +889,7 @@ class ConnectionActorSpec extends ActorSpec with Mockito {
       verifyReconnections(n - 1)
     }
 
-    case class Connect(address: InetSocketAddress)
+    final case class Connect(address: InetSocketAddress)
   }
 
   trait OperationTimedOutScope extends TestScope {

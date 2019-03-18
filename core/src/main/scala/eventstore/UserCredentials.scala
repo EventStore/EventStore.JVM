@@ -1,6 +1,6 @@
 package eventstore
 
-@SerialVersionUID(1L) case class UserCredentials(login: String, password: String) {
+@SerialVersionUID(1L) final case class UserCredentials(login: String, password: String) {
   require(login != null, "login is null")
   require(login.nonEmpty, "login is empty")
   require(password != null, "password is null")

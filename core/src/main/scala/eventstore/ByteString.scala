@@ -14,7 +14,7 @@ sealed abstract class ByteString {
 
 object ByteString {
 
-  private case class DefaultBS(bv: ByteVector) extends ByteString {
+  private final case class DefaultBS(bv: ByteVector) extends ByteString {
     def nonEmpty: Boolean        = bv.nonEmpty
     def toArray: Array[Byte]     = bv.toArray
     def toByteBuffer: ByteBuffer = bv.toByteBuffer

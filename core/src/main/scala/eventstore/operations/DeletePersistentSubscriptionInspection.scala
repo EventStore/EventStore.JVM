@@ -5,7 +5,7 @@ import DeletePersistentSubscriptionError.{Error, DoesNotExist, AccessDenied}
 import PersistentSubscription.{Delete, DeleteCompleted}
 import Inspection.Decision.Fail
 
-private[eventstore] case class DeletePersistentSubscriptionInspection(out: Delete)
+private[eventstore] final case class DeletePersistentSubscriptionInspection(out: Delete)
     extends ErrorInspection[DeleteCompleted.type, DeletePersistentSubscriptionError] {
 
   def decision(error: DeletePersistentSubscriptionError) = {

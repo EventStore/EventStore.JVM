@@ -7,7 +7,7 @@ import scala.util.{ Failure, Success, Try }
 import _root_.akka.actor.{ ActorContext, ActorRef, ActorSystem, Status }
 import eventstore.tcp.PackOut
 
-private[eventstore] case class Client(private val ref: ActorRef) {
+private[eventstore] final case class Client(private val ref: ActorRef) {
   def apply(in: Try[In])(implicit sender: ActorRef): Unit = {
     val msg = in match {
       case Success(x) => x
@@ -23,7 +23,7 @@ private[eventstore] case class Client(private val ref: ActorRef) {
   def unwatch()(implicit context: ActorContext): Unit = context unwatch ref
 }
 
-private[eventstore] case class Connection private (address: InetSocketAddress, private val ref: ActorRef) {
+private[eventstore] final case class Connection private (address: InetSocketAddress, private val ref: ActorRef) {
   def apply(packOut: PackOut): Unit = ref ! packOut
 
   def stop()(implicit system: ActorSystem, context: ActorContext): Unit = {

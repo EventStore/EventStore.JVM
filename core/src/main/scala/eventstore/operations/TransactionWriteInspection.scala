@@ -4,7 +4,7 @@ package operations
 import OperationError._
 import Inspection.Decision._
 
-private[eventstore] case class TransactionWriteInspection(out: TransactionWrite)
+private[eventstore] final case class TransactionWriteInspection(out: TransactionWrite)
     extends ErrorInspection[TransactionWriteCompleted, OperationError] {
 
   def decision(error: OperationError) = {

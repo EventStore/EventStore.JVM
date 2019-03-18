@@ -5,7 +5,7 @@ import scala.util.{Failure, Success, Try}
 import eventstore.tcp.PackOut
 import NotHandled.{ NotReady, TooBusy }
 
-private[eventstore] case class SimpleOperation[C](
+private[eventstore] final case class SimpleOperation[C](
   pack:       PackOut,
   client:     C,
   inspection: Inspection

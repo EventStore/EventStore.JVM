@@ -32,7 +32,7 @@ object ReadEventError {
   @SerialVersionUID(1L) case object StreamNotFound extends ReadEventError
   @SerialVersionUID(1L) case object StreamDeleted extends ReadEventError
   @SerialVersionUID(1L) case object AccessDenied extends ReadEventError
-  @SerialVersionUID(1L) case class Error(message: Option[String]) extends ReadEventError {
+  @SerialVersionUID(1L) final case class Error(message: Option[String]) extends ReadEventError {
     override def toString = s"ReadEventError($message)"
   }
 }
@@ -43,7 +43,7 @@ object ReadStreamEventsError {
   @SerialVersionUID(1L) case object StreamNotFound extends ReadStreamEventsError
   @SerialVersionUID(1L) case object StreamDeleted extends ReadStreamEventsError
   @SerialVersionUID(1L) case object AccessDenied extends ReadStreamEventsError
-  @SerialVersionUID(1L) case class Error(message: Option[String]) extends ReadStreamEventsError {
+  @SerialVersionUID(1L) final case class Error(message: Option[String]) extends ReadStreamEventsError {
     override def toString = s"ReadStreamEventsError($message)"
   }
 }
@@ -52,12 +52,12 @@ sealed trait ReadAllEventsError extends ServerError
 
 object ReadAllEventsError {
   @SerialVersionUID(1L) case object AccessDenied extends ReadAllEventsError
-  @SerialVersionUID(1L) case class Error(message: Option[String]) extends ReadAllEventsError {
+  @SerialVersionUID(1L) final case class Error(message: Option[String]) extends ReadAllEventsError {
     override def toString = s"ReadAllEventsError($message)"
   }
 }
 
-@SerialVersionUID(1L) case class NotHandled(reason: NotHandled.Reason) extends ServerError {
+@SerialVersionUID(1L) final case class NotHandled(reason: NotHandled.Reason) extends ServerError {
   override def toString = s"NotHandled($reason)"
 }
 
@@ -66,9 +66,9 @@ object NotHandled {
 
   @SerialVersionUID(1L) case object NotReady extends Reason
   @SerialVersionUID(1L) case object TooBusy extends Reason
-  @SerialVersionUID(1L) case class NotMaster(masterInfo: MasterInfo) extends Reason
+  @SerialVersionUID(1L) final case class NotMaster(masterInfo: MasterInfo) extends Reason
 
-  @SerialVersionUID(1L) case class MasterInfo(
+  @SerialVersionUID(1L) final case class MasterInfo(
     tcpAddress:       InetSocketAddress,
     httpAddress:      InetSocketAddress,
     tcpSecureAddress: Option[InetSocketAddress] = None
@@ -96,7 +96,7 @@ sealed trait CreatePersistentSubscriptionError extends SystemError
 object CreatePersistentSubscriptionError {
   @SerialVersionUID(1L) case object AccessDenied extends CreatePersistentSubscriptionError
   @SerialVersionUID(1L) case object AlreadyExists extends CreatePersistentSubscriptionError
-  @SerialVersionUID(1L) case class Error(message: Option[String]) extends CreatePersistentSubscriptionError {
+  @SerialVersionUID(1L) final case class Error(message: Option[String]) extends CreatePersistentSubscriptionError {
     override def toString = s"CreatePersistentSubscriptionError($message)"
   }
 }
@@ -106,7 +106,7 @@ sealed trait UpdatePersistentSubscriptionError extends SystemError
 object UpdatePersistentSubscriptionError {
   @SerialVersionUID(1L) case object AccessDenied extends UpdatePersistentSubscriptionError
   @SerialVersionUID(1L) case object DoesNotExist extends UpdatePersistentSubscriptionError
-  @SerialVersionUID(1L) case class Error(message: Option[String]) extends UpdatePersistentSubscriptionError {
+  @SerialVersionUID(1L) final case class Error(message: Option[String]) extends UpdatePersistentSubscriptionError {
     override def toString = s"UpdatePersistentSubscriptionError($message)"
   }
 }
@@ -116,7 +116,7 @@ sealed trait DeletePersistentSubscriptionError extends SystemError
 object DeletePersistentSubscriptionError {
   @SerialVersionUID(1L) case object AccessDenied extends DeletePersistentSubscriptionError
   @SerialVersionUID(1L) case object DoesNotExist extends DeletePersistentSubscriptionError
-  @SerialVersionUID(1L) case class Error(message: Option[String]) extends DeletePersistentSubscriptionError {
+  @SerialVersionUID(1L) final case class Error(message: Option[String]) extends DeletePersistentSubscriptionError {
     override def toString = s"DeletePersistentSubscriptionError($message)"
   }
 }

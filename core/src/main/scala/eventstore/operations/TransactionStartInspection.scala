@@ -4,7 +4,7 @@ package operations
 import OperationError._
 import Inspection.Decision._
 
-private[eventstore] case class TransactionStartInspection(out: TransactionStart)
+private[eventstore] final case class TransactionStartInspection(out: TransactionStart)
     extends ErrorInspection[TransactionStartCompleted, OperationError] {
 
   def streamId        = out.streamId

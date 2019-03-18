@@ -9,14 +9,14 @@ sealed trait Pack {
 }
 
 @SerialVersionUID(1L)
-case class PackIn(message: Try[In], correlationId: Uuid = randomUuid) extends Pack
+final case class PackIn(message: Try[In], correlationId: Uuid = randomUuid) extends Pack
 
 object PackIn {
   def apply(message: In): PackIn = PackIn(Try(message))
 }
 
 @SerialVersionUID(1L)
-case class PackOut(
+final case class PackOut(
   message:       Out,
   correlationId: Uuid                    = randomUuid,
   credentials:   Option[UserCredentials] = None

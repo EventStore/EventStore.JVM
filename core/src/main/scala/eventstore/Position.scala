@@ -23,7 +23,7 @@ object Position {
     override def toString = "Position.Last"
   }
 
-  @SerialVersionUID(1L) case class Exact(commitPosition: Long, preparePosition: Long) extends Position {
+  @SerialVersionUID(1L) final case class Exact(commitPosition: Long, preparePosition: Long) extends Position {
     require(commitPosition >= 0, s"commitPosition must be >= 0, but is $commitPosition")
     require(preparePosition >= 0, s"preparePosition must be >= 0, but is $preparePosition")
     require(commitPosition >= preparePosition, s"commitPosition must be >= preparePosition, but $commitPosition < $preparePosition ")

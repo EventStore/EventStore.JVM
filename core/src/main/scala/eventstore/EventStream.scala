@@ -54,7 +54,7 @@ object EventStream {
     }
   }
 
-  @SerialVersionUID(1L) case class Plain(value: String) extends HasMetadata {
+  @SerialVersionUID(1L) final case class Plain(value: String) extends HasMetadata {
     require(value != null, "value must not be null")
     require(value.nonEmpty, "value must not be empty")
     require(!(value startsWith "$"), s"value must not start with $$, but is $value")
@@ -74,7 +74,7 @@ object EventStream {
     def isSystem = false
   }
 
-  @SerialVersionUID(1L) case class System(value: String) extends HasMetadata {
+  @SerialVersionUID(1L) final case class System(value: String) extends HasMetadata {
     require(value != null, "value must not be null")
     require(value.nonEmpty, "value must not be empty")
     require(!(value startsWith "$"), s"value must not start with $$, but is $value")
@@ -93,7 +93,7 @@ object EventStream {
     def apply(x: UserCredentials): System = System(s"user-${x.login}")
   }
 
-  @SerialVersionUID(1L) case class Metadata(value: String) extends Id {
+  @SerialVersionUID(1L) final case class Metadata(value: String) extends Id {
     require(value != null, "value must not be null")
     require(value.nonEmpty, "value must not be empty")
     require(!(value startsWith "$$"), s"value must not start with $$$$, but is $value")

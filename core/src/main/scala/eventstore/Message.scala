@@ -7,7 +7,7 @@ sealed trait OutLike {
   def out: Out
 }
 
-@SerialVersionUID(1L) case class WithCredentials(out: Out, credentials: UserCredentials) extends OutLike
+@SerialVersionUID(1L) final case class WithCredentials(out: Out, credentials: UserCredentials) extends OutLike
 
 sealed trait Message
 sealed trait In extends Message
@@ -29,7 +29,7 @@ sealed trait InOut extends In with Out
 @SerialVersionUID(1L) case object Ping extends InOut
 @SerialVersionUID(1L) case object Pong extends InOut
 
-@SerialVersionUID(1L) case class IdentifyClient(
+@SerialVersionUID(1L) final case class IdentifyClient(
     version:        Int,
     connectionName: Option[String]
 ) extends Out {
@@ -38,7 +38,7 @@ sealed trait InOut extends In with Out
 
 @SerialVersionUID(1L) case object ClientIdentified extends In
 
-@SerialVersionUID(1L) case class WriteEvents(
+@SerialVersionUID(1L) final case class WriteEvents(
   streamId:        EventStream.Id,
   events:          List[EventData],
   expectedVersion: ExpectedVersion = ExpectedVersion.Any,
@@ -62,31 +62,31 @@ object WriteEvents {
   }
 }
 
-@SerialVersionUID(1L) case class WriteEventsCompleted(
+@SerialVersionUID(1L) final case class WriteEventsCompleted(
   numbersRange: Option[EventNumber.Range] = None,
   position:     Option[Position.Exact]    = None
 ) extends In
 
-@SerialVersionUID(1L) case class DeleteStream(
+@SerialVersionUID(1L) final case class DeleteStream(
   streamId:        EventStream.Id,
   expectedVersion: ExpectedVersion.Existing = ExpectedVersion.Any,
   hard:            Boolean                  = false,
   requireMaster:   Boolean                  = EsSettings.Default.requireMaster
 ) extends Out
 
-@SerialVersionUID(1L) case class DeleteStreamCompleted(position: Option[Position.Exact] = None) extends In
+@SerialVersionUID(1L) final case class DeleteStreamCompleted(position: Option[Position.Exact] = None) extends In
 
-@SerialVersionUID(1L) case class TransactionStart(
+@SerialVersionUID(1L) final case class TransactionStart(
   streamId:        EventStream.Id,
   expectedVersion: ExpectedVersion = ExpectedVersion.Any,
   requireMaster:   Boolean         = EsSettings.Default.requireMaster
 ) extends Out
 
-@SerialVersionUID(1L) case class TransactionStartCompleted(transactionId: Long) extends In {
+@SerialVersionUID(1L) final case class TransactionStartCompleted(transactionId: Long) extends In {
   require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
 }
 
-@SerialVersionUID(1L) case class TransactionWrite(
+@SerialVersionUID(1L) final case class TransactionWrite(
     transactionId: Long,
     events:        List[EventData],
     requireMaster: Boolean         = EsSettings.Default.requireMaster
@@ -94,18 +94,18 @@ object WriteEvents {
   require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
 }
 
-@SerialVersionUID(1L) case class TransactionWriteCompleted(transactionId: Long) extends In {
+@SerialVersionUID(1L) final case class TransactionWriteCompleted(transactionId: Long) extends In {
   require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
 }
 
-@SerialVersionUID(1L) case class TransactionCommit(
+@SerialVersionUID(1L) final case class TransactionCommit(
     transactionId: Long,
     requireMaster: Boolean = EsSettings.Default.requireMaster
 ) extends Out {
   require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
 }
 
-@SerialVersionUID(1L) case class TransactionCommitCompleted(
+@SerialVersionUID(1L) final case class TransactionCommitCompleted(
     transactionId: Long,
     numbersRange:  Option[EventNumber.Range] = None,
     position:      Option[Position.Exact]    = None
@@ -113,7 +113,7 @@ object WriteEvents {
   require(transactionId >= 0, s"transactionId must be >= 0, but is $transactionId")
 }
 
-@SerialVersionUID(1L) case class ReadEvent(
+@SerialVersionUID(1L) final case class ReadEvent(
   streamId:       EventStream.Id,
   eventNumber:    EventNumber    = EventNumber.First,
   resolveLinkTos: Boolean        = EsSettings.Default.resolveLinkTos,
@@ -132,9 +132,9 @@ object ReadEvent {
   }
 }
 
-@SerialVersionUID(1L) case class ReadEventCompleted(event: Event) extends In
+@SerialVersionUID(1L) final case class ReadEventCompleted(event: Event) extends In
 
-@SerialVersionUID(1L) case class ReadStreamEvents(
+@SerialVersionUID(1L) final case class ReadStreamEvents(
   streamId:       EventStream.Id,
   fromNumber:     EventNumber    = EventNumber.First,
   maxCount:       Int            = EsSettings.Default.readBatchSize,
@@ -150,7 +150,7 @@ object ReadEvent {
   )
 }
 
-@SerialVersionUID(1L) case class ReadStreamEventsCompleted(
+@SerialVersionUID(1L) final case class ReadStreamEventsCompleted(
     events:             List[Event],
     nextEventNumber:    EventNumber,
     lastEventNumber:    EventNumber.Exact,
@@ -167,7 +167,7 @@ object ReadEvent {
   def eventsJava: java.util.List[Event] = events.asJava
 }
 
-@SerialVersionUID(1L) case class ReadAllEvents(
+@SerialVersionUID(1L) final case class ReadAllEvents(
   fromPosition:   Position      = Position.First,
   maxCount:       Int           = EsSettings.Default.readBatchSize,
   direction:      ReadDirection = ReadDirection.Forward,
@@ -178,7 +178,7 @@ object ReadEvent {
   require(maxCount <= MaxBatchSize, s"maxCount must be <= $MaxBatchSize, but is $maxCount")
 }
 
-@SerialVersionUID(1L) case class ReadAllEventsCompleted(
+@SerialVersionUID(1L) final case class ReadAllEventsCompleted(
     events:       List[IndexedEvent],
     position:     Position.Exact,
     nextPosition: Position.Exact,
@@ -213,7 +213,7 @@ object PersistentSubscription {
   }
 
   @SerialVersionUID(1L)
-  case class Create(
+  final case class Create(
       streamId: EventStream.Id, groupName: String,
       settings: PersistentSubscriptionSettings = PersistentSubscriptionSettings.Default
   ) extends Out {
@@ -226,7 +226,7 @@ object PersistentSubscription {
   case object CreateCompleted extends In
 
   @SerialVersionUID(1L)
-  case class Update(
+  final case class Update(
       streamId:  EventStream.Id,
       groupName: String,
       settings:  PersistentSubscriptionSettings = PersistentSubscriptionSettings.Default
@@ -240,7 +240,7 @@ object PersistentSubscription {
   case object UpdateCompleted extends In
 
   @SerialVersionUID(1L)
-  case class Delete(streamId: EventStream.Id, groupName: String) extends Out {
+  final case class Delete(streamId: EventStream.Id, groupName: String) extends Out {
     require(groupName != null, "groupName must not be null")
     require(groupName.nonEmpty, "groupName must not be empty")
   }
@@ -249,14 +249,14 @@ object PersistentSubscription {
   case object DeleteCompleted extends In
 
   @SerialVersionUID(1L)
-  case class Ack(subscriptionId: String, eventIds: List[Uuid]) extends Out {
+  final case class Ack(subscriptionId: String, eventIds: List[Uuid]) extends Out {
     require(subscriptionId != null, "subscriptionId must not be null")
     require(subscriptionId.nonEmpty, "subscriptionId must not be empty")
     require(eventIds.nonEmpty, "eventIds must not be empty")
   }
 
   @SerialVersionUID(1L)
-  case class Nak(
+  final case class Nak(
       subscriptionId: String,
       eventIds:       List[Uuid],
       action:         Nak.Action,
@@ -279,37 +279,37 @@ object PersistentSubscription {
     }
   }
 
-  @SerialVersionUID(1L) case class Connect(
+  @SerialVersionUID(1L) final case class Connect(
     streamId:   EventStream.Id,
     groupName:  String,
     bufferSize: Int            = 10
   ) extends Out
 
-  @SerialVersionUID(1L) case class Connected(
+  @SerialVersionUID(1L) final case class Connected(
     subscriptionId:  String,
     lastCommit:      Long,
     lastEventNumber: Option[EventNumber.Exact]
   ) extends In
 
-  @SerialVersionUID(1L) case class EventAppeared(event: Event) extends In
+  @SerialVersionUID(1L) final case class EventAppeared(event: Event) extends In
 }
 
-@SerialVersionUID(1L) case class SubscribeTo(stream: EventStream, resolveLinkTos: Boolean = EsSettings.Default.resolveLinkTos) extends Out
+@SerialVersionUID(1L) final case class SubscribeTo(stream: EventStream, resolveLinkTos: Boolean = EsSettings.Default.resolveLinkTos) extends Out
 
 sealed trait SubscribeCompleted extends In
 
-@SerialVersionUID(1L) case class SubscribeToAllCompleted(lastCommit: Long) extends SubscribeCompleted {
+@SerialVersionUID(1L) final case class SubscribeToAllCompleted(lastCommit: Long) extends SubscribeCompleted {
   require(lastCommit >= 0, s"lastCommit must be >= 0, but is $lastCommit")
 }
 
-@SerialVersionUID(1L) case class SubscribeToStreamCompleted(
+@SerialVersionUID(1L) final case class SubscribeToStreamCompleted(
     lastCommit:      Long,
     lastEventNumber: Option[EventNumber.Exact] = None
 ) extends SubscribeCompleted {
   require(lastCommit >= 0, s"lastCommit must be >= 0, but is $lastCommit")
 }
 
-@SerialVersionUID(1L) case class StreamEventAppeared(event: IndexedEvent) extends In
+@SerialVersionUID(1L) final case class StreamEventAppeared(event: IndexedEvent) extends In
 
 @SerialVersionUID(1L) case object Unsubscribe extends Out {
   /**
@@ -331,7 +331,7 @@ sealed trait SubscribeCompleted extends In
   def getInstance = this
 }
 
-@SerialVersionUID(1L) case class ScavengeDatabaseResponse(scavengeId: Option[String]) extends In
+@SerialVersionUID(1L) final case class ScavengeDatabaseResponse(scavengeId: Option[String]) extends In
 
 @SerialVersionUID(1L) case object Authenticate extends Out {
   /**

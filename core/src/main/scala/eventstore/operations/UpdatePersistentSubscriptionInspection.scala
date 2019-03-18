@@ -5,7 +5,7 @@ import PersistentSubscription.{ Update, UpdateCompleted }
 import UpdatePersistentSubscriptionError._
 import Inspection.Decision.Fail
 
-private[eventstore] case class UpdatePersistentSubscriptionInspection(out: Update)
+private[eventstore] final case class UpdatePersistentSubscriptionInspection(out: Update)
     extends ErrorInspection[UpdateCompleted.type, UpdatePersistentSubscriptionError] {
 
   def streamId = out.streamId

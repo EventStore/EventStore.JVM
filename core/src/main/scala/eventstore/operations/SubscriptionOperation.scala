@@ -35,7 +35,7 @@ private[eventstore] object SubscriptionOperation {
     Subscribing(subscribeTo, pack, client, ongoing, 0)
   }
 
-  case class Subscribing[C](
+  final case class Subscribing[C](
     subscribeTo: SubscribeTo,
     pack:        PackOut,
     client:      C,
@@ -96,7 +96,7 @@ private[eventstore] object SubscriptionOperation {
     }
   }
 
-  case class Subscribed[C](
+  final case class Subscribed[C](
     subscribeTo: SubscribeTo,
     pack:        PackOut,
     client:      C,
@@ -138,7 +138,7 @@ private[eventstore] object SubscriptionOperation {
     }
   }
 
-  case class Unsubscribing[C](
+  final case class Unsubscribing[C](
     stream:  EventStream,
     pack:    PackOut,
     client:  C,

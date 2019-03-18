@@ -86,7 +86,7 @@ object ProjectionsClient {
   sealed trait ProjectionDeleteResult
   object ProjectionDeleteResult {
     case object ProjectionDeleted extends ProjectionDeleteResult
-    case class UnableToDeleteProjection(reason: String) extends ProjectionDeleteResult
+    final case class UnableToDeleteProjection(reason: String) extends ProjectionDeleteResult
   }
 
 @SerialVersionUID(1L) class ProjectionException(message: String, cause: Throwable) extends EsException(message, cause) {

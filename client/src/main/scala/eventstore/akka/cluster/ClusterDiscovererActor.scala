@@ -166,9 +166,9 @@ private[eventstore] object ClusterDiscovererActor {
     Props(new ClusterDiscovererActor(settings, clusterInfo))
   }
 
-  @SerialVersionUID(1L) case class GetAddress(failed: Option[InetSocketAddress] = None)
+  @SerialVersionUID(1L) final case class GetAddress(failed: Option[InetSocketAddress] = None)
 
-  @SerialVersionUID(1L) case class Address(value: InetSocketAddress)
+  @SerialVersionUID(1L) final case class Address(value: InetSocketAddress)
 
   object Address {
     def apply(x: MemberInfo): Address = Address(x.externalTcp)

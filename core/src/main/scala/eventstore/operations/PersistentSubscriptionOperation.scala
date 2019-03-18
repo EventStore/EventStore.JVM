@@ -37,7 +37,7 @@ private[eventstore] object PersistentSubscriptionOperation {
     Connecting(connect, pack, client, ongoing, 0)
   }
 
-  case class Connecting[C](
+  final case class Connecting[C](
       connect: Connect,
       pack:    PackOut,
       client:  C,
@@ -92,7 +92,7 @@ private[eventstore] object PersistentSubscriptionOperation {
     }
   }
 
-  case class Connected[C](
+  final case class Connected[C](
       connect: Connect,
       pack:    PackOut,
       client:  C,
@@ -142,7 +142,7 @@ private[eventstore] object PersistentSubscriptionOperation {
     }
   }
 
-  case class Unsubscribing[C](
+  final case class Unsubscribing[C](
       stream:  EventStream,
       pack:    PackOut,
       client:  C,

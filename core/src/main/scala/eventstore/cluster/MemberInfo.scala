@@ -5,7 +5,7 @@ import java.net.InetSocketAddress
 import java.time.ZonedDateTime
 
 @SerialVersionUID(1L)
-case class MemberInfo(
+final case class MemberInfo(
     instanceId:         Uuid,
     timestamp:          ZonedDateTime,
     state:              NodeState,

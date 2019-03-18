@@ -91,7 +91,7 @@ object ClusterJsonProtocol extends DefaultJsonProtocol {
       MappingFormat.write(m)
     }
 
-    case class Mapping(
+    final case class Mapping(
       instanceId:            Uuid,
       timeStamp:             ZonedDateTime,
       state:                 NodeState,
@@ -136,6 +136,6 @@ object ClusterJsonProtocol extends DefaultJsonProtocol {
       MappingFormat.write(m)
     }
 
-    private case class Mapping(members: List[MemberInfo], serverIp: String, serverPort: Int)
+    private final case class Mapping(members: List[MemberInfo], serverIp: String, serverPort: Int)
   }
 }

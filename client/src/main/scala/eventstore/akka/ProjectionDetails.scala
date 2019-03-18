@@ -24,7 +24,7 @@ object ProjectionDetails {
   implicit val projectionDetailsJsonFormat = jsonFormat11(ProjectionDetails.apply)
 }
 
-case class ProjectionDetails(
+final case class ProjectionDetails(
   name:             String,
   effectiveName:    String,
   version:          Int,

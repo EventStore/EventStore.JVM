@@ -10,7 +10,7 @@ object DelayedRetry {
   }
 }
 
-case class DelayedRetry private[DelayedRetry](left: Int, delay: FiniteDuration, delayMax: FiniteDuration) {
+final case class DelayedRetry private[DelayedRetry](left: Int, delay: FiniteDuration, delayMax: FiniteDuration) {
   require(delay > Duration.Zero, "delay must be > 0")
   require(delayMax > Duration.Zero, "delayMax must be > 0")
   require(left != 0, "left must be != 0")

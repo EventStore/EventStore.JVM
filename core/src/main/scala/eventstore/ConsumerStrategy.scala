@@ -25,7 +25,7 @@ object ConsumerStrategy {
   /**
    * Unknown, not predefined strategy
    */
-  @SerialVersionUID(1L) case class Custom private[eventstore] (value: String) extends ConsumerStrategy {
+  @SerialVersionUID(1L) final case class Custom private[eventstore] (value: String) extends ConsumerStrategy {
     require(value != null, "value must not be null")
     require(value.nonEmpty, "value must not be empty")
 

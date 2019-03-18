@@ -4,7 +4,7 @@ package operations
 import ReadStreamEventsError._
 import Inspection.Decision.Fail
 
-private[eventstore] case class ReadStreamEventsInspection(out: ReadStreamEvents)
+private[eventstore] final case class ReadStreamEventsInspection(out: ReadStreamEvents)
     extends ErrorInspection[ReadStreamEventsCompleted, ReadStreamEventsError] {
 
   def decision(error: ReadStreamEventsError) = {

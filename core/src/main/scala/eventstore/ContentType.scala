@@ -24,7 +24,7 @@ object ContentType {
   }
 
   /*TODO not yet implemented in EventStore 3.0.0
-  case class Unknown(value: Int) extends ContentType {
+  final case class Unknown(value: Int) extends ContentType {
     require(value > Known.last.value,
       if (value < Known.head.value) s"content type must be > ${Known.last.value}, but is $value"
       else s"please use ${Known.find(_.value == value).get} instead of $toString")

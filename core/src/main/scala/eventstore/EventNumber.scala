@@ -22,7 +22,7 @@ object EventNumber {
     override def toString = "EventNumber.Last"
   }
 
-  @SerialVersionUID(1L) case class Exact(value: Long) extends EventNumber {
+  @SerialVersionUID(1L) final case class Exact(value: Long) extends EventNumber {
     require(value >= 0, s"event number must be >= 0, but is $value")
 
     def compare(that: EventNumber) = that match {
@@ -43,7 +43,7 @@ object EventNumber {
     def opt(proto: Long): Option[EventNumber.Exact] = if (proto >= 0) Some(Exact(proto)) else None
   }
 
-  @SerialVersionUID(1L) case class Range(start: Exact, end: Exact) {
+  @SerialVersionUID(1L) final case class Range(start: Exact, end: Exact) {
     require(start <= end, s"start must be <= end, but $start > $end")
 
     override def toString = s"EventNumber.Range(${start.value} to ${end.value})"

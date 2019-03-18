@@ -36,10 +36,10 @@ object ConnectionActor {
     val Empty: Operations = OneToMany[Operation[Client], Uuid, Client](_.id, _.client)
   }
 
-  private[eventstore] case class Connect(address: InetSocketAddress)
-  private[eventstore] case class Connected(address: InetSocketAddress)
-  private[eventstore] case class TimedOut(id: Uuid, version: Int)
-  private[eventstore] case class Disconnected(address: InetSocketAddress)
+  private[eventstore] final case class Connect(address: InetSocketAddress)
+  private[eventstore] final case class Connected(address: InetSocketAddress)
+  private[eventstore] final case class TimedOut(id: Uuid, version: Int)
+  private[eventstore] final case class Disconnected(address: InetSocketAddress)
 
   private[eventstore] object TcpFailure {
     def unapply(failure: Status.Failure): Option[RuntimeException] = PartialFunction.condOpt(failure.cause) {

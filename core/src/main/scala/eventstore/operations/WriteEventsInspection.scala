@@ -4,7 +4,7 @@ package operations
 import eventstore.OperationError._
 import Inspection.Decision._
 
-private[eventstore] case class WriteEventsInspection(out: WriteEvents)
+private[eventstore] final case class WriteEventsInspection(out: WriteEvents)
     extends ErrorInspection[WriteEventsCompleted, OperationError] {
 
   def streamId = out.streamId

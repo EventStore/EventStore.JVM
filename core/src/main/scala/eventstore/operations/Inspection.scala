@@ -15,6 +15,6 @@ private[eventstore] object Inspection {
     case object Stop extends Decision
     case object Retry extends Decision
     case object Unexpected extends Decision
-    case class Fail(value: EsException) extends Decision
+    final case class Fail(value: EsException) extends Decision
   }
 }

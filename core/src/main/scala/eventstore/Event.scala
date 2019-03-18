@@ -36,7 +36,7 @@ object Event {
   }
 }
 
-@SerialVersionUID(1L) case class EventRecord(
+@SerialVersionUID(1L) final case class EventRecord(
     streamId: EventStream.Id,
     number:   EventNumber.Exact,
     data:     EventData,
@@ -53,7 +53,7 @@ object EventRecord {
   )
 }
 
-@SerialVersionUID(1L) case class ResolvedEvent(linkedEvent: EventRecord, linkEvent: EventRecord) extends Event {
+@SerialVersionUID(1L) final case class ResolvedEvent(linkedEvent: EventRecord, linkEvent: EventRecord) extends Event {
   def streamId = linkedEvent.streamId
   def number = linkedEvent.number
   def data = linkedEvent.data
@@ -61,7 +61,7 @@ object EventRecord {
   def created = linkedEvent.created
 }
 
-@SerialVersionUID(1L) case class Content(
+@SerialVersionUID(1L) final case class Content(
     value:       ByteString  = ByteString.empty,
     contentType: ContentType = ContentType.Binary
 ) {
@@ -91,7 +91,7 @@ object Content {
   }
 }
 
-@SerialVersionUID(1L) case class EventData(
+@SerialVersionUID(1L) final case class EventData(
   eventType: String,
   eventId:   Uuid    = randomUuid,
   data:      Content = Content.Empty,
@@ -129,6 +129,6 @@ object EventData {
   }
 }
 
-@SerialVersionUID(1L) case class IndexedEvent(event: Event, position: Position.Exact) extends Ordered[IndexedEvent] {
+@SerialVersionUID(1L) final case class IndexedEvent(event: Event, position: Position.Exact) extends Ordered[IndexedEvent] {
   def compare(that: IndexedEvent) = this.position compare that.position
 }

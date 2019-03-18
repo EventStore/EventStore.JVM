@@ -28,7 +28,7 @@ trait OneToMany[T, S, M] {
 object OneToMany {
   def apply[T, S, M](sf: T => S, mf: T => M): OneToMany[T, S, M] = Impl[T, S, M](Map(), Map(), sf, mf)
 
-  private case class Impl[T, S, M](
+  private final case class Impl[T, S, M](
       ss: Map[S, T],
       ms: Map[M, Set[S]],
       sf: T => S,
