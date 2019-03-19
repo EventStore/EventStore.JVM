@@ -19,7 +19,7 @@ lazy val commonSettings = Seq(
     "-feature",
     "-unchecked",
     "-deprecation",
-  //  "-Xfatal-warnings",
+    "-Xfatal-warnings",
     "-Xlint:-missing-interpolator",
     "-Yno-adapted-args",
     "-Ywarn-dead-code",
@@ -68,19 +68,15 @@ lazy val core = project
   .settings(commonSettings)
   .settings(
     moduleName := "eventstore-client-core",
-    version in ProtobufConfig := "3.0.0",
-    protobufRunProtoc in ProtobufConfig := { args => Protoc.runProtoc("-v3.0.0" +: args.toArray) },
+    version in ProtobufConfig := protobufVersion,
+    protobufRunProtoc in ProtobufConfig := { args => Protoc.runProtoc(s"-v$protobufVersion" +: args.toArray) },
     coverageExcludedPackages :=
       "eventstore.proto;" +
       "eventstore.tcp.EventStoreProtoFormats;" +
-      "eventstore.tcp.MarkerBytes;" +
-      "eventstore.util.ToCoarsest"
+      "eventstore.tcp.MarkerBytes;"
   ).settings(
-    libraryDependencies ++= Seq(
-      `scodec-bits`, `ts-config`
-    ) ++ testDeps(
-      `mockito-all`, Specs2.core, Specs2.mock
-    )
+    libraryDependencies ++=
+      Seq(`scodec-bits`, `ts-config`) ++ testDeps(specs2)
   )
   .enablePlugins(ProtobufPlugin)
 
@@ -103,7 +99,7 @@ lazy val client = project
       `ts-config`,`spray-json`, `scodec-bits`,
       Reactive.streams, Akka.actor, Akka.stream, AkkaHttp.http, AkkaHttp.`http-spray-json`
     ) ++ testDeps(
-        `mockito-all`, Specs2.core, Specs2.mock, Reactive.`streams-tck`, Akka.testkit, Akka.`stream-testkit`
+      specs2, Reactive.`streams-tck`, Akka.testkit, Akka.`stream-testkit`
     )
   )
   .dependsOn(core)

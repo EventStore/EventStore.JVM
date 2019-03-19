@@ -4,7 +4,7 @@ package j
 import scala.collection.JavaConverters._
 import _root_.akka.japi.function
 import _root_.akka.stream.ActorMaterializer
-import _root_.akka.stream.scaladsl.Source
+import _root_.akka.stream.scaladsl.{Source, Sink}
 import _root_.akka.stream.testkit.scaladsl.TestSink
 import eventstore.akka.randomUuid
 import eventstore.akka.ActorSpec
@@ -167,7 +167,11 @@ class EsConnectionITest extends ActorSpec {
 
     "publish stream events" in new TestScope {
       val streamId = s"java-publish-$randomUuid"
-      def publisher = connection.streamPublisher(streamId, null, false, null, false)
+
+      def publisher = connection
+        .streamSource(streamId, null, false, null, false)
+        .runWith(Sink.asPublisher(fanout = false), materializer)
+
       await_(connection.writeEvents(streamId, null, events, null))
       Source.fromPublisher(publisher)
         .map(_.data)
@@ -178,7 +182,8 @@ class EsConnectionITest extends ActorSpec {
     }
 
     "publish all streams" in new TestScope {
-      val publisher = connection.allStreamsPublisher(Position.First, false, null, true)
+      val publisher = connection.allStreamsSource(Position.First, false, null, true)
+        .runWith(Sink.asPublisher(fanout = false), materializer)
       val probe = Source.fromPublisher(publisher)
         .runWith(TestSink.probe[IndexedEvent])
         .request(10)
@@ -212,7 +217,7 @@ class EsConnectionITest extends ActorSpec {
 
   private trait TestScope extends ActorScope {
     implicit val materializer = ActorMaterializer()
-    val connection: EsConnection = new EsConnectionImpl(eventstore.EsConnection(system), Settings.Default, system.dispatcher)
+    val connection: EsConnection = new EsConnectionImpl(eventstore.akka.EsConnection(system), Settings.Default, system.dispatcher)
     val eventData = newEventData
     val events = List(eventData).asJava
     val eventsM = List.fill(20)(newEventData).asJava
