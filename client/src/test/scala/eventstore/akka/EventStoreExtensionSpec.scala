@@ -2,21 +2,21 @@ package eventstore
 package akka
 
 import _root_.akka.actor.Status.Failure
-import scala.concurrent.Await
-import scala.concurrent.duration._
+import _root_.akka.pattern.AskTimeoutException
 
 class EventStoreExtensionSpec extends ActorSpec {
+
+  val extension = EventStoreExtension(system)
   val readEvent = ReadEvent(EventStream.Id(randomUuid.toString))
 
   "EventStoreExtension" should {
     "return connection actor" in new ActorScope {
-      EventStoreExtension(system).actor ! readEvent
+      extension.actor ! readEvent
       expectMsgPF() { case Failure(_: EsException) => }
     }
 
-    "return connection instance" in new ActorScope {
-      val future = EventStoreExtension(system).connection(readEvent)
-      Await.result(future, 3.seconds) must throwAn[EsException]
+    "return connection instance" in {
+      extension.connection(readEvent).await_ must throwAn[EsException] or throwAn[AskTimeoutException]
     }
   }
 }

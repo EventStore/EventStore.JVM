@@ -14,18 +14,16 @@ private[eventstore] object BidiLogging {
 
     def logPackIn(packIn: PackIn): PackIn = {
       if (log.isDebugEnabled) packIn.message match {
-        case Success(HeartbeatRequest) =>
-        case Success(Ping)             =>
-        case _                         => log.debug(packIn.toString)
+        case Success(HeartbeatRequest | Ping) =>
+        case _                                => log.debug(packIn.toString)
       }
       packIn
     }
 
     def logPackOut(packOut: PackOut): PackOut = {
       if (log.isDebugEnabled) packOut.message match {
-        case HeartbeatResponse =>
-        case Pong              =>
-        case _                 => log.debug(packOut.toString)
+        case HeartbeatResponse | Pong =>
+        case _                        => log.debug(packOut.toString)
       }
       packOut
     }
