@@ -18,9 +18,9 @@ private[eventstore] final case class Client(private val ref: ActorRef) {
 
   def apply(in: Status.Failure)(implicit sender: ActorRef): Unit = ref ! in
 
-  def watch()(implicit context: ActorContext): Unit = context watch ref
+  def watch()(implicit context: ActorContext): Unit = { context watch ref; () }
 
-  def unwatch()(implicit context: ActorContext): Unit = context unwatch ref
+  def unwatch()(implicit context: ActorContext): Unit = { context unwatch ref; () }
 }
 
 private[eventstore] final case class Connection private (address: InetSocketAddress, private val ref: ActorRef) {
@@ -31,7 +31,7 @@ private[eventstore] final case class Connection private (address: InetSocketAddr
     system stop ref
   }
 
-  def unwatch()(implicit context: ActorContext): Unit = context unwatch ref
+  def unwatch()(implicit context: ActorContext): Unit = { context unwatch ref; () }
 
   def unapply(ref: ActorRef): Boolean = ref == this.ref
 }

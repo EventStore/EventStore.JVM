@@ -7,6 +7,7 @@ import _root_.akka.actor.Status.Failure
 import _root_.akka.testkit._
 import spray.json.{JsNumber, JsObject}
 import ReadDirection._
+import eventstore.ScalaCompat._
 import eventstore.akka.tcp.ConnectionActor
 
 abstract class TestConnection extends ActorSpec {
@@ -132,15 +133,15 @@ abstract class TestConnection extends ActorSpec {
       readStreamEventsFailed(EventNumber(direction), Settings.Default.readBatchSize)
     }
 
-    def streamEvents(implicit direction: ReadDirection = Forward): Stream[EventData] =
+    def streamEvents(implicit direction: ReadDirection = Forward): LazyList[EventData] =
       streamEventRecords(direction).map(_.data)
 
-    def streamEventRecords(implicit direction: ReadDirection = Forward): Stream[Event] = {
-      def loop(position: EventNumber): Stream[Event] = {
+    def streamEventRecords(implicit direction: ReadDirection = Forward): LazyList[Event] = {
+      def loop(position: EventNumber): LazyList[Event] = {
         val result = readStreamEventsCompleted(position, Settings.Default.readBatchSize)
         val resolvedIndexedEvents = result.events
-        if (resolvedIndexedEvents.isEmpty || result.endOfStream) resolvedIndexedEvents.toStream
-        else resolvedIndexedEvents.toStream #::: loop(result.nextEventNumber)
+        if (resolvedIndexedEvents.isEmpty || result.endOfStream) resolvedIndexedEvents.toLazyList
+        else resolvedIndexedEvents.toLazyList #::: loop(result.nextEventNumber)
       }
       loop(EventNumber(direction))
     }
@@ -199,12 +200,12 @@ abstract class TestConnection extends ActorSpec {
     def readAllEvents(position: Position, maxCount: Int)(implicit direction: ReadDirection): List[Event] =
       readAllEventsCompleted(position = position, maxCount = maxCount).events.map(_.event)
 
-    def allStreamsEvents(maxCount: Int = Settings.Default.readBatchSize)(implicit direction: ReadDirection): Stream[IndexedEvent] = {
-      def loop(position: Position): Stream[IndexedEvent] = {
+    def allStreamsEvents(maxCount: Int = Settings.Default.readBatchSize)(implicit direction: ReadDirection): LazyList[IndexedEvent] = {
+      def loop(position: Position): LazyList[IndexedEvent] = {
         val result = readAllEventsCompleted(position, maxCount)
         val events = result.events
-        if (events.isEmpty) Stream()
-        else events.toStream #::: loop(result.nextPosition)
+        if (events.isEmpty) LazyList.empty[IndexedEvent]
+        else events.toLazyList #::: loop(result.nextPosition)
       }
       loop(Position(direction))
     }

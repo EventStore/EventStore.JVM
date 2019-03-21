@@ -1,14 +1,14 @@
 package eventstore
 package util
 
-import scala.collection.GenTraversableOnce
+import eventstore.ScalaCompat._
 
-trait OneToMany[T, S, M] {
+private[eventstore] trait OneToMany[T, S, M] {
   def +(t: T): OneToMany[T, S, M]
 
   def -(t: T): OneToMany[T, S, M]
 
-  def --(ts: Traversable[T]): OneToMany[T, S, M]
+  def --(ts: Iterable[T]): OneToMany[T, S, M]
 
   def single(s: S): Option[T]
 
@@ -22,10 +22,10 @@ trait OneToMany[T, S, M] {
 
   def values: Set[T]
 
-  def flatMap(f: T => GenTraversableOnce[T]): OneToMany[T, S, M]
+  def flatMap(f: T => IterableOnce[T]): OneToMany[T, S, M]
 }
 
-object OneToMany {
+private[eventstore] object OneToMany {
   def apply[T, S, M](sf: T => S, mf: T => M): OneToMany[T, S, M] = Impl[T, S, M](Map(), Map(), sf, mf)
 
   private final case class Impl[T, S, M](
@@ -57,7 +57,7 @@ object OneToMany {
       }
     }
 
-    def --(ts: Traversable[T]) = ts.foldLeft[OneToMany[T, S, M]](this)((x, t) => x - t)
+    def --(ts: Iterable[T]) = ts.foldLeft[OneToMany[T, S, M]](this)((x, t) => x - t)
 
     def single(s: S) = ss get s
 
@@ -71,7 +71,7 @@ object OneToMany {
 
     def values = ss.values.toSet
 
-    def flatMap(f: T => GenTraversableOnce[T]) = {
+    def flatMap(f: T => IterableOnce[T]) = {
       val ts = values.flatMap(f)
       ts.foldLeft[OneToMany[T, S, M]](Impl[T, S, M](Map(), Map(), sf, mf)) { case (otm, t) => otm + t }
     }

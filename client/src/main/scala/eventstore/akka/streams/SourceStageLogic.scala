@@ -97,6 +97,7 @@ private[eventstore] abstract class SourceStageLogic[T, O <: Ordered[O], P <: O](
         rcvUnsubscribed(onUnsubscribeCompleted()) or
         rcvSubscribed(onSubscriptionCompleted)
     }
+    ()
   }
 
   def catchup(from: P, to: P, stash: Queue[T] = Queue.empty[T]): Unit = {
@@ -132,6 +133,7 @@ private[eventstore] abstract class SourceStageLogic[T, O <: Ordered[O], P <: O](
           rcvSubscribed(onResubscribed) or
           rcvUnsubscribed(onUnsubscribeCompleted())
       }
+      ()
     }
 
     readEventsFrom(from)
@@ -158,11 +160,13 @@ private[eventstore] abstract class SourceStageLogic[T, O <: Ordered[O], P <: O](
     state = newState
     emitMultiple(out, events.iterator, () ⇒ completeStage())
     stageActorBecome(ignoring)
+    ()
   }
 
   def waitUntilBufferAvailable(action: () ⇒ Unit): Unit = {
     state = state.copy(onBufferAvailable = Some(action))
     stageActorBecome(ignoring)
+    ()
   }
 
   def enqueueAndPush(events: T*): Unit = {

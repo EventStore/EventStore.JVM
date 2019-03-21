@@ -2,7 +2,6 @@ package eventstore
 package j
 
 import java.io.Closeable
-
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import _root_.akka.actor.Status.Failure
