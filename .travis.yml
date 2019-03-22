@@ -35,7 +35,7 @@ cache:
   # These directories are cached to S3 at the end of the build
   directories:
     - $HOME/.ivy2/cache
-    - $HOME/.sbt/boot/
+    - $HOME/.sbt
 
 before_cache:
   # Tricks to avoid unnecessary cache updates
