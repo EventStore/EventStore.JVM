@@ -4,32 +4,21 @@ import Dependencies._
 
 lazy val commonSettings = Seq(
 
-  organization := "com.geteventstore",
-  scalaVersion := crossScalaVersions.value.last,
-  crossScalaVersions := Seq("2.12.8"),
-  releaseCrossBuild := true,
-  licenses := Seq("BSD 3-Clause" -> url("http://raw.github.com/EventStore/EventStore.JVM/master/LICENSE")),
-  homepage := Some(new URL("http://github.com/EventStore/EventStore.JVM")),
+  organization         := "com.geteventstore",
+  scalaVersion         := crossScalaVersions.value.head,
+  crossScalaVersions   := Seq("2.12.8", "2.13.0-M5"),
+  releaseCrossBuild    := true,
+  licenses             := Seq("BSD 3-Clause" -> url("http://raw.github.com/EventStore/EventStore.JVM/master/LICENSE")),
+  homepage             := Some(new URL("http://github.com/EventStore/EventStore.JVM")),
   organizationHomepage := Some(new URL("http://geteventstore.com")),
-  description := "Event Store JVM Client",
-  startYear := Some(2013),
+  description          := "Event Store JVM Client",
+  startYear            := Some(2013),
 
-  scalacOptions ++= Seq(
-    "-encoding", "UTF-8",
-    "-feature",
-    "-unchecked",
-    "-deprecation",
-    "-Xfatal-warnings",
-    "-Xlint:-missing-interpolator",
-    "-Yno-adapted-args",
-    "-Ywarn-dead-code",
-    "-Ywarn-numeric-widen",
-    "-Xfuture"
-  ),
+  scalacOptions ++= commonScalacOptions(scalaVersion.value),
+  Test / compile / scalacOptions -= "-Ywarn-value-discard",
+  Compile / doc / scalacOptions ++= Seq("-groups", "-implicits", "-no-link-warnings"),
 
-  scalacOptions in(Compile, doc) ++= Seq("-groups", "-implicits", "-no-link-warnings"),
-
-  pomExtra in Global := {
+  Global / pomExtra := {
     <scm>
       <url>git@github.com:EventStore/EventStore.JVM.git</url>
       <connection>scm:git:git@github.com:EventStore/EventStore.JVM.git</connection>
@@ -53,6 +42,29 @@ lazy val commonSettings = Seq(
   publishTo := sonatypePublishTo.value
 )
 
+def commonScalacOptions(scalaVersion: String) = {
+  Seq(
+    "-encoding", "UTF-8",
+    "-feature",
+    "-unchecked",
+    "-deprecation",
+    "-language:existentials",
+    "-language:higherKinds",
+    "-Xfatal-warnings",
+    "-Xlint:-missing-interpolator",
+    "-Xfuture",
+    "-Ywarn-dead-code",
+    "-Ywarn-numeric-widen",
+    "-Ywarn-value-discard"
+  ) ++ (if (priorTo2_13(scalaVersion)) Seq("-Yno-adapted-args") else Nil)
+}
+
+def priorTo2_13(scalaVersion: String): Boolean =
+  CrossVersion.partialVersion(scalaVersion) match {
+    case Some((2, minor)) if minor < 13 => true
+    case _                              => false
+  }
+
 ///
 
 lazy val IntegrationTest = config("it") extend Test
@@ -60,7 +72,7 @@ lazy val ClusterTest     = config("c") extend Test
 
 lazy val root = project.in(file("."))
   .settings(commonSettings)
-  .settings(skip in publish := true)
+  .settings(publish / skip := true)
   .dependsOn(core, client, examples)
   .aggregate(core, client, examples)
 
@@ -68,12 +80,15 @@ lazy val core = project
   .settings(commonSettings)
   .settings(
     moduleName := "eventstore-client-core",
-    version in ProtobufConfig := protobufVersion,
-    protobufRunProtoc in ProtobufConfig := { args => Protoc.runProtoc(s"-v$protobufVersion" +: args.toArray) },
+    ProtobufConfig / version := protobufVersion,
+    ProtobufConfig / protobufRunProtoc := { args => Protoc.runProtoc(s"-v$protobufVersion" +: args.toArray) },
     coverageExcludedPackages :=
       "eventstore.proto;" +
       "eventstore.tcp.EventStoreProtoFormats;" +
-      "eventstore.tcp.MarkerBytes;"
+      "eventstore.tcp.MarkerBytes;",
+    Compile / unmanagedSourceDirectories += {
+      (Compile / sourceDirectory).value / (if(priorTo2_13(scalaVersion.value)) "scala-2.12" else "scala-2.13")
+    }
   ).settings(
     libraryDependencies ++=
       Seq(`scodec-bits`, `ts-config`) ++ testDeps(specs2)
@@ -87,11 +102,11 @@ lazy val client = project
   .settings(inConfig(ClusterTest)(Defaults.testTasks): _*)
   .settings(
     moduleName := "eventstore-client",
-    testOptions in Test := Seq(Tests.Filter(_ endsWith "Spec")),
-    testOptions in IntegrationTest := Seq(Tests.Filter(_ endsWith "ITest")),
-    testOptions in ClusterTest := Seq(Tests.Filter(_ endsWith "CTest")),
-    parallelExecution in IntegrationTest := false,
-    parallelExecution in ClusterTest := false,
+    Test / testOptions := Seq(Tests.Filter(_ endsWith "Spec")),
+    IntegrationTest / testOptions := Seq(Tests.Filter(_ endsWith "ITest")),
+    ClusterTest / testOptions := Seq(Tests.Filter(_ endsWith "CTest")),
+    IntegrationTest / parallelExecution := false,
+    ClusterTest / parallelExecution := false,
     coverageExcludedPackages := "eventstore.j;"
   )
   .settings(
@@ -108,7 +123,8 @@ lazy val examples = project
   .settings(commonSettings)
   .settings(
     moduleName := "eventstore-client-examples",
-    skip in publish := true,
+    scalacOptions -= "-Ywarn-value-discard",
+    publish / skip := true,
     coverageExcludedPackages := "eventstore.examples;eventstore.j;"
   )
   .dependsOn(client)

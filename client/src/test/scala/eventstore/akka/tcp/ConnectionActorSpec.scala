@@ -14,9 +14,8 @@ import eventstore.syntax._
 import eventstore.tcp._
 import eventstore.cluster.{ClusterException, ClusterSettings}
 import eventstore.cluster.GossipSeedsOrDns.GossipSeeds
-import eventstore.akka.ActorSpec
 import eventstore.akka.cluster.ClusterDiscovererActor.{Address, GetAddress}
-import eventstore.akka.tcp.ConnectionActor.Disconnected
+import eventstore.akka.tcp.ConnectionActor.{Disconnected, Connected}
 
 class ConnectionActorSpec extends ActorSpec {
 
@@ -70,7 +69,7 @@ class ConnectionActorSpec extends ActorSpec {
       sendConnected()
 
       connection.expectMsgPF() {
-        case PackOut(IdentifyClient(1, _), id, credentials) ⇒ client ! ClientIdentified
+        case PackOut(IdentifyClient(1, _), _, _) ⇒ client ! ClientIdentified
       }
     }
 
@@ -491,7 +490,7 @@ class ConnectionActorSpec extends ActorSpec {
       connectedAndIdentified()
       client ! Authenticate
       val (cmd, id) = connection.expectMsgPF() {
-        case x @ PackOut(Authenticate, id, `credentials`) => (x, id)
+        case x @ PackOut(Authenticate, cid, `credentials`) => (x, cid)
       }
 
       client ! PackIn(Failure(NotHandled(NotHandled.NotReady)), id)
@@ -502,7 +501,7 @@ class ConnectionActorSpec extends ActorSpec {
       connectedAndIdentified()
       client ! Authenticate
       val (cmd, id) = connection.expectMsgPF() {
-        case x @ PackOut(Authenticate, id, `credentials`) => (x, id)
+        case x @ PackOut(Authenticate, cid, `credentials`) => (x, cid)
       }
 
       client ! PackIn(Failure(NotHandled(NotHandled.NotReady)), id)
@@ -514,7 +513,7 @@ class ConnectionActorSpec extends ActorSpec {
       client ! Authenticate
 
       val (cmd, id) = connection.expectMsgPF() {
-        case x @ PackOut(Authenticate, id, `credentials`) => (x, id)
+        case x @ PackOut(Authenticate, cid, `credentials`) => (x, cid)
       }
       client ! PackIn(Failure(NotHandled(NotHandled.NotReady)), id)
       connection expectMsg cmd
@@ -524,7 +523,7 @@ class ConnectionActorSpec extends ActorSpec {
       connectedAndIdentified()
       client ! Authenticate
       val (cmd, id) = connection.expectMsgPF() {
-        case x @ PackOut(Authenticate, id, `credentials`) => (x, id)
+        case x @ PackOut(Authenticate, cid, `credentials`) => (x, cid)
       }
       val notReady = PackIn(Failure(NotHandled(NotHandled.NotReady)), id)
       client ! notReady
@@ -544,7 +543,7 @@ class ConnectionActorSpec extends ActorSpec {
       connectedAndIdentified()
       client ! SubscribeTo(EventStream.Id("stream"))
       val (cmd, id) = connection.expectMsgPF() {
-        case x @ PackOut(subscribeTo, id, `credentials`) => (x, id)
+        case x @ PackOut(_, cid, `credentials`) => (x, cid)
       }
 
       val tooBusy = PackIn(Failure(NotHandled(NotHandled.TooBusy)), id)
@@ -671,7 +670,7 @@ class ConnectionActorSpec extends ActorSpec {
     "abort wrong connection" in new TestScope {
       val probe = TestProbe()
       watch(probe.ref)
-      client.tell(ConnectionActor.Connected(new InetSocketAddress(0)), probe.ref)
+      client.tell(Connected(new InetSocketAddress(0)), probe.ref)
       expectTerminated(probe.ref)
     }
 
@@ -764,7 +763,6 @@ class ConnectionActorSpec extends ActorSpec {
     import _root_.akka.util.{ByteString => ABS}
     import scodec.bits.{ByteOrdering, ByteVector}
     import EventStoreFormats._
-    import eventstore.BytesReader
 
     val byteOrder = ByteOrdering.LittleEndian
 
@@ -819,7 +817,7 @@ class ConnectionActorSpec extends ActorSpec {
 
     connectedAndIdentified()
     client ! subscribeTo
-    val id = connection.expectMsgPF() { case PackOut(`subscribeTo`, id, `credentials`) => id }
+    val id = connection.expectMsgPF() { case PackOut(`subscribeTo`, cid, `credentials`) => cid }
 
     override def settings = Settings(maxReconnections = 1, heartbeatInterval = 10.seconds, heartbeatTimeout = 20.seconds)
   }
@@ -858,7 +856,7 @@ class ConnectionActorSpec extends ActorSpec {
     }
 
     def sendConnected(address: InetSocketAddress = settings.address): Unit = {
-      client.tell(ConnectionActor.Connected(address), connection.ref)
+      client.tell(Connected(address), connection.ref)
     }
 
     def connectedAndIdentified(address: InetSocketAddress = settings.address): Unit = {
@@ -896,6 +894,7 @@ class ConnectionActorSpec extends ActorSpec {
     val id = randomUuid
 
     def expectOperationTimedOut(x: AnyRef, xs: AnyRef*): Unit = {
+
       def removeOne[T](xs: Seq[T], x: T): Seq[T] = {
         val (h, t) = xs.span(_ != x)
         h ++ t.drop(1)
@@ -903,10 +902,10 @@ class ConnectionActorSpec extends ActorSpec {
 
       def expect(xs: Seq[AnyRef]): Unit = {
         if (xs.nonEmpty) expectMsgPF() {
-          case Status.Failure(OperationTimeoutException(PackOut(x, _, `credentials`))) if xs contains x =>
-            expect(removeOne(xs, x))
-          case Status.Failure(OperationTimeoutException(x)) if xs contains x =>
-            expect(removeOne(xs, x))
+          case Status.Failure(OperationTimeoutException(PackOut(o, _, `credentials`))) if xs contains o =>
+            expect(removeOne(xs, o))
+          case Status.Failure(OperationTimeoutException(o)) if xs contains o =>
+            expect(removeOne(xs, o))
         }
       }
 

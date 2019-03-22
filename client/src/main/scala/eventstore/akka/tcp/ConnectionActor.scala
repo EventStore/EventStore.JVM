@@ -355,6 +355,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
     } else {
       log.debug("{} to {} in {}", label, address, in)
       system.scheduler.scheduleOnce(in, self, Connect(address))
+      ()
     }
   }
 

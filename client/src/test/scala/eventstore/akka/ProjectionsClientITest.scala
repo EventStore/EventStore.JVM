@@ -69,7 +69,7 @@ class ProjectionsClientITest extends AbstractStreamsITest {
 
       EventuallyResults.eventually {
         val projectionDetails = client.fetchProjectionDetails(projectionName).await_(timeout)
-        projectionDetails.map(_.status) should beSome(Completed)
+        projectionDetails.map(_.status) shouldEqual Some(Completed)
       }
     }
 
@@ -83,7 +83,7 @@ class ProjectionsClientITest extends AbstractStreamsITest {
       } yield details
 
       val projectionDetails = result.await_(timeout)
-      projectionDetails.map(_.status) should beSome(Running)
+      projectionDetails.map(_.status) shouldEqual Some(Running)
     }
 
     "return the faulted status for a continuous projection that doesnt compile" in new TestScope {
@@ -97,7 +97,7 @@ class ProjectionsClientITest extends AbstractStreamsITest {
       } yield details
 
       val projectionDetails = result.await_(timeout)
-      projectionDetails.map(_.status) should beSome(Faulted)
+      projectionDetails.map(_.status) shouldEqual Some(Faulted)
     }
 
     "return None when fetching the project details of a non existant projection" in new TestScope {
@@ -135,7 +135,7 @@ class ProjectionsClientITest extends AbstractStreamsITest {
       client.createProjection(projectionName, ProjectionCodeWithNoState, OneTime)
 
       EventuallyResults.eventually {
-        val projectionCompleted = client.fetchProjectionDetails(projectionName).await_(timeout).map(_.status) should beSome(Completed)
+        val projectionCompleted = client.fetchProjectionDetails(projectionName).await_(timeout).map(_.status) shouldEqual Some(Completed)
         val resultIsEmpty = client.fetchProjectionState(projectionName).await_(timeout) shouldEqual Some("{}")
 
         projectionCompleted and resultIsEmpty
@@ -170,7 +170,7 @@ class ProjectionsClientITest extends AbstractStreamsITest {
       client.createProjection(projectionName, ProjectionCodeWithNoState, OneTime)
 
       EventuallyResults.eventually {
-        val projectionCompleted = client.fetchProjectionDetails(projectionName).await_(timeout).map(_.status) should beSome(Completed)
+        val projectionCompleted = client.fetchProjectionDetails(projectionName).await_(timeout).map(_.status) shouldEqual Some(Completed)
         val resultIsEmpty = client.fetchProjectionResult(projectionName).await_(timeout) shouldEqual Some("{}")
 
         projectionCompleted and resultIsEmpty
@@ -188,7 +188,7 @@ class ProjectionsClientITest extends AbstractStreamsITest {
       } yield status
 
       val projectionDetails = result.await_(timeout)
-      projectionDetails.map(_.status) should beSome(Stopped)
+      projectionDetails.map(_.status) shouldEqual Some(Stopped)
     }
 
     "restart a stopped projection" in new TestScope {
@@ -203,7 +203,7 @@ class ProjectionsClientITest extends AbstractStreamsITest {
       } yield status
 
       val projectionDetails = result.await_(timeout)
-      projectionDetails.map(_.status) should beSome(Running)
+      projectionDetails.map(_.status) shouldEqual Some(Running)
     }
 
     "delete a completed onetime projection" in new TestScope {
@@ -214,7 +214,7 @@ class ProjectionsClientITest extends AbstractStreamsITest {
         _ <- client.createProjection(projectionName, ProjectionCode, OneTime)
         _ <- waitForProjectionStatus(client, projectionName, Completed)
         _ <- client.stopProjection(projectionName)
-        stopped <- waitForProjectionStatus(client, projectionName, Stopped)
+        _ <- waitForProjectionStatus(client, projectionName, Stopped)
         deleteResult <- client.deleteProjection(projectionName)
       } yield deleteResult
 
@@ -227,9 +227,9 @@ class ProjectionsClientITest extends AbstractStreamsITest {
 
       val result = for {
         _ <- client.createProjection(projectionName, ProjectionCode, Continuous)
-        stopped <- waitForProjectionStatus(client, projectionName, Running)
+        _ <- waitForProjectionStatus(client, projectionName, Running)
         _ <- client.stopProjection(projectionName)
-        stopped <- waitForProjectionStatus(client, projectionName, Stopped)
+        _ <- waitForProjectionStatus(client, projectionName, Stopped)
         deleteResult <- client.deleteProjection(projectionName)
       } yield deleteResult
 
