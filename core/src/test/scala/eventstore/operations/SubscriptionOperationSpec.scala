@@ -381,7 +381,7 @@ class SubscriptionOperationSpec extends OperationSpec {
     "stop on unexpected" in foreach(streams) { implicit stream =>
       new UnsubscribingScope {
         val unexpected = stream match {
-          case x: EventStream.Id => SubscribeToStreamCompleted(0)
+          case _: EventStream.Id => SubscribeToStreamCompleted(0)
           case _                 => SubscribeToAllCompleted(0)
         }
         operation.inspectIn(Try(unexpected)) must beLike {
@@ -443,7 +443,7 @@ class SubscriptionOperationSpec extends OperationSpec {
     val operation = SO.Subscribing(subscribeTo, pack, client, ongoing = true, 0)
 
     lazy val subscribeCompleted = stream match {
-      case x: EventStream.Id => SubscribeToStreamCompleted(0)
+      case _: EventStream.Id => SubscribeToStreamCompleted(0)
       case _                 => SubscribeToAllCompleted(0)
     }
   }

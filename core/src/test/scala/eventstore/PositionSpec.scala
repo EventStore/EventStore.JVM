@@ -33,10 +33,10 @@ class PositionSpec extends Specification {
     ">=" in new PositionScope {
       def verify(p1: Position, p2: Position) = {
         (p1 >= p2) mustEqual ((p1, p2) match {
-          case (Last, Last)                       => true
-          case (_, Last)                          => false
-          case (Last, _)                          => true
-          case (Exact(cp1, pp1), Exact(cp2, pp2)) => p1 > p2 || p1 == p2
+          case (Last, Last)               => true
+          case (_, Last)                  => false
+          case (Last, _)                  => true
+          case (Exact(_, _), Exact(_, _)) => p1 > p2 || p1 == p2
         })
       }
     }
@@ -44,10 +44,10 @@ class PositionSpec extends Specification {
     "<=" in new PositionScope {
       def verify(p1: Position, p2: Position) = {
         (p1 <= p2) mustEqual ((p1, p2) match {
-          case (Last, Last)                       => true
-          case (_, Last)                          => true
-          case (Last, _)                          => false
-          case (Exact(cp1, pp1), Exact(cp2, pp2)) => p1 < p2 || p1 == p2
+          case (Last, Last)               => true
+          case (_, Last)                  => true
+          case (Last, _)                  => false
+          case (Exact(_, _), Exact(_, _)) => p1 < p2 || p1 == p2
         })
       }
     }

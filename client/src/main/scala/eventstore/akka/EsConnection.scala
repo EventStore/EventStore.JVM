@@ -30,9 +30,7 @@ class EsConnection(
   implicit val timeout = Timeout(settings.operationTimeout)
 
   def apply[OUT <: Out, IN <: In](out: OUT, credentials: Option[UserCredentials] = None)(
-    implicit
-    outIn: ClassTags[OUT, IN],
-    ec:    ExecutionContext
+    implicit outIn: ClassTags[OUT, IN]
   ): Future[IN] = {
 
     val future = connection ? credentials.fold[OutLike](out)(WithCredentials(out, _))

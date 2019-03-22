@@ -82,7 +82,8 @@ private[eventstore] class ClusterDiscovererActor(
   }
 
   def discover(attempt: Int, failed: Option[InetSocketAddress], seeds: List[InetSocketAddress]) = {
-    def attemptFailed(e: Option[Throwable] = None) = {
+
+    def attemptFailed(e: Option[Throwable]) = {
       if (attempt < maxDiscoverAttempts) {
         e match {
           case Some(th) => log.info("Discovering cluster: attempt {}/{} failed with error: {}", attempt, maxDiscoverAttempts, th)
@@ -167,7 +168,10 @@ private[eventstore] object ClusterDiscovererActor {
     Props(new ClusterDiscovererActor(settings, clusterInfo))
   }
 
-  @SerialVersionUID(1L) final case class GetAddress(failed: Option[InetSocketAddress] = None)
+  @SerialVersionUID(1L) final case class GetAddress(failed: Option[InetSocketAddress])
+  object GetAddress {
+    def apply(): GetAddress = GetAddress(None)
+  }
 
   @SerialVersionUID(1L) final case class Address(value: InetSocketAddress)
 

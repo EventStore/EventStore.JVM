@@ -96,11 +96,11 @@ class EsConnectionSpec extends ActorSpec {
     val connection = new EsConnection(testActor, system)
 
     def verifyOutIn[OUT <: Out, IN <: In](out: OUT, in: In)(implicit outIn: ClassTags[OUT, IN]): Unit = {
-      val future = connection(out)(outIn, system.dispatcher)
+      val future = connection(out)(outIn)
       expectMsg(out)
       future.value must beNone
       lastSender ! in
-      future.value must beSome(Success(in))
+      future.value mustEqual Some(Success(in))
     }
   }
 

@@ -6,9 +6,7 @@ import eventstore.{akka => a}
 
 package object tcp extends TypeAliases {
 
-  private val sinceVersion = "7.0.0"
-
-  @deprecated(a.deprecationMsg("ConnectionActor"), since = sinceVersion)
+  @deprecated(a.deprecationMsg("ConnectionActor"), since = "7.0.0")
   val ConnectionActor = a.tcp.ConnectionActor
 
 }

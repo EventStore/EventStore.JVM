@@ -19,7 +19,7 @@ class CountAll extends Actor with ActorLogging {
   def receive = count(0)
 
   def count(n: Long, printed: Boolean = false): Receive = {
-    case x: IndexedEvent       => context become count(n + 1)
+    case _: IndexedEvent       => context become count(n + 1)
     case LiveProcessingStarted => log.info("live processing started")
     case ReceiveTimeout if !printed =>
       log.info("count {}", n)

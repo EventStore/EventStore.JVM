@@ -6,7 +6,7 @@ import java.{util => ju}
 
 package object eventstore {
 
-  private val sinceVersion = "7.0.0"
+  private[eventstore] val sinceVersion = "7.0.0"
 
   type Uuid                = ju.UUID
 

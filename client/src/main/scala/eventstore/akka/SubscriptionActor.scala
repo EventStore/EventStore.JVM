@@ -116,12 +116,11 @@ private[eventstore] class SubscriptionActor(
   }
 
   def subscribingFromLast(): Receive = {
-    def subscribed(position: Long) = {
+    def subscribed: Receive =
       liveProcessing(None, Queue())
-    }
 
     subscribeToStream()
-    rcvSubscribeCompleted(subscribed) or
+    rcvSubscribeCompleted(_ ⇒ subscribed) or
       rcvFailureOrUnsubscribe
   }
 

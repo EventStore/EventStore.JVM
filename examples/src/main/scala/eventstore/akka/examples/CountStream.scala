@@ -27,7 +27,7 @@ class CountStream extends Actor with ActorLogging {
   def receive = count(0)
 
   def count(n: Long, printed: Boolean = false): Receive = {
-    case x: Event              => context become count(n + 1)
+    case _: Event              => context become count(n + 1)
     case LiveProcessingStarted => log.info("live processing started")
     case ReceiveTimeout if !printed =>
       log.info("count {}", n)

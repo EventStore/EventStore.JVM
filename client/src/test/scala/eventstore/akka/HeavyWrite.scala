@@ -24,7 +24,7 @@ class HeavyWrite extends ActorSpec {
       }
       val data = Content(bytes)
 
-      val results = for { n <- 0 until times } yield {
+      val results = for { _ <- 0 until times } yield {
 
         val futures = for { _ <- 0 until writes } yield {
           val es = List.fill(events)(EventData(testName, data = data))
