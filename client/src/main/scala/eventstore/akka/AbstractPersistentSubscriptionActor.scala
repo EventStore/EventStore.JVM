@@ -2,7 +2,7 @@ package eventstore
 package akka
 
 import _root_.akka.actor.{Actor, ActorLogging, ActorRef}
-import eventstore.{PersistentSubscription => PS}
+import eventstore.core.{PersistentSubscription => PS}
 
 private[eventstore] trait AbstractPersistentSubscriptionActor[T] extends Actor with ActorLogging {
   def groupName: String

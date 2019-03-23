@@ -2,7 +2,7 @@ package eventstore.j.examples;
 
 import akka.actor.ActorSystem;
 import eventstore.akka.EventStoreExtension;
-import eventstore.PersistentSubscriptionSettings;
+import eventstore.core.settings.PersistentSubscriptionSettings;
 import eventstore.j.EsConnection;
 import eventstore.j.PersistentSubscriptionSettingsBuilder;
 

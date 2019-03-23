@@ -1,7 +1,7 @@
 package eventstore
 package akka
 
-import constants.MaxBatchSize
+import core.constants.MaxBatchSize
 
 class ReadAllEventsForwardITest extends TestConnection {
   sequential

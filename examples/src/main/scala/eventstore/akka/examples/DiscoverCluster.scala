@@ -2,20 +2,20 @@ package eventstore
 package akka
 package examples
 
+import java.net.InetSocketAddress
 import _root_.akka.actor._
 import eventstore.cluster.GossipSeedsOrDns.GossipSeeds
 import eventstore.cluster.ClusterSettings
 import eventstore.akka.cluster.ClusterDiscovererActor.{Address, GetAddress}
 import eventstore.akka.cluster.ClusterDiscovererActor
 import eventstore.akka.cluster.ClusterInfoOf
-import eventstore.syntax._
 
 object DiscoverCluster extends App {
   implicit val system = ActorSystem()
   val settings = ClusterSettings(GossipSeeds(
-    "127.0.0.1" :: 1113,
-    "127.0.0.1" :: 2113,
-    "127.0.0.1" :: 3113
+    new InetSocketAddress("127.0.0.1", 1113),
+    new InetSocketAddress("127.0.0.1", 2113),
+    new InetSocketAddress("127.0.0.1", 3113)
   ))
   val discoverer = system.actorOf(ClusterDiscovererActor.props(settings, ClusterInfoOf(system)), "discoverer")
   system.actorOf(Props(classOf[DiscoverCluster], discoverer))

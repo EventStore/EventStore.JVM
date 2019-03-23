@@ -5,7 +5,7 @@ package tcp
 import java.net.InetSocketAddress
 import scala.util.{ Failure, Success, Try }
 import _root_.akka.actor.{ ActorContext, ActorRef, ActorSystem, Status }
-import eventstore.tcp.PackOut
+import eventstore.core.tcp.PackOut
 
 private[eventstore] final case class Client(private val ref: ActorRef) {
   def apply(in: Try[In])(implicit sender: ActorRef): Unit = {

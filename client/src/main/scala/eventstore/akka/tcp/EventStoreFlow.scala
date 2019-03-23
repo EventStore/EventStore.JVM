@@ -10,9 +10,10 @@ import _root_.akka.util.{ByteString => ABS}
 import _root_.akka.event.LoggingAdapter
 import _root_.akka.stream.scaladsl._
 import scodec.bits.ByteVector
-import eventstore.tcp._
-import eventstore.tcp.EventStoreFormats._
-import eventstore.syntax._
+import eventstore.core.syntax._
+import eventstore.core.{BytesReader, BytesWriter, HeartbeatRequest, HeartbeatResponse}
+import eventstore.core.tcp._
+import eventstore.core.tcp.EventStoreFormats._
 
 private[eventstore] object EventStoreFlow {
 
@@ -28,7 +29,7 @@ private[eventstore] object EventStoreFlow {
 
     val outgoing = Flow[PackOut]
       .mapFuture(ordered, parallelism)(BytesWriter[PackOut].write)
-      .keepAlive(heartbeatInterval, () => BytesWriter[PackOut].write(PackOut(HeartbeatRequest)))
+      .keepAlive(heartbeatInterval, () => BytesWriter[PackOut].write(PackOut(HeartbeatRequest, randomUuid)))
 
     val autoReply = {
 

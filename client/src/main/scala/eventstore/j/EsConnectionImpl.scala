@@ -7,7 +7,9 @@ import scala.concurrent.ExecutionContext
 import _root_.akka.NotUsed
 import _root_.akka.actor.ActorSystem
 import _root_.akka.stream.javadsl.Source
-import ExpectedVersion.Existing
+import eventstore.core.ExpectedVersion.Existing
+import eventstore.akka.SubscriptionObserver
+import eventstore.akka.Settings
 
 object EsConnectionImpl {
   def apply(system: ActorSystem, settings: Settings = Settings.Default): EsConnectionImpl =
@@ -16,7 +18,7 @@ object EsConnectionImpl {
 
 class EsConnectionImpl(
     connection:                            eventstore.akka.EsConnection,
-    settings:                              Settings,
+    settings:                              eventstore.akka.Settings,
     private implicit val executionContext: ExecutionContext
 ) extends EsConnection {
 
@@ -143,7 +145,7 @@ class EsConnectionImpl(
       streamId = EventStream.Id(stream),
       fromNumber = Option(fromNumber) getOrElse EventNumber.First,
       maxCount = count,
-      direction = eventstore.ReadDirection.Forward,
+      direction = eventstore.core.ReadDirection.Forward,
       resolveLinkTos = resolveLinkTos,
       requireMaster = requireMaster
     )

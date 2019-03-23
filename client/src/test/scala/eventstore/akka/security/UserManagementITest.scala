@@ -6,7 +6,7 @@ import scala.concurrent.duration._
 import _root_.akka.testkit.TestActorRef
 import _root_.akka.actor.Status.Failure
 import eventstore.akka.tcp.ConnectionActor
-import eventstore.util.PasswordHashAlgorithm
+import eventstore.core.util.PasswordHashAlgorithm
 
 class UserManagementITest extends ActorSpec {
 
@@ -56,6 +56,7 @@ class UserManagementITest extends ActorSpec {
   }
 
   trait UserScope extends ActorScope {
+
     val user = {
       val uuid = randomUuid.toString
       UserCredentials(uuid, uuid)
@@ -115,13 +116,13 @@ class UserManagementITest extends ActorSpec {
       val (hash, salt) = PasswordHashAlgorithm().hash(user.password)
       val login = user.login
       val data = userData(login = login, fullName = login, salt = salt, hash = hash)
-      EventData(SystemEventType.userCreated, data = Content.Json(data))
+      EventData(SystemEventType.userCreated, randomUuid, data = Content.Json(data))
     }
 
-    def userUpdated(data: String): EventData = EventData(SystemEventType.userUpdated, data = Content.Json(data))
+    def userUpdated(data: String): EventData = EventData(SystemEventType.userUpdated, randomUuid, data = Content.Json(data))
 
     def passwordChanged(login: String): EventData =
-      EventData(SystemEventType.passwordChanged, data = Content.Json(s"""{"loginName": "$login"}"""))
+      EventData(SystemEventType.passwordChanged, randomUuid, data = Content.Json(s"""{"loginName": "$login"}"""))
   }
 }
 

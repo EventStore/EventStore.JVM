@@ -1,13 +1,15 @@
 package eventstore.j;
 
-import akka.NotUsed;
-import akka.stream.javadsl.Source;
-import eventstore.*;
-import org.reactivestreams.Publisher;
-import scala.concurrent.Future;
-
 import java.io.Closeable;
 import java.util.Collection;
+import scala.concurrent.Future;
+import akka.NotUsed;
+import akka.stream.javadsl.Source;
+import org.reactivestreams.Publisher;
+import eventstore.akka.SubscriptionObserver;
+import eventstore.core.settings.PersistentSubscriptionSettings;
+import eventstore.core.*;
+
 
 /**
  * Maintains a full duplex connection to the EventStore
@@ -21,7 +23,7 @@ public interface EsConnection {
   /**
    * Write events to a stream
    * <p>
-   * When writing events to a stream the {@link eventstore.ExpectedVersion} choice can
+   * When writing events to a stream the {@link eventstore.core.ExpectedVersion} choice can
    * make a very large difference in the observed behavior. For example, if no stream exists
    * and ExpectedVersion.Any is used, a new stream will be implicitly created when appending.
    * <p>
@@ -45,7 +47,7 @@ public interface EsConnection {
   /**
    * Write events to a stream
    * <p>
-   * When writing events to a stream the {@link eventstore.ExpectedVersion} choice can
+   * When writing events to a stream the {@link eventstore.core.ExpectedVersion} choice can
    * make a very large difference in the observed behavior. For example, if no stream exists
    * and ExpectedVersion.Any is used, a new stream will be implicitly created when appending.
    * <p>
@@ -343,7 +345,7 @@ public interface EsConnection {
    * pushed to the client.
    *
    * @param stream         The stream to subscribe to
-   * @param observer       A {@link eventstore.SubscriptionObserver} to handle a new event received over the subscription
+   * @param observer       A {@link eventstore.akka.SubscriptionObserver} to handle a new event received over the subscription
    * @param resolveLinkTos Whether to resolve LinkTo events automatically
    * @param credentials    The optional user credentials to perform operation with
    * @return A {@link java.io.Closeable} representing the subscription which can be closed.
@@ -370,7 +372,7 @@ public interface EsConnection {
    * appeared on the subscription.
    *
    * @param stream                   The stream to subscribe to
-   * @param observer                 A {@link eventstore.SubscriptionObserver} to handle a new event received over the subscription
+   * @param observer                 A {@link eventstore.akka.SubscriptionObserver} to handle a new event received over the subscription
    * @param fromEventNumberExclusive The event number from which to start, or <code>null</code> to read all events.
    * @param resolveLinkTos           Whether to resolve LinkTo events automatically
    * @param credentials              The optional user credentials to perform operation with
@@ -387,7 +389,7 @@ public interface EsConnection {
    * Subscribes to all events in the Event Store. New events written to the stream
    * while the subscription is active will be pushed to the client.
    *
-   * @param observer       A {@link eventstore.SubscriptionObserver} to handle a new event received over the subscription
+   * @param observer       A {@link eventstore.akka.SubscriptionObserver} to handle a new event received over the subscription
    * @param resolveLinkTos Whether to resolve LinkTo events automatically
    * @param credentials    The optional user credentials to perform operation with
    * @return A {@link java.io.Closeable} representing the subscription which can be closed.
@@ -411,7 +413,7 @@ public interface EsConnection {
    * is desired, use the position representing the last event processed which
    * appeared on the subscription.
    *
-   * @param observer              A {@link eventstore.SubscriptionObserver} to handle a new event received over the subscription
+   * @param observer              A {@link eventstore.akka.SubscriptionObserver} to handle a new event received over the subscription
    * @param fromPositionExclusive The position from which to start, or <code>null</code> to read all events
    * @param resolveLinkTos        Whether to resolve LinkTo events automatically
    * @param credentials           The optional user credentials to perform operation with

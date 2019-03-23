@@ -27,7 +27,7 @@ class HeavyWrite extends ActorSpec {
       val results = for { _ <- 0 until times } yield {
 
         val futures = for { _ <- 0 until writes } yield {
-          val es = List.fill(events)(EventData(testName, data = data))
+          val es = List.fill(events)(EventData(testName, randomUuid, data = data))
           val writeEvents = WriteEvents(EventStream.Id(randomUuid.toString), es)
           connection(writeEvents)
         }

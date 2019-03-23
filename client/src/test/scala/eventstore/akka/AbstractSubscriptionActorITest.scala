@@ -12,9 +12,8 @@ abstract class AbstractSubscriptionActorITest extends ActorSpec {
     val streamId = EventStream.Id(randomUuid.toString)
 
     def write(count: Int = 1): Unit = {
-      def event = EventData("test")
       val probe = TestProbe()
-      connection.tell(WriteEvents(streamId, List.fill(count)(event)), probe.ref)
+      connection.tell(WriteEvents(streamId, List.fill(count)(TestData.eventData)), probe.ref)
       probe.expectMsgType[WriteEventsCompleted]
     }
 

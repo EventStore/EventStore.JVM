@@ -1,8 +1,6 @@
 package eventstore
 package j
 
-import eventstore.akka.randomUuid
-
 class EventDataBuilder(val eventType: String) extends Builder[EventData] with ChainSet[EventDataBuilder] {
   protected var _eventId: Uuid = randomUuid
   protected var _data: Content = Content.Empty

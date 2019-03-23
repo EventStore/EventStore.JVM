@@ -11,10 +11,11 @@ import _root_.akka.testkit.TestProbe
 import _root_.akka.util.Timeout
 import _root_.akka.actor.Status.Failure
 import _root_.akka.pattern.ask
-import eventstore.syntax._
-import eventstore.cluster._
-import eventstore.cluster.GossipSeedsOrDns.ClusterDns
-import eventstore.cluster.NodeState._
+import eventstore.core.syntax._
+import eventstore.core.cluster._
+import eventstore.core.cluster.GossipSeedsOrDns.ClusterDns
+import eventstore.core.cluster.NodeState._
+import eventstore.core.settings.ClusterSettings
 import ClusterDiscovererActor._
 
 class ClusterDiscovererActorSpec extends ActorSpec {
@@ -440,7 +441,7 @@ class ClusterDiscovererActorSpec extends ActorSpec {
     )
     val failure = Failure(TestException)
 
-    val futureFunc: ClusterInfoOf.FutureFunc = (address) => testActor.ask(address).mapTo[ClusterInfo]
+    val futureFunc: ClusterInfoOf.FutureFunc = address => testActor.ask(address).mapTo[ClusterInfo]
 
     lazy val actor = system.actorOf(ClusterDiscovererActor.props(settings, futureFunc))
 

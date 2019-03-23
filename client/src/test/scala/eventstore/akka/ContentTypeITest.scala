@@ -40,8 +40,9 @@ class ContentTypeITest extends TestConnection {
     def verify(dataContentType: ContentType, metadataContentType: ContentType) = {
       val expected = EventData(
         eventType = s"${render(dataContentType)}/${render(metadataContentType)}",
-        data = content(dataContentType),
-        metadata = content(metadataContentType)
+        eventId   = randomUuid,
+        data      = content(dataContentType),
+        metadata  = content(metadataContentType)
       )
 
       val number = append(expected).number

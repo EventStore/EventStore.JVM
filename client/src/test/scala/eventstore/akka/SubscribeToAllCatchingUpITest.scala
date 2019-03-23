@@ -112,7 +112,7 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
         linkedData,
         Some(date)
       )
-      val link = append(linked.link())
+      val link = append(linked.link(randomUuid))
 
       actor ! DeleteStream(linkedStreamId, hard = true)
       expectMsgType[DeleteStreamCompleted]
@@ -134,7 +134,7 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
         linkedData,
         Some(date)
       )
-      val link = append(linked.link())
+      val link = append(linked.link(randomUuid))
 
       actor ! DeleteStream(linkedStreamId, hard = true)
       expectMsgType[DeleteStreamCompleted]

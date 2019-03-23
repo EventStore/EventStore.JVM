@@ -8,11 +8,13 @@ import scala.util.{Failure, Success, Try}
 import _root_.akka.actor._
 import _root_.akka.stream.scaladsl._
 import _root_.akka.stream.{ActorMaterializer, BufferOverflowException, StreamTcpException}
-import NotHandled.NotMaster
-import eventstore.cluster.{ClusterSettings, ClusterException}
-import eventstore.util.{DelayedRetry, OneToMany}
-import eventstore.tcp.{PackIn, PackOut}
-import eventstore.operations._
+import eventstore.core.{HeartbeatRequest, HeartbeatResponse}
+import eventstore.core.NotHandled.NotMaster
+import eventstore.core.settings.ClusterSettings
+import eventstore.core.cluster.ClusterException
+import eventstore.core.util.{DelayedRetry, OneToMany}
+import eventstore.core.tcp.{PackIn, PackOut}
+import eventstore.core.operations._
 import eventstore.akka.cluster.ClusterDiscovererActor.GetAddress
 import eventstore.akka.cluster.ClusterDiscovererActor
 import eventstore.akka.cluster.ClusterInfoOf
@@ -282,7 +284,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
     case Connected(`address`) =>
       log.info("Connected to {}", address)
       val connection = Connection(address, sender(), context)
-      connection(PackOut(identifyClient))
+      connection(PackOut(identifyClient, randomUuid))
       val result = os.flatMap { operation =>
         operation.connected match {
           case OnConnected.Retry(op, packOut) =>
@@ -381,7 +383,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
   }
 
   def connectionFailed(msg: String, os: Operations): Unit = {
-    connectionFailed(msg, new CannotEstablishConnectionException(msg), os)
+    connectionFailed(msg, CannotEstablishConnectionException(msg), os)
   }
 
   def stopOperation(operation: Operation[Client], os: Operations, in: Try[In]): Operations = {

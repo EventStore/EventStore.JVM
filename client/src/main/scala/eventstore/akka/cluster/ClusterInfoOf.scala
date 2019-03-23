@@ -14,7 +14,7 @@ import _root_.akka.http.scaladsl.Http
 import _root_.akka.http.scaladsl.model._
 import _root_.akka.http.scaladsl.unmarshalling.Unmarshal
 import _root_.akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import eventstore.cluster.ClusterInfo
+import eventstore.core.cluster.ClusterInfo
 
 private[eventstore] object ClusterInfoOf {
 

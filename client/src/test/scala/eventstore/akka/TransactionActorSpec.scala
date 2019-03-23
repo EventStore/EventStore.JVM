@@ -172,7 +172,7 @@ class TransactionActorSpec extends ActorSpec {
     def expectCommit = connection.expectMsg(TransactionCommit(transactionId))
 
     def commitCompleted(range: Option[EventNumber.Range]): Unit = {
-      actor ! TransactionCommitCompleted(transactionId, range)
+      actor ! TransactionCommitCompleted(transactionId, range, None)
     }
 
     def expectTerminated(): Unit = expectMsgPF() {
@@ -192,7 +192,7 @@ class TransactionActorSpec extends ActorSpec {
       expectMsg(TransactionId(transactionId))
     }
 
-    def events(label: String) = List(EventData(label))
+    def events(label: String) = List(EventData(label, randomUuid))
 
     def kickOff: Kickoff
   }

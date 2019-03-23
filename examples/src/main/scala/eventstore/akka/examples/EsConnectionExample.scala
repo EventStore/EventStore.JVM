@@ -4,7 +4,7 @@ package examples
 
 import _root_.akka.actor.ActorSystem
 import scala.concurrent.Future
-
+import eventstore.core.util.uuid.randomUuid
 
 object EsConnectionExample extends App {
   val system = ActorSystem()
@@ -16,22 +16,22 @@ object EsConnectionExample extends App {
 
   val stream = EventStream.Id("my-stream")
 
-  val readEvent: Future[ReadEventCompleted] = connection.apply(ReadEvent(stream))
+  val readEvent: Future[ReadEventCompleted] = connection(ReadEvent(stream))
   readEvent foreach { x =>
     log.info(x.event.toString)
   }
 
-  val readStreamEvents: Future[ReadStreamEventsCompleted] = connection.apply(ReadStreamEvents(stream))
+  val readStreamEvents: Future[ReadStreamEventsCompleted] = connection(ReadStreamEvents(stream))
   readStreamEvents foreach { x =>
     log.info(x.events.toString())
   }
 
-  val readAllEvents: Future[ReadAllEventsCompleted] = connection.apply(ReadAllEvents(maxCount = 5))
+  val readAllEvents: Future[ReadAllEventsCompleted] = connection(ReadAllEvents(maxCount = 5))
   readAllEvents foreach { x =>
     log.info(x.events.toString())
   }
 
-  val writeEvents: Future[WriteEventsCompleted] = connection.apply(WriteEvents(stream, List(EventData("my-event"))))
+  val writeEvents: Future[WriteEventsCompleted] = connection(WriteEvents(stream, List(EventData("my-event", eventId = randomUuid))))
   writeEvents foreach { x =>
     log.info(x.numbersRange.toString)
   }

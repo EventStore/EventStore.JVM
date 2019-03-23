@@ -6,7 +6,6 @@ import _root_.akka.japi.function
 import _root_.akka.stream.ActorMaterializer
 import _root_.akka.stream.scaladsl.{Source, Sink}
 import _root_.akka.stream.testkit.scaladsl.TestSink
-import eventstore.akka.randomUuid
 import eventstore.akka.ActorSpec
 
 class EsConnectionITest extends ActorSpec {
@@ -223,6 +222,6 @@ class EsConnectionITest extends ActorSpec {
     val eventsM = List.fill(20)(newEventData).asJava
 
     def eventType = "java-test"
-    def newEventData = EventData(eventType = eventType, data = Content("data"), metadata = Content("metadata"))
+    def newEventData = EventData(eventType = eventType, eventId = randomUuid, data = Content("data"), metadata = Content("metadata"))
   }
 }

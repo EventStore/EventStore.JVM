@@ -1,12 +1,10 @@
 package eventstore.j.examples;
 
-import akka.actor.ActorSystem;
-import eventstore.IndexedEvent;
-import eventstore.SubscriptionObserver;
-import eventstore.j.EsConnection;
-import eventstore.j.EsConnectionFactory;
-
 import java.io.Closeable;
+import akka.actor.ActorSystem;
+import eventstore.j.*;
+import eventstore.core.IndexedEvent;
+import eventstore.akka.SubscriptionObserver;
 
 public class SubscribeToAllExample {
     public static void main(String[] args) {

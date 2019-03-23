@@ -26,11 +26,11 @@ class StreamSourceSpec extends SourceSpec {
 
       connection expectMsg readEvents(0)
 
-      val e1 = EventRecord(EventStream.Id("e-a1"), EventNumber.First, EventData("a"))
-      val r1 = ResolvedEvent(e1.record, EventRecord(streamId, EventNumber.First, e1.link()))
+      val e1 = EventRecord(EventStream.Id("e-a1"), EventNumber.First, EventData("a", randomUuid))
+      val r1 = ResolvedEvent(e1.record, EventRecord(streamId, EventNumber.First, e1.link(randomUuid)))
 
-      val e2 = EventRecord(EventStream.Id("e-b1"), EventNumber.First, EventData("b"))
-      val r2 = ResolvedEvent(e2.record, EventRecord(streamId, EventNumber.Exact(1), e2.link()))
+      val e2 = EventRecord(EventStream.Id("e-b1"), EventNumber.First, EventData("b", randomUuid))
+      val r2 = ResolvedEvent(e2.record, EventRecord(streamId, EventNumber.Exact(1), e2.link(randomUuid)))
 
       connection reply readCompleted(2, false, r1, r2)
 

@@ -6,9 +6,9 @@ import scala.concurrent.duration._
 import _root_.akka.actor.Status.Failure
 import _root_.akka.testkit._
 import spray.json.{JsNumber, JsObject}
-import ReadDirection._
-import eventstore.ScalaCompat._
+import eventstore.core.ScalaCompat._
 import eventstore.akka.tcp.ConnectionActor
+import ReadDirection._
 
 abstract class TestConnection extends ActorSpec {
 
@@ -33,7 +33,8 @@ abstract class TestConnection extends ActorSpec {
 
     def newEventData: EventData = EventData(
       "test",
-      data = Content("""{"data":"data"}"""),
+      eventId  = randomUuid,
+      data     = Content("""{"data":"data"}"""),
       metadata = Content("""{"metadata":"metadata"}""")
     )
 
@@ -68,7 +69,7 @@ abstract class TestConnection extends ActorSpec {
     def linkedAndLink(): (EventRecord, EventRecord) = {
       val linked = append(newEventData.copy(eventType = "linked"))
       append(newEventData)
-      val link = append(linked.link())
+      val link = append(linked.link(randomUuid))
       (linked, link)
     }
 

@@ -6,7 +6,7 @@ import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import _root_.akka.actor.Status.Failure
 import _root_.akka.testkit.TestProbe
-import eventstore.akka.ActorSpec
+import eventstore.akka.{ActorSpec, SubscriptionObserver}
 
 class EsConnectionSpec extends ActorSpec {
 
@@ -24,7 +24,7 @@ class EsConnectionSpec extends ActorSpec {
   val events = (for {
     data <- contents
     metadata <- contents
-  } yield EventData("event-type", data = data, metadata = metadata)).asJavaCollection
+  } yield EventData("event-type", eventId = randomUuid, data = data, metadata = metadata)).asJavaCollection
 
   val userCredentials = List(UserCredentials.DefaultAdmin, UserCredentials("login", "password"), null)
 
@@ -302,7 +302,7 @@ class EsConnectionSpec extends ActorSpec {
       def onLiveProcessingStart(subscription: Closeable) = client.ref ! LiveProcessingStart
     }
 
-    def newEvent(x: Long) = IndexedEvent(EventRecord(streamId, EventNumber.Exact(x), EventData("event-type")), Position.Exact(x))
+    def newEvent(x: Long) = IndexedEvent(EventRecord(streamId, EventNumber.Exact(x), EventData("event-type", randomUuid)), Position.Exact(x))
 
     val error = new RuntimeException("test")
 
@@ -332,7 +332,7 @@ class EsConnectionSpec extends ActorSpec {
       resolveLinkTos <- booleans
       startFrom <- List(EventNumber.Last, EventNumber.First)
       consumerStrategy <- ConsumerStrategy.Custom("custom") :: ConsumerStrategy.Values.toList
-    } yield PersistentSubscriptionSettings(
+    } yield core.settings.PersistentSubscriptionSettings(
       resolveLinkTos = resolveLinkTos,
       startFrom = startFrom,
       consumerStrategy = consumerStrategy
