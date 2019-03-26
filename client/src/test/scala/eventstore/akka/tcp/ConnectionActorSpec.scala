@@ -363,7 +363,7 @@ class ConnectionActorSpec extends ActorSpec {
     }
 
     "not unsubscribe twice" in new SubscriptionScope {
-      def forStream(stream: EventStream, id: Uuid, uc: Option[UserCredentials], probe: TestProbe) = {
+      def forStream(/*stream: EventStream,*/ id: Uuid, uc: Option[UserCredentials], probe: TestProbe) = {
         client ! PackIn(Try(subscribeCompleted), id)
         client.tell(Unsubscribe, probe.ref)
         system stop probe.ref
@@ -720,7 +720,7 @@ class ConnectionActorSpec extends ActorSpec {
 
   abstract class TcpScope extends ActorScope {
     val (address, socket) = bind()
-    val settings = Settings(address = address)
+    def settings = Settings(address = address)
 
     def connect(settings: Settings = settings): (TestActorRef[ConnectionActor], ActorRef) = {
       val connection = newConnection(settings)
@@ -823,16 +823,21 @@ class ConnectionActorSpec extends ActorSpec {
   }
 
   trait TestScope extends CommonScope {
-    val client = TestActorRef(new ConnectionActor(settings) {
+
+    private def connectionActor = new ConnectionActor(settings) {
       override def connect(address: InetSocketAddress): Unit = TestScope.this.tcp.ref ! Connect(address)
-    })
+    }
+
+    val client = TestActorRef(connectionActor)
 
     expectConnect()
   }
 
   trait CommonScope extends ActorScope {
+    def settings: Settings = Settings()
+
     val duration = 1.second
-    val credentials = settings.defaultCredentials
+    lazy val credentials = settings.defaultCredentials
 
     val tcp = TestProbe()
     val connection = {
@@ -848,8 +853,6 @@ class ConnectionActorSpec extends ActorSpec {
     }
 
     def client: TestActorRef[ConnectionActor]
-
-    def settings: Settings = Settings()
 
     def expectConnect(): Unit = {
       tcp expectMsg connect()
@@ -887,10 +890,11 @@ class ConnectionActorSpec extends ActorSpec {
     }
 
     case class Connect(address: InetSocketAddress)
-  }
 
+  }
+  
   trait OperationTimedOutScope extends TestScope {
-    val operationTimeout = settings.operationTimeout
+    def operationTimeout = settings.operationTimeout
     val id = randomUuid
 
     def expectOperationTimedOut(x: AnyRef, xs: AnyRef*): Unit = {
@@ -920,11 +924,14 @@ class ConnectionActorSpec extends ActorSpec {
     val address2 = "127.0.0.1" :: 2
     val discoverer = TestProbe()
 
-    val client = TestActorRef(new ConnectionActor(settings) {
+    override def settings = super.settings.copy(cluster = Some(ClusterSettings(GossipSeeds(address))))
+
+    private def connectionActor = new ConnectionActor(settings) {
       override def newClusterDiscoverer(settings: ClusterSettings) = discoverer.ref
       override def connect(address: InetSocketAddress): Unit = ClusterScope.this.tcp.ref ! Connect(address)
-    })
+    }
 
-    override def settings = super.settings.copy(cluster = Some(ClusterSettings(GossipSeeds(address))))
+    val client = TestActorRef(connectionActor)
+
   }
 }

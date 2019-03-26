@@ -93,7 +93,7 @@ class SimpleOperationSpec extends OperationSpec {
     val inspection = new Inspection {
       def expected = Pong.getClass
       def pf = {
-        case x @ Success(Pong)  => Inspection.Decision.Stop
+        case _@ Success(Pong)  => Inspection.Decision.Stop
         case Failure(TestError) => Inspection.Decision.Fail(TestException)
       }
     }

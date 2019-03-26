@@ -7,7 +7,7 @@ import _root_.akka.event.LoggingAdapter
 import TestLogger.Item
 import TestLogger.Level
 
-final case class TestLogger private(
+final case class TestLogger private[testutil](
   debug: Boolean            = false,
   info: Boolean             = false,
   warning: Boolean          = false,

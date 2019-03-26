@@ -22,7 +22,7 @@ class MessagesPerSecond extends Actor with ActorLogging {
   override def receive: Receive = receive(0, Nil, scheduled = false)
 
   def receive(n: Long, ns: List[Long], scheduled: Boolean): Receive = {
-    case x: IndexedEvent =>
+    case _: IndexedEvent =>
       if (!scheduled) context.system.scheduler.scheduleOnce(1.second, self, Tick)
       context become receive(n + 1, ns, scheduled = true)
 

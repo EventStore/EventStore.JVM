@@ -104,7 +104,7 @@ private[eventstore] abstract class SourceStageLogic[T, O <: Ordered[O], P <: O](
 
     def doCatchUp(to: P, stash: Queue[T]): Unit = {
 
-      def onReadCompleted(events: List[T], next: P, endOfStream: Boolean): Unit = {
+      def onReadCompleted(events: List[T], next: P): Unit = {
 
         enqueueAndPush(events: _*)
 
@@ -128,7 +128,7 @@ private[eventstore] abstract class SourceStageLogic[T, O <: Ordered[O], P <: O](
       }
 
       stageActorBecome {
-        rcvRead(onReadCompleted, subscribed()) or
+        rcvRead((es, n, _) ⇒ onReadCompleted(es, n), subscribed()) or
           rcvEventAppeared(onEventAppeared) or
           rcvSubscribed(onResubscribed) or
           rcvUnsubscribed(onUnsubscribeCompleted())

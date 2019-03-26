@@ -54,8 +54,8 @@ private[eventstore] object EventStoreFlow {
     framing atop convert atop autoReply atop serialization atop logging
   }
 
-  private implicit class FlowOps[In](self: Flow[In, In, NotUsed]) {
-    def mapFuture[Out](ordered: Boolean, parallelism: Int)(f: In => Out)(implicit ec: ExecutionContext): Flow[In, Out, NotUsed] = {
+  private implicit class FlowOps[I](self: Flow[I, I, NotUsed]) {
+    def mapFuture[O](ordered: Boolean, parallelism: Int)(f: I => O)(implicit ec: ExecutionContext): Flow[I, O, NotUsed] = {
       if (ordered) self.mapAsync(parallelism) { x => Future { f(x) } }
       else self.mapAsyncUnordered(parallelism) { x => Future { f(x) } }
     }

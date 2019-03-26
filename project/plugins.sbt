@@ -12,4 +12,6 @@ addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.6.0-M5")
 
 addSbtPlugin("org.scoverage" % "sbt-coveralls" % "1.2.7")
 
+addSbtPlugin("io.github.davidgregory084" % "sbt-tpolecat" % "0.1.5")
+
 libraryDependencies += "com.github.os72" % "protoc-jar" % "3.7.0"

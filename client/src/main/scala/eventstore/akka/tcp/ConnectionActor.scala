@@ -133,7 +133,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
               }
             }
 
-            def renewAddress(address: InetSocketAddress, os: Operations): Option[Receive] = {
+            def renewAddress: Reconnect = (_, os) => {
               cd ! GetAddress()
               Some(connecting(None, os, renewAddress))
             }

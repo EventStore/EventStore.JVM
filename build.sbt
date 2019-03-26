@@ -13,8 +13,6 @@ lazy val commonSettings = Seq(
   organizationHomepage := Some(new URL("http://geteventstore.com")),
   description          := "Event Store JVM Client",
   startYear            := Some(2013),
-
-  scalacOptions ++= commonScalacOptions(scalaVersion.value),
   Test / compile / scalacOptions -= "-Ywarn-value-discard",
   Compile / doc / scalacOptions ++= Seq("-groups", "-implicits", "-no-link-warnings"),
 
@@ -41,23 +39,6 @@ lazy val commonSettings = Seq(
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
   publishTo := sonatypePublishTo.value
 )
-
-def commonScalacOptions(scalaVersion: String) = {
-  Seq(
-    "-encoding", "UTF-8",
-    "-feature",
-    "-unchecked",
-    "-deprecation",
-    "-language:existentials",
-    "-language:higherKinds",
-    "-Xfatal-warnings",
-    "-Xlint:-missing-interpolator",
-    "-Xfuture",
-    "-Ywarn-dead-code",
-    "-Ywarn-numeric-widen",
-    "-Ywarn-value-discard"
-  ) ++ (if (priorTo2_13(scalaVersion)) Seq("-Yno-adapted-args") else Nil)
-}
 
 def priorTo2_13(scalaVersion: String): Boolean =
   CrossVersion.partialVersion(scalaVersion) match {
@@ -102,11 +83,11 @@ lazy val client = project
   .settings(inConfig(ClusterTest)(Defaults.testTasks): _*)
   .settings(
     moduleName := "eventstore-client",
-    Test / testOptions := Seq(Tests.Filter(_ endsWith "Spec")),
+    Test            / testOptions := Seq(Tests.Filter(_ endsWith "Spec")),
     IntegrationTest / testOptions := Seq(Tests.Filter(_ endsWith "ITest")),
-    ClusterTest / testOptions := Seq(Tests.Filter(_ endsWith "CTest")),
+    ClusterTest     / testOptions := Seq(Tests.Filter(_ endsWith "CTest")),
     IntegrationTest / parallelExecution := false,
-    ClusterTest / parallelExecution := false,
+    ClusterTest     / parallelExecution := false,
     coverageExcludedPackages := "eventstore.j;"
   )
   .settings(

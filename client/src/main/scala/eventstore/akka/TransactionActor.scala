@@ -126,7 +126,7 @@ private[eventstore] class TransactionActor(
       throw error
   }
 
-  class ContinueReceive(transactionId: Long) extends (Queue[StashEntry] => Receive) {
+  private[eventstore] class ContinueReceive(transactionId: Long) extends (Queue[StashEntry] => Receive) {
     val common: Receive = {
       case GetTransactionId => sender() ! TransactionId(transactionId)
     }

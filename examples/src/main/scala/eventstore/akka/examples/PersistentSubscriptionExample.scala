@@ -27,8 +27,8 @@ class CountPersistentStream extends Actor with ActorLogging {
 
   def receive: Receive = count(0)
 
-  def count(n: Long, printed: Boolean = false): Receive = {
-    case x: EventRecord =>
+  def count(n: Long): Receive = {
+    case _: EventRecord =>
       log.info("count {}", n)
       context become count(n + 1)
     case LiveProcessingStarted => log.info("live processing started")

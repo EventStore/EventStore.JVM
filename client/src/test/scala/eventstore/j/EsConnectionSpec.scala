@@ -10,7 +10,7 @@ import eventstore.akka.ActorSpec
 
 class EsConnectionSpec extends ActorSpec {
 
-  val streams = List("plain", "$system", "$$metadata")
+  val streams = List("plain", s"$$system", s"$$$$metadata")
   val existingVersions = List(ExpectedVersion.Any, ExpectedVersion.First, null)
   val versions = ExpectedVersion.NoStream :: existingVersions
   val contents = List(Content("string"), Content(Array[Byte](1, 2, 3)), Content.Json("{}"))
