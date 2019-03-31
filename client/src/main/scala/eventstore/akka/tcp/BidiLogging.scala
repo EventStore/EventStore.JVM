@@ -6,7 +6,8 @@ import scala.util.Success
 import _root_.akka.NotUsed
 import _root_.akka.event.LoggingAdapter
 import _root_.akka.stream.scaladsl.BidiFlow
-import eventstore.tcp.{PackIn, PackOut}
+import eventstore.core.tcp.{PackIn, PackOut}
+import eventstore.core.{HeartbeatRequest, HeartbeatResponse}
 
 private[eventstore] object BidiLogging {
 

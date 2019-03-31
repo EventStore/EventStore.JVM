@@ -3,6 +3,7 @@ package akka
 
 import scala.concurrent.duration._
 import PersistentSubscription._
+import eventstore.core.settings.{PersistentSubscriptionSettings => PSS}
 
 class PersistentSubscriptionITest extends TestConnection {
   "PersistentSubscription" should {
@@ -12,7 +13,7 @@ class PersistentSubscriptionITest extends TestConnection {
     }
 
     "fail to create with unknown strategy" in new PsScope {
-      val settings = PersistentSubscriptionSettings(consumerStrategy = ConsumerStrategy.Custom("test"))
+      val settings = PSS(consumerStrategy = ConsumerStrategy.Custom("test"))
       actor ! Create(streamId, groupName, settings)
       expectEsException() must throwA[ServerErrorException]
     }
@@ -28,7 +29,7 @@ class PersistentSubscriptionITest extends TestConnection {
       actor ! Create(streamId, groupName)
       expectMsg(CreateCompleted)
 
-      val settings = PersistentSubscriptionSettings(consumerStrategy = ConsumerStrategy.DispatchToSingle)
+      val settings = PSS(consumerStrategy = ConsumerStrategy.DispatchToSingle)
       actor ! Update(streamId, groupName, settings)
       expectMsg(UpdateCompleted)
     }
@@ -42,7 +43,7 @@ class PersistentSubscriptionITest extends TestConnection {
     }
 
     "connect to stream" in new PsScope {
-      val settings = PersistentSubscriptionSettings(startFrom = EventNumber.First)
+      val settings = PSS(startFrom = EventNumber.First)
       actor ! Create(streamId, groupName, settings)
       expectMsg(CreateCompleted)
 
@@ -54,7 +55,7 @@ class PersistentSubscriptionITest extends TestConnection {
 
     "connect to stream with pending event" in new PsScope {
       appendEventToCreateStream()
-      val settings = PersistentSubscriptionSettings(startFrom = EventNumber.First)
+      val settings = PSS(startFrom = EventNumber.First)
       actor ! Create(streamId, groupName, settings)
       expectMsg(CreateCompleted)
 

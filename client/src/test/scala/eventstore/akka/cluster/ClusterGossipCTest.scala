@@ -2,8 +2,8 @@ package eventstore
 package akka
 package cluster
 
-import eventstore.syntax._
-import eventstore.cluster.NodeState
+import eventstore.core.syntax._
+import eventstore.core.cluster.NodeState
 
 class ClusterGossipCTest extends ActorSpec {
 

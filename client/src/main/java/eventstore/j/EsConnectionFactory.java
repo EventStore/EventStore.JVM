@@ -1,7 +1,7 @@
 package eventstore.j;
 
 import akka.actor.ActorSystem;
-import eventstore.Settings;
+import eventstore.akka.Settings;
 
 public class EsConnectionFactory {
     public static EsConnection create(ActorSystem system, Settings settings) {

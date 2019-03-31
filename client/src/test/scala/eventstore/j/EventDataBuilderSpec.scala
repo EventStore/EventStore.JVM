@@ -2,7 +2,6 @@ package eventstore
 package j
 
 import org.specs2.mutable.Specification
-import eventstore.akka.randomUuid
 
 class EventDataBuilderSpec extends Specification {
 

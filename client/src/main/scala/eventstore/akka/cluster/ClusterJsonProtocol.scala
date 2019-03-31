@@ -4,8 +4,8 @@ package cluster
 
 import java.time.{ZoneOffset, ZonedDateTime}
 import scala.util.Try
-import eventstore.syntax._
-import eventstore.cluster.{ClusterInfo, MemberInfo, NodeState}
+import eventstore.core.syntax._
+import eventstore.core.cluster.{ClusterInfo, MemberInfo, NodeState}
 import spray.json._
 
 private[eventstore] object ClusterJsonProtocol extends DefaultJsonProtocol {

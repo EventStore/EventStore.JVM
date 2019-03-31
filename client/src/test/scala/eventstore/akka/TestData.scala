@@ -45,7 +45,7 @@ object TestData {
   def scavengeDatabaseResponse: ScavengeDatabaseResponse = ScavengeDatabaseResponse(None)
 
   def transactionCommit: TransactionCommit = TransactionCommit(1L, requireMaster)
-  def transactionCommitCompleted: TransactionCommitCompleted = TransactionCommitCompleted(1L)
+  def transactionCommitCompleted: TransactionCommitCompleted = TransactionCommitCompleted(1L, None, None)
 
   def transactionStart: TransactionStart = TransactionStart(streamId, expectedAny, requireMaster)
   def transactionStartCompleted: TransactionStartCompleted = TransactionStartCompleted(1L)

@@ -1,9 +1,9 @@
 package eventstore.j;
 
-import eventstore.EventData;
 import scala.Unit;
 import scala.concurrent.Future;
 import java.util.Collection;
+import eventstore.core.EventData;
 
 /**
  * Represents a multi-request transaction with the Event Store

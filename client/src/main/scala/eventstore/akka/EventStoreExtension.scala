@@ -15,7 +15,7 @@ class EventStoreExtension(system: ActorSystem) extends Extension {
   /**
    * Java API
    */
-  lazy val connectionJava: j.EsConnection = j.EsConnectionImpl(system, settings)
+  lazy val connectionJava: j.EsConnection = eventstore.j.EsConnectionImpl(system, settings)
 }
 
 object EventStoreExtension extends ExtensionId[EventStoreExtension] with ExtensionIdProvider {

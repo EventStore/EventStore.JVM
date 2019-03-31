@@ -15,7 +15,7 @@ class PersistentSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
     "should send an ack after message was received" in new PersistentSubscriptionActorScope {
       connection.expectMsgType[Connect]
       actor ! connected(Some(EventNumber.Exact(0)))
-      actor ! EventAppeared(new EventRecord(streamId, EventNumber.Exact(0), new EventData("test")))
+      actor ! EventAppeared(new EventRecord(streamId, EventNumber.Exact(0), eventData))
       connection.expectMsgType[Ack]
     }
 

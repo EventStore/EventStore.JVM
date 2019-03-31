@@ -8,8 +8,9 @@ import scala.util.Random.shuffle
 import scala.util.control.NonFatal
 import _root_.akka.actor._
 import _root_.akka.actor.Status.Failure
-import eventstore.syntax._
-import eventstore.cluster.{ClusterSettings, ResolveDns, MemberInfo, ClusterException, NodeState}
+import eventstore.core.syntax._
+import eventstore.core.settings.ClusterSettings
+import eventstore.core.cluster.{ResolveDns, MemberInfo, ClusterException, NodeState}
 
 private[eventstore] class ClusterDiscovererActor(
     settings:    ClusterSettings,

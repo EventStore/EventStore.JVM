@@ -10,10 +10,12 @@ import _root_.akka.io.{IO, Tcp}
 import _root_.akka.testkit.{TestActorRef, TestProbe}
 import _root_.akka.stream.StreamTcpException
 import NotHandled.{MasterInfo, NotMaster}
-import eventstore.syntax._
-import eventstore.tcp._
-import eventstore.cluster.{ClusterException, ClusterSettings}
-import eventstore.cluster.GossipSeedsOrDns.GossipSeeds
+import eventstore.core.syntax._
+import eventstore.core.{BytesReader, BytesWriter, HeartbeatRequest, HeartbeatResponse}
+import eventstore.core.tcp._
+import eventstore.core.settings.ClusterSettings
+import eventstore.core.cluster.ClusterException
+import eventstore.core.cluster.GossipSeedsOrDns.GossipSeeds
 import eventstore.akka.cluster.ClusterDiscovererActor.{Address, GetAddress}
 import eventstore.akka.tcp.ConnectionActor.{Disconnected, Connected}
 
@@ -39,7 +41,7 @@ class ConnectionActorSpec extends ActorSpec {
         case PackOut(Authenticate, x, `credentials`) => x
       }
 
-      client ! PackIn(Success(Authenticated))
+      client ! packIn(Success(Authenticated))
       expectNoMessage(duration)
 
       client ! PackIn(Success(Authenticated), correlationId)
@@ -57,7 +59,7 @@ class ConnectionActorSpec extends ActorSpec {
       client ! tcpException
       expectConnect()
 
-      client ! PackIn(Success(Authenticated))
+      client ! packIn(Success(Authenticated))
       expectNoMessage(duration)
 
       client ! PackIn(Success(Authenticated), correlationId)
@@ -154,7 +156,7 @@ class ConnectionActorSpec extends ActorSpec {
 
     "respond with HeartbeatResponseCommand on HeartbeatRequestCommand" in new TcpScope {
       val (_, tcpConnection) = connect(settings.copy(maxReconnections = 0))
-      val req = PackOut(HeartbeatRequest)
+      val req = packOut(HeartbeatRequest)
       tcpConnection ! write(req)
 
       val res = expectPack
@@ -186,7 +188,7 @@ class ConnectionActorSpec extends ActorSpec {
     }
 
     "stash PackOut message while connecting for the first time" in new TestScope {
-      val pack = PackOut(Ping)
+      val pack = PackOut(Ping, randomUuid)
       client ! pack
       connectedAndIdentified()
       connection.expectMsg(pack)
@@ -196,10 +198,10 @@ class ConnectionActorSpec extends ActorSpec {
       connectedAndIdentified()
       val ping = PackOut(Ping, id, credentials)
       client ! ping
-      client ! PackIn(Try(Pong))
+      client ! packIn(Pong)
 
       client ! Authenticate
-      client ! PackIn(Try(Authenticated))
+      client ! packIn(Authenticated)
 
       expectNoMessage(100.millis)
       expectOperationTimedOut(ping, Authenticate)
@@ -210,10 +212,10 @@ class ConnectionActorSpec extends ActorSpec {
     "reply with OperationTimedOut if not connected within timeout" in new OperationTimedOutScope {
       val ping = PackOut(Ping, id, credentials)
       client ! ping
-      client ! PackIn(Try(Pong))
+      client ! packIn(Pong)
 
       client ! Authenticate
-      client ! PackIn(Try(Authenticated))
+      client ! packIn(Authenticated)
 
       expectNoMessage(100.millis)
       expectOperationTimedOut(ping, Authenticate)
@@ -227,10 +229,10 @@ class ConnectionActorSpec extends ActorSpec {
 
       val ping = PackOut(Ping, id, credentials)
       client ! ping
-      client ! PackIn(Try(Pong))
+      client ! packIn(Pong)
 
       client ! Authenticate
-      client ! PackIn(Try(Authenticated))
+      client ! packIn(Authenticated)
 
       client ! tcpException
 
@@ -244,10 +246,10 @@ class ConnectionActorSpec extends ActorSpec {
       connectedAndIdentified()
       val ping = PackOut(Ping, id, credentials)
       client ! ping
-      client ! PackIn(Try(Pong))
+      client ! packIn(Pong)
 
       client ! Authenticate
-      client ! PackIn(Try(Authenticated))
+      client ! packIn(Authenticated)
 
       client ! tcpException
 
@@ -260,7 +262,7 @@ class ConnectionActorSpec extends ActorSpec {
     "reply with OperationTimedOut if not subscribed within timeout" in new OperationTimedOutScope {
       val subscribeTo = PackOut(SubscribeTo(EventStream.All), id, credentials)
       client ! subscribeTo
-      client ! PackIn(Try(SubscribeToAllCompleted(0)))
+      client ! packIn(SubscribeToAllCompleted(0))
 
       expectNoMessage(100.millis)
       expectOperationTimedOut(subscribeTo)
@@ -274,7 +276,7 @@ class ConnectionActorSpec extends ActorSpec {
       connectedAndIdentified()
       val subscribeTo = PackOut(SubscribeTo(EventStream.All), id, credentials)
       client ! subscribeTo
-      client ! PackIn(Try(SubscribeToAllCompleted(0)))
+      client ! packIn(SubscribeToAllCompleted(0))
       client ! PackIn(Try(SubscribeToAllCompleted(0)), id)
 
       expectMsg(SubscribeToAllCompleted(0))
@@ -284,7 +286,7 @@ class ConnectionActorSpec extends ActorSpec {
       expectNoMessage(100.millis)
       expectOperationTimedOut(Unsubscribe)
 
-      client ! PackIn(Try(Unsubscribed))
+      client ! packIn(Unsubscribed)
       client ! PackIn(Try(Unsubscribed), id)
       expectNoMessage(100.millis)
     }
@@ -429,11 +431,12 @@ class ConnectionActorSpec extends ActorSpec {
 
     "unsubscribe if event appeared and no bound operation found" in new TestScope {
       connectedAndIdentified()
-      val id = randomUuid
-      val eventRecord = EventRecord(EventStream.Id("streamId"), EventNumber.First, EventData("test"))
+      val corrId = randomUuid
+      val eventId = randomUuid
+      val eventRecord = EventRecord(EventStream.Id("streamId"), EventNumber.First, EventData("test", eventId))
       val indexedEvent = IndexedEvent(eventRecord, Position.First)
-      client ! PackIn(Try(StreamEventAppeared(indexedEvent)), id)
-      connection expectMsg PackOut(Unsubscribe, id, credentials)
+      client ! PackIn(Try(StreamEventAppeared(indexedEvent)), corrId)
+      connection expectMsg PackOut(Unsubscribe, corrId, credentials)
     }
 
     "use default credentials if not provided with message" in new SecurityScope {
@@ -460,7 +463,7 @@ class ConnectionActorSpec extends ActorSpec {
       connectedAndIdentified()
       forall(List(SubscribeToAllCompleted(0), SubscribeToStreamCompleted(0))) {
         in =>
-          val pack = PackIn(Try(in))
+          val pack = packIn(in)
           client ! pack
           connection expectMsg PackOut(Unsubscribe, pack.correlationId, `credentials`)
           success
@@ -625,7 +628,7 @@ class ConnectionActorSpec extends ActorSpec {
       sendConnected(address)
 
       val notMaster = NotHandled(NotMaster(MasterInfo(address2, new InetSocketAddress(0))))
-      client ! PackIn(Failure(notMaster))
+      client ! packIn(Failure(notMaster))
       expectTerminated(connection.ref)
       tcp expectMsg connect(address2)
       sendConnected(address2)
@@ -648,7 +651,7 @@ class ConnectionActorSpec extends ActorSpec {
       connectedAndIdentified(address)
 
       val notMaster = NotHandled(NotMaster(MasterInfo(address, new InetSocketAddress(0))))
-      client ! PackIn(Failure(notMaster))
+      client ! packIn(Failure(notMaster))
       expectNoMsgs()
     }
 
@@ -663,7 +666,7 @@ class ConnectionActorSpec extends ActorSpec {
 
     "stop when cluster failed" in new ClusterScope {
       discoverer expectMsg GetAddress()
-      client ! Status.Failure(new ClusterException("test"))
+      client ! Status.Failure(ClusterException("test"))
       expectTerminated()
     }
 
@@ -689,20 +692,20 @@ class ConnectionActorSpec extends ActorSpec {
     "stop on ClusterFailure" in new ClusterScope {
       discoverer expectMsg GetAddress()
       watch(client)
-      client ! Status.Failure(new ClusterException("test"))
+      client ! Status.Failure(ClusterException("test"))
       expectTerminated(client)
     }
 
     "automatically reply on Ping" in new TestScope {
       connectedAndIdentified()
-      val ping = PackIn(Ping)
+      val ping = packIn(Ping)
       client ! ping
       connection.expectMsg(PackOut(Pong, ping.correlationId))
     }
 
     "automatically reply on HeartbeatRequest" in new TestScope {
       connectedAndIdentified()
-      val heartbeatRequest = PackIn(HeartbeatRequest)
+      val heartbeatRequest = packIn(HeartbeatRequest)
       client ! heartbeatRequest
       connection.expectMsg(PackOut(HeartbeatResponse, heartbeatRequest.correlationId))
     }
@@ -741,7 +744,10 @@ class ConnectionActorSpec extends ActorSpec {
 
     def write(x: PackOut): Tcp.Write = Tcp.Write(Frame.toByteString(x))
 
-    def write(x: Out): Tcp.Write = write(PackOut(x))
+    def packOut(message: Out): PackOut =
+      PackOut(message, randomUuid, None)
+
+    def write(x: Out): Tcp.Write = write(packOut(x))
 
     def bind(address: InetSocketAddress = new InetSocketAddress("127.0.0.1", 0)): (InetSocketAddress, ActorRef) = {
       IO(Tcp) ! Tcp.Bind(self, address)
@@ -847,6 +853,9 @@ class ConnectionActorSpec extends ActorSpec {
     }
 
     val tcpException = Status.Failure(new StreamTcpException("test"))
+
+    def packIn(message: In): PackIn       = packIn(Try(message))
+    def packIn(message: Try[In]): PackIn  = PackIn(message, randomUuid)
 
     def connect(address: InetSocketAddress = settings.address) = {
       Connect(address)

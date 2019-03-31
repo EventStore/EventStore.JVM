@@ -3,7 +3,7 @@ package akka
 package cluster
 
 import scala.concurrent.duration._
-import eventstore.syntax._
+import eventstore.core.syntax._
 import eventstore.cluster.ClusterSettings
 import eventstore.cluster.GossipSeedsOrDns.GossipSeeds
 import ClusterDiscovererActor.{Address, GetAddress}

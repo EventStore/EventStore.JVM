@@ -1,12 +1,12 @@
 package eventstore.j
 
-import eventstore.PersistentSubscriptionSettings.Default
-import eventstore.{ ConsumerStrategy, EventNumber, PersistentSubscriptionSettings }
-
 import scala.concurrent.duration.{ FiniteDuration, _ }
+import eventstore.core.{settings => cs}
+import eventstore.PersistentSubscriptionSettings.Default
+import eventstore.{ ConsumerStrategy, EventNumber}
 
 class PersistentSubscriptionSettingsBuilder
-    extends Builder[PersistentSubscriptionSettings]
+    extends Builder[cs.PersistentSubscriptionSettings]
     with ChainSet[PersistentSubscriptionSettingsBuilder] {
 
   protected var _resolveLinkTos = Default.resolveLinkTos
@@ -119,8 +119,8 @@ class PersistentSubscriptionSettingsBuilder
     consumerStrategy(ConsumerStrategy.DispatchToSingle)
   }
 
-  def build: PersistentSubscriptionSettings = {
-    PersistentSubscriptionSettings(
+  def build: cs.PersistentSubscriptionSettings = {
+    cs.PersistentSubscriptionSettings(
       resolveLinkTos = _resolveLinkTos,
       startFrom = _startFrom,
       extraStatistics = _extraStatistics,

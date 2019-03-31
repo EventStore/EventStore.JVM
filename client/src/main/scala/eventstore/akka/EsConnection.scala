@@ -107,7 +107,7 @@ class EsConnection(
    * appeared on the subscription.
    *
    * @param streamId            The stream to subscribe to
-   * @param observer            A [[eventstore.SubscriptionObserver]] to handle a new event received over the subscription
+   * @param observer            A [[SubscriptionObserver]] to handle a new event received over the subscription
    * @param fromNumberExclusive The event number from which to start, or `None` to read all events.
    * @param resolveLinkTos      Whether to resolve LinkTo events automatically
    * @param credentials         The optional user credentials to perform operation with
@@ -217,7 +217,6 @@ class EsConnection(
     expectedMetastreamVersion: ExpectedVersion         = ExpectedVersion.Any,
     credentials:               Option[UserCredentials] = None
   )(implicit ec: ExecutionContext): Future[Option[WriteResult]] = {
-
     val writeEvents = WriteEvents.StreamMetadata(streamId.metadata, metadata, expectedMetastreamVersion)
     apply(writeEvents, credentials).map(WriteResult.opt)
   }

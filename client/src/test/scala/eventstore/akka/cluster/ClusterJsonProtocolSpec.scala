@@ -6,9 +6,9 @@ import java.time.{ZoneOffset, ZonedDateTime}
 import org.specs2.mutable.Specification
 import org.specs2.specification.Scope
 import spray.json._
-import eventstore.cluster.NodeState.{Master, Slave}
-import eventstore.cluster.{ClusterInfo, MemberInfo}
-import eventstore.syntax._
+import eventstore.core.cluster.NodeState.{Master, Slave}
+import eventstore.core.cluster.{ClusterInfo, MemberInfo}
+import eventstore.core.syntax._
 import ClusterJsonProtocol._
 
 class ClusterJsonProtocolSpec extends Specification {

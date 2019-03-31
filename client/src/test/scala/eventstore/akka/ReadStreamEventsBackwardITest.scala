@@ -1,7 +1,7 @@
 package eventstore
 package akka
 
-import constants.MaxBatchSize
+import core.constants.MaxBatchSize
 
 class ReadStreamEventsBackwardITest extends TestConnection {
   implicit val direction = ReadDirection.Backward

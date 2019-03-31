@@ -71,7 +71,8 @@ class ReadWriteEventsActor extends Actor with ActorLogging {
     val bytes = new Array[Byte](100)
     Random.nextBytes(bytes)
     val eventType = randomUuid.toString
-    val events = List.fill(maxCount)(EventData(eventType, data = Content(bytes)))
+    val eventId   = randomUuid
+    val events = List.fill(maxCount)(EventData(eventType, eventId, data = Content(bytes)))
     connection ! WriteEvents(streamId, events, expected)
     events
   }

@@ -3,11 +3,12 @@ package j
 
 import java.net.InetSocketAddress
 import scala.concurrent.duration._
-import eventstore.cluster.{ClusterSettings, GossipSeedsOrDns}
-import eventstore.cluster.GossipSeedsOrDns.{ClusterDns, GossipSeeds}
+import eventstore.core.{settings => cs}
+import eventstore.core.cluster.GossipSeedsOrDns
+import eventstore.core.cluster.GossipSeedsOrDns.{ClusterDns, GossipSeeds}
 
-class ClusterSettingsBuilder extends Builder[ClusterSettings] with ChainSet[ClusterSettingsBuilder] {
-  private val default = ClusterSettings()
+class ClusterSettingsBuilder extends Builder[cs.ClusterSettings] with ChainSet[ClusterSettingsBuilder] {
+  private val default = cs.ClusterSettings()
   protected var _gossipSeedsOrDns: GossipSeedsOrDns = default.gossipSeedsOrDns
   protected var _dnsLookupTimeout = default.dnsLookupTimeout
   protected var _maxDiscoverAttempts = default.maxDiscoverAttempts
@@ -49,7 +50,7 @@ class ClusterSettingsBuilder extends Builder[ClusterSettings] with ChainSet[Clus
 
   def gossipTimeout(seconds: Long): ClusterSettingsBuilder = gossipTimeout(seconds, SECONDS)
 
-  def build: ClusterSettings = ClusterSettings(
+  def build: cs.ClusterSettings = cs.ClusterSettings(
     gossipSeedsOrDns = _gossipSeedsOrDns,
     dnsLookupTimeout = _dnsLookupTimeout,
     maxDiscoverAttempts = _maxDiscoverAttempts,

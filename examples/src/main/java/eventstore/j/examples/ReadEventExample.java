@@ -1,16 +1,13 @@
 package eventstore.j.examples;
 
+import java.net.InetSocketAddress;
 import akka.actor.*;
 import akka.actor.Status.Failure;
 import akka.event.*;
-import eventstore.Settings;
-import eventstore.akka.tcp.ConnectionActor;
-import eventstore.EsException;
-import eventstore.Event;
-import eventstore.ReadEvent;
-import eventstore.ReadEventCompleted;
 import eventstore.j.*;
-import java.net.InetSocketAddress;
+import eventstore.core.*;
+import eventstore.akka.Settings;
+import eventstore.akka.tcp.ConnectionActor;
 
 public class ReadEventExample {
 

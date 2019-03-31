@@ -1,0 +1,170 @@
+package eventstore
+package core
+
+import java.time.ZonedDateTime
+import scala.PartialFunction.{cond, condOpt}
+import eventstore.core.util.uuid
+
+sealed trait Event extends Ordered[Event] {
+
+  def streamId: EventStream.Id
+  def number:   EventNumber.Exact
+  def data:     EventData
+  def record:   EventRecord
+  def created:  Option[ZonedDateTime]
+
+  final def compare(that: Event) = this.number.value compare that.number.value
+
+  final def link(eventId: Uuid, metadata: Content = Content.Empty): EventData = EventData(
+    eventType = SystemEventType.linkTo,
+    eventId   = eventId,
+    data      = Content(s"${number.value}@${streamId.value}"),
+    metadata  = metadata
+  )
+
+}
+
+object Event {
+
+  implicit class EventOps(val e: Event) extends AnyVal {
+    @deprecated("Use link(eventId)", since = "7.0.0")
+    def link(metadata: Content = Content.Empty): EventData = e.link(uuid.randomUuid, metadata)
+  }
+
+  object StreamDeleted {
+    def unapply(x: Event): Boolean = cond(x.record) {
+      case EventRecord(_, EventNumber.Exact(Long.MaxValue), EventData.StreamDeleted(), _) => true
+    }
+  }
+
+  object StreamMetadata {
+    def unapply(x: Event): Option[Content] = condOpt(x.record) {
+      case EventRecord(_: EventStream.Metadata, _, EventData.StreamMetadata(metadata), _) => metadata
+    }
+  }
+}
+
+@SerialVersionUID(1L)
+final case class EventRecord(
+  streamId: EventStream.Id,
+  number:   EventNumber.Exact,
+  data:     EventData,
+  created:  Option[ZonedDateTime]  = None
+) extends Event {
+  def record = this
+}
+
+object EventRecord {
+  val Deleted: EventRecord = EventRecord(
+    streamId = EventStream.Undefined,
+    number   = EventNumber.First,
+    data     = EventData.StreamDeleted(uuid.Zero)
+  )
+}
+
+@SerialVersionUID(1L)
+final case class ResolvedEvent(
+  linkedEvent: EventRecord,
+  linkEvent:   EventRecord
+) extends Event {
+  def streamId = linkedEvent.streamId
+  def number   = linkedEvent.number
+  def data     = linkedEvent.data
+  def record   = linkEvent
+  def created  = linkedEvent.created
+}
+
+@SerialVersionUID(1L)
+final case class Content(
+  value:       ByteString  = ByteString.empty,
+  contentType: ContentType = ContentType.Binary
+) {
+
+  override lazy val toString = {
+    val data = contentType match {
+      case ContentType.Json if value.nonEmpty => value.utf8String
+      case _                                  => value.show
+    }
+    s"Content($data,$contentType)"
+  }
+
+}
+
+object Content {
+
+  val Empty: Content = Content()
+
+  def apply(content: String): Content      = Content(ByteString(content))
+  def apply(content: Array[Byte]): Content = Content(ByteString(content))
+
+  object Json {
+
+    def apply(content: String): Content =
+      Content(ByteString(content), ContentType.Json)
+
+    def unapply(content: Content): Option[String] = condOpt(content) {
+      case Content(x, ContentType.Json) => x.utf8String
+    }
+  }
+
+}
+
+@SerialVersionUID(1L) final case class EventData(
+  eventType: String,
+  eventId:   Uuid,
+  data:      Content = Content.Empty,
+  metadata:  Content = Content.Empty
+) {
+  require(eventType != null, "eventType must not be null")
+  require(eventType.nonEmpty, "eventType must not be empty")
+}
+
+object EventData {
+
+  @deprecated("Use EventData(eventType, eventId)", since = "7.0.0")
+  def apply(eventType: String): EventData = new EventData(eventType, uuid.randomUuid, Content.Empty, Content.Empty)
+  @deprecated("Use EventData(eventType, eventId, data)", since = "7.0.0")
+  def apply(eventType: String, data: Content): EventData = new EventData(eventType, uuid.randomUuid, data, Content.Empty)
+  @deprecated("Use EventData(eventType, eventId, data, metadata)", since = "7.0.0")
+  def apply(eventType: String, data: Content, metadata: Content): EventData = new EventData(eventType, uuid.randomUuid, data, metadata)
+
+  object Json {
+
+    def apply(eventType: String, eventId: Uuid, data: String = "", metadata: String = ""): EventData =
+      EventData(eventType, eventId, data = Content.Json(data), metadata = Content.Json(metadata))
+  }
+
+  object StreamDeleted {
+
+    import Content.Empty
+
+    def apply(eventId: Uuid): EventData =
+      EventData(SystemEventType.streamDeleted, eventId, Empty, Empty)
+
+    def unapply(x: EventData): Boolean = cond(x) {
+      case EventData(SystemEventType.streamDeleted, _, Empty, Empty) => true
+    }
+  }
+
+  object StreamMetadata {
+
+    @deprecated("Use StreamMetadata(data, eventId)", since = "7.0.0")
+    def apply(data: Content): EventData = apply(data, uuid.randomUuid)
+
+    def apply(data: Content, eventId: Uuid): EventData =
+      EventData(SystemEventType.metadata, eventId, data)
+
+    def unapply(x: EventData): Option[Content] = condOpt(x) {
+      case EventData(SystemEventType.metadata, _, data, _) => data
+    }
+  }
+
+}
+
+@SerialVersionUID(1L)
+final case class IndexedEvent(
+  event:    Event,
+  position: Position.Exact
+) extends Ordered[IndexedEvent] {
+  def compare(that: IndexedEvent) = this.position compare that.position
+}

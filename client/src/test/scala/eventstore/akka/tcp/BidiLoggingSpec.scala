@@ -2,12 +2,13 @@ package eventstore
 package akka
 package tcp
 
-import scala.util.Success
+import scala.util.{Success, Try}
 import scala.collection.mutable.{Queue => MQueue}
 import _root_.akka.stream.scaladsl._
 import _root_.akka.stream.{ActorMaterializer, OverflowStrategy}
 import _root_.akka.testkit.TestProbe
-import eventstore.tcp.{PackIn, PackOut}
+import eventstore.core.{HeartbeatRequest, HeartbeatResponse}
+import eventstore.core.tcp.{PackIn, PackOut}
 import testutil.TestLogger
 
 class BidiLoggingSpec extends ActorSpec {
@@ -17,33 +18,33 @@ class BidiLoggingSpec extends ActorSpec {
   "BidiLogging" should {
 
     "log incoming & outgoing if enabled" in new TestScope {
-      val packIn = PackIn(Authenticated)
-      val packOut = PackOut(Authenticate, packIn.correlationId)
+      val pIn = packIn(Authenticated)
+      val pOut = PackOut(Authenticate, pIn.correlationId)
 
-      source ! packIn
-      sink.expectMsg(packOut)
+      source ! pIn
+      sink.expectMsg(pOut)
 
-      debugLog    shouldEqual List(packIn.toString, packOut.toString)
+      debugLog    shouldEqual List(pIn.toString, pOut.toString)
       debugChecks shouldEqual 4 // Same check happens inside debug call, hence 4 instead of 2.
     }
 
     "not log incoming & outgoing if disabled" in new TestScope {
       override def turnOffLogging = true
-      source ! PackIn(Authenticated)
+      source ! packIn(Authenticated)
       sink.expectMsgType[PackOut].message shouldEqual Authenticate
       debugLog.size shouldEqual 0
       debugChecks   shouldEqual 2
     }
 
     "not log Pong & Ping" in new TestScope {
-      source ! PackIn(Ping)
+      source ! packIn(Ping)
       sink.expectMsgType[PackOut].message shouldEqual Pong
       debugLog.size shouldEqual 0
       debugChecks   shouldEqual 2
     }
 
     "not log HeartbeatRequest & HeartbeatResponse" in new TestScope {
-      source ! PackIn(HeartbeatRequest)
+      source ! packIn(HeartbeatRequest)
       sink.expectMsgType[PackOut].message shouldEqual HeartbeatResponse
       debugLog.size shouldEqual 0
       debugChecks   shouldEqual 2
@@ -53,6 +54,9 @@ class BidiLoggingSpec extends ActorSpec {
   private trait TestScope extends ActorScope {
 
     import TestLogger.Item
+
+    final def packIn(message: In): PackIn =
+      PackIn(Try(message), randomUuid)
 
     def turnOffLogging: Boolean = false
 

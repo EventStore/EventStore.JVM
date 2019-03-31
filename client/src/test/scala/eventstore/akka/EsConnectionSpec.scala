@@ -53,13 +53,13 @@ class EsConnectionSpec extends ActorSpec {
       expectMsgPF() {
         case WriteEvents(`sId`, List(EventData(SystemEventType.metadata, _, `content`, _)), ExpectedVersion.Any, true) => true
       }
-      lastSender ! WriteEventsCompleted()
+      lastSender ! WriteEventsCompleted(None, None)
       future.await_ must beNone
     }
 
     "get stream metadata" in new GetMetadataScope {
       val content = Content(byteStringInt8(1, 2, 3))
-      val metadata = EventRecord(streamId.metadata, EventNumber.First, EventData(SystemEventType.metadata, data = content))
+      val metadata = EventRecord(streamId.metadata, EventNumber.First, EventData(SystemEventType.metadata, randomUuid, content))
       getStreamMetadata(ReadEventCompleted(metadata)) mustEqual content
     }
 
@@ -72,7 +72,7 @@ class EsConnectionSpec extends ActorSpec {
     }
 
     "throw exception if non metadata event received" in new GetMetadataScope {
-      val event = EventRecord(streamId, EventNumber.First, EventData("test", data = Content.Empty))
+      val event = EventRecord(streamId, EventNumber.First, EventData("test", randomUuid, data = Content.Empty))
       getStreamMetadata(ReadEventCompleted(event)) must throwA(NonMetadataEventException(event))
     }
 
@@ -92,7 +92,7 @@ class EsConnectionSpec extends ActorSpec {
   private trait TestScope extends ActorScope {
 
     val streamId = EventStream.Id("streamId")
-    val events = Seq(EventData("test"))
+    val events = Seq(EventData("test", randomUuid))
     val connection = new EsConnection(testActor, system)
 
     def verifyOutIn[OUT <: Out, IN <: In](out: OUT, in: In)(implicit outIn: ClassTags[OUT, IN]): Unit = {

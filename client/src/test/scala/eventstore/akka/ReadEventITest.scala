@@ -43,7 +43,7 @@ class ReadEventITest extends TestConnection {
 
     "return link event if resolveLinkTos = false" in new ReadEventScope {
       val (linked, link) = linkedAndLink()
-      val event = readEventCompleted(EventNumber.Last, resolveLinkTos = false)
+      val event = readEventCompleted(EventNumber.Last)
       event mustEqual link
     }
 
@@ -57,7 +57,7 @@ class ReadEventITest extends TestConnection {
       val linkedData = newEventData.copy(eventType = "linked")
       val linkedStreamId = newStreamId
       val linked = EventRecord(linkedStreamId, writeEventsCompleted(List(linkedData), streamId = linkedStreamId).get.start, linkedData, Some(date))
-      val link = append(linked.link())
+      val link = append(linked.link(randomUuid))
 
       actor ! DeleteStream(linkedStreamId, hard = true)
       expectMsgType[DeleteStreamCompleted]
@@ -69,7 +69,7 @@ class ReadEventITest extends TestConnection {
       val linkedData = newEventData.copy(eventType = "linked")
       val linkedStreamId = newStreamId
       val linked = EventRecord(linkedStreamId, writeEventsCompleted(List(linkedData), streamId = linkedStreamId).get.start, linkedData, Some(date))
-      val link = append(linked.link())
+      val link = append(linked.link(randomUuid))
 
       actor ! DeleteStream(linkedStreamId, hard = true)
       expectMsgType[DeleteStreamCompleted]

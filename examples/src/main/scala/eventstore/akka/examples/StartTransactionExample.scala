@@ -2,7 +2,8 @@ package eventstore
 package akka
 package examples
 
-import _root_.akka.actor.{ Props, ActorSystem }
+import _root_.akka.actor.{ActorSystem, Props}
+import eventstore.core.util.uuid.randomUuid
 import eventstore.akka.tcp.ConnectionActor
 import eventstore.akka.TransactionActor._
 
@@ -14,9 +15,11 @@ object StartTransactionExample extends App {
   val transaction = system.actorOf(TransactionActor.props(connection, kickoff), "transaction")
   implicit val transactionResult = system.actorOf(Props[TransactionResult], "result")
 
+  val data = EventData("transaction-event", eventId = randomUuid)
+
   transaction ! GetTransactionId // replies with `TransactionId(transactionId)`
-  transaction ! Write(EventData("transaction-event")) // replies with `WriteCompleted`
-  transaction ! Write(EventData("transaction-event")) // replies with `WriteCompleted`
-  transaction ! Write(EventData("transaction-event")) // replies with `WriteCompleted`
+  transaction ! Write(data) // replies with `WriteCompleted`
+  transaction ! Write(data) // replies with `WriteCompleted`
+  transaction ! Write(data) // replies with `WriteCompleted`
   transaction ! Commit // replies with `CommitCompleted`
 }

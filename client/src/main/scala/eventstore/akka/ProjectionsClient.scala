@@ -89,8 +89,11 @@ object ProjectionsClient {
     final case class UnableToDeleteProjection(reason: String) extends ProjectionDeleteResult
   }
 
-@SerialVersionUID(1L) class ProjectionException(message: String, cause: Throwable) extends EsException(message, cause) {
-  def this(message: String) = this(message, null)
+@SerialVersionUID(1L)
+final case class ProjectionException(message: String, cause: Option[Throwable]) extends EsException(message, cause)
+object ProjectionException {
+  def apply(msg: String): ProjectionException                = ProjectionException(msg, None)
+  def apply(msg: String, th: Throwable): ProjectionException = ProjectionException(msg, Option(th))
 }
 
 }
@@ -100,7 +103,7 @@ object ProjectionsClient {
  */
 class ProjectionsClient(settings: Settings = Settings.Default, system: ActorSystem) extends ProjectionsUrls {
 
-  implicit val materializer = ActorMaterializer.create(system)
+  implicit val materializer: ActorMaterializer = ActorMaterializer.create(system)
 
   import ProjectionsClient._
   import materializer.executionContext
@@ -149,7 +152,7 @@ class ProjectionsClient(settings: Settings = Settings.Default, system: ActorSyst
       .map {
         case StatusCodes.Created  => ProjectionCreated
         case StatusCodes.Conflict => ProjectionAlreadyExist
-        case status               => throw new ProjectionException(s"Received unexpected response status $status")
+        case status               => throw ProjectionException(s"Received unexpected response status $status")
       }
       .runWith(Sink.head)
   }
@@ -242,7 +245,7 @@ class ProjectionsClient(settings: Settings = Settings.Default, system: ActorSyst
       .map {
         case StatusCodes.NotFound => ()
         case StatusCodes.OK       => ()
-        case status               => throw new ProjectionException(s"Received unexpected reponse status : $status")
+        case status               => throw ProjectionException(s"Received unexpected reponse status : $status")
       }
       .runWith(Sink.head)
   }
@@ -290,7 +293,7 @@ class ProjectionsClient(settings: Settings = Settings.Default, system: ActorSyst
           Future.successful(ProjectionDeleted)
         case response =>
           response.entity.discardBytes()
-          Future.failed(new ProjectionException(s"Received unexpected reponse $response"))
+          Future.failed(ProjectionException(s"Received unexpected reponse $response"))
       }
       .runWith(Sink.head)
   }
@@ -301,7 +304,7 @@ class ProjectionsClient(settings: Settings = Settings.Default, system: ActorSyst
       .via(connection)
       .map { responseTry =>
         val response = responseTry.recover {
-          case ex => throw new ProjectionException(s"Failed to query eventstore on ${request.uri}", ex)
+          case ex => throw ProjectionException(s"Failed to query eventstore on ${request.uri}", ex)
         }.get
         if (response.status == StatusCodes.Unauthorized) {
           response.entity.discardBytes()
