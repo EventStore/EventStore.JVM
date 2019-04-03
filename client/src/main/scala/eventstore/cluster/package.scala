@@ -7,11 +7,16 @@ package object cluster {
   import eventstore.core.{settings => cs}
   import eventstore.core.{cluster => cc}
 
-  @deprecated(deprecationMsg("GossipSeedsOrDns", "eventstore.cluster", "eventstore.core.cluster"), since = sinceVersion)
+  private final val clusterMsg =
+    "This type has been moved from eventstore.cluster to eventstore.core.cluster. " +
+    "Please update your imports, as this deprecated type alias will " +
+    "be removed in a future version of EventStore.JVM."
+
+  @deprecated(clusterMsg, sinceV7)
   type GossipSeedsOrDns = cc.GossipSeedsOrDns
   val  GossipSeedsOrDns = cc.GossipSeedsOrDns
 
-  @deprecated(deprecationMsg("ClusterSettings", "eventstore.cluster", "eventstore.core.settings"), since = sinceVersion)
+  @deprecated(clusterMsg, sinceV7)
   type ClusterSettings  = cs.ClusterSettings
   val  ClusterSettings  = cs.ClusterSettings
 
