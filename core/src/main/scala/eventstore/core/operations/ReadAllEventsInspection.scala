@@ -10,7 +10,7 @@ private[eventstore] final case class ReadAllEventsInspection(out: ReadAllEvents)
 
   def decision(error: ReadAllEventsError) = {
     error match {
-      case Error(msg)   => Fail(ServerErrorException(msg.orNull))
+      case e: Error     => Fail(ServerErrorException(e.message.getOrElse(e.toString)))
       case AccessDenied => Fail(AccessDeniedException(s"Read access denied for $streamId"))
     }
   }
