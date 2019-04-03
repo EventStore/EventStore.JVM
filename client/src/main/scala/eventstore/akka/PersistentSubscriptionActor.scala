@@ -56,7 +56,7 @@ private[eventstore] class PersistentSubscriptionActor private (
     val credentials: Option[UserCredentials],
     val settings:    Settings,
     val autoAck:     Boolean
-) extends AbstractPersistentSubscriptionActor[Event] with FSM[PSA.State, PSA.Data] {
+) extends FSM[PSA.State, PSA.Data] {
 
   context watch client
   context watch connection
@@ -73,6 +73,12 @@ private[eventstore] class PersistentSubscriptionActor private (
     case x: ResolvedEvent => x.linkEvent.data.eventId
     case x                => x.data.eventId
   }
+
+  def toClient(event: Event): Unit        = client ! event
+  def subscribeToPersistentStream(): Unit = toConnection(PS.Connect(EventStream.Id(streamId.streamId), groupName))
+  def toConnection(x: Out): Unit          = connection ! credentials.fold[OutLike](x)(x.withCredentials)
+
+  ///
 
   startWith(PSA.Unsubscribed, connectionDetails)
 

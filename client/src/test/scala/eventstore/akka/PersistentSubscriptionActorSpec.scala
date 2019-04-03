@@ -95,8 +95,6 @@ class PersistentSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
     lazy val streamId = EventStream.Id(PersistentSubscriptionActor.getClass.getSimpleName + "-" + randomUuid.toString)
     def groupName: String = randomUuid.toString
 
-    def settings: Settings = Settings.Default.copy(readBatchSize = readBatchSize, resolveLinkTos = resolveLinkTos)
-
     override def createActor(): ActorRef = {
       val props = PersistentSubscriptionActor.props(
         connection = connection.ref,

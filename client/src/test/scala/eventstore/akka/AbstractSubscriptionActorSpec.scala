@@ -5,20 +5,21 @@ import scala.concurrent.duration._
 import _root_.akka.actor.Status.Failure
 import _root_.akka.actor.ActorRef
 import _root_.akka.testkit._
+import eventstore.akka.Settings.{Default => DS}
 
 abstract class AbstractSubscriptionActorSpec extends ActorSpec {
 
   abstract class AbstractScope extends ActorScope {
-    val duration = 1.second
-    val readBatchSize = 10
-    val resolveLinkTos = false
-    val connection = TestProbe()
 
-    val actor = createActor()
-    watch(actor)
+    val duration: FiniteDuration             = 250.millis
+    val readBatchSize: Int                   = 10
+    val resolveLinkTos: Boolean              = false
+    val connection: TestProbe                = TestProbe()
+    val actor: ActorRef                      = watch(createActor())
+    def settings: Settings                   = DS.copy(resolveLinkTos = resolveLinkTos, readBatchSize = readBatchSize)
+    def credentials: Option[UserCredentials] = None
 
     def createActor(): ActorRef
-
     def streamId: EventStream
 
     def expectNoActivity(): Unit = {
@@ -26,9 +27,11 @@ abstract class AbstractSubscriptionActorSpec extends ActorSpec {
       connection.expectNoMessage(duration)
     }
 
-    def streamEventAppeared(x: Event) = StreamEventAppeared(IndexedEvent(x, Position.Exact(x.number.value)))
+    def streamEventAppeared(x: Event): StreamEventAppeared =
+      StreamEventAppeared(IndexedEvent(x, Position.Exact(x.number.value)))
 
-    def subscribeTo = SubscribeTo(streamId, resolveLinkTos = resolveLinkTos)
+    def subscribeTo: SubscribeTo =
+      SubscribeTo(streamId, resolveLinkTos = resolveLinkTos)
 
     def expectActorTerminated(testKit: TestKitBase = this): Unit = {
       testKit.expectTerminated(actor)
@@ -36,16 +39,11 @@ abstract class AbstractSubscriptionActorSpec extends ActorSpec {
 
     def expectTerminatedOnFailure(): Unit = {
       val failure = Failure(new ServerErrorException("test"))
-      actor ! failure
+      connection.reply(failure)
       expectMsg(failure)
       expectTerminated(actor)
-      val duration = 1.seconds
       expectNoMessage(duration)
       connection.expectNoMessage(duration)
     }
-
-    def notHandled(x: NotHandled.Reason) = Failure(NotHandled(x))
-
-    def credentials: Option[UserCredentials] = None
   }
 }

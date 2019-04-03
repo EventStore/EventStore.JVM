@@ -10,7 +10,7 @@ import _root_.akka.actor.{ActorRef, Terminated}
 import _root_.akka.stream.{SourceShape, _}
 import _root_.akka.stream.stage.GraphStageLogic.StageActor
 import _root_.akka.stream.stage._
-import SourceStageLogic.UnhandledMessage
+import SourceStageLogic.{UnhandledMessage, ConnectionTerminated, OnLive, LiveCallback}
 
 private[eventstore] abstract class SourceStageLogic[T, O <: Ordered[O], P <: O](
   shape:       SourceShape[T],
@@ -19,7 +19,8 @@ private[eventstore] abstract class SourceStageLogic[T, O <: Ordered[O], P <: O](
   connection:  ActorRef,
   credentials: Option[UserCredentials],
   settings:    Settings,
-  infinite:    Boolean
+  infinite:    Boolean,
+  onLiveProcessing: LiveCallback
 ) extends GraphStageLogic(shape)
     with StageLogging {
 
@@ -74,15 +75,19 @@ private[eventstore] abstract class SourceStageLogic[T, O <: Ordered[O], P <: O](
 
   def subscribe(): Unit = {
     stageActorBecome {
-      rcvSubscribed(onSubscriptionCompleted)
+      rcvSubscribed(onSubscriptionCompleted(_))
     }
     subscribeToStream()
   }
 
-  def onSubscriptionCompleted(subscribedFromExcl: Option[P]): Unit = (subscribedFromExcl, state.lastIn) match {
+  def onSubscriptionCompleted(subscribedFromExcl: Option[P], signalLive: Boolean = true): Unit = (subscribedFromExcl, state.lastIn) match {
     case (Some(sn), Some(l)) if pointerFrom(sn) > pointerFrom(l) ⇒ catchup(l, sn)
-    case (Some(sn), None) if operation.isFirst ⇒ catchup(first, sn)
-    case _ ⇒ subscribed()
+    case (Some(sn), None)    if operation.isFirst                ⇒ catchup(first, sn)
+    case _                                                       ⇒
+      subscribed()
+      if(signalLive) {
+        onLiveProcessing(OnLive(state.lastIn.filterNot(operation.exclusivePosition.contains).map(pointerFrom)))
+      }
   }
 
   def subscribed(): Unit = {
@@ -95,7 +100,7 @@ private[eventstore] abstract class SourceStageLogic[T, O <: Ordered[O], P <: O](
     stageActorBecome {
       rcvEventAppeared(onEventAppeared) or
         rcvUnsubscribed(onUnsubscribeCompleted()) or
-        rcvSubscribed(onSubscriptionCompleted)
+        rcvSubscribed(onSubscriptionCompleted(_, signalLive = false))
     }
     ()
   }
@@ -111,6 +116,7 @@ private[eventstore] abstract class SourceStageLogic[T, O <: Ordered[O], P <: O](
         val evtPos = positionFrom andThen pointerFrom
 
         if (events.isEmpty || events.exists(evtPos(_) >= pointerFrom(to))) {
+          onLiveProcessing(if(events.isEmpty) OnLive.Now else OnLive(pointerFrom(to)))
           enqueueAndPush(stash: _*)
           subscribed()
         } else {
@@ -191,7 +197,7 @@ private[eventstore] abstract class SourceStageLogic[T, O <: Ordered[O], P <: O](
 
   private def stageActorBecome(receive: Receive): StageActor = getStageActor {
     case (_, m) if receive.isDefinedAt(m) ⇒ receive(m)
-    case (_, Terminated(`connection`))    ⇒ completeStage()
+    case (_, Terminated(`connection`))    ⇒ failStage(ConnectionTerminated)
     case (_, Failure(failure))            ⇒ failStage(failure)
     case (r, m)                           ⇒ failStage(UnhandledMessage(r, m))
   }
@@ -217,26 +223,29 @@ private[eventstore] abstract class SourceStageLogic[T, O <: Ordered[O], P <: O](
   def buildReadEventsFrom(p: P): Out
 
   def readEventsFrom(next: P): Unit =
-    toConnection(buildReadEventsFrom(next))
+    sendToES(buildReadEventsFrom(next))
 
   def subscribeToStream(): Unit =
-    toConnection(SubscribeTo(streamId, resolveLinkTos = settings.resolveLinkTos))
+    sendToES(SubscribeTo(streamId, resolveLinkTos = settings.resolveLinkTos))
 
   def unsubscribeFromStream(): Unit =
-    toConnection(Unsubscribe)
+    sendToES(Unsubscribe)
 
-  def toConnection(x: Out) =
+  private def sendToES(x: Out) : Unit =
     connection.tell(credentials.fold[OutLike](x)(x.withCredentials), stageActor.ref)
 
   ///
 
   sealed trait ReadFrom extends Product with Serializable {
     def isFirst: Boolean = false
+    def exclusivePosition: Option[P] = None
   }
 
   object ReadFrom {
     case object End extends ReadFrom
-    case class Exact(positionExclusive: P) extends ReadFrom
+    case class Exact(positionExclusive: P) extends ReadFrom {
+      override def exclusivePosition: Option[P] = Some(positionExclusive)
+    }
     case object Beginning extends ReadFrom {
       override def isFirst: Boolean = true
     }
@@ -277,6 +286,26 @@ private[eventstore] abstract class SourceStageLogic[T, O <: Ordered[O], P <: O](
 }
 
 object SourceStageLogic {
-  final case class UnhandledMessage(ref: ActorRef, msg: Any)
-    extends RuntimeException(s"Unhandled from message: $msg from $ref")
+
+  type LiveCallback = OnLive => Unit
+
+  sealed trait OnLive
+  object OnLive {
+    def apply(p: Long): OnLive = LiveAfter(p)
+    def apply(p: Option[Long]): OnLive = p.fold[OnLive](Now)(LiveAfter)
+
+    case object Now extends OnLive
+    final case class LiveAfter(position: Long) extends OnLive
+
+    implicit class OnliveOps(val ol: OnLive) extends AnyVal {
+      def fold[A](now: => A, liveAfter: Long => A): A = ol match {
+        case OnLive.Now          => now
+        case OnLive.LiveAfter(p) => liveAfter(p)
+      }
+    }
+  }
+
+  sealed abstract class StageError(msg: String) extends RuntimeException(msg)
+  case object ConnectionTerminated                           extends StageError("Connection terminated unexpectedly")
+  final case class UnhandledMessage(ref: ActorRef, msg: Any) extends StageError(s"Unhandled message: $msg from $ref")
 }

@@ -8,7 +8,7 @@ import TestData._
 
 class EsConnectionSpec extends ActorSpec {
 
-  "EventStoreConnection.future" should {
+  "EventStoreConnection.apply" should {
     "write events" in new TestScope {
       verifyOutIn(writeEvents, writeEventsCompleted)
     }

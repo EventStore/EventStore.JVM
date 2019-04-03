@@ -7,6 +7,7 @@ import _root_.akka.actor.ActorRef
 import _root_.akka.actor.Status.Failure
 import _root_.akka.stream.stage._
 import _root_.akka.stream.{Attributes, SourceShape, _}
+import SourceStageLogic.LiveCallback
 import EventNumber.{Exact, First, Last}
 import ReadDirection.Forward
 
@@ -16,7 +17,8 @@ private[eventstore] class StreamSourceStage(
     fromNumberExclusive: Option[EventNumber],
     credentials:         Option[UserCredentials],
     settings:            Settings,
-    infinite:            Boolean                 = true
+    infinite:            Boolean                 = true,
+    onLiveProcessing:    LiveCallback            = _ => ()
 ) extends GraphStage[SourceShape[Event]] {
 
   val out: Outlet[Event] = Outlet("StreamSource")
@@ -24,7 +26,7 @@ private[eventstore] class StreamSourceStage(
 
   def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new SourceStageLogic[Event, EventNumber, Exact](
-      shape, out, streamId, connection, credentials, settings, infinite
+      shape, out, streamId, connection, credentials, settings, infinite, onLiveProcessing
     ) {
 
       import settings._

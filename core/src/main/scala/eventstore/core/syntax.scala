@@ -33,4 +33,8 @@ private[eventstore] object syntax {
     }
   }
 
+  implicit class BooleanOps(val b: Boolean) extends AnyVal {
+    @inline def fold[A](t: => A, f: => A): A = if (b) t else f
+  }
+
 }

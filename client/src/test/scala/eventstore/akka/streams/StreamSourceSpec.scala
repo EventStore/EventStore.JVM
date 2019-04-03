@@ -7,6 +7,7 @@ import _root_.akka.actor.Status
 import _root_.akka.actor.Status.Failure
 import _root_.akka.stream.scaladsl._
 import ReadDirection.Forward
+import eventstore.akka.streams.SourceStageLogic.ConnectionTerminated
 
 class StreamSourceSpec extends SourceSpec {
 
@@ -240,10 +241,10 @@ class StreamSourceSpec extends SourceSpec {
       override def eventNumber = Some(EventNumber(1))
     }
 
-    "complete source if connection stopped" in new SourceScope {
+    "fail source if connection stopped" in new SourceScope {
       connection expectMsg readEvents(0)
       system stop connection.ref
-      expectComplete()
+      expectError(ConnectionTerminated)
     }
 
     "stop source if error while reading" in new SourceScope {

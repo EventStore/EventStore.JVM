@@ -9,13 +9,15 @@ import _root_.akka.stream.{Attributes, SourceShape, _}
 import EventStream.All
 import Position.{Exact, First, Last}
 import ReadDirection.Forward
+import SourceStageLogic.LiveCallback
 
 private[eventstore] class AllStreamsSourceStage(
     connection:            ActorRef,
     fromPositionExclusive: Option[Position],
     credentials:           Option[UserCredentials],
     settings:              Settings,
-    infinite:              Boolean                 = true
+    infinite:              Boolean                 = true,
+    onLiveProcessing:      LiveCallback            = _ => ()
 ) extends GraphStage[SourceShape[IndexedEvent]] {
 
   val out: Outlet[IndexedEvent] = Outlet("AllStreamsSource")
@@ -23,7 +25,7 @@ private[eventstore] class AllStreamsSourceStage(
 
   def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new SourceStageLogic[IndexedEvent, Position, Exact](
-      shape, out, All, connection, credentials, settings, infinite
+      shape, out, All, connection, credentials, settings, infinite, onLiveProcessing
     ) {
 
       import settings._
