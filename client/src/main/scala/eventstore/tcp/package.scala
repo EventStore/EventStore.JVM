@@ -7,7 +7,12 @@ import eventstore.core.tcp.TypeAliases
 
 package object tcp extends TypeAliases {
 
-  @deprecated(deprecationMsg("ConnectionActor", "eventstore.tcp", "eventstore.akka.tcp"), since = sinceVersion)
+  private final val tcpMsg =
+    "This type has been moved from eventstore.tcp to eventstore.akka.tcp. " +
+    "Please update your imports, as this deprecated type alias will " +
+    "be removed in a future version of EventStore.JVM."
+
+  @deprecated(tcpMsg, sinceV7)
   val ConnectionActor = a.tcp.ConnectionActor
 
 }
