@@ -2,7 +2,7 @@ import sbt._
 
 object Dependencies {
 
-  val protobufVersion = "3.7.0"
+  val protobufVersion = "3.7.1"
   
   val `ts-config`   = "com.typesafe" %  "config"      % "1.3.3"
   val `scodec-bits` = "org.scodec"   %% "scodec-bits" % "1.1.9"
@@ -12,7 +12,7 @@ object Dependencies {
   ///
 
   object Akka {
-    private val version = "2.5.21"
+    private val version = "2.5.22"
     val actor            = "com.typesafe.akka" %% "akka-actor"          % version
     val stream           = "com.typesafe.akka" %% "akka-stream"         % version
     val testkit          = "com.typesafe.akka" %% "akka-testkit"        % version
@@ -20,7 +20,7 @@ object Dependencies {
   }
 
   object AkkaHttp {
-    private val version = "10.1.7"
+    private val version = "10.1.8"
     val http              = "com.typesafe.akka" %% "akka-http"            % version
     val `http-spray-json` = "com.typesafe.akka" %% "akka-http-spray-json" % version
   }
