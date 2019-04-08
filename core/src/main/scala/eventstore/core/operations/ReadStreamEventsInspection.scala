@@ -12,7 +12,7 @@ private[eventstore] final case class ReadStreamEventsInspection(out: ReadStreamE
     val result = error match {
       case StreamNotFound => StreamNotFoundException(streamId)
       case StreamDeleted  => StreamDeletedException(s"Read failed due to $streamId has been deleted")
-      case Error(msg)     => ServerErrorException(msg.orNull)
+      case e: Error       => ServerErrorException(e.message.getOrElse(e.toString))
       case AccessDenied   => AccessDeniedException(s"Read access denied for $streamId")
     }
 
