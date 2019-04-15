@@ -1,63 +1,58 @@
 package object eventstore {
 
-  def randomUuid: Uuid = eventstore.core.util.uuid.randomUuid
+  import eventstore.{compat, akka ⇒ a, core ⇒ c}
+  import eventstore.core.{settings ⇒ cs}
 
-  private[eventstore] val sinceVersion = "7.0.0"
+  private[eventstore] final val sinceV7: String = "7.0.0"
+  private[eventstore] def randomUuid: Uuid      = c.util.uuid.randomUuid
 
-  private[eventstore] def deprecationMsg(name: String, fromPkg: String, toPkg: String) =
-    s"$name has been moved from $fromPkg.$name to $toPkg.$name. " +
-    s"Please update your imports, as this deprecated type alias will be " +
-    s"removed in a future version of EventStore.JVM."
-
-  private[eventstore] def akkaMsg(name: String) =
-    deprecationMsg(name, "eventstore", "eventstore.akka")
+  private final val akkaMsg =
+    "This type has been moved from eventstore to eventstore.akka. " +
+    "Please update your imports, as this deprecated type alias will " +
+    "be removed in a future version of EventStore.JVM."
 
   /// ************************************** Akka ************************************** ///
 
-  import eventstore.{akka => a}
-
-  @deprecated(akkaMsg("EsConnection"), since = sinceVersion)
+  // TODO(AHJ): Remove akka aliases after 7.1.0
+  
+  @deprecated(akkaMsg, sinceV7)
   type EsConnection        = a.EsConnection
   val EsConnection         = a.EsConnection
 
-  @deprecated(akkaMsg("EventStoreExtension"), since = sinceVersion)
+  @deprecated(akkaMsg, sinceV7)
   type EventStoreExtension = a.EventStoreExtension
   val EventStoreExtension  = a.EventStoreExtension
 
-  @deprecated(akkaMsg("OverflowStrategy"), since = sinceVersion)
+  @deprecated(akkaMsg, sinceV7)
   type OverflowStrategy    = a.OverflowStrategy
   val OverflowStrategy     = a.OverflowStrategy
 
-  @deprecated(akkaMsg("EsTransaction"), since = sinceVersion)
+  @deprecated(akkaMsg, sinceV7)
   type EsTransaction       = a.EsTransaction
   val EsTransaction        = a.EsTransaction
 
-  @deprecated(akkaMsg("SubscriptionObserver"), since = sinceVersion)
+  @deprecated(akkaMsg, sinceV7)
   type SubscriptionObserver[T] = a.SubscriptionObserver[T]
 
-  @deprecated(akkaMsg("ProjectionsClient"), since = sinceVersion)
+  @deprecated(akkaMsg, sinceV7)
   type ProjectionsClient   = a.ProjectionsClient
   val ProjectionsClient    = a.ProjectionsClient
 
-  @deprecated(akkaMsg("PersistentSubscriptionActor"), since = sinceVersion)
+  @deprecated(akkaMsg, sinceV7)
   val PersistentSubscriptionActor  = a.PersistentSubscriptionActor
 
-  @deprecated(akkaMsg("LiveProcessingStarted"), since = sinceVersion)
-  type LiveProcessingStarted = a.LiveProcessingStarted.type
+  @deprecated(akkaMsg, sinceV7)
   val LiveProcessingStarted  = a.LiveProcessingStarted
 
-  @deprecated(akkaMsg("Settings"), since = sinceVersion)
+  @deprecated(akkaMsg, sinceV7)
   type Settings              = a.Settings
   val Settings               = a.Settings
 
-  @deprecated(akkaMsg("HttpSettings"), since = sinceVersion)
+  @deprecated(akkaMsg, sinceV7)
   type HttpSettings          = a.HttpSettings
   val HttpSettings           = a.HttpSettings
 
   /// ************************************** Core ************************************** ///
-
-  import eventstore.{core => c}
-  import eventstore.core.{settings => cs}
 
   type Uuid            = c.Uuid
   type EventStream     = c.EventStream
@@ -89,235 +84,57 @@ package object eventstore {
   /// Settings
 
   type PersistentSubscriptionSettings = cs.PersistentSubscriptionSettings
-  object PersistentSubscriptionSettings {
-    import com.typesafe.config.{Config, ConfigFactory}
-
-    lazy val Default: PersistentSubscriptionSettings        = apply(ConfigFactory.load())
-    def apply(conf: Config): PersistentSubscriptionSettings = cs.PersistentSubscriptionSettings(conf)
-  }
-
-  private lazy val RequireMaster: Boolean  = a.Settings.Default.requireMaster
-  private lazy val ResolveLinkTos: Boolean = a.Settings.Default.resolveLinkTos
-  private lazy val ReadBatchSize: Int      = a.Settings.Default.readBatchSize
+  val  PersistentSubscriptionSettings = compat.PersistentSubscriptionSettings
 
   /// Messages
 
-  type ClassTags[O, I]  = c.ClassTags[O, I]
-  val  ClassTags        = c.ClassTags
-
-  type In               = c.In
-  type Out              = c.Out
-  type OutLike          = c.OutLike
-  type WithCredentials  = c.WithCredentials
-  val  WithCredentials  = c.WithCredentials
-  val  Ping             = c.Ping
-  val  Pong             = c.Pong
-  type IdentifyClient   = c.IdentifyClient
-  val  IdentifyClient   = c.IdentifyClient
-  val  ClientIdentified = c.ClientIdentified
-
-  type WriteEvents = c.WriteEvents
-  object WriteEvents {
-
-    def unapply(arg: WriteEvents): Option[(EventStream.Id, List[EventData], ExpectedVersion, Boolean)] =
-      c.WriteEvents.unapply(arg)
-
-    def apply(
-      streamId:        EventStream.Id,
-      events:          List[EventData],
-      expectedVersion: ExpectedVersion = ExpectedVersion.Any,
-      requireMaster:   Boolean         = RequireMaster
-    ): WriteEvents = c.WriteEvents(streamId, events, expectedVersion, requireMaster)
-
-    object StreamMetadata {
-
-      def apply(
-        streamId:        EventStream.Metadata,
-        data:            Content,
-        expectedVersion: ExpectedVersion = ExpectedVersion.Any,
-        requireMaster:   Boolean         = RequireMaster
-      ): WriteEvents = c.WriteEvents.StreamMetadata(streamId, data, randomUuid, expectedVersion, requireMaster)
-
-    }
-  }
-
-  type WriteEventsCompleted = c.WriteEventsCompleted
-  val  WriteEventsCompleted = c.WriteEventsCompleted
-
-  type DeleteStream = c.DeleteStream
-  object DeleteStream {
-
-    def unapply(arg: DeleteStream): Option[(EventStream.Id, ExpectedVersion.Existing, Boolean, Boolean)] =
-      c.DeleteStream.unapply(arg)
-
-    def apply(
-      streamId:        EventStream.Id,
-      expectedVersion: ExpectedVersion.Existing = ExpectedVersion.Any,
-      hard:            Boolean                  = false,
-      requireMaster: Boolean                    = RequireMaster
-    ): DeleteStream = c.DeleteStream(streamId, expectedVersion, hard, requireMaster)
-  }
-
-  type DeleteStreamCompleted = c.DeleteStreamCompleted
-  val  DeleteStreamCompleted = c.DeleteStreamCompleted
-
-  type TransactionStart = c.TransactionStart
-  object TransactionStart {
-
-    def unapply(arg: TransactionStart): Option[(EventStream.Id, ExpectedVersion, Boolean)] =
-      c.TransactionStart.unapply(arg)
-
-    def apply(
-      streamId:        EventStream.Id,
-      expectedVersion: ExpectedVersion = ExpectedVersion.Any,
-      requireMaster:  Boolean          = RequireMaster
-    ): TransactionStart = c.TransactionStart(streamId, expectedVersion, requireMaster)
-  }
-
-  type TransactionStartCompleted = c.TransactionStartCompleted
-  val  TransactionStartCompleted = c.TransactionStartCompleted
-
-  type TransactionWrite = c.TransactionWrite
-  object TransactionWrite {
-
-    def unapply(arg: TransactionWrite): Option[(Long, List[EventData], Boolean)] =
-      c.TransactionWrite.unapply(arg)
-
-    def apply(
-      transactionId:  Long,
-      events:         List[EventData],
-      requireMaster:  Boolean          = RequireMaster
-    ): TransactionWrite = c.TransactionWrite(transactionId, events, requireMaster)
-  }
-
-  type TransactionWriteCompleted = c.TransactionWriteCompleted
-  val  TransactionWriteCompleted = c.TransactionWriteCompleted
-
-  type TransactionCommit = c.TransactionCommit
-  object TransactionCommit {
-
-    def unapply(arg: TransactionCommit): Option[(Long, Boolean)] =
-      c.TransactionCommit.unapply(arg)
-
-    def apply(
-      transactionId: Long,
-      requireMaster: Boolean = RequireMaster
-    ): TransactionCommit = c.TransactionCommit(transactionId, requireMaster)
-  }
-
+  type ClassTags[O, I]            = c.ClassTags[O, I]
+  val  ClassTags                  = c.ClassTags
+  type In                         = c.In
+  type Out                        = c.Out
+  type OutLike                    = c.OutLike
+  type WithCredentials            = c.WithCredentials
+  val  Ping                       = c.Ping
+  val  Pong                       = c.Pong
+  type IdentifyClient             = c.IdentifyClient
+  val  IdentifyClient             = c.IdentifyClient
+  val  ClientIdentified           = c.ClientIdentified
+  val  WithCredentials            = c.WithCredentials
+  type WriteEvents                = c.WriteEvents
+  val  WriteEvents                = compat.WriteEvents
+  type WriteEventsCompleted       = c.WriteEventsCompleted
+  val  WriteEventsCompleted       = c.WriteEventsCompleted
+  type DeleteStream               = c.DeleteStream
+  val  DeleteStream               = compat.DeleteStream
+  type DeleteStreamCompleted      = c.DeleteStreamCompleted
+  val  DeleteStreamCompleted      = c.DeleteStreamCompleted
+  type TransactionStart           = c.TransactionStart
+  val  TransactionStart           = compat.TransactionStart
+  type TransactionStartCompleted  = c.TransactionStartCompleted
+  val  TransactionStartCompleted  = c.TransactionStartCompleted
+  type TransactionWrite           = c.TransactionWrite
+  val  TransactionWrite           = compat.TransactionWrite
+  type TransactionWriteCompleted  = c.TransactionWriteCompleted
+  val  TransactionWriteCompleted  = c.TransactionWriteCompleted
+  type TransactionCommit          = c.TransactionCommit
+  val  TransactionCommit          = compat.TransactionCommit
   type TransactionCommitCompleted = c.TransactionCommitCompleted
   val  TransactionCommitCompleted = c.TransactionCommitCompleted
-
-  type ReadEvent = c.ReadEvent
-  object ReadEvent {
-
-    def unapply(arg: ReadEvent): Option[(EventStream.Id, EventNumber, Boolean, Boolean)] =
-      c.ReadEvent.unapply(arg)
-
-    def apply(
-      streamId:       EventStream.Id,
-      eventNumber:    EventNumber = EventNumber.First,
-      resolveLinkTos: Boolean     = ResolveLinkTos,
-      requireMaster:  Boolean     = RequireMaster
-    ): ReadEvent = c.ReadEvent(streamId, eventNumber, resolveLinkTos, requireMaster)
-
-    object StreamMetadata {
-      def apply(
-        streamId:       EventStream.Metadata,
-        eventNumber:    EventNumber = EventNumber.Last,
-        resolveLinkTos: Boolean     = ResolveLinkTos,
-        requireMaster:  Boolean     = RequireMaster
-      ): ReadEvent = c.ReadEvent.StreamMetadata(streamId, eventNumber, resolveLinkTos, requireMaster)
-    }
-  }
-
-  type ReadEventCompleted = c.ReadEventCompleted
-  val  ReadEventCompleted = c.ReadEventCompleted
-
-  type ReadStreamEvents = c.ReadStreamEvents
-  object ReadStreamEvents {
-
-    def unapply(arg: ReadStreamEvents): Option[(EventStream.Id, EventNumber, Int, ReadDirection, Boolean, Boolean)] =
-      c.ReadStreamEvents.unapply(arg)
-
-    def apply(
-      streamId:       EventStream.Id,
-      fromNumber:     EventNumber   = EventNumber.First,
-      maxCount:       Int           = ReadBatchSize,
-      direction:      ReadDirection = ReadDirection.Forward,
-      resolveLinkTos: Boolean       = ResolveLinkTos,
-      requireMaster:  Boolean       = RequireMaster
-    ): ReadStreamEvents = c.ReadStreamEvents(streamId, fromNumber, maxCount, direction, resolveLinkTos, requireMaster)
-  }
-
-  type ReadStreamEventsCompleted = c.ReadStreamEventsCompleted
-  val  ReadStreamEventsCompleted = c.ReadStreamEventsCompleted
-
-  type ReadAllEvents = c.ReadAllEvents
-  object ReadAllEvents {
-
-    def unapply(arg: ReadAllEvents): Option[(Position, Int, ReadDirection, Boolean, Boolean)] =
-      c.ReadAllEvents.unapply(arg)
-
-    def apply(
-      fromPosition: Position   = Position.First,
-      maxCount: Int            = ReadBatchSize,
-      direction: ReadDirection = ReadDirection.Forward,
-      resolveLinkTos: Boolean  = ResolveLinkTos,
-      requireMaster:  Boolean  = RequireMaster
-    ): ReadAllEvents = c.ReadAllEvents(fromPosition, maxCount, direction, resolveLinkTos, requireMaster)
-  }
-
-  type ReadAllEventsCompleted = c.ReadAllEventsCompleted
-  val  ReadAllEventsCompleted = c.ReadAllEventsCompleted
-
-  object PersistentSubscription {
-
-    import c.EventStream.Id
-    import c.{PersistentSubscription => PS}
-    import cs.{PersistentSubscriptionSettings => PSS}
-    import PersistentSubscriptionSettings.{Default => D}
-
-    def create(streamId: Id, groupName: String, settings: PSS): Create = Create(streamId, groupName, settings)
-    def update(streamId: Id, groupName: String, settings: PSS): Update = Update(streamId, groupName, settings)
-    def delete(streamId: Id, groupName: String): Delete                = Delete(streamId, groupName)
-
-    object Create {
-      def unapply(arg: Create): Option[(Id, String, PSS)]                   = PS.Create.unapply(arg)
-      def apply(streamId: Id, groupName: String, settings: PSS = D): Create = PS.Create(streamId, groupName, settings)
-    }
-
-    object Update {
-      def unapply(arg: Update): Option[(Id, String, PSS)]                   = PS.Update.unapply(arg)
-      def apply(streamId: Id, groupName: String, settings: PSS = D): Update = PS.Update(streamId, groupName, settings)
-    }
-
-    type Create          = PS.Create
-    val  CreateCompleted = PS.CreateCompleted
-    type Update          = PS.Update
-    val  UpdateCompleted = PS.UpdateCompleted
-    type Delete          = PS.Delete
-    val  Delete          = PS.Delete
-    val  DeleteCompleted = PS.DeleteCompleted
-    type Ack             = PS.Ack
-    val  Ack             = PS.Ack
-    type Nak             = PS.Nak
-    val  Nak             = PS.Nak
-    type Connect         = PS.Connect
-    val  Connect         = PS.Connect
-    type Connected       = PS.Connected
-    val  Connected       = PS.Connected
-    type EventAppeared   = PS.EventAppeared
-    val  EventAppeared   = PS.EventAppeared
-
-  }
-
-  type SubscribeTo = c.SubscribeTo
-  object SubscribeTo {
-    def unapply(arg: SubscribeTo): Option[(EventStream, Boolean)]                         = c.SubscribeTo.unapply(arg)
-    def apply(stream: EventStream, resolveLinkTos: Boolean = ResolveLinkTos): SubscribeTo = c.SubscribeTo(stream, resolveLinkTos)
-  }
-
+  type ReadEvent                  = c.ReadEvent
+  val  ReadEvent                  = compat.ReadEvent
+  type ReadEventCompleted         = c.ReadEventCompleted
+  val  ReadEventCompleted         = c.ReadEventCompleted
+  type ReadStreamEvents           = c.ReadStreamEvents
+  val  ReadStreamEvents           = compat.ReadStreamEvents
+  type ReadStreamEventsCompleted  = c.ReadStreamEventsCompleted
+  val  ReadStreamEventsCompleted  = c.ReadStreamEventsCompleted
+  type ReadAllEvents              = c.ReadAllEvents
+  val  ReadAllEvents              = compat.ReadAllEvents
+  type ReadAllEventsCompleted     = c.ReadAllEventsCompleted
+  val  ReadAllEventsCompleted     = c.ReadAllEventsCompleted
+  val  PersistentSubscription     = compat.PersistentSubscription
+  type SubscribeTo                = c.SubscribeTo
+  val  SubscribeTo                = compat.SubscribeTo
   type SubscribeCompleted         = c.SubscribeCompleted
   type SubscribeToAllCompleted    = c.SubscribeToAllCompleted
   val  SubscribeToAllCompleted    = c.SubscribeToAllCompleted
