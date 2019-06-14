@@ -10,10 +10,12 @@ class TransactionResult extends Actor with ActorLogging {
   def receive = {
     case Failure(x) =>
       log.error(x.toString)
-      context.system.terminate()
+      shutdown()
 
     case x =>
       log.info(x.toString)
-      if (x == CommitCompleted) context.system.terminate()
+      if (x == CommitCompleted) shutdown()
   }
+
+  def shutdown(): Unit = { context.system.terminate(); () }
 }

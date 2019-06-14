@@ -4,7 +4,7 @@ package settings
 
 import java.net.InetSocketAddress
 import scala.concurrent.duration._
-import scala.collection.JavaConverters._
+import ScalaCompat._
 import com.typesafe.config.Config
 import syntax._
 import cluster.GossipSeedsOrDns
@@ -49,7 +49,7 @@ object ClusterSettings {
       def gossipSeeds = option("gossip-seeds", conf.getStringList).flatMap { ss =>
         if (ss.isEmpty) None
         else {
-          val seeds = ss.asScala.map { s =>
+          val seeds = ss.toScala.map { s =>
             s.split(":") match {
               case Array(host, port) => new InetSocketAddress(host, port.toInt)
               case _                 => sys.error(s"Cannot parse address from $s, expected format is host:port")

@@ -1,7 +1,7 @@
 package eventstore
 package core
 
-import scala.collection.JavaConverters._
+import ScalaCompat._
 import constants.MaxBatchSize
 
 sealed trait OutLike {
@@ -189,7 +189,7 @@ final case class ReadStreamEventsCompleted(
     s"lastEventNumber must not be EventNumber.Last"
   )
 
-  def eventsJava: java.util.List[Event] = events.asJava
+  def eventsJava: java.util.List[Event] = events.toJava
 }
 
 @SerialVersionUID(1L)
@@ -213,7 +213,7 @@ final case class ReadAllEventsCompleted(
 ) extends In {
   require(events.size <= MaxBatchSize, s"events.size must be <= $MaxBatchSize, but is ${events.size}")
 
-  def eventsJava: java.util.List[IndexedEvent] = events.asJava
+  def eventsJava: java.util.List[IndexedEvent] = events.toJava
 }
 
 object PersistentSubscription {

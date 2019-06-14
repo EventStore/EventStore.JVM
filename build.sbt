@@ -6,14 +6,14 @@ lazy val commonSettings = Seq(
 
   organization         := "com.geteventstore",
   scalaVersion         := crossScalaVersions.value.head,
-  crossScalaVersions   := Seq("2.12.8", "2.13.0-M5"),
+  crossScalaVersions   := Seq("2.13.0", "2.12.8"),
   releaseCrossBuild    := true,
   licenses             := Seq("BSD 3-Clause" -> url("http://raw.github.com/EventStore/EventStore.JVM/master/LICENSE")),
   homepage             := Some(new URL("http://github.com/EventStore/EventStore.JVM")),
   organizationHomepage := Some(new URL("http://geteventstore.com")),
   description          := "Event Store JVM Client",
   startYear            := Some(2013),
-  Test / compile / scalacOptions -= "-Ywarn-value-discard",
+  Test / compile / scalacOptions --= Seq("-Ywarn-value-discard", "-Wvalue-discard"),
   Compile / doc / scalacOptions ++= Seq("-groups", "-implicits", "-no-link-warnings"),
 
   Global / pomExtra := {
@@ -104,7 +104,7 @@ lazy val examples = project
   .settings(commonSettings)
   .settings(
     moduleName := "eventstore-client-examples",
-    scalacOptions -= "-Ywarn-value-discard",
+    scalacOptions --= Seq("-Ywarn-value-discard", "-Wvalue-discard"),
     publish / skip := true,
     coverageExcludedPackages := "eventstore.examples;eventstore.j;"
   )

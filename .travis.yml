@@ -5,8 +5,8 @@ jdk:
 language: scala
 
 scala:
+  - 2.13.0
   - 2.12.8
-  - 2.13.0-M5
 
 sudo: required
 
@@ -22,7 +22,7 @@ after_success:
 jobs:
   include:
     - stage: integration
-      scala: 2.12.8
+      scala: 2.13.0
       env: AKKA_TEST_TIMEFACTOR=1.5 AKKA_TEST_LOGLEVEL=OFF
       before_install:
         - docker pull eventstore/eventstore:release-5.0.0

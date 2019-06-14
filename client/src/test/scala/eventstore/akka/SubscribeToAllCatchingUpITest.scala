@@ -222,7 +222,7 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
 
       def expectPlainIndexedEvent(max: Duration = Duration.Undefined): IndexedEvent = {
         self.fishForSpecificMessage[IndexedEvent](max) {
-          case e: IndexedEvent if e.event.isPlainEvent ⇒ e.fixDate
+          case e: IndexedEvent if e.event.isPlainEvent => e.fixDate
         }
       }
 

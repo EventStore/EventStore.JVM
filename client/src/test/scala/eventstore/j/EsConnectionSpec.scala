@@ -2,10 +2,10 @@ package eventstore
 package j
 
 import java.io.Closeable
-import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import _root_.akka.actor.Status.Failure
 import _root_.akka.testkit.TestProbe
+import eventstore.core.ScalaCompat._
 import eventstore.akka.{ActorSpec, SubscriptionObserver}
 
 class EsConnectionSpec extends ActorSpec {
@@ -24,7 +24,7 @@ class EsConnectionSpec extends ActorSpec {
   val events = (for {
     data <- contents
     metadata <- contents
-  } yield EventData("event-type", eventId = randomUuid, data = data, metadata = metadata)).asJavaCollection
+  } yield EventData("event-type", eventId = randomUuid, data = data, metadata = metadata)).toJavaCollection
 
   val userCredentials = List(UserCredentials.DefaultAdmin, UserCredentials("login", "password"), null)
 
@@ -38,7 +38,7 @@ class EsConnectionSpec extends ActorSpec {
         val future = connection.writeEvents(stream, version, events, uc)
         expect(WriteEvents(
           streamId = EventStream.Id(stream),
-          events = events.asScala.toList,
+          events = events.toScala.toList,
           expectedVersion = Option(version) getOrElse ExpectedVersion.Any
         ), uc)
         lastSender ! WriteEventsCompleted(None, None)

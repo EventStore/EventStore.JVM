@@ -43,7 +43,7 @@ object Builder {
 
   trait EventDataSnippet[T] extends ChainSet[T] { self: T =>
     import scala.collection.mutable.ListBuffer
-    import scala.collection.JavaConverters._
+    import core.ScalaCompat._
 
     protected var _events: ListBuffer[EventData] = new ListBuffer()
 
@@ -52,7 +52,7 @@ object Builder {
     }
 
     def addEvents(xs: java.lang.Iterable[EventData]): T = set {
-      _events ++= xs.asScala
+      _events ++= xs.toScala
     }
 
     def event(x: EventData): T = set {

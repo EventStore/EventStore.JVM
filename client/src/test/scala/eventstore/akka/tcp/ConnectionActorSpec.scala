@@ -71,7 +71,7 @@ class ConnectionActorSpec extends ActorSpec {
       sendConnected()
 
       connection.expectMsgPF() {
-        case PackOut(IdentifyClient(1, _), _, _) ⇒ client ! ClientIdentified
+        case PackOut(IdentifyClient(1, _), _, _) => client ! ClientIdentified
       }
     }
 
@@ -874,7 +874,7 @@ class ConnectionActorSpec extends ActorSpec {
     def connectedAndIdentified(address: InetSocketAddress = settings.address): Unit = {
       sendConnected(address)
       connection.expectMsgPF() {
-        case PackOut(IdentifyClient(1, _), _, _) ⇒ client ! ClientIdentified
+        case PackOut(IdentifyClient(1, _), _, _) => client ! ClientIdentified
       }
     }
 

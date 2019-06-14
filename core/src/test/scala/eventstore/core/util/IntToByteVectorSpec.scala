@@ -12,12 +12,12 @@ class IntToByteVectorSpec extends Specification {
   "IntToByteVector" should {
 
     "roundtrip (uint8)" in {
-      (0 to 255).map(i ⇒ uint8(i).unsafe.take(1).toInt(signed = false, ordering = ByteOrdering.BigEndian) shouldEqual i)
+      (0 to 255).map(i => uint8(i).unsafe.take(1).toInt(signed = false, ordering = ByteOrdering.BigEndian) shouldEqual i)
     }
 
     "support endianess correctly (uint8)" in {
       val uint8L = new IntToByteVector(8, false, ByteOrdering.LittleEndian).encode _
-      (0 to 255).map(i ⇒ uint8L(i).unsafe shouldEqual uint8(i).unsafe.reverse)
+      (0 to 255).map(i => uint8L(i).unsafe shouldEqual uint8(i).unsafe.reverse)
     }
 
     "return an error when value to apply is out of legal range (uint8)" in {

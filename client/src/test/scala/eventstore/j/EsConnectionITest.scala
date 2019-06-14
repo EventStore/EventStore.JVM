@@ -1,11 +1,11 @@
 package eventstore
 package j
 
-import scala.collection.JavaConverters._
 import _root_.akka.japi.function
 import _root_.akka.stream.ActorMaterializer
 import _root_.akka.stream.scaladsl.{Source, Sink}
 import _root_.akka.stream.testkit.scaladsl.TestSink
+import eventstore.core.ScalaCompat._
 import eventstore.akka.ActorSpec
 
 class EsConnectionITest extends ActorSpec {
@@ -112,7 +112,7 @@ class EsConnectionITest extends ActorSpec {
         started <- connection.startTransaction(streamId, null, null)
         _ <- started.write(events)
         continued = connection.continueTransaction(started.getId, null)
-        _ <- continued.write(List(newEventData).asJava)
+        _ <- continued.write(List(newEventData).toJava)
         _ <- continued.commit()
         _ <- started.commit()
       } yield (started, continued)
@@ -218,8 +218,8 @@ class EsConnectionITest extends ActorSpec {
     implicit val materializer = ActorMaterializer()
     val connection: EsConnection = new EsConnectionImpl(eventstore.akka.EsConnection(system), Settings.Default, system.dispatcher)
     val eventData = newEventData
-    val events = List(eventData).asJava
-    val eventsM = List.fill(20)(newEventData).asJava
+    val events = List(eventData).toJava
+    val eventsM = List.fill(20)(newEventData).toJava
 
     def eventType = "java-test"
     def newEventData = EventData(eventType = eventType, eventId = randomUuid, data = Content("data"), metadata = Content("metadata"))

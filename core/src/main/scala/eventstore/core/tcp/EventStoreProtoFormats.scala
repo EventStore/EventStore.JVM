@@ -3,7 +3,7 @@ package core
 package tcp
 
 import java.time.{Instant, ZoneId, ZonedDateTime}
-import scala.collection.JavaConverters._
+import ScalaCompat._
 import scala.language.reflectiveCalls
 import scala.util.Try
 import eventstore.core.syntax._
@@ -162,7 +162,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
       val builder = j.WriteEvents.newBuilder()
       builder.setEventStreamId(x.streamId.streamId)
       builder.setExpectedVersion(expectedVersion(x.expectedVersion))
-      builder.addAllEvents(x.events.map(EventDataWriter.toProto(_).build()).toIterable.asJava)
+      builder.addAllEvents(x.events.map(EventDataWriter.toProto(_).build()).toJava)
       builder.setRequireMaster(x.requireMaster)
       builder
     }
@@ -210,7 +210,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
     def toProto(x: TransactionWrite) = {
       val builder = j.TransactionWrite.newBuilder()
       builder.setTransactionId(x.transactionId)
-      builder.addAllEvents(x.events.map(EventDataWriter.toProto(_).build()).toIterable.asJava)
+      builder.addAllEvents(x.events.map(EventDataWriter.toProto(_).build()).toJava)
       builder.setRequireMaster(x.requireMaster)
       builder
     }
@@ -297,7 +297,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
       def failure(x: ReadStreamEventsError) = this.failure(x)
 
       def readStreamEventsCompleted = ReadStreamEventsCompleted(
-        events = x.getEventsList.asScala.map(EventReader.fromProto).toList,
+        events = x.getEventsList.toScala.map(EventReader.fromProto).toList,
         nextEventNumber = EventNumber(x.getNextEventNumber),
         lastEventNumber = EventNumber.Exact(x.getLastEventNumber),
         endOfStream = x.getIsEndOfStream,
@@ -348,7 +348,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
 
       def readAllEventsCompleted = ReadAllEventsCompleted(
         position = position(x),
-        events = x.getEventsList.asScala.map(IndexedEventReader.fromProto).toList,
+        events = x.getEventsList.toScala.map(IndexedEventReader.fromProto).toList,
         nextPosition = Position.Exact(commitPosition = x.getNextCommitPosition, preparePosition = x.getNextPreparePosition),
         direction = direction
       )
@@ -526,7 +526,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
     def toProto(x: Ps.Ack) = {
       val builder = j.PersistentSubscriptionAckEvents.newBuilder()
       builder.setSubscriptionId(x.subscriptionId)
-      builder.addAllProcessedEventIds(x.eventIds.map(protoByteString).toIterable.asJava)
+      builder.addAllProcessedEventIds(x.eventIds.map(protoByteString).toJava)
       builder
     }
   }
@@ -546,7 +546,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
 
       val builder = j.PersistentSubscriptionNakEvents.newBuilder()
       builder.setSubscriptionId(x.subscriptionId)
-      builder.addAllProcessedEventIds(x.eventIds.map(protoByteString).toIterable.asJava)
+      builder.addAllProcessedEventIds(x.eventIds.map(protoByteString).toJava)
       builder.setAction(action)
       for { message <- x.message } builder.setMessage(message)
       builder

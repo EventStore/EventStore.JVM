@@ -24,9 +24,9 @@ private[eventstore] abstract class SourceStageLogic[T, O <: Ordered[O], P <: O](
     with StageLogging {
 
   def first: P
-  def eventFrom: IndexedEvent ⇒ T
-  def positionFrom: T ⇒ P
-  def pointerFrom: P ⇒ Long
+  def eventFrom: IndexedEvent => T
+  def positionFrom: T => P
+  def pointerFrom: P => Long
   def operation: ReadFrom
 
   private var state: State = State.from(operation)
@@ -41,9 +41,9 @@ private[eventstore] abstract class SourceStageLogic[T, O <: Ordered[O], P <: O](
     stageActorBecome(ignoring).watch(connection)
 
     operation match {
-      case ReadFrom.Beginning       ⇒ readFrom(first)
-      case ReadFrom.Exact(position) ⇒ readFrom(position)
-      case ReadFrom.End             ⇒ if (infinite) subscribe() else completeStage()
+      case ReadFrom.Beginning       => readFrom(first)
+      case ReadFrom.Exact(position) => readFrom(position)
+      case ReadFrom.End             => if (infinite) subscribe() else completeStage()
     }
   }
 
@@ -58,7 +58,7 @@ private[eventstore] abstract class SourceStageLogic[T, O <: Ordered[O], P <: O](
         else drainAndComplete()
       } else {
         if (state.bufferAvailable) readFrom(next)
-        else waitUntilBufferAvailable(() ⇒ readFrom(next))
+        else waitUntilBufferAvailable(() => readFrom(next))
       }
     }
 
@@ -80,9 +80,9 @@ private[eventstore] abstract class SourceStageLogic[T, O <: Ordered[O], P <: O](
   }
 
   def onSubscriptionCompleted(subscribedFromExcl: Option[P]): Unit = (subscribedFromExcl, state.lastIn) match {
-    case (Some(sn), Some(l)) if pointerFrom(sn) > pointerFrom(l) ⇒ catchup(l, sn)
-    case (Some(sn), None) if operation.isFirst ⇒ catchup(first, sn)
-    case _ ⇒ subscribed()
+    case (Some(sn), Some(l)) if pointerFrom(sn) > pointerFrom(l) => catchup(l, sn)
+    case (Some(sn), None) if operation.isFirst => catchup(first, sn)
+    case _ => subscribed()
   }
 
   def subscribed(): Unit = {
@@ -124,11 +124,11 @@ private[eventstore] abstract class SourceStageLogic[T, O <: Ordered[O], P <: O](
       }
 
       def onResubscribed(subscribedFromExcl: Option[P]): Unit = {
-        subscribedFromExcl.filter(_ > to).foreach(p ⇒ doCatchUp(p, Queue.empty[T]))
+        subscribedFromExcl.filter(_ > to).foreach(p => doCatchUp(p, Queue.empty[T]))
       }
 
       stageActorBecome {
-        rcvRead((es, n, _) ⇒ onReadCompleted(es, n), subscribed()) or
+        rcvRead((es, n, _) => onReadCompleted(es, n), subscribed()) or
           rcvEventAppeared(onEventAppeared) or
           rcvSubscribed(onResubscribed) or
           rcvUnsubscribed(onUnsubscribeCompleted())
@@ -150,7 +150,7 @@ private[eventstore] abstract class SourceStageLogic[T, O <: Ordered[O], P <: O](
 
   def onUnsubscribeCompleted(): Unit = {
     if (state.bufferAvailable) subscribe()
-    else waitUntilBufferAvailable(() ⇒ subscribe())
+    else waitUntilBufferAvailable(() => subscribe())
   }
 
   ///
@@ -158,30 +158,30 @@ private[eventstore] abstract class SourceStageLogic[T, O <: Ordered[O], P <: O](
   def drainAndComplete(): Unit = {
     val (events, newState) = state.dequeueAll
     state = newState
-    emitMultiple(out, events.iterator, () ⇒ completeStage())
+    emitMultiple(out, events.iterator, () => completeStage())
     stageActorBecome(ignoring)
     ()
   }
 
-  def waitUntilBufferAvailable(action: () ⇒ Unit): Unit = {
+  def waitUntilBufferAvailable(action: () => Unit): Unit = {
     state = state.copy(onBufferAvailable = Some(action))
     stageActorBecome(ignoring)
     ()
   }
 
   def enqueueAndPush(events: T*): Unit = {
-    state = events.foldLeft(state)((s, e) ⇒ s.enqueue(e))
+    state = events.foldLeft(state)((s, e) => s.enqueue(e))
     push()
   }
 
   def push(): Unit = if (isAvailable(out)) {
     state.dequeue.foreach {
-      case (event, newState) ⇒
+      case (event, newState) =>
         state = newState
         push(out, event)
     }
 
-    if (state.bufferAvailable) state.onBufferAvailable.foreach { action ⇒
+    if (state.bufferAvailable) state.onBufferAvailable.foreach { action =>
       state = state.copy(onBufferAvailable = None)
       action()
     }
@@ -190,26 +190,26 @@ private[eventstore] abstract class SourceStageLogic[T, O <: Ordered[O], P <: O](
   /// StageActor Related
 
   private def stageActorBecome(receive: Receive): StageActor = getStageActor {
-    case (_, m) if receive.isDefinedAt(m) ⇒ receive(m)
-    case (_, Terminated(`connection`))    ⇒ completeStage()
-    case (_, Failure(failure))            ⇒ failStage(failure)
-    case (r, m)                           ⇒ failStage(UnhandledMessage(r, m))
+    case (_, m) if receive.isDefinedAt(m) => receive(m)
+    case (_, Terminated(`connection`))    => completeStage()
+    case (_, Failure(failure))            => failStage(failure)
+    case (r, m)                           => failStage(UnhandledMessage(r, m))
   }
 
   private val ignoring = PartialFunction.empty
 
   /// Messages from Connection
 
-  def rcvRead(onRead: (List[T], P, Boolean) ⇒ Unit, onNotExists: ⇒ Unit): Receive
+  def rcvRead(onRead: (List[T], P, Boolean) => Unit, onNotExists: => Unit): Receive
 
-  def rcvSubscribed(onSubscribed: Option[P] ⇒ Unit): Receive
+  def rcvSubscribed(onSubscribed: Option[P] => Unit): Receive
 
-  def rcvUnsubscribed(onUnsubscribed: ⇒ Unit): Receive = {
-    case Unsubscribed ⇒ onUnsubscribed
+  def rcvUnsubscribed(onUnsubscribed: => Unit): Receive = {
+    case Unsubscribed => onUnsubscribed
   }
 
-  def rcvEventAppeared(onEventAppeared: IndexedEvent ⇒ Unit): Receive = {
-    case StreamEventAppeared(event) ⇒ onEventAppeared(event)
+  def rcvEventAppeared(onEventAppeared: IndexedEvent => Unit): Receive = {
+    case StreamEventAppeared(event) => onEventAppeared(event)
   }
 
   /// Messages to Connection
@@ -245,7 +245,7 @@ private[eventstore] abstract class SourceStageLogic[T, O <: Ordered[O], P <: O](
   case class State(
       lastIn:            Option[P],
       buffer:            immutable.Queue[T] = Queue.empty[T],
-      onBufferAvailable: Option[() ⇒ Unit]  = None
+      onBufferAvailable: Option[() => Unit]  = None
   ) {
 
     def bufferAvailable: Boolean = buffer.size <= settings.readBatchSize
@@ -259,7 +259,7 @@ private[eventstore] abstract class SourceStageLogic[T, O <: Ordered[O], P <: O](
     }
 
     def dequeue: Option[(T, State)] =
-      buffer.dequeueOption.map { case (e, b) ⇒ (e, copy(buffer = b)) }
+      buffer.dequeueOption.map { case (e, b) => (e, copy(buffer = b)) }
 
     def dequeueAll: (List[T], State) =
       (buffer.toList, copy(buffer = Queue.empty[T]))
@@ -268,8 +268,8 @@ private[eventstore] abstract class SourceStageLogic[T, O <: Ordered[O], P <: O](
   object State {
     def from(operation: ReadFrom): State = {
       val fromPositionExclusive = operation match {
-        case ReadFrom.Exact(p) ⇒ Some(p)
-        case _                 ⇒ None
+        case ReadFrom.Exact(p) => Some(p)
+        case _                 => None
       }
       State(fromPositionExclusive)
     }

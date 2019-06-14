@@ -418,7 +418,7 @@ class StreamSourceSpec extends SourceSpec {
     "temporarily halt reading when buffer is full" in new SourceScope {
       connection expectMsg readEvents(0)
       connection reply readCompleted(3, false, event0, event1, event2)
-      connection expectNoMessage ()
+      connection.expectNoMessage()
       expectEvent(event0)
       expectEvent(event1)
       connection expectMsg readEvents(3)

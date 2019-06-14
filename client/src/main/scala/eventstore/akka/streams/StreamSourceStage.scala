@@ -30,14 +30,14 @@ private[eventstore] class StreamSourceStage(
       import settings._
 
       final val first: Exact = First
-      final val eventFrom: IndexedEvent ⇒ Event = _.event
-      final val pointerFrom: Exact ⇒ Long = _.value
-      final val positionFrom: Event ⇒ Exact = _.record.number
+      final val eventFrom: IndexedEvent => Event = _.event
+      final val pointerFrom: Exact => Long = _.value
+      final val positionFrom: Event => Exact = _.record.number
 
       final def operation: ReadFrom = fromNumberExclusive match {
-        case Some(Last)     ⇒ ReadFrom.End
-        case Some(e: Exact) ⇒ ReadFrom.Exact(e)
-        case None           ⇒ ReadFrom.Beginning
+        case Some(Last)     => ReadFrom.End
+        case Some(e: Exact) => ReadFrom.Exact(e)
+        case None           => ReadFrom.Beginning
       }
 
       final def buildReadEventsFrom(next: Exact): Out = ReadStreamEvents(
@@ -45,12 +45,12 @@ private[eventstore] class StreamSourceStage(
       )
 
       final def rcvRead(onRead: (List[Event], Exact, Boolean) => Unit, onNotExists: => Unit): Receive = {
-        case ReadStreamEventsCompleted(e, n: Exact, _, eos, _, Forward) ⇒ onRead(e, n, eos)
-        case Failure(_: StreamNotFoundException)                        ⇒ onNotExists
+        case ReadStreamEventsCompleted(e, n: Exact, _, eos, _, Forward) => onRead(e, n, eos)
+        case Failure(_: StreamNotFoundException)                        => onNotExists
       }
 
-      final def rcvSubscribed(onSubscribed: Option[Exact] ⇒ Unit): Receive = {
-        case SubscribeToStreamCompleted(_, subscriptionNumber) ⇒ onSubscribed(subscriptionNumber)
+      final def rcvSubscribed(onSubscribed: Option[Exact] => Unit): Receive = {
+        case SubscribeToStreamCompleted(_, subscriptionNumber) => onSubscribed(subscriptionNumber)
       }
 
     }

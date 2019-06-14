@@ -1,7 +1,7 @@
 package eventstore
 package akka
 
-import eventstore.{PersistentSubscription ⇒ Ps}
+import eventstore.{PersistentSubscription => Ps}
 
 object TestData {
 

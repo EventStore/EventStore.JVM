@@ -1,7 +1,7 @@
 package object eventstore {
 
-  import eventstore.{compat, akka ⇒ a, core ⇒ c}
-  import eventstore.core.{settings ⇒ cs}
+  import eventstore.{compat, akka => a, core => c}
+  import eventstore.core.{settings => cs}
 
   private[eventstore] final val sinceV7: String = "7.0.0"
   private[eventstore] def randomUuid: Uuid      = c.util.uuid.randomUuid

@@ -2,11 +2,11 @@ package eventstore
 package j
 
 import java.util
-import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
 import _root_.akka.NotUsed
 import _root_.akka.actor.ActorSystem
 import _root_.akka.stream.javadsl.Source
+import eventstore.core.ScalaCompat._
 import eventstore.core.ExpectedVersion.Existing
 import eventstore.akka.SubscriptionObserver
 import eventstore.akka.Settings
@@ -42,7 +42,7 @@ class EsConnectionImpl(
 
     val out = WriteEvents(
       streamId = EventStream.Id(stream),
-      events = events.asScala.toList,
+      events = events.toScala,
       expectedVersion = Option(expectedVersion) getOrElse ExpectedVersion.Any,
       requireMaster = requireMaster
     )
