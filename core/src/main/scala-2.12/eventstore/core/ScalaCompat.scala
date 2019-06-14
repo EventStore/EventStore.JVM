@@ -5,6 +5,8 @@ import scala.{collection => c}
 
 private[eventstore] object ScalaCompat {
 
+  val JavaConverters = scala.collection.JavaConverters
+
   type IterableOnce[+X] = c.TraversableOnce[X]
   val IterableOnce      = c.TraversableOnce
   type LazyList[+T]     = c.immutable.Stream[T]

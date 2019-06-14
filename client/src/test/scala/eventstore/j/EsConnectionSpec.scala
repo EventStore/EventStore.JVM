@@ -2,10 +2,10 @@ package eventstore
 package j
 
 import java.io.Closeable
-import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import _root_.akka.actor.Status.Failure
 import _root_.akka.testkit.TestProbe
+import eventstore.core.ScalaCompat.JavaConverters._
 import eventstore.akka.{ActorSpec, SubscriptionObserver}
 
 class EsConnectionSpec extends ActorSpec {

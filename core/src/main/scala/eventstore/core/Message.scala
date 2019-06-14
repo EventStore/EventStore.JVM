@@ -1,7 +1,7 @@
 package eventstore
 package core
 
-import scala.collection.JavaConverters._
+import ScalaCompat.JavaConverters._
 import constants.MaxBatchSize
 
 sealed trait OutLike {

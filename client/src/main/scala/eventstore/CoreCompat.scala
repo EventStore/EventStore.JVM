@@ -1,7 +1,7 @@
 package eventstore
 
-import eventstore.core.{settings ⇒ cs}
-import eventstore.{core ⇒ c}
+import eventstore.core.{settings => cs}
+import eventstore.{core => c}
 
 trait CoreCompat {
 
@@ -142,10 +142,10 @@ trait CoreCompat {
 
   object PersistentSubscription {
 
-    import PersistentSubscriptionSettings.{Default ⇒ D}
+    import PersistentSubscriptionSettings.{Default => D}
     import c.EventStream.Id
-    import c.{PersistentSubscription ⇒ PS}
-    import cs.{PersistentSubscriptionSettings ⇒ PSS}
+    import c.{PersistentSubscription => PS}
+    import cs.{PersistentSubscriptionSettings => PSS}
 
     def create(streamId: Id, groupName: String, settings: PSS): Create = Create(streamId, groupName, settings)
     def update(streamId: Id, groupName: String, settings: PSS): Update = Update(streamId, groupName, settings)

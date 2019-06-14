@@ -33,5 +33,5 @@ private[eventstore] final class IntToByteVector(bits: Int, signed: Boolean, orde
 }
 
 private[eventstore] object IntToByteVector {
-  val uint8: Int ⇒ Attempt[ByteVector] = new IntToByteVector(8, false, ByteOrdering.BigEndian).encode _
+  val uint8: Int => Attempt[ByteVector] = new IntToByteVector(8, false, ByteOrdering.BigEndian).encode _
 }
