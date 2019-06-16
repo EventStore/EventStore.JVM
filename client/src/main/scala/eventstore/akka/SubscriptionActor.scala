@@ -120,7 +120,7 @@ private[eventstore] class SubscriptionActor(
       liveProcessing(None, Queue())
 
     subscribeToStream()
-    rcvSubscribeCompleted(_ ⇒ subscribed) or
+    rcvSubscribeCompleted(_ => subscribed) or
       rcvFailureOrUnsubscribe
   }
 

@@ -30,7 +30,7 @@ class ReadWriteEventsActor extends Actor with ActorLogging {
       shutdown()
   }
 
-  override def preStart() = read(EventNumber.First)
+  override def preStart(): Unit = { read(EventNumber.First); () }
 
   def receive = rcvStreamNotFound
 
@@ -82,5 +82,5 @@ class ReadWriteEventsActor extends Actor with ActorLogging {
     context.system.scheduler.scheduleOnce(100.millis, connection, msg)
   }
 
-  def shutdown() = context.system.terminate()
+  def shutdown(): Unit = { context.system.terminate();  () }
 }

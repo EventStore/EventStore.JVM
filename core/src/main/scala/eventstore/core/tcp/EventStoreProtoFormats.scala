@@ -3,7 +3,7 @@ package core
 package tcp
 
 import java.time.{Instant, ZoneId, ZonedDateTime}
-import scala.collection.JavaConverters._
+import ScalaCompat.JavaConverters._
 import scala.language.reflectiveCalls
 import scala.util.Try
 import eventstore.core.syntax._
@@ -162,7 +162,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
       val builder = j.WriteEvents.newBuilder()
       builder.setEventStreamId(x.streamId.streamId)
       builder.setExpectedVersion(expectedVersion(x.expectedVersion))
-      builder.addAllEvents(x.events.map(EventDataWriter.toProto(_).build()).toIterable.asJava)
+      builder.addAllEvents(x.events.map(EventDataWriter.toProto(_).build()).asJava)
       builder.setRequireMaster(x.requireMaster)
       builder
     }
@@ -210,7 +210,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
     def toProto(x: TransactionWrite) = {
       val builder = j.TransactionWrite.newBuilder()
       builder.setTransactionId(x.transactionId)
-      builder.addAllEvents(x.events.map(EventDataWriter.toProto(_).build()).toIterable.asJava)
+      builder.addAllEvents(x.events.map(EventDataWriter.toProto(_).build()).asJava)
       builder.setRequireMaster(x.requireMaster)
       builder
     }
@@ -526,7 +526,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
     def toProto(x: Ps.Ack) = {
       val builder = j.PersistentSubscriptionAckEvents.newBuilder()
       builder.setSubscriptionId(x.subscriptionId)
-      builder.addAllProcessedEventIds(x.eventIds.map(protoByteString).toIterable.asJava)
+      builder.addAllProcessedEventIds(x.eventIds.map(protoByteString).asJava)
       builder
     }
   }
@@ -546,7 +546,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
 
       val builder = j.PersistentSubscriptionNakEvents.newBuilder()
       builder.setSubscriptionId(x.subscriptionId)
-      builder.addAllProcessedEventIds(x.eventIds.map(protoByteString).toIterable.asJava)
+      builder.addAllProcessedEventIds(x.eventIds.map(protoByteString).asJava)
       builder.setAction(action)
       for { message <- x.message } builder.setMessage(message)
       builder

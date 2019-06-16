@@ -156,7 +156,7 @@ abstract class TestConnection extends ActorSpec {
     def expectNonSystemStreamEventAppeared(testKit: TestKitBase = this, max: Duration = Duration.Undefined) = {
 
       val sea = testKit.fishForSpecificMessage[StreamEventAppeared](max) {
-        case sea @ StreamEventAppeared(IndexedEvent(e, _)) if e.isPlainEvent ⇒ sea.fixDate
+        case sea @ StreamEventAppeared(IndexedEvent(e, _)) if e.isPlainEvent => sea.fixDate
       }
 
       sea.event.event.streamId mustEqual streamId

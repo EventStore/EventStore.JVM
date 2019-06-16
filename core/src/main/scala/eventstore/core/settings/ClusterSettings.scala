@@ -4,7 +4,7 @@ package settings
 
 import java.net.InetSocketAddress
 import scala.concurrent.duration._
-import scala.collection.JavaConverters._
+import ScalaCompat.JavaConverters._
 import com.typesafe.config.Config
 import syntax._
 import cluster.GossipSeedsOrDns

@@ -1,7 +1,6 @@
 package eventstore
 package akka
 
-import scala.compat.Platform
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.util.Random
@@ -32,9 +31,9 @@ class HeavyWrite extends ActorSpec {
           connection(writeEvents)
         }
 
-        val start = Platform.currentTime
+        val start = System.currentTimeMillis()
         Await.result(Future.sequence(futures), 10.seconds)
-        val duration = Platform.currentTime - start
+        val duration = System.currentTimeMillis() - start
         duration
       }
 

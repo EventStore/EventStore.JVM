@@ -3,11 +3,11 @@
 <table border="0">
   <tr>
     <td><a href="http://www.scala-lang.org">Scala</a> </td>
-    <td>2.12.8/2.11.12</td>
+    <td>2.13.0 / 2.12.8</td>
   </tr>
   <tr>
     <td><a href="http://akka.io">Akka</a> </td>
-    <td>2.5.21</td>
+    <td>2.5.23</td>
   </tr>
   <tr>
     <td><a href="https://eventstore.org">Event Store</a></td>
@@ -22,7 +22,7 @@ We have two APIs available:
 
 We are using [`scala.concurrent.Future`](http://docs.scala-lang.org/overviews/core/futures.html) for asynchronous calls, however it is not friendly enough for Java users.
 In order to make Java devs happy and not reinvent a wheel, we propose to use tools invented by Akka team.
-[Check it out](http://doc.akka.io/docs/akka/2.5.19/java/futures.html)
+[Check it out](http://doc.akka.io/docs/akka/2.5.23/java/futures.html)
 
 ```java
 final EsConnection connection = EsConnectionFactory.create(system);
@@ -51,7 +51,7 @@ connection ! ReadEvent(EventStream.Id("my-stream"), EventNumber.First)
 
 #### Sbt
 ```scala
-libraryDependencies += "com.geteventstore" %% "eventstore-client" % "6.0.0"
+libraryDependencies += "com.geteventstore" %% "eventstore-client" % "7.0.0"
 ```
 
 #### Maven
@@ -59,7 +59,7 @@ libraryDependencies += "com.geteventstore" %% "eventstore-client" % "6.0.0"
 <dependency>
     <groupId>com.geteventstore</groupId>
     <artifactId>eventstore-client_${scala.version}</artifactId>
-    <version>6.0.0</version>
+    <version>7.0.0</version>
 </dependency>
 ```
 
@@ -270,12 +270,14 @@ object ReadEventExample extends App {
     def receive = {
       case ReadEventCompleted(event) =>
         log.info("event: {}", event)
-        context.system.terminate()
+        shutdown()
 
       case Failure(e: EsException) =>
         log.error(e.toString)
-        context.system.terminate()
+        shutdown()
     }
+
+    def shutdown(): Unit = { context.system.terminate(); () }
   }
 }
 ```
@@ -303,12 +305,14 @@ object WriteEventExample extends App {
     def receive = {
       case WriteEventsCompleted(range, position) =>
         log.info("range: {}, position: {}", range, position)
-        context.system.terminate()
+        shutdown()
 
       case Failure(e: EsException) =>
         log.error(e.toString)
-        context.system.terminate()
+        shutdown()
     }
+
+    def shutdown(): Unit = { context.system.terminate();  () }
   }
 }
 ```

@@ -1,11 +1,11 @@
 package eventstore
 package j
 
-import scala.collection.JavaConverters._
 import _root_.akka.japi.function
 import _root_.akka.stream.ActorMaterializer
 import _root_.akka.stream.scaladsl.{Source, Sink}
 import _root_.akka.stream.testkit.scaladsl.TestSink
+import eventstore.core.ScalaCompat.JavaConverters._
 import eventstore.akka.ActorSpec
 
 class EsConnectionITest extends ActorSpec {
