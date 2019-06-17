@@ -36,3 +36,5 @@ TAGS
 .*.swp
 
 EventStore.Net
+
+.java-version
