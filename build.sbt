@@ -15,6 +15,7 @@ lazy val commonSettings = Seq(
   startYear            := Some(2013),
   Test / compile / scalacOptions --= Seq("-Ywarn-value-discard", "-Wvalue-discard"),
   Compile / doc / scalacOptions ++= Seq("-groups", "-implicits", "-no-link-warnings"),
+  Compile / doc / scalacOptions --= Seq("-Xfatal-warnings"),
 
   Global / pomExtra := {
     <scm>
