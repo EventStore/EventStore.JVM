@@ -4,7 +4,14 @@
 This change log is ordered chronologically, so each release contains all changes described below
 it. Changes start from v6.0.0 and only relevant or interesting changes are mentioned. 
 
-## v7.0.0 (2019-06-14)
+## v7.0.1 (2019-06-17)
+
+### Changes
+* Only change in this release is ensuring compile target for Java 8.
+
+## ~~v7.0.0 (2019-06-14)~~
+
+Please disregard this version and use v7.0.1 instead as this version was mistakenly published with jdk11 class file format (55) instead of jdk8 (52).
 
 ### Breaking changes
 
