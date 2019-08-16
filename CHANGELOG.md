@@ -4,6 +4,15 @@
 This change log is ordered chronologically, so each release contains all changes described below
 it. Changes start from v6.0.0 and only relevant or interesting changes are mentioned. 
 
+## v7.0.2 (2019-08-22)
+
+### Dependencies
+
+- Upgrades
+  * akka-*: 2.5.23 -> 2.5.25
+  * akka-http-*: 10.1.8 -> 10.1.9
+  * specs2-core: 4.5.1 -> 4.7.0
+
 ## v7.0.1 (2019-06-17)
 
 ### Changes
