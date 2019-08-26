@@ -3,11 +3,11 @@
 <table border="0">
   <tr>
     <td><a href="http://www.scala-lang.org">Scala</a> </td>
-    <td>2.13.0 / 2.12.8</td>
+    <td>2.13.0 / 2.12.9</td>
   </tr>
   <tr>
     <td><a href="http://akka.io">Akka</a> </td>
-    <td>2.5.23</td>
+    <td>2.5.25</td>
   </tr>
   <tr>
     <td><a href="https://eventstore.org">Event Store</a></td>
@@ -22,7 +22,7 @@ We have two APIs available:
 
 We are using [`scala.concurrent.Future`](http://docs.scala-lang.org/overviews/core/futures.html) for asynchronous calls, however it is not friendly enough for Java users.
 In order to make Java devs happy and not reinvent a wheel, we propose to use tools invented by Akka team.
-[Check it out](http://doc.akka.io/docs/akka/2.5.23/java/futures.html)
+[Check it out](https://doc.akka.io/docs/akka/current/futures.html)
 
 ```java
 final EsConnection connection = EsConnectionFactory.create(system);
@@ -51,7 +51,7 @@ connection ! ReadEvent(EventStream.Id("my-stream"), EventNumber.First)
 
 #### Sbt
 ```scala
-libraryDependencies += "com.geteventstore" %% "eventstore-client" % "7.0.1"
+libraryDependencies += "com.geteventstore" %% "eventstore-client" % "7.0.2"
 ```
 
 #### Maven
@@ -59,7 +59,7 @@ libraryDependencies += "com.geteventstore" %% "eventstore-client" % "7.0.1"
 <dependency>
     <groupId>com.geteventstore</groupId>
     <artifactId>eventstore-client_${scala.version}</artifactId>
-    <version>7.0.1</version>
+    <version>7.0.2</version>
 </dependency>
 ```
 
