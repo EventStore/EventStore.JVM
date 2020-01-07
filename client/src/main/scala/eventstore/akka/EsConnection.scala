@@ -6,7 +6,6 @@ import scala.concurrent.{ExecutionContext, Future}
 import _root_.akka.NotUsed
 import _root_.akka.actor._
 import _root_.akka.pattern.ask
-import _root_.akka.stream.ActorMaterializer
 import _root_.akka.stream.scaladsl._
 import _root_.akka.util.Timeout
 import org.reactivestreams.Publisher
@@ -24,8 +23,7 @@ class EsConnection(
     connection: ActorRef,
     factory:    ActorRefFactory,
     settings:   Settings        = Settings.Default
-) {
-  private val materializer = ActorMaterializer()(factory)
+)(implicit system: ActorSystem) {
 
   implicit val timeout = Timeout(settings.operationTimeout)
 
@@ -273,7 +271,7 @@ class EsConnection(
       credentials,
       infinite,
       readBatchSize
-    ).runWith(Sink.asPublisher(fanout = true))(materializer)
+    ).runWith(Sink.asPublisher(fanout = true))
   }
 
   /**
@@ -348,7 +346,7 @@ class EsConnection(
       credentials,
       infinite,
       readBatchSize
-    ).runWith(Sink.asPublisher(fanout = true))(materializer)
+    ).runWith(Sink.asPublisher(fanout = true))
   }
 
   /**
@@ -395,6 +393,6 @@ object EsConnection {
       connection = system actorOf props,
       factory = system,
       settings = settings
-    )
+    )(system)
   }
 }

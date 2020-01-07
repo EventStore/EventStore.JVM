@@ -3,12 +3,9 @@ package akka
 package streams
 
 import scala.concurrent.duration._
-import _root_.akka.stream.ActorMaterializer
 import _root_.akka.stream.testkit.scaladsl.TestSink
 
 class StreamSourceITest extends TestConnection {
-
-  implicit val materializer = ActorMaterializer()
 
   "StreamSource" should {
     "subscribe to stream" in new Scope {

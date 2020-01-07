@@ -4,6 +4,30 @@
 This change log is ordered chronologically, so each release contains all changes described below
 it. Changes start from v6.0.0 and only relevant or interesting changes are mentioned. 
 
+## v7.1.0 (2020-01-08)
+
+### Breaking changes
+
+ * Moving to Akka 2.6.1
+ * Change constructor of `eventstore.akka.EsConnection` to require implicit `ActorSystem`.
+
+### Dependencies
+
+  * akka-*: 2.5.25 -> 2.6.1
+  * akka-http-*: 10.1.9 -> 10.1.11
+  * config: 1.3.4 -> 1.4.0
+  * reactive-streams: 1.0.2 -> 1.0.3
+  * specs2-core: 4.5.1 -> 4.8.3
+
+### Misc / Build
+
+ * scala: 2.13.0 -> 2.13.1, 2.12.9 -> 2.12.10
+ * sbt: 1.2.8 -> 1.3.6
+ 
+ * sbt-plugins:
+   * sbt-scoverage: 1.6.0 -> 1.6.1
+   * sbt-tpolecat: 0.1.6 -> 0.1.10
+
 ## v7.0.2 (2019-08-22)
 
 ### Dependencies

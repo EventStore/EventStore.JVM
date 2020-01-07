@@ -4,7 +4,6 @@ package streams
 
 import scala.concurrent.duration._
 import _root_.akka.NotUsed
-import _root_.akka.stream.ActorMaterializer
 import _root_.akka.stream.scaladsl._
 import _root_.akka.stream.testkit.scaladsl._
 import _root_.akka.testkit._
@@ -12,8 +11,6 @@ import _root_.akka.testkit._
 abstract class SourceSpec extends ActorSpec {
 
   abstract class AbstractSourceScope[T] extends ActorScope {
-
-    implicit val materializer: ActorMaterializer = ActorMaterializer()
 
     val duration = 1.second
     val readBatchSize = 2

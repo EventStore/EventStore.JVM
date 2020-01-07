@@ -29,6 +29,12 @@ TAGS
 # Scala
 *.sc
 
+# Metals
+.metals/*
+.bloop/*
+project/.bloop/*
+project/metals.sbt
+
 # Mac
 .DS_Store
 

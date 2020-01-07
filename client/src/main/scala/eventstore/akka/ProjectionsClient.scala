@@ -9,7 +9,6 @@ import _root_.akka.http.scaladsl.Http
 import _root_.akka.http.scaladsl.model._
 import _root_.akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials}
 import _root_.akka.http.scaladsl.unmarshalling.Unmarshal
-import _root_.akka.stream.ActorMaterializer
 import _root_.akka.stream.scaladsl.{Flow, Sink, Source}
 import ProjectionsClient.ProjectionCreationResult._
 import ProjectionsClient.ProjectionDeleteResult._
@@ -103,10 +102,10 @@ object ProjectionException {
  */
 class ProjectionsClient(settings: Settings = Settings.Default, system: ActorSystem) extends ProjectionsUrls {
 
-  implicit val materializer: ActorMaterializer = ActorMaterializer.create(system)
+  private implicit val as = system
 
+  import system.dispatcher
   import ProjectionsClient._
-  import materializer.executionContext
 
   private val connection: Flow[HttpRequest, Try[HttpResponse], NotUsed] = {
     val httpExt = Http(system)

@@ -7,7 +7,7 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 import _root_.akka.actor._
 import _root_.akka.stream.scaladsl._
-import _root_.akka.stream.{ActorMaterializer, BufferOverflowException, StreamTcpException}
+import _root_.akka.stream.{CompletionStrategy, BufferOverflowException, StreamTcpException}
 import eventstore.core.{HeartbeatRequest, HeartbeatResponse}
 import eventstore.core.NotHandled.NotMaster
 import eventstore.core.settings.ClusterSettings
@@ -362,15 +362,31 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
   }
 
   def connect(address: InetSocketAddress): Unit = {
-    implicit val materializer = ActorMaterializer()(context)
+
+    import settings.{connectionTimeout, heartbeatTimeout, bufferSize, bufferOverflowStrategy}
 
     val connection = tcp.outgoingConnection(
       remoteAddress = address,
-      connectTimeout = settings.connectionTimeout,
-      idleTimeout = settings.heartbeatTimeout
+      connectTimeout = connectionTimeout,
+      idleTimeout = heartbeatTimeout
     )
-    val source = Source.actorRef(settings.bufferSize, settings.bufferOverflowStrategy.toAkka)
-    val sink = Sink.actorRef(self, Disconnected(address))
+
+    val completionMatcher: PartialFunction[Any, CompletionStrategy] = {
+      case Status.Success(s: CompletionStrategy) => s
+      case Status.Success(_)                     => CompletionStrategy.draining
+      case Status.Success                        => CompletionStrategy.draining
+    }
+
+    val failureMatcher: PartialFunction[Any, Throwable] = {
+      case Status.Failure(cause) => cause
+    }
+
+    // completionMatcher & failureMatcher are the same as the deprecated `Source.actorRef` Akka 2.6.0 uses.
+    val source = Source.actorRef(completionMatcher, failureMatcher, bufferSize, bufferOverflowStrategy.toAkka)
+
+    // onFailureMessage is the same as the deprecated `Sink.actorRef` in Akka 2.6.0 uses.
+    val sink = Sink.actorRef(self, Disconnected(address), th => Status.Failure(th))
+
     val (ref, connected) = source.viaMat(connection.join(flow))(Keep.both).toMat(sink)(Keep.left).run()
     for { _ <- connected } self.tell(Connected(address), ref)
   }
