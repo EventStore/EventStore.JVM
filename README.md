@@ -3,11 +3,11 @@
 <table border="0">
   <tr>
     <td><a href="http://www.scala-lang.org">Scala</a> </td>
-    <td>2.13.0 / 2.12.9</td>
+    <td>2.13.1 / 2.12.10</td>
   </tr>
   <tr>
     <td><a href="http://akka.io">Akka</a> </td>
-    <td>2.5.25</td>
+    <td>2.6.1</td>
   </tr>
   <tr>
     <td><a href="https://eventstore.org">Event Store</a></td>
@@ -51,7 +51,7 @@ connection ! ReadEvent(EventStream.Id("my-stream"), EventNumber.First)
 
 #### Sbt
 ```scala
-libraryDependencies += "com.geteventstore" %% "eventstore-client" % "7.0.2"
+libraryDependencies += "com.geteventstore" %% "eventstore-client" % "7.1.0"
 ```
 
 #### Maven
@@ -59,7 +59,7 @@ libraryDependencies += "com.geteventstore" %% "eventstore-client" % "7.0.2"
 <dependency>
     <groupId>com.geteventstore</groupId>
     <artifactId>eventstore-client_${scala.version}</artifactId>
-    <version>7.0.2</version>
+    <version>7.1.0</version>
 </dependency>
 ```
 
@@ -432,12 +432,11 @@ Here is a short example on how to use it:
 
 ```scala
 import _root_.akka.actor.ActorSystem
-import _root_.akka.stream.ActorMaterializer
 
 object ListAllStreamsExample extends App {
   implicit val system = ActorSystem()
   import system.dispatcher
-  implicit val materializer = ActorMaterializer()
+
   val connection = EventStoreExtension(system).connection
   val source = connection.streamSource(EventStream.System.`$streams`, infinite = false, resolveLinkTos = true)
 
@@ -456,14 +455,13 @@ Here is a short example on how to accomplish that:
 
 ```scala
 import _root_.akka.actor.ActorSystem
-import _root_.akka.stream.ActorMaterializer
 import _root_.akka.stream.scaladsl._
 import org.reactivestreams.{Publisher, Subscriber}
 import scala.concurrent.duration._
 
 object MessagesPerSecondReactiveStreams extends App {
   implicit val system = ActorSystem()
-  implicit val materializer = ActorMaterializer()
+
   val connection = EventStoreExtension(system).connection
 
   val publisher: Publisher[String] = connection.allStreamsSource()

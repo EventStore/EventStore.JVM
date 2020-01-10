@@ -2,8 +2,7 @@ package eventstore
 package j
 
 import _root_.akka.japi.function
-import _root_.akka.stream.ActorMaterializer
-import _root_.akka.stream.scaladsl.{Source, Sink}
+import _root_.akka.stream.scaladsl.{Sink, Source}
 import _root_.akka.stream.testkit.scaladsl.TestSink
 import eventstore.core.ScalaCompat.JavaConverters._
 import eventstore.akka.ActorSpec
@@ -169,7 +168,7 @@ class EsConnectionITest extends ActorSpec {
 
       def publisher = connection
         .streamSource(streamId, null, false, null, false)
-        .runWith(Sink.asPublisher(fanout = false), materializer)
+        .runWith(Sink.asPublisher[Event](fanout = false), system)
 
       await_(connection.writeEvents(streamId, null, events, null))
       Source.fromPublisher(publisher)
@@ -181,8 +180,9 @@ class EsConnectionITest extends ActorSpec {
     }
 
     "publish all streams" in new TestScope {
+
       val publisher = connection.allStreamsSource(Position.First, false, null, true)
-        .runWith(Sink.asPublisher(fanout = false), materializer)
+        .runWith(Sink.asPublisher[IndexedEvent](fanout = false), system)
       val probe = Source.fromPublisher(publisher)
         .runWith(TestSink.probe[IndexedEvent])
         .request(10)
@@ -196,7 +196,7 @@ class EsConnectionITest extends ActorSpec {
       await_(connection.writeEvents(streamId, null, events, null))
       source
         .map(new function.Function[Event, EventData] { def apply(event: Event) = event.data } )
-        .runWith(TestSink.probe[EventData], materializer)
+        .runWith(TestSink.probe[EventData], system)
         .request(1)
         .expectNext(eventData)
         .expectComplete()
@@ -207,7 +207,7 @@ class EsConnectionITest extends ActorSpec {
       val source = connection.allStreamsSource(Position.First, false, null, true)
       await_(connection.writeEvents(streamId, null, eventsM, null))
       source
-        .runWith(TestSink.probe[IndexedEvent], materializer)
+        .runWith(TestSink.probe[IndexedEvent], system)
         .request(15)
         .expectNextN(10)
     }
@@ -215,7 +215,7 @@ class EsConnectionITest extends ActorSpec {
   }
 
   private trait TestScope extends ActorScope {
-    implicit val materializer = ActorMaterializer()
+
     val connection: EsConnection = new EsConnectionImpl(eventstore.akka.EsConnection(system), Settings.Default, system.dispatcher)
     val eventData = newEventData
     val events = List(eventData).asJava

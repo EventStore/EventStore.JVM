@@ -5,15 +5,13 @@ package tcp
 import scala.util.{Success, Try}
 import scala.collection.mutable.{Queue => MQueue}
 import _root_.akka.stream.scaladsl._
-import _root_.akka.stream.{ActorMaterializer, OverflowStrategy}
+import _root_.akka.stream.OverflowStrategy
 import _root_.akka.testkit.TestProbe
 import eventstore.core.{HeartbeatRequest, HeartbeatResponse}
 import eventstore.core.tcp.{PackIn, PackOut}
 import testutil.TestLogger
 
 class BidiLoggingSpec extends ActorSpec {
-
-  implicit val materializer = ActorMaterializer()
 
   "BidiLogging" should {
 
@@ -78,8 +76,8 @@ class BidiLoggingSpec extends ActorSpec {
       case PackIn(message, _)                               => sys error s"unexpected $message"
     }
     val (source, _) = (logging join flow).runWith(
-      Source.actorRef(100, OverflowStrategy.fail),
-      Sink.actorRef[PackOut](sink.ref, "completed")
+      Source.actorRef(PartialFunction.empty, PartialFunction.empty, 100, OverflowStrategy.fail),
+      Sink.actorRef[PackOut](sink.ref, "completed", { _: Throwable => "failed" })
     )
   }
 }

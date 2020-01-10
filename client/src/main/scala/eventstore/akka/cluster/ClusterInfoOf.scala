@@ -8,7 +8,6 @@ import scala.concurrent._
 import scala.util.Try
 import _root_.akka.actor.ActorSystem
 import _root_.akka.http.scaladsl.Http.HostConnectionPool
-import _root_.akka.stream.ActorMaterializer
 import _root_.akka.stream.scaladsl._
 import _root_.akka.http.scaladsl.Http
 import _root_.akka.http.scaladsl.model._
@@ -28,7 +27,6 @@ private[eventstore] object ClusterInfoOf {
 
     val http = Http(system)
     val acceptHeader = headers.Accept(MediaRange(MediaTypes.`application/json`))
-    implicit val materializer = ActorMaterializer()
 
     val pools = TrieMap.empty[Uri, Flow[(HttpRequest, Unit), (Try[HttpResponse], Unit), HostConnectionPool]]
 

@@ -9,7 +9,7 @@ class EventStoreExtension(system: ActorSystem) extends Extension {
   def settings: Settings = Settings(system.settings.config)
 
   lazy val actor: ActorRef = system.actorOf(ConnectionActor.props(settings), "eventstore-connection")
-  lazy val connection: EsConnection = new EsConnection(actor, system, settings)
+  lazy val connection: EsConnection = new EsConnection(actor, system, settings)(system)
   lazy val projectionsClient: ProjectionsClient = new ProjectionsClient(settings, system)
 
   /**

@@ -1,12 +1,12 @@
 jdk:
-  - oraclejdk8
+  - openjdk8
   - openjdk11
 
 language: scala
 
 scala:
-  - 2.13.0
-  - 2.12.9
+  - 2.13.1
+  - 2.12.10
 
 sudo: required
 
@@ -22,11 +22,11 @@ after_success:
 jobs:
   include:
     - stage: integration
-      scala: 2.13.0
+      scala: 2.13.1
       env: AKKA_TEST_TIMEFACTOR=1.5 AKKA_TEST_LOGLEVEL=OFF
       before_install:
-        - docker pull eventstore/eventstore:release-5.0.2
-        - docker run -d --rm --name eventstore-node -p 2113:2113 -p 1113:1113 -e EVENTSTORE_MEM_DB=True -e EVENTSTORE_STATS_PERIOD_SEC=1200 eventstore/eventstore:release-5.0.2
+        - docker pull eventstore/eventstore:release-5.0.5
+        - docker run -d --rm --name eventstore-node -p 2113:2113 -p 1113:1113 -e EVENTSTORE_MEM_DB=True -e EVENTSTORE_STATS_PERIOD_SEC=2400 eventstore/eventstore:release-5.0.5
       script:
         - sbt test:compile
         - travis_retry sbt it:test

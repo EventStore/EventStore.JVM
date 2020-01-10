@@ -3,14 +3,12 @@ package akka
 package examples
 
 import _root_.akka.actor.ActorSystem
-import _root_.akka.stream.ActorMaterializer
 import _root_.akka.stream.scaladsl._
 import org.reactivestreams.{Publisher, Subscriber}
 import scala.concurrent.duration._
 
 object MessagesPerSecondReactiveStreams extends App {
   implicit val system = ActorSystem()
-  implicit val materializer = ActorMaterializer()
   val connection = EventStoreExtension(system).connection
 
   val publisher: Publisher[String] = connection.allStreamsSource()
