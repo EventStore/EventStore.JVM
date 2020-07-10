@@ -90,20 +90,20 @@ private[eventstore] class PersistentSubscriptionActor private (
       }
     // Ignore events sent while unsubscribed
     case Event(PS.EventAppeared(_), _) =>
-      stay
+      stay()
   }
 
   when(PSA.LiveProcessing) {
     case Event(PS.EventAppeared(event), details: PSA.SubscriptionDetails) =>
       if (autoAck) toConnection(Ack(details.subscriptionId, getEventId(event) :: Nil))
       client ! event
-      stay
+      stay()
     case Event(PSA.ManualAck(eventId), details: PSA.SubscriptionDetails) =>
       toConnection(Ack(details.subscriptionId, eventId :: Nil))
-      stay
+      stay()
     case Event(PSA.ManualNak(eventId), details: PSA.SubscriptionDetails) =>
       toConnection(Nak(details.subscriptionId, List(eventId), Retry, None))
-      stay
+      stay()
   }
 
   when(PSA.CatchingUp) {
@@ -111,19 +111,19 @@ private[eventstore] class PersistentSubscriptionActor private (
       if (autoAck) toConnection(Ack(details.subscriptionId, getEventId(event) :: Nil))
       client ! event
       if (details.lastEventNum.exists(_ <= event.number)) goto(PSA.LiveProcessing) using details
-      else stay
+      else stay()
     case Event(PSA.ManualAck(eventId), details: PSA.SubscriptionDetails) =>
       toConnection(Ack(details.subscriptionId, eventId :: Nil))
-      stay
+      stay()
     case Event(PSA.ManualNak(eventId), details: PSA.SubscriptionDetails) =>
       toConnection(Nak(details.subscriptionId, List(eventId), Retry, None))
-      stay
+      stay()
   }
 
   whenUnhandled {
     // If a reconnect is launched in LiveProcessing or CatchingUp, then renew subId
     case Event(PS.Connected(subId, _, eventNum), _) =>
-      stay using subscriptionDetails(subId, eventNum)
+      stay() using subscriptionDetails(subId, eventNum)
     // Error conditions
     // This handles when the client or connection is terminated (unrecoverable)
     case Event(Terminated(_), _) =>
@@ -138,7 +138,7 @@ private[eventstore] class PersistentSubscriptionActor private (
       stop()
     case Event(e, s) =>
       log.warning(s"Received unhandled $e in state $stateName with state $s")
-      stay
+      stay()
   }
 
   initialize()

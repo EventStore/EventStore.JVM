@@ -18,9 +18,9 @@ class ClusterDiscovererActorCTest extends ActorSpec {
 
   trait TestScope extends ActorScope {
     val seeds = GossipSeeds(
-      "127.0.0.1" :: 1113,
-      "127.0.0.1" :: 2113,
-      "127.0.0.1" :: 3113
+      "127.0.0.1" :: 2114,
+      "127.0.0.1" :: 2115,
+      "127.0.0.1" :: 2116
     )
     val settings = ClusterSettings(seeds)
     val actor = system.actorOf(ClusterDiscovererActor.props(settings, ClusterInfoOf.apply))

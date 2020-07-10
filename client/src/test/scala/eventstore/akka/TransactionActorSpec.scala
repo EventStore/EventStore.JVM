@@ -76,7 +76,7 @@ class TransactionActorSpec extends ActorSpec {
       commitCompleted(None)
       expectMsg(CommitCompleted(None))
 
-      expectTerminated
+      expectTerminated()
     }
 
     "commit from stash" in new ContinueTransactionScope {
@@ -106,7 +106,7 @@ class TransactionActorSpec extends ActorSpec {
       commitCompleted(Some(EventNumber.First to EventNumber.Exact(2)))
       expectMsg(CommitCompleted(Some(EventNumber.First to EventNumber.Exact(2))))
 
-      expectTerminated
+      expectTerminated()
     }
 
     "start and commit" in new StartTransactionScope {
@@ -119,31 +119,31 @@ class TransactionActorSpec extends ActorSpec {
       expectCommit
       commitCompleted(Some(EventNumber.Exact(0) to EventNumber.Exact(2)))
       expectMsg(CommitCompleted(Some(EventNumber.Exact(0) to EventNumber.Exact(2))))
-      expectTerminated
+      expectTerminated()
       expectNoMsgs()
     }
 
     "handle failures while starting" in new StartTransactionScope {
-      sendFailure
+      sendFailure()
     }
 
     "handle failures while starting and reply with it on GetTransactionId" in new StartTransactionScope {
       actor ! GetTransactionId
-      sendFailure
+      sendFailure()
       expectFailure
     }
 
     "handle failures while writing" in new ContinueTransactionScope {
       actor ! Write(es1)
       expectWrite(es1)
-      sendFailure
+      sendFailure()
       expectFailure
     }
 
     "handle failures while committing" in new ContinueTransactionScope {
       actor ! Commit
       expectCommit
-      sendFailure
+      sendFailure()
       expectFailure
     }
   }

@@ -4,6 +4,26 @@
 This change log is ordered chronologically, so each release contains all changes described below
 it. Changes start from v6.0.0 and only relevant or interesting changes are mentioned. 
 
+## v7.2.0 (2020-07-10)
+
+### Enhancements
+
+ * Ability to connect to ES v20.6.0+ node(s) using non-TLS.
+
+### Dependencies
+
+  * akka-*: 2.6.1 -> 2.6.8
+  * akka-http-*: 10.1.11 -> 10.1.12
+  * specs2-core: 4.8.3 -> 4.10.0
+
+### Misc / Build
+
+ * scala: 2.13.1 -> 2.13.3, 2.12.10 -> 2.12.12
+ * sbt: 1.3.6 -> 1.3.13
+ 
+ * sbt-plugins:
+   * sbt-tpolecat: 0.1.10 -> 0.1.13
+
 ## v7.1.0 (2020-01-08)
 
 ### Breaking changes

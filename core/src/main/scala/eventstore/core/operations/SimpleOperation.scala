@@ -4,7 +4,7 @@ package operations
 
 import scala.util.{Failure, Success, Try}
 import eventstore.core.tcp.PackOut
-import NotHandled.{ NotReady, TooBusy }
+import NotHandled.{ NotReady, TooBusy , IsReadOnly}
 
 private[eventstore] final case class SimpleOperation[C](
   pack:       PackOut,
@@ -34,13 +34,14 @@ private[eventstore] final case class SimpleOperation[C](
     }
 
     def fallback(in: Try[In]): OnIncoming[Operation[C]] = in match {
-      case Success(_)                    => unexpected()
-      case Failure(NotHandled(NotReady)) => retry
-      case Failure(NotHandled(TooBusy))  => retry
-      case Failure(OperationTimedOut)    => Stop(OperationTimeoutException(pack))
-      case Failure(BadRequest)           => Stop(new ServerErrorException(s"Bad request: $pack"))
-      case Failure(NotAuthenticated)     => Stop(NotAuthenticatedException(pack))
-      case Failure(_)                    => unexpected()
+      case Success(_)                      => unexpected()
+      case Failure(NotHandled(NotReady))   => retry
+      case Failure(NotHandled(TooBusy))    => retry
+      case Failure(NotHandled(IsReadOnly)) => Stop(ServerErrorException(s"${pack.message} is not supported. Node is Read Only"))
+      case Failure(OperationTimedOut)      => Stop(OperationTimeoutException(pack))
+      case Failure(BadRequest)             => Stop(ServerErrorException(s"Bad request: $pack"))
+      case Failure(NotAuthenticated)       => Stop(NotAuthenticatedException(pack))
+      case Failure(_)                      => unexpected()
     }
 
     val pf = inspection.pf andThen {

@@ -3,6 +3,7 @@ package core
 package cluster
 
 import java.time.ZonedDateTime
+import scala.collection.immutable.SortedSet
 import org.specs2.mutable.Specification
 import org.specs2.specification.Scope
 import syntax._
@@ -13,9 +14,21 @@ class ClusterInfoSpec extends Specification {
 
   "ClusterInfo.bestNode" should {
 
-    "return Master if exists" in new TestScope {
-      val expected = member(Master)
-      val clusterInfo = ClusterInfo(address, expected :: (NodeState.values - Master).map(x => member(x)).toList)
+    "return Leader if exists" in new TestScope {
+      val expected = member(Leader)
+      val clusterInfo = ClusterInfo(address, membersFrom(expected))
+      clusterInfo.bestNode must beSome(expected)
+    }
+
+    "return PreLeader if exists & Leader not present" in new TestScope {
+      val expected = member(PreLeader)
+      val clusterInfo = ClusterInfo(address, membersFrom(expected, Leader))
+      clusterInfo.bestNode must beSome(expected)
+    }
+
+    "return Follower if exists & Leader/PreLeader not present" in new TestScope {
+      val expected = member(Follower)
+      val clusterInfo = ClusterInfo(address, membersFrom(expected, Leader, PreLeader))
       clusterInfo.bestNode must beSome(expected)
     }
 
@@ -40,9 +53,13 @@ class ClusterInfoSpec extends Specification {
   }
 
   trait TestScope extends Scope {
+
     val address = "127.0.0.1" :: 1
 
-    def member(state: NodeState = NodeState.Master, isAlive: Boolean = true) = MemberInfo(
+    def membersFrom(expected: MemberInfo, exclude: NodeState*) =
+      expected :: (NodeState.values -- SortedSet(expected.state +: exclude:_*)).map(x => member(x)).toList
+
+    def member(state: NodeState = NodeState.Leader, isAlive: Boolean = true) = MemberInfo(
       instanceId = randomUuid,
       timestamp = ZonedDateTime.now,
       state = state,

@@ -654,9 +654,10 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
 
     def fromProto(x: j.NotHandled) = {
       val reason = x.getReason match {
-        case NotReady  => NotHandled.NotReady
-        case TooBusy   => NotHandled.TooBusy
-        case NotMaster => NotHandled.NotMaster(masterInfo(x.getAdditionalInfo))
+        case NotReady   => NotHandled.NotReady
+        case TooBusy    => NotHandled.TooBusy
+        case NotMaster  => NotHandled.NotMaster(masterInfo(x.getAdditionalInfo))
+        case IsReadOnly => NotHandled.IsReadOnly
       }
       NotHandled(reason)
     }

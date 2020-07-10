@@ -6,7 +6,7 @@ import scala.util.control.NoStackTrace
 import scala.util.{Failure, Success}
 import util.uuid.randomUuid
 import tcp.PackOut
-import NotHandled.{NotReady, TooBusy}
+import NotHandled.{IsReadOnly, NotReady, TooBusy}
 import OnIncoming._
 
 class SimpleOperationSpec extends OperationSpec {
@@ -49,6 +49,12 @@ class SimpleOperationSpec extends OperationSpec {
 
     "retry on TooBusy" in new SimpleOperationScope {
       operation.inspectIn(Failure(NotHandled(TooBusy))) mustEqual Retry(operation, pack)
+    }
+
+    "stop on IsReadOnly" in new SimpleOperationScope {
+      operation.inspectIn(Failure(NotHandled(IsReadOnly))) mustEqual(
+        Stop(Failure(ServerErrorException(s"${pack.message} is not supported. Node is Read Only")))
+      )
     }
 
     "stop on OperationTimedOut" in new SimpleOperationScope {

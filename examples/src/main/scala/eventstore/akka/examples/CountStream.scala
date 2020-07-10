@@ -9,7 +9,7 @@ import eventstore.akka.tcp.ConnectionActor
 object CountStream extends App {
   val system = ActorSystem()
   val connection = system.actorOf(ConnectionActor.props(), "connection")
-  val countStream = system.actorOf(Props[CountStream], "count-stream")
+  val countStream = system.actorOf(Props[CountStream](), "count-stream")
   val props = StreamSubscriptionActor.props(
     connection,
     countStream,
