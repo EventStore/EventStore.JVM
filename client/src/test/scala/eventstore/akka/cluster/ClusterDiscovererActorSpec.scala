@@ -460,7 +460,7 @@ class ClusterDiscovererActorSpec extends ActorSpec {
 
     def member(
       address: InetSocketAddress,
-      state:   NodeState         = NodeState.Master,
+      state:   NodeState         = NodeState.Leader,
       isAlive: Boolean           = true
     ): MemberInfo = MemberInfo(
       instanceId = ids(address),

@@ -9,7 +9,7 @@ import scala.concurrent.duration._
 
 object ReadWriteEvents extends App {
   val system = ActorSystem()
-  system.actorOf(Props[ReadWriteEventsActor], "read-write")
+  system.actorOf(Props[ReadWriteEventsActor](), "read-write")
 }
 
 class ReadWriteEventsActor extends Actor with ActorLogging {

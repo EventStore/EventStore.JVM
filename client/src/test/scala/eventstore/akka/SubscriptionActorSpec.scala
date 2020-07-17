@@ -413,7 +413,7 @@ class SubscriptionActorSpec extends AbstractSubscriptionActorSpec {
 
   trait SubscriptionScope extends AbstractScope {
 
-    def createActor = {
+    def createActor() = {
       val props = SubscriptionActor.props(
         connection = connection.ref,
         client = testActor,

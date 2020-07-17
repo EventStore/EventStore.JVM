@@ -37,12 +37,12 @@ private[eventstore] object ClusterJsonProtocol extends DefaultJsonProtocol {
   }
 
   implicit object MemberInfoFormat extends RootJsonFormat[MemberInfo] {
-    private val MappingFormat = jsonFormat21(Mapping)
+    private val MappingFormatPreSeries20 = jsonFormat21(MappingPreSeries20)
+    private val MappingFormatPostSeries20 = jsonFormat19(MappingPostSeries20)
 
     def read(json: JsValue): MemberInfo = {
-      val m = MappingFormat.read(json)
 
-      MemberInfo(
+      def pre20(m: MappingPreSeries20) = MemberInfo(
         instanceId = m.instanceId,
         timestamp = m.timeStamp,
         state = m.state,
@@ -61,10 +61,36 @@ private[eventstore] object ClusterJsonProtocol extends DefaultJsonProtocol {
         epochId = m.epochId,
         nodePriority = m.nodePriority
       )
+
+      def post20(m: MappingPostSeries20) = MemberInfo(
+        instanceId = m.instanceId,
+        timestamp = m.timeStamp,
+        state = m.state,
+        isAlive = m.isAlive,
+        internalTcp = m.internalTcpIp :: m.internalTcpPort,
+        externalTcp = m.externalTcpIp :: m.externalTcpPort,
+        internalSecureTcp = m.internalTcpIp :: m.internalSecureTcpPort,
+        externalSecureTcp = m.externalTcpIp :: m.externalSecureTcpPort,
+        internalHttp = m.httpEndPointIp :: m.httpEndPointPort,
+        externalHttp = m.httpEndPointIp :: m.httpEndPointPort,
+        lastCommitPosition = m.lastCommitPosition,
+        writerCheckpoint = m.writerCheckpoint,
+        chaserCheckpoint = m.chaserCheckpoint,
+        epochPosition = m.epochPosition,
+        epochNumber = m.epochNumber,
+        epochId = m.epochId,
+        nodePriority = m.nodePriority
+      )
+
+      json.asJsObject.fields.get("httpEndPointIp").fold(
+        pre20(MappingFormatPreSeries20.read(json)))(
+        _ => post20(MappingFormatPostSeries20.read(json))
+      )
+
     }
 
     def write(x: MemberInfo): JsValue = {
-      val m = Mapping(
+      val m = MappingPreSeries20(
         instanceId = x.instanceId,
         timeStamp = x.timestamp,
         state = x.state,
@@ -88,10 +114,10 @@ private[eventstore] object ClusterJsonProtocol extends DefaultJsonProtocol {
         nodePriority = x.nodePriority
       )
 
-      MappingFormat.write(m)
+      MappingFormatPreSeries20.write(m)
     }
 
-    final case class Mapping(
+    final case class MappingPreSeries20(
       instanceId:            Uuid,
       timeStamp:             ZonedDateTime,
       state:                 NodeState,
@@ -114,6 +140,31 @@ private[eventstore] object ClusterJsonProtocol extends DefaultJsonProtocol {
       epochId:               Uuid,
       nodePriority:          Int
     )
+
+    ///
+
+    final case class MappingPostSeries20(
+      instanceId:            Uuid,
+      timeStamp:             ZonedDateTime,
+      state:                 NodeState,
+      isAlive:               Boolean,
+      internalTcpIp:         String,
+      internalTcpPort:       Int,
+      internalSecureTcpPort: Int,
+      externalTcpIp:         String,
+      externalTcpPort:       Int,
+      externalSecureTcpPort: Int,
+      httpEndPointIp:        String,
+      httpEndPointPort:      Int,
+      lastCommitPosition:    Long,
+      writerCheckpoint:      Long,
+      chaserCheckpoint:      Long,
+      epochPosition:         Long,
+      epochNumber:           Int,
+      epochId:               Uuid,
+      nodePriority:          Int
+    )
+
   }
 
   implicit object ClusterInfoFormat extends RootJsonFormat[ClusterInfo] {

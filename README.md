@@ -3,16 +3,16 @@
 <table border="0">
   <tr>
     <td><a href="http://www.scala-lang.org">Scala</a> </td>
-    <td>2.13.1 / 2.12.10</td>
+    <td>2.13.3 / 2.12.12</td>
   </tr>
   <tr>
     <td><a href="http://akka.io">Akka</a> </td>
-    <td>2.6.1</td>
+    <td>2.6.8</td>
   </tr>
   <tr>
     <td><a href="https://eventstore.org">Event Store</a></td>
-    <td>v5.0.0 and higher is supported</td>
-  </tr>  
+    <td>v5.x is supported - v20.x using non-TLS is supported</td>    
+  </tr>
 </table>
 
 
@@ -51,7 +51,7 @@ connection ! ReadEvent(EventStream.Id("my-stream"), EventNumber.First)
 
 #### Sbt
 ```scala
-libraryDependencies += "com.geteventstore" %% "eventstore-client" % "7.1.0"
+libraryDependencies += "com.geteventstore" %% "eventstore-client" % "7.2.0"
 ```
 
 #### Maven
@@ -59,7 +59,7 @@ libraryDependencies += "com.geteventstore" %% "eventstore-client" % "7.1.0"
 <dependency>
     <groupId>com.geteventstore</groupId>
     <artifactId>eventstore-client_${scala.version}</artifactId>
-    <version>7.1.0</version>
+    <version>7.2.0</version>
 </dependency>
 ```
 
@@ -262,7 +262,7 @@ object ReadEventExample extends App {
   )
 
   val connection = system.actorOf(ConnectionActor.props(settings))
-  implicit val readResult = system.actorOf(Props[ReadResult])
+  implicit val readResult = system.actorOf(Props[ReadResult]())
 
   connection ! ReadEvent(EventStream.Id("my-stream"), EventNumber.First)
 
@@ -353,7 +353,7 @@ import eventstore.akka.tcp.ConnectionActor
 object CountAll extends App {
   val system = ActorSystem()
   val connection = system.actorOf(ConnectionActor.props(), "connection")
-  val countAll = system.actorOf(Props[CountAll], "count-all")
+  val countAll = system.actorOf(Props[CountAll](), "count-all")
   system.actorOf(SubscriptionActor.props(connection, countAll, None, None, Settings.Default), "subscription")
 }
 

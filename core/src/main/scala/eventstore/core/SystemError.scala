@@ -67,6 +67,7 @@ object NotHandled {
   case object NotReady                       extends Reason
   case object TooBusy                        extends Reason
   final case class NotMaster(mi: MasterInfo) extends Reason
+  case object IsReadOnly                     extends Reason
 
   final case class MasterInfo(
     tcpAddress:       InetSocketAddress,

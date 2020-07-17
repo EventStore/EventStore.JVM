@@ -4,6 +4,8 @@ package akka
 import _root_.akka.testkit.TestProbe
 import ExpectedVersion._
 
+import scala.util.Try
+
 class TransactionITest extends TestConnection {
 
   implicit val direction = ReadDirection.Forward
@@ -93,12 +95,19 @@ class TransactionITest extends TestConnection {
       transactionWrite(event)(transactionId1)
       transactionCommit(Some(EventNumber.First to EventNumber.First))(transactionId1)
 
+      // This is due to:
+      // https://github.com/EventStore/EventStore/commit/0db40ab6a1b667060fef9948fc5135b90d4a9b34#diff-b20ab1e660cda65b9fb97a8271bfc669R77
+      val positionMustBeSome = isES20Series
+
       val transactionId2 = transactionStart(Any)
       transactionWrite(event)(transactionId2)
-      transactionCommit(Some(EventNumber.First to EventNumber.First), position = false)(transactionId2)
+      transactionCommit(Some(EventNumber.First to EventNumber.First), position = positionMustBeSome)(transactionId2)
       streamEvents mustEqual List(event)
     }
   }
+
+  private def isES20Series: Boolean =
+    sys.env.get("ES_TEST_IS_20_SERIES").flatMap(v => Try(v.toBoolean).toOption).getOrElse(false)
 
   private trait TransactionScope extends TestConnectionScope {
 

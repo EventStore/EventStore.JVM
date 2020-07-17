@@ -14,7 +14,7 @@ object PersistentSubscriptionExample extends App {
     address = new InetSocketAddress("127.0.0.1", 1113)
   )
 
-  val actor = system.actorOf(Props[CountPersistentStream])
+  val actor = system.actorOf(Props[CountPersistentStream]())
 
   val connection = system.actorOf(ConnectionActor.props(settings))
 

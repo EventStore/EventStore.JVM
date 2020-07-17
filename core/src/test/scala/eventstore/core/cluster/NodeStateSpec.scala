@@ -13,27 +13,14 @@ class NodeStateSpec extends Specification {
     }
   }
 
-  "NodeState.isReplica" should {
-    "return true for CatchingUp, Clone, Slave" in {
-      val replicas = Set(CatchingUp, Clone, Slave)
-      val other = NodeState.values -- replicas
-
-      foreach(replicas) { state =>
-        state.isReplica must beTrue
-      }
-
-      foreach(other) { state =>
-        state.isReplica must beFalse
-      }
-    }
-  }
-
   "NodeState.isAllowedToConnect" should {
-    "return false for Manager, ShuttingDown, Shutdown" in {
-      val replicas = Set(Manager, ShuttingDown, Shutdown)
-      val other = NodeState.values -- replicas
 
-      foreach(replicas) { state =>
+    "return false for Manager, ShuttingDown, Shutdown" in {
+
+      val notAllowedStates = Set(Manager, ShuttingDown, Shutdown)
+      val other = NodeState.values -- notAllowedStates
+
+      foreach(notAllowedStates) { state =>
         state.isAllowedToConnect must beFalse
       }
 
@@ -41,5 +28,6 @@ class NodeStateSpec extends Specification {
         state.isAllowedToConnect must beTrue
       }
     }
+
   }
 }

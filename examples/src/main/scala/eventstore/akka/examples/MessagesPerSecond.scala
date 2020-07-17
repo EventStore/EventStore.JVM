@@ -9,7 +9,7 @@ import eventstore.akka.tcp.ConnectionActor
 object MessagesPerSecond extends App {
   val system = ActorSystem()
   val connection = system.actorOf(ConnectionActor.props())
-  val messagePerSecond = system.actorOf(Props[MessagesPerSecond], "messages-per-second")
+  val messagePerSecond = system.actorOf(Props[MessagesPerSecond](), "messages-per-second")
   system.actorOf(SubscriptionActor.props(connection, messagePerSecond, None, None, Settings.Default))
 }
 

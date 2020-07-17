@@ -12,10 +12,10 @@ class ClusterGossipCTest extends ActorSpec {
     "return ClusterInfo for address" in new ActorScope {
 
       val futureFunc = ClusterInfoOf.apply
-      val info = futureFunc("127.0.0.1" :: 1113).await_
+      val info = futureFunc("127.0.0.1" :: 2114).await_
       info.members must haveSize(3)
 
-      info.members.find(_.state == NodeState.Master) must beSome
+      info.members.find(_.state == NodeState.Leader) must beSome
 
       foreach(info.members) { member =>
         member.isAlive must beTrue

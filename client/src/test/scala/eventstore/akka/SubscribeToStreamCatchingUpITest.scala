@@ -40,7 +40,7 @@ class SubscribeToStreamCatchingUpITest extends TestConnection {
     }
 
     "allow multiple subscriptions to same stream" in new SubscribeCatchingUpScope {
-      val probes = List.fill(5)(TestProbe.apply)
+      val probes = List.fill(5)(TestProbe.apply())
       probes.foreach(x => newSubscription(client = x.ref))
       probes.foreach(_.expectMsg(LiveProcessingStarted))
       val event = append(newEventData)

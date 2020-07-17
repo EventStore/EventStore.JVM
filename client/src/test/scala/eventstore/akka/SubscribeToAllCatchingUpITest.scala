@@ -55,7 +55,7 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
 
     "allow multiple subscriptions" in new SubscribeToAllCatchingUpScope {
       val position = allStreamsEvents()(Backward).take(10).last.position
-      val probes = List.fill(5)(TestProbe.apply)
+      val probes = List.fill(5)(TestProbe.apply())
       probes.foreach(x => newSubscription(Some(position), client = x.ref))
       probes.foreach(x => fishForLiveProcessingStarted(testKit = x))
       val event = append(newEventData).data

@@ -14,7 +14,7 @@ object ContinueTransactionExample extends App {
   val transactionId = 0L
   val kickoff = Continue(transactionId)
   val transaction = system.actorOf(TransactionActor.props(connection, kickoff), "transaction")
-  implicit val transactionResult = system.actorOf(Props[TransactionResult], "result")
+  implicit val transactionResult = system.actorOf(Props[TransactionResult](), "result")
 
   val data = EventData("transaction-event", randomUuid)
 

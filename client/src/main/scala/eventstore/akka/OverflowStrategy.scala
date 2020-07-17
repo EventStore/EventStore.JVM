@@ -10,7 +10,7 @@ object OverflowStrategy {
   private lazy val map = Values.map(x => (x.toString.toLowerCase, x)).toMap
 
   def apply(x: String): OverflowStrategy =
-    map getOrElse (x.toLowerCase, sys error s"No OverflowStrategy found by $x")
+    map.getOrElse(x.toLowerCase, sys error s"No OverflowStrategy found by $x")
 
   case object DropHead   extends OverflowStrategy
   case object DropTail   extends OverflowStrategy
