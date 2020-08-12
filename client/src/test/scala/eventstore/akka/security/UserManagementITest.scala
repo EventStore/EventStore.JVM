@@ -10,6 +10,8 @@ import eventstore.core.util.PasswordHashAlgorithm
 
 class UserManagementITest extends ActorSpec {
 
+  skipAllIf(testutil.isES20Series) // due to --insecure node setting disables user management
+
   "admin" should {
     "be authenticated" in new UserScope {
       actor ! Authenticate.withCredentials(UserCredentials.DefaultAdmin)
@@ -53,6 +55,7 @@ class UserManagementITest extends ActorSpec {
 
       expectNotAuthenticated()
     }
+
   }
 
   trait UserScope extends ActorScope {

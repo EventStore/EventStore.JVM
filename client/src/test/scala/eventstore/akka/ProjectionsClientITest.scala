@@ -18,28 +18,43 @@ import ProjectionsClient.ProjectionStatus._
 class ProjectionsClientITest extends AbstractStreamsITest {
   sequential
 
+  val streamId = s"projections_client_itest_$randomUuid"
   val timeout = 20.seconds
   val ProjectionCode =
-    """ fromStream("$users").
+    s""" fromStream("$streamId").
       |   when({
-      |     $init : function(state,event){
+      |     $$init : function(state,event){
       |       return { count : 0 }
       |     },
-      |     $any : function(state,event){
+      |     $$any : function(state,event){
       |       state.count += 1
       |     }
       |   })
     """.stripMargin
   val ProjectionCodeWithNoState =
-    """ fromStream("$users").
+    s""" fromStream("$streamId").
       |   when({
-      |     $any : function(state,event){
+      |     $$any : function(state,event){
       |       return;
       |     }
       |   })
     """.stripMargin
 
   "the projections client" should {
+
+    "init test data" in new TestScope {
+      val es = EsConnection(system)
+      def genEventData: EventData = EventData(
+        "test-type",
+        eventId  = randomUuid,
+        data     = Content("""{"data":"data"}"""),
+        metadata = Content("""{"metadata":"metadata"}""")
+      )
+
+      es(WriteEvents(EventStream.Id(streamId), List(genEventData, genEventData)))
+    }
+
+
     "be able to create a projection" in new TestScope {
       val client = new ProjectionsClient(settings, system)
       val projectionName = generateProjectionName

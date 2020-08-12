@@ -27,7 +27,7 @@ jobs:
       env: AKKA_TEST_TIMEFACTOR=1.5 AKKA_TEST_LOGLEVEL=OFF ES_TEST_ADDRESS_PORT=1114 ES_TEST_HTTP_PORT=2114 ES_TEST_IS_20_SERIES=true
       before_install:
         - docker pull quay.io/ahjohannessen/eventstore-20.6.0-bionic
-        - docker run -d --rm --name eventstore-node-20 -p 2114:2113 -p 1114:1113 -e EVENTSTORE_DEV=True -e EVENTSTORE_MEM_DB=True -e EVENTSTORE_ENABLE_EXTERNAL_TCP=True -e EVENTSTORE_RUN_PROJECTIONS=All quay.io/ahjohannessen/eventstore-20.6.0-bionic
+        - docker run -d --rm --name eventstore-node-20 -p 2114:2113 -p 1114:1113 -e EVENTSTORE_INSECURE=True -e EVENTSTORE_MEM_DB=True -e EVENTSTORE_ENABLE_EXTERNAL_TCP=True -e EVENTSTORE_RUN_PROJECTIONS=All quay.io/ahjohannessen/eventstore-20.6.0-bionic
       script:
         - sbt test:compile
         - travis_retry sbt it:test
@@ -48,9 +48,9 @@ jobs:
       before_install:
         - docker pull quay.io/ahjohannessen/eventstore-20.6.0-bionic
         - docker network create --subnet=172.18.0.0/16 es-net-20
-        - docker run -d --rm --name es1 --net=es-net-20 --ip 172.18.0.2 -p 2114:2113 -p 1114:1113 -e EVENTSTORE_DISCOVER_VIA_DNS=False -e EVENTSTORE_GOSSIP_SEED=172.18.0.3:2113,172.18.0.4:2113 -e EVENTSTORE_CLUSTER_SIZE=3 -e EVENTSTORE_INSECURE=True -e EVENTSTORE_DEV=True -e EVENTSTORE_MEM_DB=True -e EVENTSTORE_ENABLE_EXTERNAL_TCP=True quay.io/ahjohannessen/eventstore-20.6.0-bionic
-        - docker run -d --rm --name es2 --net=es-net-20 --ip 172.18.0.3 -p 2115:2113 -p 1115:1113 -e EVENTSTORE_DISCOVER_VIA_DNS=False -e EVENTSTORE_GOSSIP_SEED=172.18.0.2:2113,172.18.0.4:2113 -e EVENTSTORE_CLUSTER_SIZE=3 -e EVENTSTORE_INSECURE=True -e EVENTSTORE_DEV=True -e EVENTSTORE_MEM_DB=True -e EVENTSTORE_ENABLE_EXTERNAL_TCP=True quay.io/ahjohannessen/eventstore-20.6.0-bionic
-        - docker run -d --rm --name es3 --net=es-net-20 --ip 172.18.0.4 -p 2116:2113 -p 1116:1113 -e EVENTSTORE_DISCOVER_VIA_DNS=False -e EVENTSTORE_GOSSIP_SEED=172.18.0.2:2113,172.18.0.3:2113 -e EVENTSTORE_CLUSTER_SIZE=3 -e EVENTSTORE_INSECURE=True -e EVENTSTORE_DEV=True -e EVENTSTORE_MEM_DB=True -e EVENTSTORE_ENABLE_EXTERNAL_TCP=True quay.io/ahjohannessen/eventstore-20.6.0-bionic
+        - docker run -d --rm --name es1 --net=es-net-20 --ip 172.18.0.2 -p 2114:2113 -p 1114:1113 -e EVENTSTORE_DISCOVER_VIA_DNS=False -e EVENTSTORE_GOSSIP_SEED=172.18.0.3:2113,172.18.0.4:2113 -e EVENTSTORE_CLUSTER_SIZE=3 -e EVENTSTORE_INSECURE=True -e EVENTSTORE_MEM_DB=True -e EVENTSTORE_ENABLE_EXTERNAL_TCP=True quay.io/ahjohannessen/eventstore-20.6.0-bionic
+        - docker run -d --rm --name es2 --net=es-net-20 --ip 172.18.0.3 -p 2115:2113 -p 1115:1113 -e EVENTSTORE_DISCOVER_VIA_DNS=False -e EVENTSTORE_GOSSIP_SEED=172.18.0.2:2113,172.18.0.4:2113 -e EVENTSTORE_CLUSTER_SIZE=3 -e EVENTSTORE_INSECURE=True -e EVENTSTORE_MEM_DB=True -e EVENTSTORE_ENABLE_EXTERNAL_TCP=True quay.io/ahjohannessen/eventstore-20.6.0-bionic
+        - docker run -d --rm --name es3 --net=es-net-20 --ip 172.18.0.4 -p 2116:2113 -p 1116:1113 -e EVENTSTORE_DISCOVER_VIA_DNS=False -e EVENTSTORE_GOSSIP_SEED=172.18.0.2:2113,172.18.0.3:2113 -e EVENTSTORE_CLUSTER_SIZE=3 -e EVENTSTORE_INSECURE=True -e EVENTSTORE_MEM_DB=True -e EVENTSTORE_ENABLE_EXTERNAL_TCP=True quay.io/ahjohannessen/eventstore-20.6.0-bionic
       script:
         - sbt test:compile
         - travis_retry sbt c:test
