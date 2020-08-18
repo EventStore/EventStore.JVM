@@ -21,6 +21,7 @@ import syntax._
  * @param resolveLinkTos Whether to resolve LinkTo events automatically
  * @param requireMaster Whether or not to require Event Store to refuse serving read or write request if it is not master
  * @param readBatchSize Number of events to be retrieved by client as single message
+ * @param enableTcpTls Whether TLS should be enabled for TCP connections.
  * @param cluster see [[ClusterSettings]]
  * @param http see [[HttpSettings]]
  * @param serializationParallelism The number of serialization/deserialization functions to be run in parallel
@@ -42,6 +43,7 @@ final case class EsSettings(
     resolveLinkTos:           Boolean,
     requireMaster:            Boolean,
     readBatchSize:            Int,
+    enableTcpTls:             Boolean,
     cluster:                  Option[ClusterSettings],
     http:                     HttpSettings,
     serializationParallelism: Int,
@@ -94,6 +96,7 @@ object EsSettings {
         resolveLinkTos           = c getBoolean "resolve-linkTos",
         requireMaster            = c getBoolean "require-master",
         readBatchSize            = c getInt "read-batch-size",
+        enableTcpTls             = c getBoolean "enable-tcp-tls",
         cluster                  = cluster,
         http                     = HttpSettings(c),
         serializationParallelism = c getInt "serialization-parallelism",

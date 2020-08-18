@@ -3,11 +3,12 @@ package akka
 package tcp
 
 import java.net.InetSocketAddress
+import javax.net.ssl._
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 import _root_.akka.actor._
 import _root_.akka.stream.scaladsl._
-import _root_.akka.stream.{CompletionStrategy, BufferOverflowException, StreamTcpException}
+import _root_.akka.stream.{BufferOverflowException, CompletionStrategy, IgnoreComplete, StreamTcpException}
 import eventstore.core.{HeartbeatRequest, HeartbeatResponse}
 import eventstore.core.NotHandled.NotMaster
 import eventstore.core.settings.ClusterSettings
@@ -72,10 +73,11 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
 
   val flow = EventStoreFlow(settings.heartbeatInterval, settings.serializationParallelism, settings.serializationOrdered, log)
   val tcp = Tcp(system)
+  val sslContext = if(settings.enableTcpTls) Some(Tls.createSSLContext(system)) else None
 
   val identifyClient = IdentifyClient(version = 1, connectionName = settings.connectionName)
 
-  lazy val clusterDiscoverer: Option[ActorRef] = settings.cluster.map(newClusterDiscoverer)
+  lazy val clusterDiscoverer: Option[ActorRef] = settings.cluster.map(newClusterDiscoverer(_, settings.enableTcpTls))
   lazy val delayedRetry = DelayedRetry.opt(
     left = settings.maxReconnections,
     delay = settings.reconnectionDelayMin,
@@ -341,8 +343,8 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
     }
   }
 
-  def newClusterDiscoverer(settings: ClusterSettings): ActorRef = {
-    context.actorOf(ClusterDiscovererActor.props(settings, ClusterInfoOf.apply), "cluster")
+  def newClusterDiscoverer(settings: ClusterSettings, useTls: Boolean): ActorRef = {
+    context.actorOf(ClusterDiscovererActor.props(settings, ClusterInfoOf(useTls).apply), "cluster")
   }
 
   def credentials(x: OutLike): Option[UserCredentials] = x match {
@@ -365,11 +367,19 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
 
     import settings.{connectionTimeout, heartbeatTimeout, bufferSize, bufferOverflowStrategy}
 
-    val connection = tcp.outgoingConnection(
-      remoteAddress = address,
-      connectTimeout = connectionTimeout,
-      idleTimeout = heartbeatTimeout
+    def secureConnection(ctx: SSLContext) = tcp.outgoingConnectionWithTls(
+      address, () => Tls.createSSLEngine(ctx), None, Nil, connectionTimeout, heartbeatTimeout,
+      _ => Success(()), IgnoreComplete
     )
+
+    def insecureConnection = tcp.outgoingConnection(
+      remoteAddress = address, connectTimeout = connectionTimeout, idleTimeout = heartbeatTimeout
+    )
+
+    val connection = sslContext match {
+      case Some(v) => secureConnection(v)
+      case None    => insecureConnection
+    }
 
     val completionMatcher: PartialFunction[Any, CompletionStrategy] = {
       case Status.Success(s: CompletionStrategy) => s

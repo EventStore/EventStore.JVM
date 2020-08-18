@@ -102,7 +102,7 @@ object ProjectionException {
  */
 class ProjectionsClient(settings: Settings = Settings.Default, system: ActorSystem) extends ProjectionsUrls {
 
-  private implicit val as = system
+  private implicit val as: ActorSystem = system
 
   import system.dispatcher
   import ProjectionsClient._

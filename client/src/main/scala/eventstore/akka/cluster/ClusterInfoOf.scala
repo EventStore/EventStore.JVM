@@ -19,7 +19,7 @@ private[eventstore] object ClusterInfoOf {
 
   type FutureFunc = InetSocketAddress => Future[ClusterInfo]
 
-  def apply(implicit system: ActorSystem): FutureFunc = {
+  def apply(useTls: Boolean)(implicit system: ActorSystem): FutureFunc = {
 
     import SprayJsonSupport._
     import ClusterJsonProtocol._
@@ -31,11 +31,20 @@ private[eventstore] object ClusterInfoOf {
     val pools = TrieMap.empty[Uri, Flow[(HttpRequest, Unit), (Try[HttpResponse], Unit), HostConnectionPool]]
 
     def clusterInfo(address: InetSocketAddress) = {
+
+      val protocol = if(useTls) "https" else "http"
       val host = address.getHostString
       val port = address.getPort
-      val uri = Uri(s"http://$host:$port/gossip?format=json")
+      val uri = Uri(s"$protocol://$host:$port/gossip?format=json")
+
+      val connectionPool = if (useTls) {
+        http.cachedHostConnectionPoolHttps[Unit](uri.authority.host.address(), uri.authority.port)
+      } else {
+        http.cachedHostConnectionPool[Unit](uri.authority.host.address(), uri.authority.port)
+      }
+
       val req = HttpRequest(uri = uri, headers = List(acceptHeader))
-      val pool = pools.getOrElseUpdate(uri, http.cachedHostConnectionPool[Unit](host, port))
+      val pool = pools.getOrElseUpdate(uri, connectionPool)
       val source = Source.single((req, ()))
       val (_, response) = pool.runWith(source, Sink.head)
       for {

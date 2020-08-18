@@ -11,7 +11,7 @@ class ClusterGossipCTest extends ActorSpec {
 
     "return ClusterInfo for address" in new ActorScope {
 
-      val futureFunc = ClusterInfoOf.apply
+      val futureFunc = ClusterInfoOf(useTls = false)
       val info = futureFunc("127.0.0.1" :: 2114).await_
       info.members must haveSize(3)
 
