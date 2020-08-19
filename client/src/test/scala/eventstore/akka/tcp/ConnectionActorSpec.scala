@@ -936,7 +936,7 @@ class ConnectionActorSpec extends ActorSpec {
     override def settings = super.settings.copy(cluster = Some(ClusterSettings(GossipSeeds(address))))
 
     private def connectionActor = new ConnectionActor(settings) {
-      override def newClusterDiscoverer(settings: ClusterSettings) = discoverer.ref
+      override def newClusterDiscoverer(settings: ClusterSettings, useTls: Boolean) = discoverer.ref
       override def connect(address: InetSocketAddress): Unit = ClusterScope.this.tcp.ref ! Connect(address)
     }
 

@@ -17,7 +17,7 @@ object DiscoverCluster extends App {
     new InetSocketAddress("127.0.0.1", 2113),
     new InetSocketAddress("127.0.0.1", 3113)
   ))
-  val discoverer = system.actorOf(ClusterDiscovererActor.props(settings, ClusterInfoOf(system)), "discoverer")
+  val discoverer = system.actorOf(ClusterDiscovererActor.props(settings, ClusterInfoOf(useTls = false)), "discoverer")
   system.actorOf(Props(classOf[DiscoverCluster], discoverer))
 }
 

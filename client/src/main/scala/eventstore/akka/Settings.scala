@@ -23,7 +23,8 @@ import eventstore.{akka => a}
  * @param resolveLinkTos Whether to resolve LinkTo events automatically
  * @param requireMaster Whether or not to require Event Store to refuse serving read or write request if it is not master
  * @param readBatchSize Number of events to be retrieved by client as single message
- * @param http Url to access eventstore though the Http API
+ * @param enableTcpTls Whether TLS should be enabled for TCP connections. TLS setup is loaded from akka.ssl-config when enabled.
+ * @param http Url to access eventstore though the Http API. When https is used, TLS setup is loaded from akka.ssl-config.
  * @param serializationParallelism The number of serialization/deserialization functions to be run in parallel
  * @param serializationOrdered Serialization done asynchronously and these futures may complete in any order, but results will be used with preserved order if set to true
  * @param connectionName Client identifier used to show a friendly name of client in Event Store.
@@ -45,6 +46,7 @@ final case class Settings(
   resolveLinkTos:           Boolean                    = false,
   requireMaster:            Boolean                    = true,
   readBatchSize:            Int                        = 500,
+  enableTcpTls:             Boolean                    = false,
   cluster:                  Option[cs.ClusterSettings] = None,
   http:                     HttpSettings               = HttpSettings(),
   serializationParallelism: Int                        = 8,
@@ -87,6 +89,7 @@ object Settings {
         resolveLinkTos           = es.resolveLinkTos,
         requireMaster            = es.requireMaster,
         readBatchSize            = es.readBatchSize,
+        enableTcpTls             = es.enableTcpTls,
         cluster                  = es.cluster,
         http                     = hs,
         serializationParallelism = es.serializationParallelism,
