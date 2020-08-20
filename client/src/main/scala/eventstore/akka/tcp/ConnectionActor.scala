@@ -367,10 +367,12 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
 
     import settings.{connectionTimeout, heartbeatTimeout, bufferSize, bufferOverflowStrategy}
 
-    def secureConnection(ctx: SSLContext) = tcp.outgoingConnectionWithTls(
-      address, () => Tls.createSSLEngine(ctx), None, Nil, connectionTimeout, heartbeatTimeout,
-      _ => Success(()), IgnoreComplete
-    )
+    def secureConnection(ctx: SSLContext) = {
+      def createEngine() = Tls.createSSLEngine(address.getHostString, address.getPort, ctx)
+      tcp.outgoingConnectionWithTls(
+        address, createEngine, None, Nil, connectionTimeout, heartbeatTimeout,_ => Success(()), IgnoreComplete
+      )
+    }
 
     def insecureConnection = tcp.outgoingConnection(
       remoteAddress = address, connectTimeout = connectionTimeout, idleTimeout = heartbeatTimeout

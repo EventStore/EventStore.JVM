@@ -3,13 +3,14 @@ package akka
 package cluster
 
 import java.net.InetSocketAddress
+import javax.net.ssl.SSLContext
 import scala.collection.concurrent.TrieMap
 import scala.concurrent._
 import scala.util.Try
 import _root_.akka.actor.ActorSystem
 import _root_.akka.http.scaladsl.Http.HostConnectionPool
 import _root_.akka.stream.scaladsl._
-import _root_.akka.http.scaladsl.Http
+import _root_.akka.http.scaladsl.{ConnectionContext, Http}
 import _root_.akka.http.scaladsl.model._
 import _root_.akka.http.scaladsl.unmarshalling.Unmarshal
 import _root_.akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
@@ -27,6 +28,7 @@ private[eventstore] object ClusterInfoOf {
 
     val http = Http(system)
     val acceptHeader = headers.Accept(MediaRange(MediaTypes.`application/json`))
+    val sslContext: Option[SSLContext] = if(useTls) Some(Tls.createSSLContext(system)) else None
 
     val pools = TrieMap.empty[Uri, Flow[(HttpRequest, Unit), (Try[HttpResponse], Unit), HostConnectionPool]]
 
@@ -37,10 +39,12 @@ private[eventstore] object ClusterInfoOf {
       val port = address.getPort
       val uri = Uri(s"$protocol://$host:$port/gossip?format=json")
 
-      val connectionPool = if (useTls) {
-        http.cachedHostConnectionPoolHttps[Unit](uri.authority.host.address(), uri.authority.port)
-      } else {
-        http.cachedHostConnectionPool[Unit](uri.authority.host.address(), uri.authority.port)
+      val connectionPool = sslContext match {
+        case Some(sc) =>
+          val cc = ConnectionContext.httpsClient(sc)
+          http.cachedHostConnectionPoolHttps[Unit](uri.authority.host.address(), uri.authority.port, cc)
+        case None =>
+          http.cachedHostConnectionPool[Unit](uri.authority.host.address(), uri.authority.port)
       }
 
       val req = HttpRequest(uri = uri, headers = List(acceptHeader))
