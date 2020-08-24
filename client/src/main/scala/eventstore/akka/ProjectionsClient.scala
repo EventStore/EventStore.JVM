@@ -6,6 +6,7 @@ import scala.concurrent.Future
 import _root_.akka.NotUsed
 import _root_.akka.actor.ActorSystem
 import _root_.akka.http.scaladsl.Http
+import _root_.akka.http.scaladsl._
 import _root_.akka.http.scaladsl.model._
 import _root_.akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials}
 import _root_.akka.http.scaladsl.unmarshalling.Unmarshal
@@ -114,7 +115,8 @@ class ProjectionsClient(settings: Settings = Settings.Default, system: ActorSyst
     val connectionPool = if (uri.scheme == "http") {
       httpExt.cachedHostConnectionPool[Unit](uri.authority.host.address(), uri.authority.port)
     } else {
-      httpExt.cachedHostConnectionPoolHttps[Unit](uri.authority.host.address(), uri.authority.port)
+      val ctx = ConnectionContext.httpsClient(Tls.createSSLContext(system))
+      httpExt.cachedHostConnectionPoolHttps[Unit](uri.authority.host.address(), uri.authority.port, ctx)
     }
 
     Flow[HttpRequest]
