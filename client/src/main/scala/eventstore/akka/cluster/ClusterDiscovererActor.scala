@@ -13,8 +13,9 @@ import eventstore.core.settings.ClusterSettings
 import eventstore.core.cluster.{ResolveDns, MemberInfo, ClusterException, NodeState}
 
 private[eventstore] class ClusterDiscovererActor(
-    settings:    ClusterSettings,
-    clusterInfo: ClusterInfoOf.FutureFunc
+  settings:    ClusterSettings,
+  clusterInfo: ClusterInfoOf.FutureFunc,
+  useTls:      Boolean
 ) extends Actor with ActorLogging {
   import ClusterDiscovererActor._
   import context.dispatcher
@@ -46,7 +47,7 @@ private[eventstore] class ClusterDiscovererActor(
             log.info("Cluster best node {} failed, reported by {}", bestNode, client)
             context become recovering(bestNode, members)
 
-          case _ => client ! Address(bestNode)
+          case _ => client ! Address(bestNode,useTls)
         }
 
       case Tick =>
@@ -61,7 +62,7 @@ private[eventstore] class ClusterDiscovererActor(
                 if (state != newState) log.info("Cluster best node state changed from {} to {}", state, newState)
               } else {
                 log.info("Cluster best node changed from {} to {}", bestNode, newBestNode)
-                broadcast(Address(newBestNode))
+                broadcast(Address(newBestNode,useTls))
               }
               context become discovered(newBestNode, clusterInfo.members)
 
@@ -129,7 +130,7 @@ private[eventstore] class ClusterDiscovererActor(
         case Some(ci) =>
           val bestNode = ci.bestNode.get
           log.info("Discovering cluster: attempt {}/{} successful: best candidate is {}", attempt, maxDiscoverAttempts, bestNode)
-          broadcast(Address(bestNode))
+          broadcast(Address(bestNode, useTls))
           context become discovered(bestNode, ci.members)
       }
     } catch { case NonFatal(e) => attemptFailed(Some(e)) }
@@ -165,8 +166,8 @@ private[eventstore] class ClusterDiscovererActor(
 
 private[eventstore] object ClusterDiscovererActor {
 
-  def props(settings: ClusterSettings, clusterInfo: ClusterInfoOf.FutureFunc): Props = {
-    Props(new ClusterDiscovererActor(settings, clusterInfo))
+  def props(settings: ClusterSettings, clusterInfo: ClusterInfoOf.FutureFunc, useTls: Boolean): Props = {
+    Props(new ClusterDiscovererActor(settings, clusterInfo, useTls))
   }
 
   @SerialVersionUID(1L) final case class GetAddress(failed: Option[InetSocketAddress])
@@ -177,6 +178,14 @@ private[eventstore] object ClusterDiscovererActor {
   @SerialVersionUID(1L) final case class Address(value: InetSocketAddress)
 
   object Address {
-    def apply(x: MemberInfo): Address = Address(x.externalTcp)
+    def apply(x: MemberInfo, useTls: Boolean): Address = {
+      Address(
+        if (useTls) {
+          x.externalSecureTcp
+        } else {
+          x.externalTcp
+        }
+      )
+    }
   }
 }

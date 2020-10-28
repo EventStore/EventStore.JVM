@@ -344,7 +344,7 @@ private[eventstore] class ConnectionActor(settings: Settings) extends Actor with
   }
 
   def newClusterDiscoverer(settings: ClusterSettings, useTls: Boolean): ActorRef = {
-    context.actorOf(ClusterDiscovererActor.props(settings, ClusterInfoOf(useTls).apply), "cluster")
+    context.actorOf(ClusterDiscovererActor.props(settings, ClusterInfoOf().apply, useTls), "cluster")
   }
 
   def credentials(x: OutLike): Option[UserCredentials] = x match {

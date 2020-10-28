@@ -23,6 +23,6 @@ class ClusterDiscovererActorCTest extends ActorSpec {
       "127.0.0.1" :: 2116
     )
     val settings = ClusterSettings(seeds)
-    val actor = system.actorOf(ClusterDiscovererActor.props(settings, ClusterInfoOf(useTls = false).apply))
+    val actor = system.actorOf(ClusterDiscovererActor.props(settings, ClusterInfoOf().apply, useTls = false))
   }
 }
