@@ -6,7 +6,7 @@ object Dependencies {
   
   val `ts-config`   = "com.typesafe" %  "config"      % "1.4.0"
   val `scodec-bits` = "org.scodec"   %% "scodec-bits" % "1.1.18"
-  val `spray-json`  = "io.spray"     %% "spray-json"  % "1.3.5"
+  val `spray-json`  = "io.spray"     %% "spray-json"  % "1.3.6"
   val specs2        = "org.specs2"   %% "specs2-core" % "4.10.3"
 
   ///
