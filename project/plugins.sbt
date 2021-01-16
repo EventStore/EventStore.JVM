@@ -1,4 +1,4 @@
-addSbtPlugin("com.github.gseitz" % "sbt-protobuf" % "0.6.4")
+addSbtPlugin("com.github.gseitz" % "sbt-protobuf" % "0.6.5")
 
 addSbtPlugin("com.jsuereth" % "sbt-pgp" % "1.1.2")
 
