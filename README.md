@@ -3,15 +3,15 @@
 <table border="0">
   <tr>
     <td><a href="http://www.scala-lang.org">Scala</a> </td>
-    <td>2.13.3 / 2.12.12</td>
+    <td>2.13.4 / 2.12.13</td>
   </tr>
   <tr>
     <td><a href="http://akka.io">Akka</a> </td>
-    <td>2.6.8</td>
+    <td>2.6.12</td>
   </tr>
   <tr>
     <td><a href="https://eventstore.org">Event Store</a></td>
-    <td>v5.x is supported - v20.x using non-TLS is supported</td>    
+    <td>v5.x and v20.x are supported</td>    
   </tr>
 </table>
 
@@ -51,7 +51,7 @@ connection ! ReadEvent(EventStream.Id("my-stream"), EventNumber.First)
 
 #### Sbt
 ```scala
-libraryDependencies += "com.geteventstore" %% "eventstore-client" % "7.2.0"
+libraryDependencies += "com.geteventstore" %% "eventstore-client" % "7.3.1"
 ```
 
 #### Maven
@@ -59,7 +59,7 @@ libraryDependencies += "com.geteventstore" %% "eventstore-client" % "7.2.0"
 <dependency>
     <groupId>com.geteventstore</groupId>
     <artifactId>eventstore-client_${scala.version}</artifactId>
-    <version>7.2.0</version>
+    <version>7.3.1</version>
 </dependency>
 ```
 
@@ -449,7 +449,7 @@ object ListAllStreamsExample extends App {
 ### Reactive Streams
 
 You can use generic [Reactive Streams](http://www.reactive-streams.org) `Publisher` interface for EventStore subscriptions, 
-by converting an Akka Stream to Publisher. See: [Integrating Akka Streams with Reactive Streams](https://doc.akka.io/docs/akka/2.5.3/scala/stream/stream-integrations.html#integrating-with-reactive-streams)
+by converting an Akka Stream to Publisher. See: [Integrating Akka Streams with Reactive Streams](https://doc.akka.io/docs/akka/2.6/stream/reactive-streams-interop.html)
 
 Here is a short example on how to accomplish that:
 

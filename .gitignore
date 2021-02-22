@@ -29,11 +29,14 @@ TAGS
 # Scala
 *.sc
 
-# Metals
-.metals/*
-.bloop/*
-project/.bloop/*
-project/metals.sbt
+# bloop/metals/vscode
+.bloop/
+.metals/
+.vscode/
+metals.sbt
+
+# BSP
+.bsp/*
 
 # Mac
 .DS_Store

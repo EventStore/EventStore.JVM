@@ -2,9 +2,8 @@ package eventstore
 package akka
 
 import _root_.akka.testkit.TestProbe
+import testutil.isES20Series
 import ExpectedVersion._
-
-import scala.util.Try
 
 class TransactionITest extends TestConnection {
 
@@ -105,9 +104,6 @@ class TransactionITest extends TestConnection {
       streamEvents mustEqual List(event)
     }
   }
-
-  private def isES20Series: Boolean =
-    sys.env.get("ES_TEST_IS_20_SERIES").flatMap(v => Try(v.toBoolean).toOption).getOrElse(false)
 
   private trait TransactionScope extends TestConnectionScope {
 

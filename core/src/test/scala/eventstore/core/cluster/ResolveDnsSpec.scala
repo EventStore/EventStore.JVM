@@ -18,8 +18,8 @@ class ResolveDnsSpec extends Specification {
       ResolveDns("google.com", timeout) must not be empty
     }
 
-    "not resolve test" in {
-      ResolveDns("test", timeout) must throwAn[ClusterException]
+    "not resolve nobody" in {
+      ResolveDns("nobody", timeout) must throwAn[ClusterException]
     }
   }
 }

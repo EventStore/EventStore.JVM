@@ -19,7 +19,7 @@ class EventStoreExtension(system: ActorSystem) extends Extension {
 }
 
 object EventStoreExtension extends ExtensionId[EventStoreExtension] with ExtensionIdProvider {
-  def lookup() = EventStoreExtension
+  def lookup: ExtensionId[EventStoreExtension] = EventStoreExtension
 
   def createExtension(system: ExtendedActorSystem): EventStoreExtension = new EventStoreExtension(system)
 
