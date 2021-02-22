@@ -37,7 +37,7 @@ class ClusterDiscovererActorSpec extends ActorSpec {
       expectFailure
 
       override def settings = super.settings.copy(
-        gossipSeedsOrDns = ClusterDns("test"),
+        gossipSeedsOrDns = ClusterDns("nobody"),
         dnsLookupTimeout = 300.millis
       )
     }

@@ -4,15 +4,15 @@ object Dependencies {
 
   val protobufVersion = "3.7.1"
   
-  val `ts-config`   = "com.typesafe" %  "config"      % "1.4.0"
-  val `scodec-bits` = "org.scodec"   %% "scodec-bits" % "1.1.18"
-  val `spray-json`  = "io.spray"     %% "spray-json"  % "1.3.5"
-  val specs2        = "org.specs2"   %% "specs2-core" % "4.10.3"
+  val `ts-config`   = "com.typesafe" %  "config"      % "1.4.1"
+  val `scodec-bits` = "org.scodec"   %% "scodec-bits" % "1.1.24"
+  val `spray-json`  = "io.spray"     %% "spray-json"  % "1.3.6"
+  val specs2        = "org.specs2"   %% "specs2-core" % "4.10.6"
 
   ///
 
   object Akka {
-    private val version = "2.6.8"
+    private val version = "2.6.12"
     val actor            = "com.typesafe.akka" %% "akka-actor"          % version
     val stream           = "com.typesafe.akka" %% "akka-stream"         % version
     val testkit          = "com.typesafe.akka" %% "akka-testkit"        % version
@@ -20,7 +20,7 @@ object Dependencies {
   }
 
   object AkkaHttp {
-    private val version = "10.2.0"
+    private val version = "10.2.3"
     val http              = "com.typesafe.akka" %% "akka-http"            % version
     val `http-spray-json` = "com.typesafe.akka" %% "akka-http-spray-json" % version
   }
