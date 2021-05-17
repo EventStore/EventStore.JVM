@@ -23,7 +23,7 @@ jobs:
   include:
 
     - stage: integration-20.x
-      scala: 2.13.4
+      scala: 2.13.6
       env:
         - AKKA_TEST_TIMEFACTOR=1.5
         - AKKA_TEST_LOGLEVEL=OFF
@@ -46,7 +46,7 @@ jobs:
         - travis_retry sbt -J-Dconfig.resource=es20-tls.conf it:test
 
     - stage: integration-5.x
-      scala: 2.13.4
+      scala: 2.13.6
       env:
         - AKKA_TEST_TIMEFACTOR=1.5
         - AKKA_TEST_LOGLEVEL=OFF
@@ -58,7 +58,7 @@ jobs:
         - travis_retry sbt it:test
 
     - stage: integration-cluster-20.x
-      scala: 2.13.4
+      scala: 2.13.6
       env: AKKA_TEST_TIMEFACTOR=1.5 AKKA_TEST_LOGLEVEL=OFF
       before_install:
         - docker pull quay.io/ahjohannessen/esdb:21.2.0
@@ -71,7 +71,7 @@ jobs:
         - travis_retry sbt c:test
 
     - stage: integration-cluster-5.x
-      scala: 2.13.4
+      scala: 2.13.6
       env: AKKA_TEST_TIMEFACTOR=1.5 AKKA_TEST_LOGLEVEL=OFF
       before_install:
         - docker pull eventstore/eventstore:release-5.0.9
