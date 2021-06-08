@@ -2,7 +2,7 @@ import sbt._
 
 object Dependencies {
 
-  val protobufVersion = "3.7.1"
+  val protobufVersion = "3.17.3"
   
   val `ts-config`   = "com.typesafe" %  "config"      % "1.4.1"
   val `scodec-bits` = "org.scodec"   %% "scodec-bits" % "1.1.24"
