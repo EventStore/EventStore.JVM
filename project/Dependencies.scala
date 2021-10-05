@@ -20,7 +20,7 @@ object Dependencies {
   }
 
   object AkkaHttp {
-    private val version = "10.2.3"
+    private val version = "10.2.6"
     val http              = "com.typesafe.akka" %% "akka-http"            % version
     val `http-spray-json` = "com.typesafe.akka" %% "akka-http-spray-json" % version
   }
