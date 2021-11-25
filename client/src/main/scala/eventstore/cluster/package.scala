@@ -12,11 +12,11 @@ package object cluster {
     "Please update your imports, as this deprecated type alias will " +
     "be removed in a future version of EventStore.JVM."
 
-  @deprecated(clusterMsg, sinceV7)
+  @deprecated(clusterMsg, "7.0.0")
   type GossipSeedsOrDns = cc.GossipSeedsOrDns
   val  GossipSeedsOrDns = cc.GossipSeedsOrDns
 
-  @deprecated(clusterMsg, sinceV7)
+  @deprecated(clusterMsg, "7.0.0")
   type ClusterSettings  = cs.ClusterSettings
   val  ClusterSettings  = cs.ClusterSettings
 

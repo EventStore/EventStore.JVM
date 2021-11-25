@@ -47,3 +47,5 @@ metals.sbt
 EventStore.Net
 
 .java-version
+
+certs/

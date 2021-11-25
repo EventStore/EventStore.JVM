@@ -1,12 +1,12 @@
+
 jdk:
   - openjdk8
-  - openjdk11
 
 language: scala
 
 scala:
-  - 2.13.4
-  - 2.12.12
+  - 2.13.7
+  - 2.12.15
 
 sudo: required
 
@@ -22,8 +22,8 @@ after_success:
 jobs:
   include:
 
-    - stage: integration-20.x
-      scala: 2.13.4
+    - stage: integration-21.x
+      scala: 2.13.7
       env:
         - AKKA_TEST_TIMEFACTOR=1.5
         - AKKA_TEST_LOGLEVEL=OFF
@@ -39,46 +39,46 @@ jobs:
         - docker run -it --rm -v $HOME/certs:/certs:rw quay.io/ahjohannessen/es-gencert-cli:1.0.1 create-ca -out /certs/ca
         - docker run -it --rm -v $HOME/certs:/certs:rw quay.io/ahjohannessen/es-gencert-cli:1.0.1 create-node -ca-certificate /certs/ca/ca.crt -ca-key /certs/ca/ca.key -out /certs/node -ip-addresses 127.0.0.1
         - sudo chmod -R 777 $HOME/certs
-        - docker pull quay.io/ahjohannessen/esdb:21.2.0
-        - docker run -d --rm --name eventstore-node-20 -p 2114:2113 -p 1114:1113 -v $HOME/certs:/certs -e EVENTSTORE_CERTIFICATE_FILE=/certs/node/node.crt -e EVENTSTORE_CERTIFICATE_PRIVATE_KEY_FILE=/certs/node/node.key -e EVENTSTORE_TRUSTED_ROOT_CERTIFICATES_PATH=/certs/ca -e EVENTSTORE_MEM_DB=True -e EVENTSTORE_ENABLE_EXTERNAL_TCP=True -e EVENTSTORE_RUN_PROJECTIONS=All quay.io/ahjohannessen/esdb:21.2.0
+        - docker pull eventstore/eventstore:21.10.0-bionic
+        - docker run -d --rm --name eventstore-node-20 -p 2114:2113 -p 1114:1113 -v $HOME/certs:/certs -e EVENTSTORE_CERTIFICATE_FILE=/certs/node/node.crt -e EVENTSTORE_CERTIFICATE_PRIVATE_KEY_FILE=/certs/node/node.key -e EVENTSTORE_TRUSTED_ROOT_CERTIFICATES_PATH=/certs/ca -e EVENTSTORE_MEM_DB=True -e EVENTSTORE_ENABLE_EXTERNAL_TCP=True -e EVENTSTORE_RUN_PROJECTIONS=All eventstore/eventstore:21.10.0-bionic
       script:
         - sbt test:compile
         - travis_retry sbt -J-Dconfig.resource=es20-tls.conf it:test
 
     - stage: integration-5.x
-      scala: 2.13.4
+      scala: 2.13.7
       env:
         - AKKA_TEST_TIMEFACTOR=1.5
         - AKKA_TEST_LOGLEVEL=OFF
       before_install:
-        - docker pull eventstore/eventstore:release-5.0.9
-        - docker run -d --rm --name eventstore-node-5 -p 2113:2113 -p 1113:1113 -e EVENTSTORE_MEM_DB=True -e EVENTSTORE_STATS_PERIOD_SEC=2400 eventstore/eventstore:release-5.0.9
+        - docker pull eventstore/eventstore:release-5.0.11
+        - docker run -d --rm --name eventstore-node-5 -p 2113:2113 -p 1113:1113 -e EVENTSTORE_MEM_DB=True -e EVENTSTORE_STATS_PERIOD_SEC=2400 eventstore/eventstore:release-5.0.11
       script:
         - sbt test:compile
         - travis_retry sbt it:test
 
-    - stage: integration-cluster-20.x
-      scala: 2.13.4
+    - stage: integration-cluster-21.x
+      scala: 2.13.7
       env: AKKA_TEST_TIMEFACTOR=1.5 AKKA_TEST_LOGLEVEL=OFF
       before_install:
-        - docker pull quay.io/ahjohannessen/esdb:21.2.0
+        - docker pull eventstore/eventstore:21.10.0-bionic
         - docker network create --subnet=172.18.0.0/16 es-net-20
-        - docker run -d --rm --name es1 --net=es-net-20 --ip 172.18.0.2 -p 2114:2113 -p 1114:1113 -e EVENTSTORE_DISCOVER_VIA_DNS=False -e EVENTSTORE_GOSSIP_SEED=172.18.0.3:2113,172.18.0.4:2113 -e EVENTSTORE_CLUSTER_SIZE=3 -e EVENTSTORE_INSECURE=True -e EVENTSTORE_MEM_DB=True -e EVENTSTORE_ENABLE_EXTERNAL_TCP=True quay.io/ahjohannessen/esdb:21.2.0
-        - docker run -d --rm --name es2 --net=es-net-20 --ip 172.18.0.3 -p 2115:2113 -p 1115:1113 -e EVENTSTORE_DISCOVER_VIA_DNS=False -e EVENTSTORE_GOSSIP_SEED=172.18.0.2:2113,172.18.0.4:2113 -e EVENTSTORE_CLUSTER_SIZE=3 -e EVENTSTORE_INSECURE=True -e EVENTSTORE_MEM_DB=True -e EVENTSTORE_ENABLE_EXTERNAL_TCP=True quay.io/ahjohannessen/esdb:21.2.0
-        - docker run -d --rm --name es3 --net=es-net-20 --ip 172.18.0.4 -p 2116:2113 -p 1116:1113 -e EVENTSTORE_DISCOVER_VIA_DNS=False -e EVENTSTORE_GOSSIP_SEED=172.18.0.2:2113,172.18.0.3:2113 -e EVENTSTORE_CLUSTER_SIZE=3 -e EVENTSTORE_INSECURE=True -e EVENTSTORE_MEM_DB=True -e EVENTSTORE_ENABLE_EXTERNAL_TCP=True quay.io/ahjohannessen/esdb:21.2.0
+        - docker run -d --rm --name es1 --net=es-net-20 --ip 172.18.0.2 -p 2114:2113 -p 1114:1113 -e EVENTSTORE_DISCOVER_VIA_DNS=False -e EVENTSTORE_GOSSIP_SEED=172.18.0.3:2113,172.18.0.4:2113 -e EVENTSTORE_CLUSTER_SIZE=3 -e EVENTSTORE_INSECURE=True -e EVENTSTORE_MEM_DB=True -e EVENTSTORE_ENABLE_EXTERNAL_TCP=True eventstore/eventstore:21.10.0-bionic
+        - docker run -d --rm --name es2 --net=es-net-20 --ip 172.18.0.3 -p 2115:2113 -p 1115:1113 -e EVENTSTORE_DISCOVER_VIA_DNS=False -e EVENTSTORE_GOSSIP_SEED=172.18.0.2:2113,172.18.0.4:2113 -e EVENTSTORE_CLUSTER_SIZE=3 -e EVENTSTORE_INSECURE=True -e EVENTSTORE_MEM_DB=True -e EVENTSTORE_ENABLE_EXTERNAL_TCP=True eventstore/eventstore:21.10.0-bionic
+        - docker run -d --rm --name es3 --net=es-net-20 --ip 172.18.0.4 -p 2116:2113 -p 1116:1113 -e EVENTSTORE_DISCOVER_VIA_DNS=False -e EVENTSTORE_GOSSIP_SEED=172.18.0.2:2113,172.18.0.3:2113 -e EVENTSTORE_CLUSTER_SIZE=3 -e EVENTSTORE_INSECURE=True -e EVENTSTORE_MEM_DB=True -e EVENTSTORE_ENABLE_EXTERNAL_TCP=True eventstore/eventstore:21.10.0-bionic
       script:
         - sbt test:compile
         - travis_retry sbt c:test
 
     - stage: integration-cluster-5.x
-      scala: 2.13.4
+      scala: 2.13.7
       env: AKKA_TEST_TIMEFACTOR=1.5 AKKA_TEST_LOGLEVEL=OFF
       before_install:
-        - docker pull eventstore/eventstore:release-5.0.9
+        - docker pull eventstore/eventstore:release-5.0.11
         - docker network create --subnet=172.20.0.0/16 es-net-5
-        - docker run -d --rm --name es1 --net=es-net-5 --ip 172.20.0.2 -p 2114:2113 -p 1114:1113 -e EVENTSTORE_DISCOVER_VIA_DNS=False -e EVENTSTORE_GOSSIP_SEED=172.20.0.3:2112,172.20.0.4:2112 -e EVENTSTORE_CLUSTER_SIZE=3 -e EVENTSTORE_MEM_DB=True eventstore/eventstore:release-5.0.9
-        - docker run -d --rm --name es2 --net=es-net-5 --ip 172.20.0.3 -p 2115:2113 -p 1115:1113 -e EVENTSTORE_DISCOVER_VIA_DNS=False -e EVENTSTORE_GOSSIP_SEED=172.20.0.2:2112,172.20.0.4:2112 -e EVENTSTORE_CLUSTER_SIZE=3 -e EVENTSTORE_MEM_DB=True eventstore/eventstore:release-5.0.9
-        - docker run -d --rm --name es3 --net=es-net-5 --ip 172.20.0.4 -p 2116:2113 -p 1116:1113 -e EVENTSTORE_DISCOVER_VIA_DNS=False -e EVENTSTORE_GOSSIP_SEED=172.20.0.2:2112,172.20.0.3:2112 -e EVENTSTORE_CLUSTER_SIZE=3 -e EVENTSTORE_MEM_DB=True eventstore/eventstore:release-5.0.9
+        - docker run -d --rm --name es1 --net=es-net-5 --ip 172.20.0.2 -p 2114:2113 -p 1114:1113 -e EVENTSTORE_DISCOVER_VIA_DNS=False -e EVENTSTORE_GOSSIP_SEED=172.20.0.3:2112,172.20.0.4:2112 -e EVENTSTORE_CLUSTER_SIZE=3 -e EVENTSTORE_MEM_DB=True eventstore/eventstore:release-5.0.11
+        - docker run -d --rm --name es2 --net=es-net-5 --ip 172.20.0.3 -p 2115:2113 -p 1115:1113 -e EVENTSTORE_DISCOVER_VIA_DNS=False -e EVENTSTORE_GOSSIP_SEED=172.20.0.2:2112,172.20.0.4:2112 -e EVENTSTORE_CLUSTER_SIZE=3 -e EVENTSTORE_MEM_DB=True eventstore/eventstore:release-5.0.11
+        - docker run -d --rm --name es3 --net=es-net-5 --ip 172.20.0.4 -p 2116:2113 -p 1116:1113 -e EVENTSTORE_DISCOVER_VIA_DNS=False -e EVENTSTORE_GOSSIP_SEED=172.20.0.2:2112,172.20.0.3:2112 -e EVENTSTORE_CLUSTER_SIZE=3 -e EVENTSTORE_MEM_DB=True eventstore/eventstore:release-5.0.11
       script:
         - sbt test:compile
         - travis_retry sbt c:test

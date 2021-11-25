@@ -3,8 +3,7 @@ package object eventstore {
   import eventstore.{compat, akka => a, core => c}
   import eventstore.core.{settings => cs}
 
-  private[eventstore] final val sinceV7: String = "7.0.0"
-  private[eventstore] def randomUuid: Uuid      = c.util.uuid.randomUuid
+  private[eventstore] def randomUuid: Uuid = c.util.uuid.randomUuid
 
   private final val akkaMsg =
     "This type has been moved from eventstore to eventstore.akka. " +
@@ -15,40 +14,40 @@ package object eventstore {
 
   // TODO(AHJ): Remove akka aliases after 7.1.0
   
-  @deprecated(akkaMsg, sinceV7)
+  @deprecated(akkaMsg, "7.0.0")
   type EsConnection        = a.EsConnection
   val EsConnection         = a.EsConnection
 
-  @deprecated(akkaMsg, sinceV7)
+  @deprecated(akkaMsg, "7.0.0")
   type EventStoreExtension = a.EventStoreExtension
   val EventStoreExtension  = a.EventStoreExtension
 
-  @deprecated(akkaMsg, sinceV7)
+  @deprecated(akkaMsg, "7.0.0")
   type OverflowStrategy    = a.OverflowStrategy
   val OverflowStrategy     = a.OverflowStrategy
 
-  @deprecated(akkaMsg, sinceV7)
+  @deprecated(akkaMsg, "7.0.0")
   type EsTransaction       = a.EsTransaction
   val EsTransaction        = a.EsTransaction
 
-  @deprecated(akkaMsg, sinceV7)
+  @deprecated(akkaMsg, "7.0.0")
   type SubscriptionObserver[T] = a.SubscriptionObserver[T]
 
-  @deprecated(akkaMsg, sinceV7)
+  @deprecated(akkaMsg, "7.0.0")
   type ProjectionsClient   = a.ProjectionsClient
   val ProjectionsClient    = a.ProjectionsClient
 
-  @deprecated(akkaMsg, sinceV7)
+  @deprecated(akkaMsg, "7.0.0")
   val PersistentSubscriptionActor  = a.PersistentSubscriptionActor
 
-  @deprecated(akkaMsg, sinceV7)
+  @deprecated(akkaMsg, "7.0.0")
   val LiveProcessingStarted  = a.LiveProcessingStarted
 
-  @deprecated(akkaMsg, sinceV7)
+  @deprecated(akkaMsg, "7.0.0")
   type Settings              = a.Settings
   val Settings               = a.Settings
 
-  @deprecated(akkaMsg, sinceV7)
+  @deprecated(akkaMsg, "7.0.0")
   type HttpSettings          = a.HttpSettings
   val HttpSettings           = a.HttpSettings
 

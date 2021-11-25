@@ -1,0 +1,188 @@
+name: Continuous Integration
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+    tags: [v*]
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+
+  regular:
+    name: Regurlar Tests
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        scala: [2.13.7, 2.12.15]
+        java: [adopt@1.8]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout current branch (full)
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Run Tests
+        env:
+          AKKA_TEST_LOGLEVEL: OFF      
+        run: sbt ++${{ matrix.scala }} test:compile test
+
+  esdb-single:
+    name: Integration Tests
+    needs: [regular]
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        scala: [2.13.7]
+        java: [adopt@1.8]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout current branch (full)
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Start ESDB
+        run: |
+          pushd .docker
+          ./esdb-single.sh up -d
+          popd
+
+      - name: Run Tests
+        env:
+          AKKA_TEST_TIMEFACTOR: 1.5
+          AKKA_TEST_LOGLEVEL: OFF
+          ES_TEST_ADDRESS_PORT: 1114
+          ES_TEST_HTTP_PORT: 2114
+          ES_TEST_IS_20_SERIES: true
+          ES_TEST_CERTIFICATE_FILE: ${{ github.workspace }}/certs/single/ca/ca.crt
+        uses: nick-invision/retry@v2
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          command: sbt ++${{ matrix.scala }} -J-Dconfig.resource=es20-tls.conf test:compile it:test
+
+      - name: Stop ESDB
+        if: always()
+        run: |
+          pushd .docker
+          ./esdb-single.sh down
+          popd
+
+  esdb-cluster:
+    name: Cluster Tests
+    needs: [regular]
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        scala: [2.13.7]
+        java: [adopt@1.8]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout current branch (full)
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Start ESDB Cluster
+        run: |
+          pushd .docker
+          ./esdb-cluster.sh up -d
+          popd
+
+      - name: Run Tests
+        env:
+          AKKA_TEST_TIMEFACTOR: 1.5
+          AKKA_TEST_LOGLEVEL: OFF
+        uses: nick-invision/retry@v2
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          command: sbt ++${{ matrix.scala }} test:compile c:test
+
+      - name: Stop ESDB Cluster
+        if: always()
+        run: |
+          pushd .docker
+          ./esdb-cluster.sh down
+          popd
+
+  legacy-it:
+    name: Legacy Integration Tests 
+    needs: [regular]
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        scala: [2.13.7]
+        java: [adopt@1.8]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout current branch (full)
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Start Legacy ESDB
+        run: |
+          pushd .docker
+          ./legacy-single.sh up -d
+          popd
+
+      - name: Run Tests
+        env:
+          AKKA_TEST_TIMEFACTOR: 1.5
+          AKKA_TEST_LOGLEVEL: OFF
+        uses: nick-invision/retry@v2
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          command: sbt ++${{ matrix.scala }} test:compile it:test
+
+      - name: Stop Legacy ESDB
+        if: always()
+        run: |
+          pushd .docker
+          ./legacy-single.sh down
+          popd
+
+  legacy-cluster:
+    name: Legacy Cluster Tests
+    needs: [regular]
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        scala: [2.13.7]
+        java: [adopt@1.8]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout current branch (full)
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Start Legacy ESDB Cluster
+        run: |
+          pushd .docker
+          ./legacy-cluster.sh up -d
+          popd
+
+      - name: Run Tests
+        env:
+          AKKA_TEST_TIMEFACTOR: 1.5
+          AKKA_TEST_LOGLEVEL: OFF
+        uses: nick-invision/retry@v2
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          command: sbt ++${{ matrix.scala }} test:compile c:test
+
+      - name: Stop Legacy ESDB Cluster
+        if: always()
+        run: |
+          pushd .docker
+          ./legacy-cluster.sh down
+          popd
