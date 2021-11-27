@@ -1,17 +1,17 @@
-# Event Store JVM Client [![Build Status](https://api.travis-ci.org/EventStore/EventStore.JVM.svg)](https://travis-ci.org/EventStore/EventStore.JVM) [![Coverage Status](https://coveralls.io/repos/EventStore/EventStore.JVM/badge.svg)](https://coveralls.io/r/EventStore/EventStore.JVM) [![Version](https://img.shields.io/maven-central/v/com.geteventstore/eventstore-client_2.13.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg%3Acom.geteventstore%20AND%20eventstore-client)
+# Event Store JVM Client [![Continuous Integration](https://github.com/EventStore/EventStore.JVM/actions/workflows/ci.yml/badge.svg)](https://github.com/EventStore/EventStore.JVM/actions/workflows/ci.yml) [![Coverage Status](https://coveralls.io/repos/EventStore/EventStore.JVM/badge.svg)](https://coveralls.io/r/EventStore/EventStore.JVM) [![Version](https://img.shields.io/maven-central/v/com.geteventstore/eventstore-client_2.13.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg%3Acom.geteventstore%20AND%20eventstore-client)
 
 <table border="0">
   <tr>
     <td><a href="http://www.scala-lang.org">Scala</a> </td>
-    <td>2.13.4 / 2.12.13</td>
+    <td>2.13.7 / 2.12.15</td>
   </tr>
   <tr>
     <td><a href="http://akka.io">Akka</a> </td>
-    <td>2.6.12</td>
+    <td>2.6.17</td>
   </tr>
   <tr>
     <td><a href="https://eventstore.org">Event Store</a></td>
-    <td>v5.x and v20.x are supported</td>    
+    <td>v5.x, v20.x and v21.x are supported</td>    
   </tr>
 </table>
 
@@ -51,7 +51,7 @@ connection ! ReadEvent(EventStream.Id("my-stream"), EventNumber.First)
 
 #### Sbt
 ```scala
-libraryDependencies += "com.geteventstore" %% "eventstore-client" % "7.3.1"
+libraryDependencies += "com.geteventstore" %% "eventstore-client" % "7.4.0"
 ```
 
 #### Maven
@@ -59,7 +59,7 @@ libraryDependencies += "com.geteventstore" %% "eventstore-client" % "7.3.1"
 <dependency>
     <groupId>com.geteventstore</groupId>
     <artifactId>eventstore-client_${scala.version}</artifactId>
-    <version>7.3.1</version>
+    <version>7.4.0</version>
 </dependency>
 ```
 
