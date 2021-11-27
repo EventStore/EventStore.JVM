@@ -1,0 +1,55 @@
+version: '3.8'
+services:
+
+  legacy-esdb01:
+    image: eventstore/eventstore:release-5.0.11
+    environment:
+      - EVENTSTORE_MEM_DB=True
+      - EVENTSTORE_DISCOVER_VIA_DNS=False
+      - EVENTSTORE_GOSSIP_SEED=172.25.0.3:2112,172.25.0.4:2112
+      - EVENTSTORE_CLUSTER_SIZE=3
+    ports:
+      - 2114:2113
+      - 1114:1113
+    networks:
+      legacy_cluster_network:
+        ipv4_address: 172.25.0.2
+    restart: unless-stopped
+
+  legacy-esdb02:
+    image: eventstore/eventstore:release-5.0.11
+    environment:
+      - EVENTSTORE_MEM_DB=True
+      - EVENTSTORE_DISCOVER_VIA_DNS=False
+      - EVENTSTORE_GOSSIP_SEED=172.25.0.2:2112,172.25.0.4:2112
+      - EVENTSTORE_CLUSTER_SIZE=3
+    ports:
+      - 2115:2113
+      - 1115:1113
+    networks:
+      legacy_cluster_network:
+        ipv4_address: 172.25.0.3
+    restart: unless-stopped
+
+  legacy-esdb03:
+    image: eventstore/eventstore:release-5.0.11
+    environment:
+      - EVENTSTORE_MEM_DB=True
+      - EVENTSTORE_DISCOVER_VIA_DNS=False
+      - EVENTSTORE_GOSSIP_SEED=172.25.0.2:2112,172.25.0.3:2112
+      - EVENTSTORE_CLUSTER_SIZE=3
+    ports:
+      - 2116:2113
+      - 1116:1113
+    networks:
+      legacy_cluster_network:
+        ipv4_address: 172.25.0.4
+    restart: unless-stopped
+
+networks:
+  legacy_cluster_network:
+    name: legacy-cluster-net
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.25.0.0/16

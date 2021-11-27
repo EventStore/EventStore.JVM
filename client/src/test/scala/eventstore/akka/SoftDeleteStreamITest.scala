@@ -1,6 +1,8 @@
 package eventstore
 package akka
 
+import akka.testutil.isES20Series
+
 class SoftDeleteStreamITest extends TestConnection {
   implicit def direction: ReadDirection = ReadDirection.Forward
 
@@ -65,9 +67,12 @@ class SoftDeleteStreamITest extends TestConnection {
     }.pendingUntilFixed // TODO why this does not work?
 
     "allow setting json metadata on empty soft deleted stream and recreate stream not overriding metadata" in new SoftDeleteScope {
-      deleteStream(hard = false)
-      writeMetadata("""{"test":"test"}""")
-      readMetadata() mustEqual """{"test":"test","$tb":0}"""
+      // Not possible to soft delete a stream that does not exist with ExpectedVersion.Any in 21.10.0+
+      if(!isES20Series) {
+        deleteStream(hard = false)
+        writeMetadata("""{"test":"test"}""")
+        readMetadata() mustEqual """{"test":"test","$tb":0}"""
+      } else ok
     }
 
     "allow setting json metadata on nonempty soft deleted stream and recreate stream not overriding metadata" in new SoftDeleteScope {
@@ -78,10 +83,13 @@ class SoftDeleteStreamITest extends TestConnection {
     }
 
     "allow setting nonjson metadata on empty soft deleted stream and recreate stream" in new SoftDeleteScope {
-      deleteStream(hard = false)
-      val metadata = writeMetadataBinary(1, 2, 3, 4)
-      readStreamEventsFailed must throwA[StreamNotFoundException]
-      readMetadataBinary() mustEqual metadata
+      // Not possible to soft delete a stream that does not exist with ExpectedVersion.Any in 21.10.0+
+      if(!isES20Series) {
+        deleteStream(hard = false)
+        val metadata = writeMetadataBinary(1, 2, 3, 4)
+        readStreamEventsFailed must throwA[StreamNotFoundException]
+        readMetadataBinary() mustEqual metadata
+      } else ok
     }
 
     "allow setting nonjson metadata on nonempty soft deleted stream and recreate" in new SoftDeleteScope {

@@ -12,7 +12,7 @@ package object tcp extends TypeAliases {
     "Please update your imports, as this deprecated type alias will " +
     "be removed in a future version of EventStore.JVM."
 
-  @deprecated(tcpMsg, sinceV7)
+  @deprecated(tcpMsg, "7.0.0")
   val ConnectionActor = a.tcp.ConnectionActor
 
 }

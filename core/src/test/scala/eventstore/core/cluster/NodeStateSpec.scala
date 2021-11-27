@@ -15,9 +15,9 @@ class NodeStateSpec extends Specification {
 
   "NodeState.isAllowedToConnect" should {
 
-    "return false for Manager, ShuttingDown, Shutdown" in {
+    "return false for Manager, ShuttingDown, Shutdown, ResigningLeader" in {
 
-      val notAllowedStates = Set(Manager, ShuttingDown, Shutdown)
+      val notAllowedStates = Set(Manager, ShuttingDown, Shutdown, ResigningLeader)
       val other = NodeState.values -- notAllowedStates
 
       foreach(notAllowedStates) { state =>

@@ -1,0 +1,52 @@
+version: '3.8'
+services:
+  volumes-provisioner:
+    image: hasnat/volumes-provisioner
+    environment:
+      PROVISION_DIRECTORIES: "1000:1000:0755:/tmp/certs"
+    volumes:
+    - "../certs/single:/tmp/certs"
+    network_mode: none
+  cert-gen:
+    image: eventstore/es-gencert-cli:1.0.2
+    entrypoint: bash
+    command: >
+      -c "es-gencert-cli create-ca -out /tmp/certs/ca &&
+          es-gencert-cli create-node -ca-certificate /tmp/certs/ca/ca.crt -ca-key /tmp/certs/ca/ca.key -out \
+          /tmp/certs/node1 -ip-addresses 127.0.0.1,172.22.0.2 -dns-names localhost"
+    user: "1000:1000"
+    volumes:
+      - "../certs/single:/tmp/certs"
+    depends_on:
+      - volumes-provisioner
+  esdb:
+    image: eventstore/eventstore:21.10.0-bionic
+    environment:
+      - EVENTSTORE_MEM_DB=True
+      - EVENTSTORE_ENABLE_EXTERNAL_TCP=True
+      - EVENTSTORE_RUN_PROJECTIONS=All
+      - EVENTSTORE_ENABLE_ATOM_PUB_OVER_HTTP=true
+      - EVENTSTORE_INT_IP=172.22.0.2
+      - EVENTSTORE_ADVERTISE_HOST_TO_CLIENT_AS=127.0.0.1   
+      - EVENTSTORE_TRUSTED_ROOT_CERTIFICATES_PATH=/etc/eventstore/certs/ca
+      - EVENTSTORE_CERTIFICATE_FILE=/etc/eventstore/certs/node1/node.crt
+      - EVENTSTORE_CERTIFICATE_PRIVATE_KEY_FILE=/etc/eventstore/certs/node1/node.key
+    ports:
+      - 2114:2113
+      - 1114:1113
+    networks:
+      esdb_single_network:
+        ipv4_address: 172.22.0.2
+    volumes:
+      - ../certs/single:/etc/eventstore/certs
+    restart: unless-stopped
+    depends_on:
+      - cert-gen
+
+networks:
+  esdb_single_network:
+    name: esdb-single-net
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.22.0.0/16
