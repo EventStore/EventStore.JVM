@@ -4,14 +4,14 @@ package examples
 
 import java.net.InetSocketAddress
 import _root_.akka.actor._
-import eventstore.cluster.GossipSeedsOrDns.GossipSeeds
-import eventstore.cluster.ClusterSettings
+import eventstore.core.cluster.GossipSeedsOrDns.GossipSeeds
+import eventstore.core.settings.ClusterSettings
 import eventstore.akka.cluster.ClusterDiscovererActor.{Address, GetAddress}
 import eventstore.akka.cluster.ClusterDiscovererActor
 import eventstore.akka.cluster.ClusterInfoOf
 
 object DiscoverCluster extends App {
-  implicit val system = ActorSystem()
+  implicit val system: ActorSystem = ActorSystem()
   val settings = ClusterSettings(GossipSeeds(
     new InetSocketAddress("127.0.0.1", 1113),
     new InetSocketAddress("127.0.0.1", 2113),

@@ -47,35 +47,6 @@ object StreamSubscriptionActor {
     Option(settings).getOrElse(Settings.Default)
   )
 
-  /**
-   * Java API
-   */
-  @deprecated("Use `getProps` with Settings as argument", "3.0.0")
-  def getProps(
-    connection:          ActorRef,
-    client:              ActorRef,
-    streamId:            EventStream.Id,
-    fromNumberExclusive: Option[EventNumber],
-    resolveLinkTos:      Boolean,
-    credentials:         Option[UserCredentials],
-    readBatchSize:       Int
-  ): Props = {
-    val settings = Settings.Default.copy(readBatchSize = readBatchSize, resolveLinkTos = resolveLinkTos)
-    props(connection, client, streamId, fromNumberExclusive, credentials, settings)
-  }
-
-  /**
-   * Java API
-   */
-  @deprecated("Use `getProps` with Settings as argument", "3.0.0")
-  def getProps(
-    connection:          ActorRef,
-    client:              ActorRef,
-    streamId:            EventStream.Id,
-    fromNumberExclusive: Option[EventNumber]
-  ): Props = {
-    props(connection, client, streamId, fromNumberExclusive, None, Settings.Default)
-  }
 }
 
 private[eventstore] class StreamSubscriptionActor private (

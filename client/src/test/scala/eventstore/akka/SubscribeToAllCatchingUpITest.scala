@@ -202,6 +202,7 @@ class SubscribeToAllCatchingUpITest extends TestConnection {
       case IndexedEvent(_, x) =>
         x must beGreaterThanOrEqualTo(position)
         fishForLiveProcessingStarted(x, testKit)
+      case m => sys.error(s"Unexpected msg: $m")
     }
 
     def writeAsync(size: Int = 20): List[EventData] = {

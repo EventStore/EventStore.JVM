@@ -1,23 +1,42 @@
 package eventstore
 package akka
 
-import javax.net.ssl._
+import javax.net.ssl.{SSLContext, SSLEngine, X509TrustManager}
+import _root_.akka.actor._
 import com.typesafe.config.Config
 import com.typesafe.sslconfig.ssl._
 import com.typesafe.sslconfig.akka.util.AkkaLoggerFactory
-import _root_.akka.actor._
 
 private[eventstore] object Tls {
 
-  def createSSLContext(system: ActorSystem): SSLContext = {
+  def createSSLContext(system: ActorSystem): SSLContext =
+    mkSslContextAndTM(system)._1
+
+  def createSSLContextAndTrustManager(system: ActorSystem): (SSLContext, X509TrustManager) =
+    mkSslContextAndTM(system)
+
+  private def mkSslContextAndTM(system: ActorSystem): (SSLContext, X509TrustManager) = {
 
     val mkLogger = new AkkaLoggerFactory(system)
     val settings = sslConfigSettings(system.settings.config)
+
+    val signatureConstraints = settings.disabledSignatureAlgorithms.map(AlgorithmConstraintsParser.apply).toSet
+    val keySizeConstraints = settings.disabledKeyAlgorithms.map(AlgorithmConstraintsParser.apply).toSet
+    val algorithmChecker = new AlgorithmChecker(mkLogger, signatureConstraints, keySizeConstraints)
     val keyManagerFactory = new DefaultKeyManagerFactoryWrapper(settings.keyManagerConfig.algorithm)
     val trustManagerFactory = new DefaultTrustManagerFactoryWrapper(settings.trustManagerConfig.algorithm)
+
     val builder = new ConfigSSLContextBuilder(mkLogger, settings, keyManagerFactory, trustManagerFactory)
 
-    builder.build()
+    val tm: X509TrustManager = builder.buildCompositeTrustManager(
+      settings.trustManagerConfig,
+      settings.checkRevocation.getOrElse(false),
+      builder.certificateRevocationList(settings),
+      algorithmChecker,
+      settings.debug
+    )
+
+    (builder.build(), tm)
   }
 
   def createSSLEngine(host: String, port: Int, sslContext: SSLContext): SSLEngine = {

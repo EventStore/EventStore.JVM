@@ -16,15 +16,15 @@ trait EventStoreFormats extends EventStoreProtoFormats {
     def write(x: T): ByteVector = ByteVector.empty
   }
 
-  implicit object HeartbeatRequestFormat extends EmptyFormat(HeartbeatRequest)
-  implicit object HeartbeatResponseFormat extends EmptyFormat(HeartbeatResponse)
-  implicit object PingFormat extends EmptyFormat(Ping)
-  implicit object PongFormat extends EmptyFormat(Pong)
-  implicit object ClientIdentifiedFormat extends EmptyFormat(ClientIdentified)
-  implicit object UnsubscribeFromStreamFormat extends EmptyFormat(Unsubscribe)
-  implicit object ScavengeDatabaseFormat extends EmptyFormat(ScavengeDatabase)
-  implicit object AuthenticateFormat extends EmptyFormat(Authenticate)
-  implicit object AuthenticatedFormat extends EmptyFormat(Authenticated)
+  implicit object HeartbeatRequestFormat extends EmptyFormat[HeartbeatRequest.type](HeartbeatRequest)
+  implicit object HeartbeatResponseFormat extends EmptyFormat[HeartbeatResponse.type](HeartbeatResponse)
+  implicit object PingFormat extends EmptyFormat[Ping.type](Ping)
+  implicit object PongFormat extends EmptyFormat[Pong.type](Pong)
+  implicit object ClientIdentifiedFormat extends EmptyFormat[ClientIdentified.type](ClientIdentified)
+  implicit object UnsubscribeFromStreamFormat extends EmptyFormat[Unsubscribe.type](Unsubscribe)
+  implicit object ScavengeDatabaseFormat extends EmptyFormat[ScavengeDatabase.type](ScavengeDatabase)
+  implicit object AuthenticateFormat extends EmptyFormat[Authenticate.type](Authenticate)
+  implicit object AuthenticatedFormat extends EmptyFormat[Authenticated.type](Authenticated)
 
   implicit object UserCredentialsFormat extends BytesFormat[UserCredentials] {
 
@@ -51,7 +51,7 @@ trait EventStoreFormats extends EventStoreProtoFormats {
       }
 
       val reader = for {
-           login <- getString
+        login <- getString
         password <- getString
       } yield UserCredentials(login, password)
 
@@ -80,11 +80,11 @@ trait EventStoreFormats extends EventStoreProtoFormats {
   }
 
   implicit val PackInReader: BytesReader[PackIn] = for {
-         mb <- BytesReader[MarkerByte]
+    mb <- BytesReader[MarkerByte]
     readMsg <- BytesReader.lift(MarkerBytes.readerBy(mb))
-    _       <- BytesReader[Flags]
-    corr    <- BytesReader[Uuid]
-    msg     <- readMsg
+    _ <- BytesReader[Flags]
+    corr <- BytesReader[Uuid]
+    msg <- readMsg
   } yield PackIn(msg, corr)
 
 }

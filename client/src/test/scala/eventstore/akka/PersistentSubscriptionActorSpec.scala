@@ -5,8 +5,10 @@ import _root_.akka.actor.ActorRef
 import _root_.akka.testkit.TestActorRef
 import PersistentSubscription._
 import TestData.eventData
+import eventstore.core.EventStream.Id
 
 class PersistentSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
+
   "PersistentSubscriptionActor" should {
     "should connect to the eventstore" in new PersistentSubscriptionActorScope {
       connection.expectMsgType[Connect]
@@ -92,7 +94,8 @@ class PersistentSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
   }
 
   trait PersistentSubscriptionActorScope extends AbstractScope {
-    lazy val streamId = EventStream.Id(PersistentSubscriptionActor.getClass.getSimpleName + "-" + randomUuid.toString)
+    
+    lazy val streamId: Id = EventStream.Id(PersistentSubscriptionActor.getClass.getSimpleName + "-" + randomUuid.toString)
     def groupName: String = randomUuid.toString
 
     def settings: Settings = Settings.Default.copy(readBatchSize = readBatchSize, resolveLinkTos = resolveLinkTos)

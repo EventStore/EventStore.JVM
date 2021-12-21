@@ -7,42 +7,42 @@ import ExpectedVersion._
 
 class TransactionITest extends TestConnection {
 
-  implicit val direction = ReadDirection.Forward
+  implicit val direction: ReadDirection = ReadDirection.Forward
 
   "transaction" should {
     "start on non existing stream with correct exp ver and create stream on commit" in new TransactionScope {
-      implicit val transactionId = transactionStart(NoStream)
+      implicit val transactionId: Long = transactionStart(NoStream)
       transactionWrite(newEventData)
       transactionCommit(Some(EventNumber.First to EventNumber.First))
     }
 
     "start on non existing stream with any exp ver and create stream on commit" in new TransactionScope {
-      implicit val transactionId = transactionStart(Any)
+      implicit val transactionId: Long = transactionStart(Any)
       transactionWrite(newEventData)
       transactionCommit(Some(EventNumber.First to EventNumber.First))
     }
 
     "fail to commit on non existing stream with wrong exp ver" in new TransactionScope {
-      implicit val transactionId = transactionStart(ExpectedVersion.First)
+      implicit val transactionId: Long = transactionStart(ExpectedVersion.First)
       transactionWrite(newEventData)
       failTransactionCommit must throwA[WrongExpectedVersionException]
     }
 
     "do nothing if commits without events to empty stream" in new TransactionScope {
-      implicit val transactionId = transactionStart(NoStream)
+      implicit val transactionId: Long = transactionStart(NoStream)
       transactionCommit()
       readStreamEventsFailed must throwA[StreamNotFoundException]
     }
 
     "do nothing if commits no events to empty stream" in new TransactionScope {
-      implicit val transactionId = transactionStart(NoStream)
+      implicit val transactionId: Long = transactionStart(NoStream)
       transactionWrite()
       transactionCommit()
       readStreamEventsFailed must throwA[StreamNotFoundException]
     }
 
     "validate expectations on commit" in new TransactionScope {
-      implicit val transactionId = transactionStart(ExpectedVersion(1))
+      implicit val transactionId: Long = transactionStart(ExpectedVersion(1))
       transactionWrite(newEventData)
       failTransactionCommit must throwA[WrongExpectedVersionException]
     }
@@ -50,7 +50,7 @@ class TransactionITest extends TestConnection {
     "commit when writing with exp ver ANY even while someone is writing in parallel" in new TransactionScope {
       appendEventToCreateStream()
 
-      implicit val transactionId = transactionStart(Any)
+      implicit val transactionId: Long = transactionStart(Any)
 
       val probe = TestProbe()
 
@@ -67,7 +67,7 @@ class TransactionITest extends TestConnection {
 
     "fail to commit if started with correct ver but committing with bad" in new TransactionScope {
       appendEventToCreateStream()
-      implicit val transactionId = transactionStart(ExpectedVersion.First)
+      implicit val transactionId: Long = transactionStart(ExpectedVersion.First)
       append(newEventData).number mustEqual EventNumber(1)
       transactionWrite(newEventData)
       failTransactionCommit must throwA[WrongExpectedVersionException]
@@ -75,7 +75,7 @@ class TransactionITest extends TestConnection {
 
     "succeed to commit if started with wrong ver but committing with correct ver" in new TransactionScope {
       appendEventToCreateStream()
-      implicit val transactionId = transactionStart(ExpectedVersion(1))
+      implicit val transactionId: Long = transactionStart(ExpectedVersion(1))
       append(newEventData).number mustEqual EventNumber(1)
       transactionWrite()
       transactionCommit(None)
@@ -83,7 +83,7 @@ class TransactionITest extends TestConnection {
 
     "fail to commit if stream has been deleted during transaction" in new TransactionScope {
       appendEventToCreateStream()
-      implicit val transactionId = transactionStart(ExpectedVersion.First)
+      implicit val transactionId: Long = transactionStart(ExpectedVersion.First)
       deleteStream()
       failTransactionCommit must throwA[StreamDeletedException]
     }

@@ -5,7 +5,6 @@ import java.util.Collection;
 import scala.concurrent.Future;
 import akka.NotUsed;
 import akka.stream.javadsl.Source;
-import org.reactivestreams.Publisher;
 import eventstore.akka.SubscriptionObserver;
 import eventstore.core.settings.PersistentSubscriptionSettings;
 import eventstore.core.*;
@@ -456,36 +455,6 @@ public interface EsConnection {
   Future<byte[]> getStreamMetadataBytes(String stream, UserCredentials credentials);
 
   /**
-   * Creates Publisher you can use to subscribe to a single event stream. Existing events from
-   * lastCheckpoint onwards are read from the stream
-   * and presented to the user of <code>Publisher</code>
-   * as if they had been pushed.
-   * <p>
-   * Once the end of the stream is read the subscription is
-   * transparently (to the user) switched to push new events as
-   * they are written.
-   * <p>
-   * If events have already been received and resubscription from the same point
-   * is desired, use the event number of the last event processed which
-   * appeared on the subscription.
-   *
-   * @param stream                   The stream to publish
-   * @param fromEventNumberExclusive The event number from which to start, or <code>null</code> to read all events.
-   * @param resolveLinkTos           Whether to resolve LinkTo events automatically
-   * @param credentials              The optional user credentials to perform operation with
-   * @param infinite                 Whether to subscribe to the future events upon reading all current
-   * @return A {@link org.reactivestreams.Publisher} representing the stream
-   * @deprecated Use <code>connection.streamSource(...).runWith(Sink.asPublisher(...));</code>, since "5.0.8"
-   */
-  @Deprecated
-  Publisher<Event> streamPublisher(
-      String stream,
-      EventNumber fromEventNumberExclusive,
-      boolean resolveLinkTos,
-      UserCredentials credentials,
-      boolean infinite);
-
-  /**
    * Creates a Source you can use to subscribe to a single event stream. Existing events from
    * event number onwards are read from the stream and presented to the user of
    * <code>Source</code> as if they had been pushed.
@@ -506,33 +475,6 @@ public interface EsConnection {
    Source<Event, NotUsed> streamSource(
       String stream,
       EventNumber fromEventNumberExclusive,
-      boolean resolveLinkTos,
-      UserCredentials credentials,
-      boolean infinite);
-
-  /**
-   * Creates Publisher you can use to subscribes to a all events. Existing events from position
-   * onwards are read from the Event Store and presented to the user of
-   * <code>Publisher</code> as if they had been pushed.
-   * <p>
-   * Once the end of the stream is read the subscription is
-   * transparently (to the user) switched to push new events as
-   * they are written.
-   * <p>
-   * If events have already been received and resubscription from the same point
-   * is desired, use the position representing the last event processed which
-   * appeared on the subscription.
-   *
-   * @param fromPositionExclusive The position from which to start, or <code>null</code> to read all events
-   * @param resolveLinkTos        Whether to resolve LinkTo events automatically
-   * @param credentials           The optional user credentials to perform operation with
-   * @param infinite              Whether to subscribe to the future events upon reading all current
-   * @return A {@link org.reactivestreams.Publisher} representing all streams
-   * @deprecated Use <code>connection.allStreamsPublisher(...).runWith(Sink.asPublisher(...));</code>, since "5.0.8"
-   */
-  @Deprecated
-  Publisher<IndexedEvent> allStreamsPublisher(
-      Position fromPositionExclusive,
       boolean resolveLinkTos,
       UserCredentials credentials,
       boolean infinite);

@@ -148,7 +148,7 @@ private[eventstore] class ClusterDiscovererActor(
 
   object GossipCandidates {
     def apply(settings: ClusterSettings): List[InetSocketAddress] = {
-      import eventstore.cluster.GossipSeedsOrDns._
+      import eventstore.core.cluster.GossipSeedsOrDns._
       val gossipSeeds = settings.gossipSeedsOrDns match {
         case GossipSeeds(x)        => x
         case ClusterDns(dns, port) => ResolveDns(dns, dnsLookupTimeout).map(x => x :: port)

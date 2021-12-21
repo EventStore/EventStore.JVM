@@ -779,13 +779,13 @@ class ConnectionActorSpec extends ActorSpec {
     def readOut(bs: ABS): PackOut = {
 
       val readPack = for {
-            mb <- BytesReader[MarkerByte]
+        mb <- BytesReader[MarkerByte]
         reader <- BytesReader.lift(MarkerBytes.readerBy(mb))
-        flags  <- BytesReader[Flags]
+        flags <- BytesReader[Flags]
         corrId <- BytesReader[Uuid]
-        creds  <- if ((flags & Flag.Auth) == 0) BytesReader.pure[Option[UserCredentials]](None)
+        creds <- if ((flags & Flag.Auth) == 0) BytesReader.pure[Option[UserCredentials]](None)
                   else BytesReader[UserCredentials].map(Option(_))
-           msg <- reader
+        msg <- reader
       } yield PackOut(msg.get.asInstanceOf[Out], corrId, creds)
 
       readPack.read(ByteVector(bs.toArray).drop(4)).unsafe.value

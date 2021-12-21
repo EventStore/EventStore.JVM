@@ -1,6 +1,6 @@
 package eventstore.j
 
-import eventstore.Settings
+import eventstore.akka.Settings
 import org.specs2.mutable.Specification
 
 class SettingsBuilderSpec extends Specification {

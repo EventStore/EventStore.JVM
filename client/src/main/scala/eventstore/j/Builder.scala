@@ -22,7 +22,7 @@ object Builder {
   }
 
   trait ResolveLinkTosSnippet[T] extends ChainSet[T] { self: T =>
-    protected var _resolveLinkTos = Settings.Default.resolveLinkTos
+    protected var _resolveLinkTos = akka.Settings.Default.resolveLinkTos
 
     def resolveLinkTos(x: Boolean): T = set {
       _resolveLinkTos = x
@@ -30,7 +30,7 @@ object Builder {
   }
 
   trait RequireMasterSnippet[T] extends ChainSet[T] { self: T =>
-    protected var _requireMaster: Boolean = Settings.Default.requireMaster
+    protected var _requireMaster: Boolean = akka.Settings.Default.requireMaster
 
     def requireMaster(x: Boolean): T = set {
       _requireMaster = x
@@ -67,7 +67,7 @@ object Builder {
   }
 
   trait MaxCountSnippet[T] extends ChainSet[T] { self: T =>
-    protected var _maxCount = Settings.Default.readBatchSize
+    protected var _maxCount = akka.Settings.Default.readBatchSize
 
     def maxCount(x: Int): T = set {
       _maxCount = x

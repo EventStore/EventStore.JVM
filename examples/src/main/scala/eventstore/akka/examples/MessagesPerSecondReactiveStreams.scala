@@ -8,7 +8,7 @@ import org.reactivestreams.{Publisher, Subscriber}
 import scala.concurrent.duration._
 
 object MessagesPerSecondReactiveStreams extends App {
-  implicit val system = ActorSystem()
+  implicit val system: ActorSystem = ActorSystem()
   val connection = EventStoreExtension(system).connection
 
   val publisher: Publisher[String] = connection.allStreamsSource()

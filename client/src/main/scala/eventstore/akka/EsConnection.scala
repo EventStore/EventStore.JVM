@@ -8,7 +8,6 @@ import _root_.akka.actor._
 import _root_.akka.pattern.ask
 import _root_.akka.stream.scaladsl._
 import _root_.akka.util.Timeout
-import org.reactivestreams.Publisher
 import eventstore.akka.tcp.ConnectionActor
 import eventstore.akka.streams.{AllStreamsSourceStage, StreamSourceStage}
 
@@ -23,9 +22,9 @@ class EsConnection(
     connection: ActorRef,
     factory:    ActorRefFactory,
     settings:   Settings        = Settings.Default
-)(implicit system: ActorSystem) {
+) {
 
-  implicit val timeout = Timeout(settings.operationTimeout)
+  implicit val timeout: Timeout = Timeout(settings.operationTimeout)
 
   def apply[OUT <: Out, IN <: In](out: OUT, credentials: Option[UserCredentials] = None)(
     implicit outIn: ClassTags[OUT, IN]
@@ -233,48 +232,6 @@ class EsConnection(
   }
 
   /**
-   * Creates Publisher you can use to subscribe to a single event stream. Existing events from
-   * lastCheckpoint onwards are read from the stream
-   * and presented to the user of `Publisher`
-   * as if they had been pushed.
-   * <p>
-   * Once the end of the stream is read the subscription is
-   * transparently (to the user) switched to push new events as
-   * they are written.
-   * <p>
-   * If events have already been received and resubscription from the same point
-   * is desired, use the event number of the last event processed which
-   * appeared on the subscription.
-   *
-   * @param streamId            The stream to publish
-   * @param fromNumberExclusive The event number from which to start, or `None` to read all events.
-   * @param resolveLinkTos      Whether to resolve LinkTo events automatically
-   * @param credentials         The optional user credentials to perform operation with
-   * @param infinite            Whether to subscribe to the future events upon reading all current
-   * @param readBatchSize       Number of events to be retrieved by client as single message
-   * @return A [[org.reactivestreams.Publisher]] representing stream
-   */
-  @deprecated("Use `streamSource(..).runWith(Sink.asPublisher(..))` instead.", since = "5.0.8")
-  def streamPublisher(
-    streamId:            EventStream.Id,
-    fromNumberExclusive: Option[EventNumber]     = None,
-    resolveLinkTos:      Boolean                 = settings.resolveLinkTos,
-    credentials:         Option[UserCredentials] = None,
-    infinite:            Boolean                 = true,
-    readBatchSize:       Int                     = settings.readBatchSize
-  ): Publisher[Event] = {
-
-    streamSource(
-      streamId,
-      fromNumberExclusive,
-      resolveLinkTos,
-      credentials,
-      infinite,
-      readBatchSize
-    ).runWith(Sink.asPublisher(fanout = true))
-  }
-
-  /**
    * Creates a [[Source]] you can use to subscribe to a single event stream. Existing events from
    * event number onwards are read from the stream and presented to the user of
    * [[Source]] as if they had been pushed.
@@ -310,44 +267,6 @@ class EsConnection(
       infinite = infinite
     )
   )
-
-  /**
-   * Creates Publisher you can use to subscribes to a all events. Existing events from position
-   * onwards are read from the Event Store and presented to the user of
-   * `Publisher` as if they had been pushed.
-   * <p>
-   * Once the end of the stream is read the subscription is
-   * transparently (to the user) switched to push new events as
-   * they are written.
-   * <p>
-   * If events have already been received and resubscription from the same point
-   * is desired, use the position representing the last event processed which
-   * appeared on the subscription.
-   *
-   * @param resolveLinkTos        Whether to resolve LinkTo events automatically
-   * @param fromPositionExclusive The position from which to start, or `None` to read all events
-   * @param credentials           The optional user credentials to perform operation with
-   * @param infinite              Whether to subscribe to the future events upon reading all current
-   * @param readBatchSize         Number of events to be retrieved by client as single message
-   * @return A [[org.reactivestreams.Publisher]] representing all streams
-   */
-  @deprecated("Use `allStreamsSource(..).runWith(Sink.asPublisher(..))` instead.", since = "5.0.8")
-  def allStreamsPublisher(
-    resolveLinkTos:        Boolean                 = settings.resolveLinkTos,
-    fromPositionExclusive: Option[Position]        = None,
-    credentials:           Option[UserCredentials] = None,
-    infinite:              Boolean                 = true,
-    readBatchSize:         Int                     = settings.readBatchSize
-  ): Publisher[IndexedEvent] = {
-
-    allStreamsSource(
-      resolveLinkTos,
-      fromPositionExclusive,
-      credentials,
-      infinite,
-      readBatchSize
-    ).runWith(Sink.asPublisher(fanout = true))
-  }
 
   /**
    * Creates a [[Source]] you can use to subscribes to all events. Existing events from position
@@ -388,11 +307,7 @@ class EsConnection(
 object EsConnection {
 
   def apply(system: ActorSystem, settings: Settings = Settings.Default): EsConnection = {
-    val props = ConnectionActor props settings
-    new EsConnection(
-      connection = system actorOf props,
-      factory = system,
-      settings = settings
-    )(system)
+    val props = ConnectionActor.props(settings)
+    new EsConnection(system.actorOf(props), system,settings)
   }
 }

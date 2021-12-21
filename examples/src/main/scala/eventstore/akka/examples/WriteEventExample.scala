@@ -6,6 +6,7 @@ import _root_.akka.actor.Status.Failure
 import _root_.akka.actor.{ ActorLogging, Actor, Props, ActorSystem }
 import eventstore.core.util.uuid.randomUuid
 import eventstore.akka.tcp.ConnectionActor
+import _root_.akka.actor.ActorRef
 
 object WriteEventExample extends App {
 
@@ -13,7 +14,7 @@ object WriteEventExample extends App {
   val connection  = system.actorOf(ConnectionActor.props())
   val event       = EventData("my-event", eventId = randomUuid, data = Content("my event data"), metadata = Content("my first event"))
 
-  implicit val writeResult = system.actorOf(Props(WriteResult))
+  implicit val writeResult: ActorRef = system.actorOf(Props(WriteResult))
 
   connection ! WriteEvents(EventStream.Id("my-stream"), List(event))
 

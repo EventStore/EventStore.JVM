@@ -1,16 +1,11 @@
 package eventstore
 package akka
 
-import scala.util.Try
 import scala.concurrent.Future
-import _root_.akka.NotUsed
 import _root_.akka.actor.ActorSystem
-import _root_.akka.http.scaladsl.Http
-import _root_.akka.http.scaladsl._
-import _root_.akka.http.scaladsl.model._
-import _root_.akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials}
-import _root_.akka.http.scaladsl.unmarshalling.Unmarshal
-import _root_.akka.stream.scaladsl.{Flow, Sink, Source}
+import sttp.client3._
+import sttp.client3.circe._
+import sttp.model.{MediaType, StatusCode, Uri}
 import ProjectionsClient.ProjectionCreationResult._
 import ProjectionsClient.ProjectionDeleteResult._
 import ProjectionsClient.ProjectionMode
@@ -21,26 +16,44 @@ import ProjectionsClient.ProjectionMode._
  * See : https://github.com/EventStore/EventStore/blob/release-v3.9.0/src/EventStore.ClientAPI/Projections/ProjectionsClient.cs
  */
 protected[this] trait ProjectionsUrls {
-  protected def createProjectionUrl(name: String, mode: ProjectionMode = Continuous, allowEmit: Boolean = true): String = {
+
+  protected def baseUri: Uri
+
+  protected def createProjectionUrl(
+    name: String,
+    mode: ProjectionMode,
+    allowEmit: Boolean
+  ): Uri = {
     val emit = if (allowEmit) "emit=1&checkpoints=yes" else "emit=0"
+
     val projectionModeStr = mode match {
       case OneTime    => "onetime"
       case Transient  => "transient"
       case Continuous => "continuous"
     }
-    s"/projections/$projectionModeStr?name=$name&type=JS&$emit"
+
+    baseUri.addPath("projections", projectionModeStr).addQuerySegments(
+      Uri.QuerySegment.KeyValue("name", name),
+      Uri.QuerySegment.KeyValue("type", "JS"),
+      Uri.QuerySegment.Value(emit)
+    )
   }
 
-  protected def projectionBaseUrl(name: String): String = s"/projection/$name"
+  protected def projectionBaseUrl(name: String): Uri =
+    baseUri.withWholePath(s"/projection/$name")
 
-  protected def fetchProjectionStateUrl(name: String, partition: Option[String]): String =
-    s"${projectionBaseUrl(name)}/state" + partition.fold("")(partition => s"?partition=$partition")
+  protected def fetchProjectionStateUrl(name: String, partition: Option[String]): Uri =
+    projectionBaseUrl(name).addPath(s"state").addQuerySegments(
+      partition.map(Uri.QuerySegment.KeyValue("partition", _)).toList
+    )
 
-  protected def fetchProjectionResultUrl(name: String, partition: Option[String]): String =
-    s"${projectionBaseUrl(name)}/result" + partition.fold("")(partition => s"?partition=$partition")
+  protected def fetchProjectionResultUrl(name: String, partition: Option[String]): Uri =
+    projectionBaseUrl(name).addPath(s"result").addQuerySegments(
+      partition.map(Uri.QuerySegment.KeyValue("partition", _)).toList
+    )
 
-  protected def projectionCommandUrl(name: String, command: String): String =
-    s"${projectionBaseUrl(name)}/command/$command"
+  protected def projectionCommandUrl(name: String, command: String): Uri =
+    projectionBaseUrl(name).addPath(s"command").addPathSegment(Uri.PathSegment(command))
 }
 
 object ProjectionsClient {
@@ -55,7 +68,7 @@ object ProjectionsClient {
       case "onetime"    => OneTime
       case "transient"  => Transient
       case "continuous" => Continuous
-      case other        => throw new IllegalArgumentException(s"Expected ProjectionMode tp be one of OneTime|Transient|Continuous but was $other")
+      case other        => throw new IllegalArgumentException(s"Expected ProjectionMode to be one of OneTime|Transient|Continuous but was $other")
     }
 
   }
@@ -89,9 +102,9 @@ object ProjectionsClient {
     final case class UnableToDeleteProjection(reason: String) extends ProjectionDeleteResult
   }
 
-@SerialVersionUID(1L)
-final case class ProjectionException(message: String, cause: Option[Throwable]) extends EsException(message, cause)
-object ProjectionException {
+  @SerialVersionUID(1L)
+  final case class ProjectionException(message: String, cause: Option[Throwable]) extends EsException(message, cause)
+  object ProjectionException {
   def apply(msg: String): ProjectionException                = ProjectionException(msg, None)
   def apply(msg: String, th: Throwable): ProjectionException = ProjectionException(msg, Option(th))
 }
@@ -103,31 +116,15 @@ object ProjectionException {
  */
 class ProjectionsClient(settings: Settings = Settings.Default, system: ActorSystem) extends ProjectionsUrls {
 
-  private implicit val as: ActorSystem = system
-
-  import system.dispatcher
   import ProjectionsClient._
+  import system.dispatcher
 
-  private val connection: Flow[HttpRequest, Try[HttpResponse], NotUsed] = {
-    val httpExt = Http(system)
-    val uri = settings.http.uri
+  private val hs = settings.http
 
-    val connectionPool = if (uri.scheme == "http") {
-      httpExt.cachedHostConnectionPool[Unit](uri.authority.host.address(), uri.authority.port)
-    } else {
-      val ctx = ConnectionContext.httpsClient(Tls.createSSLContext(system))
-      httpExt.cachedHostConnectionPoolHttps[Unit](uri.authority.host.address(), uri.authority.port, ctx)
-    }
+  val baseUri: Uri = uri"${hs.protocol}://${hs.host}:${hs.port}${hs.prefix}"
 
-    Flow[HttpRequest]
-      .map(req => (req, ()))
-      .via(connectionPool)
-      .map { case (resp, _) => resp }
-  }
-
-  private val authorization: Option[Authorization] = settings.defaultCredentials.map(credentials => Authorization(BasicHttpCredentials(credentials.login, credentials.password)))
-
-  private val defaultHeaders = authorization.toList
+  private val sttp = Http.mkSttpFutureBackend(hs.useTls, system)
+  private val br = settings.defaultCredentials.fold(basicRequest)(c => basicRequest.auth.basic(c.login, c.password))
 
   /**
    * Create the projection with the specified name and code
@@ -137,25 +134,21 @@ class ProjectionsClient(settings: Settings = Settings.Default, system: ActorSyst
    * @param allowEmit indicates if the projection is allowed to emit new events.
    * @return
    */
-  def createProjection(name: String, javascript: String, mode: ProjectionMode = Continuous, allowEmit: Boolean = true): Future[ProjectionCreationResult] = {
-    val request = HttpRequest(
-      method = HttpMethods.POST,
-      uri = Uri(createProjectionUrl(name, mode, allowEmit)),
-      headers = defaultHeaders,
-      entity = HttpEntity(ContentTypes.`application/json`, javascript)
-    )
+  def createProjection(
+    name: String,
+    javascript: String,
+    mode: ProjectionMode = Continuous,
+    allowEmit: Boolean = true
+  ): Future[ProjectionCreationResult] = {
 
-    singleRequestWithErrorHandling(request)
-      .map { response =>
-        response.entity.discardBytes()
-        response.status
-      }
-      .map {
-        case StatusCodes.Created  => ProjectionCreated
-        case StatusCodes.Conflict => ProjectionAlreadyExist
-        case status               => throw ProjectionException(s"Received unexpected response status $status")
-      }
-      .runWith(Sink.head)
+    val uri = createProjectionUrl(name, mode, allowEmit)
+    val res = withErrorHandling(br.post(uri).body(javascript).contentType(MediaType.ApplicationJson).send(sttp), uri)
+
+    res.map(_.code).flatMap {
+      case StatusCode.Created => Future.successful(ProjectionCreated)
+      case StatusCode.Conflict => Future.successful(ProjectionAlreadyExist)
+      case status => Future.failed(ProjectionException(s"Received unexpected response status $status on $uri"))
+    }
   }
 
   /**
@@ -164,38 +157,25 @@ class ProjectionsClient(settings: Settings = Settings.Default, system: ActorSyst
    * @return the Projection details if it exist. None otherwise
    */
   def fetchProjectionDetails(name: String): Future[Option[ProjectionDetails]] = {
-    import _root_.akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 
-    val request = HttpRequest(
-      method = HttpMethods.GET,
-      uri = Uri(projectionBaseUrl(name)),
-      headers = defaultHeaders
-    )
+    val uri = projectionBaseUrl(name)
+    val res = withErrorHandling(br.get(uri).response(asJson[ProjectionDetails]).send(sttp), uri)
 
-    singleRequestWithErrorHandling(request)
-      .mapAsync(1) {
-        case response if response.status == StatusCodes.NotFound =>
-          response.entity.discardBytes()
-          Future.successful(None)
-        case response =>
-          Unmarshal(response)
-            .to[ProjectionDetails]
-            .map(Some.apply)
+    res.flatMap { r =>
+      r.body match {
+       case Left(_) if r.code == StatusCode.NotFound => Future.successful(None)
+       case Left(v) => Future.failed(v)
+       case Right(v) => Future.successful(Some(v))
       }
-      .runWith(Sink.head)
+    }
+
   }
 
-  private[this] def fetchProjectionData(request: HttpRequest): Future[Option[String]] = {
-    singleRequestWithErrorHandling(request)
-      .mapAsync(1) {
-        case response if response.status == StatusCodes.NotFound =>
-          response.entity.discardBytes()
-          Future.successful(None)
-        case response =>
-          Unmarshal(response).to[String].map(Some(_))
-      }
-      .runWith(Sink.head)
-  }
+  private[this] def fetchProjectionData(uri: Uri): Future[Option[String]] =
+    withErrorHandling(br.get(uri).response(asStringAlways).send(sttp), uri).flatMap { r =>
+      if(r.code == StatusCode.NotFound) Future.successful(None) else Future.successful(Some(r.body))
+    }
+
 
   /**
    * Fetch the projection's state
@@ -203,15 +183,8 @@ class ProjectionsClient(settings: Settings = Settings.Default, system: ActorSyst
    * @param partition the name of the partition
    * @return a String that should be either empty or a valid json object with the current state.
    */
-  def fetchProjectionState(name: String, partition: Option[String] = None): Future[Option[String]] = {
-    val request = HttpRequest(
-      method = HttpMethods.GET,
-      uri = Uri(fetchProjectionStateUrl(name, partition)),
-      headers = defaultHeaders
-    )
-
-    fetchProjectionData(request)
-  }
+  def fetchProjectionState(name: String, partition: Option[String] = None): Future[Option[String]] =
+    fetchProjectionData(fetchProjectionStateUrl(name, partition))
 
   /**
    * Fetch the projection's result.
@@ -220,35 +193,18 @@ class ProjectionsClient(settings: Settings = Settings.Default, system: ActorSyst
    * @param partition the name of the partition
    * @return a String that should be either empty or a valid json object with the projection's result.
    */
-  def fetchProjectionResult(name: String, partition: Option[String] = None): Future[Option[String]] = {
-    val request = HttpRequest(
-      method = HttpMethods.GET,
-      uri = Uri(fetchProjectionResultUrl(name, partition)),
-      headers = defaultHeaders
-    )
-
-    fetchProjectionData(request)
-  }
+  def fetchProjectionResult(name: String, partition: Option[String] = None): Future[Option[String]] =
+    fetchProjectionData(fetchProjectionResultUrl(name, partition))
 
   private[this] def executeCommand(name: String, command: String): Future[Unit] = {
-    val request = HttpRequest(
-      method = HttpMethods.POST,
-      uri = Uri(projectionCommandUrl(name, command)),
-      headers = defaultHeaders,
-      entity = HttpEntity(ContentTypes.`application/json`, "{}")
-    )
 
-    singleRequestWithErrorHandling(request)
-      .map { response =>
-        response.entity.discardBytes()
-        response.status
-      }
-      .map {
-        case StatusCodes.NotFound => ()
-        case StatusCodes.OK       => ()
-        case status               => throw ProjectionException(s"Received unexpected reponse status : $status")
-      }
-      .runWith(Sink.head)
+    val uri = projectionCommandUrl(name, command)
+    val res = withErrorHandling(br.post(uri).body("{}").contentType(MediaType.ApplicationJson).send(sttp), uri)
+
+    res.map(_.code).flatMap {
+      case StatusCode.NotFound | StatusCode.Ok => Future.successful(())
+      case status => Future.failed(ProjectionException(s"Received unexpected reponse status : $status"))
+    }
   }
 
   /**
@@ -278,41 +234,27 @@ class ProjectionsClient(settings: Settings = Settings.Default, system: ActorSyst
    * @return a future telling whether the action was done (@ProjectionDeleted) or if it was not able to do so (@UnableToDeleteProjection)
    */
   def deleteProjection(name: String): Future[ProjectionDeleteResult] = {
-    val request = HttpRequest(
-      method = HttpMethods.DELETE,
-      uri = Uri(projectionBaseUrl(name)),
-      headers = defaultHeaders
-    )
 
-    singleRequestWithErrorHandling(request)
-      .mapAsync(1) {
-        case response if response.status == StatusCodes.InternalServerError =>
-          response.entity.discardBytes()
-          Unmarshal(response.entity).to[String].map(UnableToDeleteProjection)
-        case response if response.status == StatusCodes.OK =>
-          response.entity.discardBytes()
-          Future.successful(ProjectionDeleted)
-        case response =>
-          response.entity.discardBytes()
-          Future.failed(ProjectionException(s"Received unexpected reponse $response"))
-      }
-      .runWith(Sink.head)
+    val uri = projectionBaseUrl(name)
+    val res = withErrorHandling(br.delete(uri).response(asStringAlways).send(sttp), uri)
+
+    res.flatMap {
+      case response if response.code == StatusCode.InternalServerError =>
+        Future.successful(UnableToDeleteProjection(response.body))
+      case response if response.code == StatusCode.Ok =>
+        Future.successful(ProjectionDeleted)
+      case response =>
+        Future.failed(ProjectionException(s"Received unexpected reponse $response"))
+    }
+
   }
 
-  private[this] def singleRequestWithErrorHandling(request: HttpRequest): Source[HttpResponse, NotUsed] = {
-    Source
-      .single(request)
-      .via(connection)
-      .map { responseTry =>
-        val response = responseTry.recover {
-          case ex => throw ProjectionException(s"Failed to query eventstore on ${request.uri}", ex)
-        }.get
-        if (response.status == StatusCodes.Unauthorized) {
-          response.entity.discardBytes()
-          throw new AccessDeniedException("Invalid credentials ")
-        } else {
-          response
-        }
-      }
+  def withErrorHandling[T](response: Future[Response[T]], uri:Uri): Future[Response[T]] = {
+    response.flatMap(r =>
+      if(r.code == StatusCode.Unauthorized) Future.failed(AccessDeniedException("Invalid credentials "))
+      else Future.successful(r)
+    ).recoverWith {
+      case ex => Future.failed(ProjectionException(s"Failed to query eventstore on $uri", ex))
+    }
   }
 }

@@ -16,7 +16,7 @@ object ReadEventExample extends App {
   )
 
   val connection = system.actorOf(ConnectionActor.props(settings))
-  implicit val readResult = system.actorOf(Props[ReadResult]())
+  implicit val readResult: ActorRef = system.actorOf(Props[ReadResult]())
 
   connection ! ReadEvent(EventStream.Id("my-stream"), EventNumber.First)
 
