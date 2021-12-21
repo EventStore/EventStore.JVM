@@ -96,7 +96,8 @@ lazy val client = project
   .settings(
     libraryDependencies ++= Seq(
       `ts-config`,`spray-json`, `scodec-bits`,
-      Reactive.streams, Akka.actor, Akka.stream, AkkaHttp.http, AkkaHttp.`http-spray-json`
+      Reactive.streams, Akka.actor, Akka.stream, AkkaHttp.http, AkkaHttp.`http-spray-json`,
+      Sttp.sttpCore, Sttp.sttpOkHttp, Sttp.sttpCirce
     ) ++ testDeps(
       specs2, Reactive.`streams-tck`, Akka.testkit, Akka.`stream-testkit`
     )
