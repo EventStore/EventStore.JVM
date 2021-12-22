@@ -74,13 +74,13 @@ object TestData {
     requireMaster:  Boolean       = requireMaster
   ): ReadStreamEvents = ReadStreamEvents(streamId, fromNumber, maxCount, direction, resolveLinkTos, requireMaster)
 
- def readAllEvents(
+  def readAllEvents(
     fromPosition: Position   = Position.First,
     maxCount: Int            = readBatchSize,
     direction: ReadDirection = ReadDirection.Forward,
     resolveLinkTos: Boolean  = resolveLinkTos,
     requireMaster:  Boolean  = requireMaster
- ): ReadAllEvents = ReadAllEvents(fromPosition, maxCount, direction, resolveLinkTos, requireMaster)
+  ): ReadAllEvents = ReadAllEvents(fromPosition, maxCount, direction, resolveLinkTos, requireMaster)
 
 
 }
