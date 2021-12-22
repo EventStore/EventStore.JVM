@@ -16,6 +16,7 @@ object EventStoreProtoFormats extends EventStoreProtoFormats
 
 trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
 
+  // TODO: Fix this such it works across scala versions
   import scala.reflect.Selectable._
 
   type OperationMessage = Message {
@@ -61,7 +62,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
   }
 
   trait ProtoOperationReader[T, P <: OperationMessage] extends ProtoTryReader[T, P] {
-    
+
     def fromProto(x: P): Try[T] = {
       import j.OperationResult._
       import eventstore.core.{ OperationError => E }
