@@ -3,6 +3,7 @@ package akka
 
 import _root_.akka.testkit.{TestActorRef, TestProbe}
 import ReadDirection.Forward
+import eventstore.core.EventStream.Id
 
 class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
 
@@ -432,7 +433,7 @@ class StreamSubscriptionActorSpec extends AbstractSubscriptionActorSpec {
   }
 
   trait SubscriptionScope extends AbstractScope {
-    lazy val streamId = EventStream.Id(StreamSubscriptionActorSpec.this.getClass.getSimpleName + "-" + randomUuid.toString)
+    lazy val streamId: Id = EventStream.Id(StreamSubscriptionActorSpec.this.getClass.getSimpleName + "-" + randomUuid.toString)
 
     def eventNumber: Option[EventNumber] = None
 

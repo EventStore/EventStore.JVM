@@ -1,13 +1,12 @@
 package eventstore
 package akka
 
-import scala.jdk.CollectionConverters._
+import scala.concurrent.Future
 import _root_.akka.actor.ActorSystem
 import okhttp3.{ConnectionSpec, OkHttpClient}
 import sttp.client3.SttpBackend
 import sttp.client3.okhttp.OkHttpFutureBackend
-
-import scala.concurrent.Future
+import core.ScalaCompat.JavaConverters._
 
 private[eventstore] object Http {
 

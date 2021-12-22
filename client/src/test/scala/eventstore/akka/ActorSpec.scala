@@ -10,7 +10,7 @@ import org.specs2.mutable.Specification
 import org.specs2.specification.{AfterAll, Scope}
 
 abstract class ActorSpec extends Specification with AfterAll {
-  implicit lazy val system = ActorSystem("test", config)
+  implicit lazy val system: ActorSystem = ActorSystem("test", config)
   implicit def ex: ExecutionContext = system.dispatcher
 
   def config: Config = ConfigFactory.load

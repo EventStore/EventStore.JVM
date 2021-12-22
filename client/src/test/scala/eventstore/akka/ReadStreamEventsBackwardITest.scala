@@ -4,7 +4,7 @@ package akka
 import core.constants.MaxBatchSize
 
 class ReadStreamEventsBackwardITest extends TestConnection {
-  implicit val direction = ReadDirection.Backward
+  implicit val direction: ReadDirection = ReadDirection.Backward
 
   "read stream events forward" should {
     "fail if count <= 0" in new TestConnectionScope {

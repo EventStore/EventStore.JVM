@@ -430,7 +430,7 @@ class ClusterDiscovererActorSpec extends ActorSpec {
   }
 
   trait TestScope extends ActorScope {
-    implicit val timeout = Timeout(2.seconds)
+    implicit val timeout: Timeout = Timeout(2.seconds)
     val address = "127.0.0.1" :: 1
     val address2 = "127.0.0.1" :: 2
     val address3 = "127.0.0.1" :: 3

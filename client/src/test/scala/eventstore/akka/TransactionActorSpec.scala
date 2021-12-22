@@ -198,10 +198,10 @@ class TransactionActorSpec extends ActorSpec {
   }
 
   trait StartTransactionScope extends TestScope {
-    def kickOff = Start(TransactionStart(EventStream.Id("stream")))
+    def kickOff: Start = Start(TransactionStart(EventStream.Id("stream")))
   }
 
   trait ContinueTransactionScope extends TestScope {
-    def kickOff = Continue(transactionId)
+    def kickOff: Kickoff = Continue(transactionId)
   }
 }

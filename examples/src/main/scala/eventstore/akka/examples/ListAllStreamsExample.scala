@@ -5,7 +5,7 @@ package examples
 import _root_.akka.actor.ActorSystem
 
 object ListAllStreamsExample extends App {
-  implicit val system = ActorSystem()
+  implicit val system: ActorSystem = ActorSystem()
   import system.dispatcher
 
   val connection = EventStoreExtension(system).connection

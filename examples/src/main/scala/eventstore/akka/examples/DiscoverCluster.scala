@@ -11,7 +11,7 @@ import eventstore.akka.cluster.ClusterDiscovererActor
 import eventstore.akka.cluster.ClusterInfoOf
 
 object DiscoverCluster extends App {
-  implicit val system = ActorSystem()
+  implicit val system: ActorSystem = ActorSystem()
   val settings = ClusterSettings(GossipSeeds(
     new InetSocketAddress("127.0.0.1", 1113),
     new InetSocketAddress("127.0.0.1", 2113),

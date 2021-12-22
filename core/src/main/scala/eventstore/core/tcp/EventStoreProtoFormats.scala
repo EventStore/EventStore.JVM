@@ -16,44 +16,8 @@ object EventStoreProtoFormats extends EventStoreProtoFormats
 
 trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
 
-  // TODO: Fix this such it works across scala versions
-  import scala.reflect.Selectable._
-
-  type OperationMessage = Message {
-    def getResult(): j.OperationResult
-    def hasMessage(): Boolean
-    def getMessage(): String
-  }
-
-  type HasRange = {
-    def getFirstEventNumber(): Long
-    def getLastEventNumber(): Long
-  }
-
-  private def range(x: HasRange): Option[EventNumber.Range] =
-    EventNumber.Range.opt(x.getFirstEventNumber(), x.getLastEventNumber())
-
-  type HasPosition = {
-    def getCommitPosition(): Long
-    def getPreparePosition(): Long
-  }
-
-  private def position(x: HasPosition): Position.Exact = {
-    Position.Exact(commitPosition = x.getCommitPosition(), preparePosition = x.getPreparePosition())
-  }
-
-  type HasPositionOpt = HasPosition {
-    def hasCommitPosition(): Boolean
-    def hasPreparePosition(): Boolean
-  }
-
-  private def positionOpt(x: HasPositionOpt): Option[Position.Exact] = {
-    if (x.hasCommitPosition() &&
-      x.hasPreparePosition() &&
-      x.getCommitPosition() >= 0 &&
-      x.getPreparePosition() >= 0) Some(position(x))
-    else None
-  }
+  private def positionOpt(commit: Long, prepare: Long): Option[Position.Exact] = 
+    Try(Position.Exact(commit, prepare)).toOption
 
   trait ProtoTryReader[T, P <: Message] extends ProtoReader[Try[T], P] {
     import scala.util.Failure
@@ -61,13 +25,15 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
     def failure(e: Throwable): Failure[T] = Failure(e)
   }
 
-  trait ProtoOperationReader[T, P <: OperationMessage] extends ProtoTryReader[T, P] {
+  trait ProtoOperationReader[T, P <: Message] extends ProtoTryReader[T, P] {
+
+    protected def getResult(x: P): j.OperationResult
 
     def fromProto(x: P): Try[T] = {
       import j.OperationResult._
       import eventstore.core.{ OperationError => E }
 
-      x.getResult() match {
+      getResult(x) match {
         case Success              => Try(success(x))
         case PrepareTimeout       => failure(E.PrepareTimeout)
         case CommitTimeout        => failure(E.CommitTimeout)
@@ -133,31 +99,28 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
     def parse: Array[Byte] => j.ResolvedEvent = j.ResolvedEvent.parseFrom
 
     def fromProto(x: j.ResolvedEvent): IndexedEvent = IndexedEvent(
-      event = EventReader.event(x),
-      position = position(x)
+      event = EventReader.event(
+        EventRecordReader.fromProto(x.getEvent()),
+        option(x.hasLink(), EventRecordReader.fromProto(x.getLink()))
+      ),
+      position = Position.Exact(x.getCommitPosition, x.getPreparePosition)
     )
   }
 
   implicit object EventReader extends ProtoReader[Event, j.ResolvedIndexedEvent] {
-    type JEvent = {
-      def getEvent(): j.EventRecord
-      def hasLink(): Boolean
-      def getLink(): j.EventRecord
-    }
 
     def parse: Array[Byte] => j.ResolvedIndexedEvent = j.ResolvedIndexedEvent.parseFrom
 
-    def fromProto(x: j.ResolvedIndexedEvent): Event = event(x)
-
+    def fromProto(x: j.ResolvedIndexedEvent): Event = event(
+      EventRecordReader.fromProto(x.getEvent()),
+      option(x.hasLink(), EventRecordReader.fromProto(x.getLink()))
+    )
+    
     def event(event: EventRecord, linkEvent: Option[EventRecord]): Event = linkEvent match {
       case Some(x) => ResolvedEvent(linkedEvent = event, linkEvent = x)
       case None    => event
     }
 
-    def event(x: JEvent): Event = event(
-      EventRecordReader.fromProto(x.getEvent()),
-      option(x.hasLink(), EventRecordReader.fromProto(x.getLink()))
-    )
   }
 
   implicit object WriteEventsWriter extends ProtoWriter[WriteEvents] {
@@ -172,9 +135,22 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
   }
 
   implicit object WriteEventsCompletedReader extends ProtoOperationReader[WriteEventsCompleted, j.WriteEventsCompleted] {
+
+    protected def getResult(x: j.WriteEventsCompleted): j.OperationResult = x.getResult
+
     def parse: Array[Byte] => j.WriteEventsCompleted = j.WriteEventsCompleted.parseFrom
-    def success(x: j.WriteEventsCompleted) =
-      WriteEventsCompleted(EventNumber.Range.opt(x.getFirstEventNumber, x.getLastEventNumber), positionOpt(x))
+    
+    def success(x: j.WriteEventsCompleted): WriteEventsCompleted = {
+      
+      val numbersRange = 
+        EventNumber.Range.opt(x.getFirstEventNumber, x.getLastEventNumber)
+      
+      val position = if(x.hasCommitPosition && x.hasPreparePosition) { 
+        positionOpt(x.getCommitPosition, x.getPreparePosition) 
+      } else None
+      
+      WriteEventsCompleted(numbersRange, position)
+    }
   }
 
   implicit object DeleteStreamWriter extends ProtoWriter[DeleteStream] {
@@ -190,8 +166,16 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
 
   implicit object DeleteStreamCompletedReader
       extends ProtoOperationReader[DeleteStreamCompleted, j.DeleteStreamCompleted] {
+    protected def getResult(x: j.DeleteStreamCompleted): j.OperationResult = x.getResult
     def parse: Array[Byte] => j.DeleteStreamCompleted = j.DeleteStreamCompleted.parseFrom
-    def success(x: j.DeleteStreamCompleted): DeleteStreamCompleted = DeleteStreamCompleted(positionOpt(x))
+    def success(x: j.DeleteStreamCompleted): DeleteStreamCompleted = {
+      
+      val position = if(x.hasCommitPosition && x.hasPreparePosition) { 
+        positionOpt(x.getCommitPosition, x.getPreparePosition) 
+      } else None
+
+      DeleteStreamCompleted(position) 
+    }
   }
 
   implicit object TransactionStartWriter extends ProtoWriter[TransactionStart] {
@@ -206,6 +190,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
 
   implicit object TransactionStartCompletedReader
       extends ProtoOperationReader[TransactionStartCompleted, j.TransactionStartCompleted] {
+    protected def getResult(x: j.TransactionStartCompleted): j.OperationResult = x.getResult
     def parse: Array[Byte] => j.TransactionStartCompleted = j.TransactionStartCompleted.parseFrom
     def success(x: j.TransactionStartCompleted): TransactionStartCompleted = TransactionStartCompleted(x.getTransactionId)
   }
@@ -222,6 +207,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
 
   implicit object TransactionWriteCompletedReader
       extends ProtoOperationReader[TransactionWriteCompleted, j.TransactionWriteCompleted] {
+    protected def getResult(x: j.TransactionWriteCompleted): j.OperationResult = x.getResult
     def parse: Array[Byte] => j.TransactionWriteCompleted = j.TransactionWriteCompleted.parseFrom
     def success(x: j.TransactionWriteCompleted): TransactionWriteCompleted = TransactionWriteCompleted(x.getTransactionId)
   }
@@ -237,13 +223,18 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
 
   implicit object TransactionCommitCompletedReader
       extends ProtoOperationReader[TransactionCommitCompleted, j.TransactionCommitCompleted] {
+    protected def getResult(x: j.TransactionCommitCompleted): j.OperationResult = x.getResult
     def parse = j.TransactionCommitCompleted.parseFrom
     def success(x: j.TransactionCommitCompleted) = {
-      TransactionCommitCompleted(
-        transactionId = x.getTransactionId,
-        numbersRange = range(x),
-        position = positionOpt(x)
-      )
+
+      val numbersRange = 
+        EventNumber.Range.opt(x.getFirstEventNumber ,x.getLastEventNumber)
+
+      val position = if(x.hasCommitPosition && x.hasPreparePosition) { 
+        positionOpt(x.getCommitPosition, x.getPreparePosition) 
+      } else None
+
+      TransactionCommitCompleted(x.getTransactionId, numbersRange, position)
     }
   }
 
@@ -351,7 +342,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
       def failure(x: ReadAllEventsError) = this.failure(x)
 
       def readAllEventsCompleted = ReadAllEventsCompleted(
-        position = position(x),
+        position = Position.Exact(x.getCommitPosition, x.getPreparePosition),
         events = x.getEventsList.asScala.map(IndexedEventReader.fromProto).toList,
         nextPosition = Position.Exact(commitPosition = x.getNextCommitPosition, preparePosition = x.getNextPreparePosition),
         direction = direction

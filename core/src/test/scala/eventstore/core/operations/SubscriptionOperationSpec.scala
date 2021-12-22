@@ -9,10 +9,11 @@ import operations.{SubscriptionOperation => SO}
 import NotHandled.{NotReady, TooBusy}
 import OnIncoming._
 import TestData.{readEvent, readStreamEvents, readAllEvents, subscribeTo}
+import eventstore.core.EventStream.Id
 
 class SubscriptionOperationSpec extends OperationSpec {
-  val streamId = EventStream.Id("streamId")
-  val streams = Seq(EventStream.All, streamId)
+  val defaultStreamId: Id              = EventStream.Id("streamId")
+  val streams: Seq[EventStream] = Seq(EventStream.All, defaultStreamId)
 
   "SubscriptionOperation when subscribing" should {
 
@@ -127,9 +128,9 @@ class SubscriptionOperationSpec extends OperationSpec {
       }
     }
 
-    "stop on unexpected" in foreach(streams) { implicit stream =>
+    "stop on unexpected" in foreach(streams) { implicit s =>
       new SubscribingScope {
-        val unexpected = stream match {
+        val unexpected = s match {
           case _: EventStream.Id => SubscribeToAllCompleted(0)
           case _                 => SubscribeToStreamCompleted(0)
         }
@@ -170,7 +171,7 @@ class SubscriptionOperationSpec extends OperationSpec {
     "become subscribing on disconnected" in foreach(streams) { implicit stream =>
       new SubscribedScope {
         operation.disconnected must beLike {
-          case OnDisconnected.Continue(x: SubscriptionOperation.Subscribing[Client]) if x.version == 1 => ok
+          case OnDisconnected.Continue(x: SubscriptionOperation.Subscribing[_]) if x.version == 1 => ok
         }
       }
     }
@@ -178,7 +179,7 @@ class SubscriptionOperationSpec extends OperationSpec {
     "become subscribing on connected and retry" in foreach(streams) { implicit stream =>
       new SubscribedScope {
         operation.connected must beLike {
-          case OnConnected.Retry(x: SubscriptionOperation.Subscribing[Client], `pack`) if x.version == 1 => ok
+          case OnConnected.Retry(x: SubscriptionOperation.Subscribing[_], `pack`) if x.version == 1 => ok
         }
       }
     }
@@ -380,9 +381,9 @@ class SubscriptionOperationSpec extends OperationSpec {
       }
     }
 
-    "stop on unexpected" in foreach(streams) { implicit stream =>
+    "stop on unexpected" in foreach(streams) { implicit s =>
       new UnsubscribingScope {
-        val unexpected = stream match {
+        val unexpected = s match {
           case _: EventStream.Id => SubscribeToStreamCompleted(0)
           case _                 => SubscribeToAllCompleted(0)
         }
@@ -432,9 +433,9 @@ class SubscriptionOperationSpec extends OperationSpec {
 
     def stream: EventStream
 
-    lazy val streamId = stream match {
+    lazy val streamId: EventStream.Id = stream match {
       case x: EventStream.Id => x
-      case _                 => SubscriptionOperationSpec.this.streamId
+      case _                 => SubscriptionOperationSpec.this.defaultStreamId
     }
   }
 
