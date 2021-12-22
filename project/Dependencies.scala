@@ -5,16 +5,16 @@ object Dependencies {
   val protobufVersion = "3.7.1"
   
   val `ts-config`   = "com.typesafe" %  "config"      % "1.4.1"
-  val `scodec-bits` = "org.scodec"   %% "scodec-bits" % "1.1.29"
+  val `scodec-bits` = "org.scodec"   %% "scodec-bits" % "1.1.30"
+  val circe         = "io.circe" %% "circe-core"   % "0.14.1"
 
-
-  val `spray-json`  = "io.spray"     %% "spray-json"  % "1.3.6"
-  val specs2        = "org.specs2"   %% "specs2-core" % "4.13.0"
+  val circeParser   = "io.circe" %% "circe-parser" % "0.14.1"
+  val specs2        = "org.specs2"   %% "specs2-core" % "4.13.1"
 
   ///
 
   object Akka {
-    private val version = "2.6.17"
+    private val version = "2.6.18"
     val actor            = "com.typesafe.akka" %% "akka-actor"          % version
     val stream           = "com.typesafe.akka" %% "akka-stream"         % version
     val testkit          = "com.typesafe.akka" %% "akka-testkit"        % version
@@ -25,13 +25,7 @@ object Dependencies {
     private val version = "3.3.18"
     val sttpCore      = "com.softwaremill.sttp.client3" %% "core"           % version
     val sttpOkHttp    = "com.softwaremill.sttp.client3" %% "okhttp-backend" % version
-    val sttpCirce     = "com.softwaremill.sttp.client3" %% "spray-json"     % version
-  }
-
-  object AkkaHttp {
-    private val version = "10.2.7"
-    val http              = "com.typesafe.akka" %% "akka-http"            % version
-    val `http-spray-json` = "com.typesafe.akka" %% "akka-http-spray-json" % version
+    val sttpCirce     = "com.softwaremill.sttp.client3" %% "circe"          % version
   }
 
   object Reactive {

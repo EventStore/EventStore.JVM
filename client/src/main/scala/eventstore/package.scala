@@ -47,10 +47,6 @@ package object eventstore {
   type Settings              = a.Settings
   val Settings               = a.Settings
 
-  @deprecated(akkaMsg, "7.0.0")
-  type HttpSettings          = a.HttpSettings
-  val HttpSettings           = a.HttpSettings
-
   /// ************************************** Core ************************************** ///
 
   type Uuid            = c.Uuid

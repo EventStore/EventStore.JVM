@@ -20,24 +20,24 @@ object EventNumber {
       case _    => 1
     }
 
-    override def toString = "EventNumber.Last"
+    override def toString: String = "EventNumber.Last"
   }
 
   @SerialVersionUID(1L) final case class Exact(value: Long) extends EventNumber {
     require(value >= 0, s"event number must be >= 0, but is $value")
 
-    def compare(that: EventNumber) = that match {
+    def compare(that: EventNumber): Int = that match {
       case Last        => -1
       case that: Exact => this.value compare that.value
     }
 
-    override def toString = s"EventNumber($value)"
+    override def toString: String = s"EventNumber($value)"
 
     def to(last: EventNumber.Exact): Range = Range(this, last)
   }
 
   object Exact {
-    implicit val ordering = Ordering.by[Exact, EventNumber](identity)
+    implicit val ordering: Ordering[Exact] = Ordering.by[Exact, EventNumber](identity)
 
     def apply(expectedVersion: ExpectedVersion.Exact): Exact = Exact(expectedVersion.value)
 
@@ -47,7 +47,7 @@ object EventNumber {
   @SerialVersionUID(1L) final case class Range(start: Exact, end: Exact) {
     require(start <= end, s"start must be <= end, but $start > $end")
 
-    override def toString = s"EventNumber.Range(${start.value} to ${end.value})"
+    override def toString: String = s"EventNumber.Range(${start.value} to ${end.value})"
   }
 
   object Range {

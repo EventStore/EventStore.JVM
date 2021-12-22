@@ -86,10 +86,11 @@ private[eventstore] object PersistentSubscriptionOperation {
     }
 
     object Completed {
-      def unapply(x: PersistentSubscription.Connected): Boolean = (stream, x) match {
-        case (_, _: PersistentSubscription.Connected) => true
-        case _                                        => false
-      }
+      def unapply(x: PersistentSubscription.Connected): Boolean = true
+//      (stream, x) match {
+//        case (_, _: PersistentSubscription.Connected) => true
+//        case _                                        => false
+//      }
     }
   }
 

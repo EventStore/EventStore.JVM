@@ -4,7 +4,6 @@ package tcp
 
 import java.time.{Instant, ZoneId, ZonedDateTime}
 import ScalaCompat.JavaConverters._
-import scala.language.reflectiveCalls
 import scala.util.Try
 import eventstore.core.syntax._
 import eventstore.core.util.DefaultFormats
@@ -16,6 +15,8 @@ import ReadDirection.{Backward, Forward}
 object EventStoreProtoFormats extends EventStoreProtoFormats
 
 trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
+
+  import scala.reflect.Selectable._
 
   type OperationMessage = Message {
     def getResult(): j.OperationResult
@@ -60,6 +61,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
   }
 
   trait ProtoOperationReader[T, P <: OperationMessage] extends ProtoTryReader[T, P] {
+    
     def fromProto(x: P): Try[T] = {
       import j.OperationResult._
       import eventstore.core.{ OperationError => E }
@@ -80,7 +82,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
   }
 
   implicit object IdentifyClientWriter extends ProtoWriter[IdentifyClient] {
-    def toProto(x: IdentifyClient) = {
+    def toProto(x: IdentifyClient): j.IdentifyClient.Builder = {
       val builder = j.IdentifyClient.newBuilder()
       builder.setVersion(x.version)
       x.connectionName.foreach(builder.setConnectionName)
@@ -89,7 +91,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
   }
 
   implicit object EventDataWriter extends ProtoWriter[EventData] {
-    def toProto(x: EventData) = {
+    def toProto(x: EventData): j.NewEvent.Builder = {
       val builder = j.NewEvent.newBuilder()
       builder.setEventId(protoByteString(x.eventId))
       builder.setEventType(x.eventType)
@@ -103,9 +105,9 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
 
   implicit object EventRecordReader extends ProtoReader[EventRecord, j.EventRecord] {
 
-    def parse = j.EventRecord.parseFrom
+    def parse: Array[Byte] => j.EventRecord = j.EventRecord.parseFrom
 
-    def fromProto(x: j.EventRecord) = {
+    def fromProto(x: j.EventRecord): EventRecord = {
       val streamId = x.getEventStreamId
 
       if (streamId == "") EventRecord.Deleted
@@ -127,9 +129,9 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
 
   implicit object IndexedEventReader extends ProtoReader[IndexedEvent, j.ResolvedEvent] {
 
-    def parse = j.ResolvedEvent.parseFrom
+    def parse: Array[Byte] => j.ResolvedEvent = j.ResolvedEvent.parseFrom
 
-    def fromProto(x: j.ResolvedEvent) = IndexedEvent(
+    def fromProto(x: j.ResolvedEvent): IndexedEvent = IndexedEvent(
       event = EventReader.event(x),
       position = position(x)
     )
@@ -142,9 +144,9 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
       def getLink(): j.EventRecord
     }
 
-    def parse = j.ResolvedIndexedEvent.parseFrom
+    def parse: Array[Byte] => j.ResolvedIndexedEvent = j.ResolvedIndexedEvent.parseFrom
 
-    def fromProto(x: j.ResolvedIndexedEvent) = event(x)
+    def fromProto(x: j.ResolvedIndexedEvent): Event = event(x)
 
     def event(event: EventRecord, linkEvent: Option[EventRecord]): Event = linkEvent match {
       case Some(x) => ResolvedEvent(linkedEvent = event, linkEvent = x)
@@ -158,7 +160,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
   }
 
   implicit object WriteEventsWriter extends ProtoWriter[WriteEvents] {
-    def toProto(x: WriteEvents) = {
+    def toProto(x: WriteEvents): j.WriteEvents.Builder = {
       val builder = j.WriteEvents.newBuilder()
       builder.setEventStreamId(x.streamId.streamId)
       builder.setExpectedVersion(expectedVersion(x.expectedVersion))
@@ -169,12 +171,13 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
   }
 
   implicit object WriteEventsCompletedReader extends ProtoOperationReader[WriteEventsCompleted, j.WriteEventsCompleted] {
-    def parse = j.WriteEventsCompleted.parseFrom
-    def success(x: j.WriteEventsCompleted) = WriteEventsCompleted(range(x), positionOpt(x))
+    def parse: Array[Byte] => j.WriteEventsCompleted = j.WriteEventsCompleted.parseFrom
+    def success(x: j.WriteEventsCompleted) =
+      WriteEventsCompleted(EventNumber.Range.opt(x.getFirstEventNumber, x.getLastEventNumber), positionOpt(x))
   }
 
   implicit object DeleteStreamWriter extends ProtoWriter[DeleteStream] {
-    def toProto(x: DeleteStream) = {
+    def toProto(x: DeleteStream): j.DeleteStream.Builder = {
       val builder = j.DeleteStream.newBuilder()
       builder.setEventStreamId(x.streamId.streamId)
       builder.setExpectedVersion(expectedVersion(x.expectedVersion))
@@ -186,12 +189,12 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
 
   implicit object DeleteStreamCompletedReader
       extends ProtoOperationReader[DeleteStreamCompleted, j.DeleteStreamCompleted] {
-    def parse = j.DeleteStreamCompleted.parseFrom
-    def success(x: j.DeleteStreamCompleted) = DeleteStreamCompleted(positionOpt(x))
+    def parse: Array[Byte] => j.DeleteStreamCompleted = j.DeleteStreamCompleted.parseFrom
+    def success(x: j.DeleteStreamCompleted): DeleteStreamCompleted = DeleteStreamCompleted(positionOpt(x))
   }
 
   implicit object TransactionStartWriter extends ProtoWriter[TransactionStart] {
-    def toProto(x: TransactionStart) = {
+    def toProto(x: TransactionStart): j.TransactionStart.Builder = {
       val builder = j.TransactionStart.newBuilder()
       builder.setEventStreamId(x.streamId.streamId)
       builder.setExpectedVersion(expectedVersion(x.expectedVersion))
@@ -202,12 +205,12 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
 
   implicit object TransactionStartCompletedReader
       extends ProtoOperationReader[TransactionStartCompleted, j.TransactionStartCompleted] {
-    def parse = j.TransactionStartCompleted.parseFrom
-    def success(x: j.TransactionStartCompleted) = TransactionStartCompleted(x.getTransactionId)
+    def parse: Array[Byte] => j.TransactionStartCompleted = j.TransactionStartCompleted.parseFrom
+    def success(x: j.TransactionStartCompleted): TransactionStartCompleted = TransactionStartCompleted(x.getTransactionId)
   }
 
   implicit object TransactionWriteWriter extends ProtoWriter[TransactionWrite] {
-    def toProto(x: TransactionWrite) = {
+    def toProto(x: TransactionWrite): j.TransactionWrite.Builder = {
       val builder = j.TransactionWrite.newBuilder()
       builder.setTransactionId(x.transactionId)
       builder.addAllEvents(x.events.map(EventDataWriter.toProto(_).build()).asJava)
@@ -218,12 +221,12 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
 
   implicit object TransactionWriteCompletedReader
       extends ProtoOperationReader[TransactionWriteCompleted, j.TransactionWriteCompleted] {
-    def parse = j.TransactionWriteCompleted.parseFrom
-    def success(x: j.TransactionWriteCompleted) = TransactionWriteCompleted(x.getTransactionId)
+    def parse: Array[Byte] => j.TransactionWriteCompleted = j.TransactionWriteCompleted.parseFrom
+    def success(x: j.TransactionWriteCompleted): TransactionWriteCompleted = TransactionWriteCompleted(x.getTransactionId)
   }
 
   implicit object TransactionCommitWriter extends ProtoWriter[TransactionCommit] {
-    def toProto(x: TransactionCommit) = {
+    def toProto(x: TransactionCommit): j.TransactionCommit.Builder = {
       val builder = j.TransactionCommit.newBuilder()
       builder.setTransactionId(x.transactionId)
       builder.setRequireMaster(x.requireMaster)

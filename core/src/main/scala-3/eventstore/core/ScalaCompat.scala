@@ -5,7 +5,6 @@ import scala.{collection => c}
 
 private[eventstore] object ScalaCompat {
 
-  val reflectiveCalls = scala.language.reflectiveCalls
   val JavaConverters = scala.jdk.CollectionConverters
 
   type IterableOnce[T] = c.IterableOnce[T]

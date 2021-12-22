@@ -3,7 +3,6 @@ package akka
 
 import java.net.InetSocketAddress
 import scala.concurrent.duration._
-import _root_.akka.http.scaladsl.model.Uri
 import com.typesafe.config.{Config, ConfigFactory}
 import eventstore.core.syntax._
 import eventstore.core.{settings => cs}
@@ -48,7 +47,7 @@ final case class Settings(
   readBatchSize:            Int                        = 500,
   enableTcpTls:             Boolean                    = false,
   cluster:                  Option[cs.ClusterSettings] = None,
-  http:                     HttpSettings               = HttpSettings(),
+  http:                     cs.HttpSettings            = cs.HttpSettings.Default,
   serializationParallelism: Int                        = 8,
   serializationOrdered:     Boolean                    = true,
   connectionName:           Option[String]             = Some("jvm-client"),
@@ -63,12 +62,11 @@ final case class Settings(
 
 object Settings {
 
-  lazy val Default = Settings(ConfigFactory.load())
+  lazy val Default: Settings = Settings(ConfigFactory.load())
 
   def apply(conf: Config): Settings = {
 
     def es = cs.EsSettings(conf)
-    def hs = HttpSettings(es.http)
 
     def load(c: Config): Settings = {
 
@@ -91,7 +89,7 @@ object Settings {
         readBatchSize            = es.readBatchSize,
         enableTcpTls             = es.enableTcpTls,
         cluster                  = es.cluster,
-        http                     = hs,
+        http                     = es.http,
         serializationParallelism = es.serializationParallelism,
         serializationOrdered     = es.serializationOrdered,
         connectionName           = es.connectionName,
@@ -109,12 +107,12 @@ object Settings {
   def getInstance(): Settings = Default
 }
 
-@SerialVersionUID(1L)
-final case class HttpSettings(uri: Uri = Uri("http://127.0.0.1:2113")) {
-  require(List("http", "https").contains(uri.scheme), s"Scheme must be either http or https but is ${uri.scheme}")
-}
-
-object HttpSettings {
-  def apply(hs: cs.HttpSettings): HttpSettings =
-    HttpSettings(Uri(s"${hs.protocol}://${hs.host}:${hs.port}${hs.prefix}"))
-}
+//@SerialVersionUID(1L)
+//final case class HttpSettings(uri: Uri = Uri("http://127.0.0.1:2113")) {
+//  require(List("http", "https").contains(uri.scheme), s"Scheme must be either http or https but is ${uri.scheme}")
+//}
+//
+//object HttpSettings {
+//  def apply(hs: cs.HttpSettings): HttpSettings =
+//    HttpSettings(Uri(s"${hs.protocol}://${hs.host}:${hs.port}${hs.prefix}"))
+//}

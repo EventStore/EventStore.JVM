@@ -25,7 +25,7 @@ class EsConnection(
     settings:   Settings        = Settings.Default
 )(implicit system: ActorSystem) {
 
-  implicit val timeout = Timeout(settings.operationTimeout)
+  implicit val timeout: Timeout = Timeout(settings.operationTimeout)
 
   def apply[OUT <: Out, IN <: In](out: OUT, credentials: Option[UserCredentials] = None)(
     implicit outIn: ClassTags[OUT, IN]

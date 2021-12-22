@@ -21,7 +21,7 @@ object Position {
   @SerialVersionUID(1L) case object Last extends Position {
     def compare(that: Position) = if (that.isInstanceOf[Last.type]) 0 else 1
 
-    override def toString = "Position.Last"
+    override def toString: String = "Position.Last"
   }
 
   @SerialVersionUID(1L) final case class Exact(commitPosition: Long, preparePosition: Long) extends Position {
@@ -29,7 +29,7 @@ object Position {
     require(preparePosition >= 0, s"preparePosition must be >= 0, but is $preparePosition")
     require(commitPosition >= preparePosition, s"commitPosition must be >= preparePosition, but $commitPosition < $preparePosition ")
 
-    def compare(that: Position) = that match {
+    def compare(that: Position): Int = that match {
       case Last => -1
       case Exact(c, p) => (commitPosition compare c, preparePosition compare p) match {
         case (0, 0) => 0
@@ -38,13 +38,13 @@ object Position {
       }
     }
 
-    override def toString =
+    override def toString: String =
       if (commitPosition == preparePosition) s"Position($commitPosition)"
       else s"Position($commitPosition,$preparePosition)"
   }
 
   object Exact {
-    implicit val ordering = Ordering.by[Exact, Position](identity)
+    implicit val ordering: Ordering[Exact] = Ordering.by[Exact, Position](identity)
     def apply(position: Long): Exact = Exact(commitPosition = position, preparePosition = position)
   }
 }
