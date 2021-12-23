@@ -106,13 +106,3 @@ object Settings {
    */
   def getInstance(): Settings = Default
 }
-
-//@SerialVersionUID(1L)
-//final case class HttpSettings(uri: Uri = Uri("http://127.0.0.1:2113")) {
-//  require(List("http", "https").contains(uri.scheme), s"Scheme must be either http or https but is ${uri.scheme}")
-//}
-//
-//object HttpSettings {
-//  def apply(hs: cs.HttpSettings): HttpSettings =
-//    HttpSettings(Uri(s"${hs.protocol}://${hs.host}:${hs.port}${hs.prefix}"))
-//}

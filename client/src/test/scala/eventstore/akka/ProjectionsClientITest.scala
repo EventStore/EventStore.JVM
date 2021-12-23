@@ -4,7 +4,7 @@ package akka
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Random
-// import io.circe.syntax._
+import io.circe._
 import _root_.akka.stream.ThrottleMode.Shaping
 import _root_.akka.stream.scaladsl.Source
 import org.specs2.execute.EventuallyResults
@@ -39,6 +39,7 @@ class ProjectionsClientITest extends AbstractStreamsITest {
     """.stripMargin
 
   "the projections client" should {
+
     "be able to create a projection" in new TestScope {
       val client = new ProjectionsClient(settings, system)
       val projectionName = generateProjectionName
@@ -113,9 +114,8 @@ class ProjectionsClientITest extends AbstractStreamsITest {
       client.createProjection(projectionName, ProjectionCode, OneTime)
 
       EventuallyResults.eventually {
-        // val projectionState = client.fetchProjectionState(projectionName).await_(timeout)
-        ok
-          // json.parseJson.asJsObject.fields("count").convertTo[Int]) should beSome(2)
+        val projectionState = client.fetchProjectionState(projectionName).await_(timeout)
+        projectionState.flatMap(parser.parse(_).flatMap(_.hcursor.get[Int]("count")).toOption) should beSome(2)
       }
     }
 
@@ -148,11 +148,8 @@ class ProjectionsClientITest extends AbstractStreamsITest {
       client.createProjection(projectionName, ProjectionCode, OneTime)
 
       EventuallyResults.eventually {
-        // val projectionResult = client.fetchProjectionResult(projectionName).await_(timeout)
-
-        ok
-
-          // json.parseJson.asJsObject.fields("count").convertTo[Int]) should beSome(2)
+        val projectionResult = client.fetchProjectionResult(projectionName).await_(timeout)
+        projectionResult.flatMap(parser.parse(_).flatMap(_.hcursor.get[Int]("count")).toOption) should beSome(2)
       }
     }
 

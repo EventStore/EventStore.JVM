@@ -25,25 +25,35 @@ protected[this] trait ProjectionsUrls {
     allowEmit: Boolean
   ): Uri = {
     val emit = if (allowEmit) "emit=1&checkpoints=yes" else "emit=0"
+
     val projectionModeStr = mode match {
       case OneTime    => "onetime"
       case Transient  => "transient"
       case Continuous => "continuous"
     }
-    baseUri.withWholePath(s"/projections/$projectionModeStr?name=$name&type=JS&$emit")
+
+    baseUri.addPath("projections", projectionModeStr).addQuerySegments(
+      Uri.QuerySegment.KeyValue("name", name),
+      Uri.QuerySegment.KeyValue("type", "JS"),
+      Uri.QuerySegment.Value(emit)
+    )
   }
 
   protected def projectionBaseUrl(name: String): Uri =
     baseUri.withWholePath(s"/projection/$name")
 
   protected def fetchProjectionStateUrl(name: String, partition: Option[String]): Uri =
-    projectionBaseUrl(name).addPath(s"state${partition.fold("")(p => s"partition=$p")}")
+    projectionBaseUrl(name).addPath(s"state").addQuerySegments(
+      partition.map(Uri.QuerySegment.KeyValue("partition", _)).toList
+    )
 
   protected def fetchProjectionResultUrl(name: String, partition: Option[String]): Uri =
-    projectionBaseUrl(name).addPath(s"result${partition.fold("")(p => s"partition=$p")}")
+    projectionBaseUrl(name).addPath(s"result").addQuerySegments(
+      partition.map(Uri.QuerySegment.KeyValue("partition", _)).toList
+    )
 
   protected def projectionCommandUrl(name: String, command: String): Uri =
-    projectionBaseUrl(name).addPath(s"command/$command")
+    projectionBaseUrl(name).addPath(s"command").addPathSegment(Uri.PathSegment(command))
 }
 
 object ProjectionsClient {
@@ -58,7 +68,7 @@ object ProjectionsClient {
       case "onetime"    => OneTime
       case "transient"  => Transient
       case "continuous" => Continuous
-      case other        => throw new IllegalArgumentException(s"Expected ProjectionMode tp be one of OneTime|Transient|Continuous but was $other")
+      case other        => throw new IllegalArgumentException(s"Expected ProjectionMode to be one of OneTime|Transient|Continuous but was $other")
     }
 
   }
@@ -137,7 +147,7 @@ class ProjectionsClient(settings: Settings = Settings.Default, system: ActorSyst
     res.map(_.code).flatMap {
       case StatusCode.Created => Future.successful(ProjectionCreated)
       case StatusCode.Conflict => Future.successful(ProjectionAlreadyExist)
-      case status => Future.failed(ProjectionException(s"Received unexpected response status $status"))
+      case status => Future.failed(ProjectionException(s"Received unexpected response status $status on $uri"))
     }
   }
 
