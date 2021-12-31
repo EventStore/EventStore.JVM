@@ -6,6 +6,7 @@ import _root_.akka.actor.{ Props, ActorSystem }
 import eventstore.core.util.uuid.randomUuid
 import eventstore.akka.tcp.ConnectionActor
 import eventstore.akka.TransactionActor._
+import _root_.akka.actor.ActorRef
 
 object ContinueTransactionExample extends App {
   val system = ActorSystem()
@@ -14,7 +15,7 @@ object ContinueTransactionExample extends App {
   val transactionId = 0L
   val kickoff = Continue(transactionId)
   val transaction = system.actorOf(TransactionActor.props(connection, kickoff), "transaction")
-  implicit val transactionResult = system.actorOf(Props[TransactionResult](), "result")
+  implicit val transactionResult: ActorRef = system.actorOf(Props[TransactionResult](), "result")
 
   val data = EventData("transaction-event", randomUuid)
 

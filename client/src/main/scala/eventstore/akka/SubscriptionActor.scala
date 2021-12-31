@@ -42,30 +42,6 @@ object SubscriptionActor {
     Option(settings).getOrElse(Settings.Default)
   )
 
-  /**
-   * Java API
-   */
-  @deprecated("Use `getProps` with Settings as argument", "3.0.0")
-  def getProps(
-    connection:            ActorRef,
-    client:                ActorRef,
-    fromPositionExclusive: Option[Position],
-    resolveLinkTos:        Boolean,
-    credentials:           Option[UserCredentials],
-    readBatchSize:         Int
-  ): Props = {
-    val settings  = Settings.Default.copy(resolveLinkTos = resolveLinkTos, readBatchSize = readBatchSize)
-    props(connection, client, fromPositionExclusive, credentials, settings)
-  }
-
-  /**
-   * Java API
-   */
-  @deprecated("Use `getProps` with Settings as argument", "3.0.0")
-  def getProps(connection: ActorRef, client: ActorRef, fromPositionExclusive: Option[Position]) = {
-    props(connection, client, fromPositionExclusive, None, Settings.Default)
-  }
-
 }
 
 private[eventstore] class SubscriptionActor(

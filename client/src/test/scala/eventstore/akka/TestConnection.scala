@@ -3,9 +3,9 @@ package akka
 
 import java.time.ZonedDateTime
 import scala.concurrent.duration._
+import io.circe._
 import _root_.akka.actor.Status.Failure
 import _root_.akka.testkit._
-import spray.json.{JsNumber, JsObject}
 import eventstore.core.ScalaCompat._
 import eventstore.akka.tcp.ConnectionActor
 import ReadDirection._
@@ -26,8 +26,10 @@ abstract class TestConnection extends ActorSpec {
     }
 
     def truncateStream(number: EventNumber.Exact, streamId: EventStream.Id = streamId): Unit = {
-      val json = JsObject("$tb" -> JsNumber(number.value))
-      actor ! WriteEvents.StreamMetadata(streamId.metadata, Content.Json(json.compactPrint))
+      val printer = io.circe.Printer.noSpaces
+      val json = Json.obj("$tb" -> Json.fromLong(number.value))
+      val content = Content.Json(printer.print(json))
+      actor ! WriteEvents.StreamMetadata(streamId.metadata, content)
       expectMsgType[WriteEventsCompleted]
     }
 

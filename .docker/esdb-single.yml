@@ -20,7 +20,7 @@ services:
     depends_on:
       - volumes-provisioner
   esdb:
-    image: eventstore/eventstore:21.10.0-bionic
+    image: eventstore/eventstore:21.10.1-bionic
     environment:
       - EVENTSTORE_MEM_DB=True
       - EVENTSTORE_ENABLE_EXTERNAL_TCP=True

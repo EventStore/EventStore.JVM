@@ -7,6 +7,7 @@ import _root_.akka.actor.Status
 import _root_.akka.actor.Status.Failure
 import _root_.akka.stream.scaladsl._
 import ReadDirection.Forward
+import eventstore.core.EventStream.Id
 
 class StreamSourceSpec extends SourceSpec {
 
@@ -498,7 +499,7 @@ class StreamSourceSpec extends SourceSpec {
 
   private trait SourceScope extends AbstractSourceScope[Event] {
 
-    lazy val streamId = EventStream.Id(StreamSourceSpec.this.getClass.getSimpleName + "-" + randomUuid.toString)
+    lazy val streamId: Id = EventStream.Id(StreamSourceSpec.this.getClass.getSimpleName + "-" + randomUuid.toString)
     def eventNumber: Option[EventNumber] = None
 
     def createSource(): Source[Event, NotUsed] =

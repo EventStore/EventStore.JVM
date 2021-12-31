@@ -2,7 +2,7 @@ version: '3.8'
 services:
 
   esdb01:
-    image: eventstore/eventstore:21.10.0-bionic
+    image: eventstore/eventstore:21.10.1-bionic
     environment:
       - EVENTSTORE_MEM_DB=True
       - EVENTSTORE_ENABLE_EXTERNAL_TCP=True
@@ -21,7 +21,7 @@ services:
     restart: unless-stopped
 
   esdb02:
-    image: eventstore/eventstore:21.10.0-bionic
+    image: eventstore/eventstore:21.10.1-bionic
     environment:
       - EVENTSTORE_MEM_DB=True
       - EVENTSTORE_ENABLE_EXTERNAL_TCP=True
@@ -40,7 +40,7 @@ services:
     restart: unless-stopped
 
   esdb03:
-    image: eventstore/eventstore:21.10.0-bionic
+    image: eventstore/eventstore:21.10.1-bionic
     environment:
       - EVENTSTORE_MEM_DB=True
       - EVENTSTORE_ENABLE_EXTERNAL_TCP=True

@@ -5,13 +5,13 @@ package cluster
 import java.time.{ZoneOffset, ZonedDateTime}
 import org.specs2.mutable.Specification
 import org.specs2.specification.Scope
-import spray.json._
+import io.circe.parser.decode
+import CirceDecoders._
 import eventstore.core.cluster.NodeState.{Leader, Follower}
 import eventstore.core.cluster.{ClusterInfo, MemberInfo}
 import eventstore.core.syntax._
-import ClusterJsonProtocol._
 
-class ClusterJsonProtocolSpec extends Specification {
+class ClusterInfoJsonDecoderSpec extends Specification {
 
   def readResource(p: String) = {
     val is = getClass.getResourceAsStream(p)
@@ -26,20 +26,16 @@ class ClusterJsonProtocolSpec extends Specification {
 
     "parse gossip.json" in new TestScope {
       val text = readResource("gossip.json")
-      val read = text.parseJson.convertTo[ClusterInfo]
-      read mustEqual clusterInfo
+      val read = decode[ClusterInfo](text)
+      read.toOption must beSome(clusterInfo)
     }
 
     "parse gossip-es-series20.json" in new TestScope {
       val text = readResource("gossip-es-series20.json")
-      val read = text.parseJson.convertTo[ClusterInfo]
-      read mustEqual clusterInfo
+      val read = decode[ClusterInfo](text)
+      read.toOption must beSome(clusterInfo)
     }
 
-    "read & write cluster info" in new TestScope {
-      val json = clusterInfo.toJson
-      json.convertTo[ClusterInfo] mustEqual clusterInfo
-    }
   }
 
   trait TestScope extends Scope {

@@ -2,18 +2,20 @@ import sbtprotobuf.ProtobufPlugin
 import com.github.os72.protocjar.Protoc
 import Dependencies._
 
+lazy val isScala3 = Def.setting[Boolean](scalaVersion.value.startsWith("3."))
+
 lazy val commonSettings = Seq(
 
   organization         := "com.geteventstore",
   scalaVersion         := crossScalaVersions.value.head,
-  crossScalaVersions   := Seq("2.13.7", "2.12.15"),
+  crossScalaVersions   := Seq("3.1.0", "2.13.7", "2.12.15"),
   releaseCrossBuild    := true,
   licenses             := Seq("BSD 3-Clause" -> url("http://raw.github.com/EventStore/EventStore.JVM/master/LICENSE")),
   homepage             := Some(new URL("http://github.com/EventStore/EventStore.JVM")),
   organizationHomepage := Some(new URL("http://geteventstore.com")),
   description          := "Event Store JVM Client",
   startYear            := Some(2013),
-  scalacOptions       ++= Seq("-target:jvm-1.8"),
+  scalacOptions       ++= { if (isScala3.value) Seq("-Xtarget:8") else Seq("-target:jvm-1.8") },
   javacOptions        ++= Seq("-target", "8", "-source", "8"),  
   Test / compile / scalacOptions --= Seq("-Ywarn-value-discard", "-Wvalue-discard"),
   Compile / doc / scalacOptions ++= Seq("-groups", "-implicits", "-no-link-warnings"),
@@ -43,12 +45,6 @@ lazy val commonSettings = Seq(
   publishTo := sonatypePublishTo.value
 )
 
-def priorTo2_13(scalaVersion: String): Boolean =
-  CrossVersion.partialVersion(scalaVersion) match {
-    case Some((2, minor)) if minor < 13 => true
-    case _                              => false
-  }
-
 ///
 
 lazy val IntegrationTest = config("it") extend Test
@@ -69,13 +65,10 @@ lazy val core = project
     coverageExcludedPackages :=
       "eventstore.proto;" +
       "eventstore.tcp.EventStoreProtoFormats;" +
-      "eventstore.tcp.MarkerBytes;",
-    Compile / unmanagedSourceDirectories += {
-      (Compile / sourceDirectory).value / (if(priorTo2_13(scalaVersion.value)) "scala-2.12" else "scala-2.13")
-    }
+      "eventstore.tcp.MarkerBytes;"
   ).settings(
     libraryDependencies ++=
-      Seq(`scodec-bits`, `ts-config`) ++ testDeps(specs2)
+      Seq(`scodec-bits`, `ts-config`) ++ testDeps(specs2.cross(CrossVersion.for3Use2_13))
   )
   .enablePlugins(ProtobufPlugin)
 
@@ -95,10 +88,11 @@ lazy val client = project
   )
   .settings(
     libraryDependencies ++= Seq(
-      `ts-config`,`spray-json`, `scodec-bits`,
-      Reactive.streams, Akka.actor, Akka.stream, AkkaHttp.http, AkkaHttp.`http-spray-json`
+      `ts-config`, circe, `scodec-bits`,
+      Reactive.streams, Akka.actor, Akka.stream,
+      Sttp.sttpCore, Sttp.sttpOkHttp, Sttp.sttpCirce
     ) ++ testDeps(
-      specs2, Reactive.`streams-tck`, Akka.testkit, Akka.`stream-testkit`
+      specs2.cross(CrossVersion.for3Use2_13), circeParser, Reactive.`streams-tck`, Akka.testkit, Akka.`stream-testkit`
     )
   )
   .dependsOn(core)

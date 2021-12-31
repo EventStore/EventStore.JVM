@@ -58,17 +58,18 @@ private[eventstore] object PersistentSubscriptionOperation {
       def unexpected(x: Any) = this.unexpected(x, classOf[Connected[C]])
 
       in match {
-        case Success(Completed())          => subscribed
-        case Success(_: EventAppeared)     => Continue(this, in)
-        case Success(x)                    => unexpected(x)
-        case Failure(AccessDenied)         => accessDenied(s"Subscription to $stream failed due to access denied")
-        case Failure(OperationTimedOut)    => Stop(OperationTimeoutException(pack))
-        case Failure(NotHandled(NotReady)) => retry
-        case Failure(NotHandled(TooBusy))  => retry
-        case Failure(BadRequest)           => Stop(new ServerErrorException(s"Bad request: $pack"))
-        case Failure(NotAuthenticated)     => Stop(NotAuthenticatedException(pack))
-        case Failure(x)                    => unexpected(x)
+        case Success(_: PersistentSubscription.Connected) => subscribed
+        case Success(_: EventAppeared)                    => Continue(this, in)
+        case Success(x)                                   => unexpected(x)
+        case Failure(AccessDenied)                        => accessDenied(s"Subscription to $stream failed due to access denied")
+        case Failure(OperationTimedOut)                   => Stop(OperationTimeoutException(pack))
+        case Failure(NotHandled(NotReady))                => retry
+        case Failure(NotHandled(TooBusy))                 => retry
+        case Failure(BadRequest)                          => Stop(new ServerErrorException(s"Bad request: $pack"))
+        case Failure(NotAuthenticated)                    => Stop(NotAuthenticatedException(pack))
+        case Failure(x)                                   => unexpected(x)
       }
+      
     }
 
     def inspectOut = {
@@ -85,12 +86,6 @@ private[eventstore] object PersistentSubscriptionOperation {
       OnConnected.Retry(operation, pack)
     }
 
-    object Completed {
-      def unapply(x: PersistentSubscription.Connected): Boolean = (stream, x) match {
-        case (_, _: PersistentSubscription.Connected) => true
-        case _                                        => false
-      }
-    }
   }
 
   final case class Connected[C](

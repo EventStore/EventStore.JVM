@@ -77,7 +77,7 @@ class BidiLoggingSpec extends ActorSpec {
     }
     val (source, _) = (logging join flow).runWith(
       Source.actorRef(PartialFunction.empty, PartialFunction.empty, 100, OverflowStrategy.fail),
-      Sink.actorRef[PackOut](sink.ref, "completed", { _: Throwable => "failed" })
+      Sink.actorRef[PackOut](sink.ref, "completed", { (_: Throwable) => "failed" })
     )
   }
 }

@@ -1,9 +1,10 @@
 package eventstore
 
+import eventstore.akka.Settings
 import eventstore.core.{settings => cs}
 import eventstore.{core => c}
 
-trait CoreCompat {
+private[eventstore] trait CoreCompat {
 
   private lazy val RequireMaster: Boolean  = Settings.Default.requireMaster
   private lazy val ResolveLinkTos: Boolean = Settings.Default.resolveLinkTos
@@ -11,8 +12,7 @@ trait CoreCompat {
 
   object WriteEvents {
 
-    def unapply(arg: c.WriteEvents): Option[(c.EventStream.Id, List[c.EventData], c.ExpectedVersion, Boolean)] =
-      c.WriteEvents.unapply(arg)
+    def unapply(arg: c.WriteEvents) = c.WriteEvents.unapply(arg)
 
     def apply(
       streamId:        c.EventStream.Id,
@@ -35,8 +35,7 @@ trait CoreCompat {
 
   object DeleteStream {
 
-    def unapply(arg: c.DeleteStream): Option[(c.EventStream.Id, c.ExpectedVersion.Existing, Boolean, Boolean)] =
-      c.DeleteStream.unapply(arg)
+    def unapply(arg: c.DeleteStream) = c.DeleteStream.unapply(arg)
 
     def apply(
       streamId:        c.EventStream.Id,
@@ -48,8 +47,7 @@ trait CoreCompat {
 
   object TransactionStart {
 
-    def unapply(arg: c.TransactionStart): Option[(c.EventStream.Id, c.ExpectedVersion, Boolean)] =
-      c.TransactionStart.unapply(arg)
+    def unapply(arg: c.TransactionStart) = c.TransactionStart.unapply(arg)
 
     def apply(
       streamId:        c.EventStream.Id,
@@ -60,8 +58,7 @@ trait CoreCompat {
 
   object TransactionWrite {
 
-    def unapply(arg: c.TransactionWrite): Option[(Long, List[c.EventData], Boolean)] =
-      c.TransactionWrite.unapply(arg)
+    def unapply(arg: c.TransactionWrite) = c.TransactionWrite.unapply(arg)
 
     def apply(
       transactionId:  Long,
@@ -72,8 +69,7 @@ trait CoreCompat {
 
   object TransactionCommit {
 
-    def unapply(arg: c.TransactionCommit): Option[(Long, Boolean)] =
-      c.TransactionCommit.unapply(arg)
+    def unapply(arg: c.TransactionCommit) = c.TransactionCommit.unapply(arg)
 
     def apply(
       transactionId: Long,
@@ -84,8 +80,7 @@ trait CoreCompat {
 
   object ReadEvent {
 
-    def unapply(arg: c.ReadEvent): Option[(c.EventStream.Id, c.EventNumber, Boolean, Boolean)] =
-      c.ReadEvent.unapply(arg)
+    def unapply(arg: c.ReadEvent) = c.ReadEvent.unapply(arg)
 
     def apply(
       streamId:       c.EventStream.Id,
@@ -106,8 +101,7 @@ trait CoreCompat {
 
   object ReadStreamEvents {
 
-    def unapply(arg: c.ReadStreamEvents): Option[(c.EventStream.Id, c.EventNumber, Int, c.ReadDirection, Boolean, Boolean)] =
-      c.ReadStreamEvents.unapply(arg)
+    def unapply(arg: c.ReadStreamEvents) = c.ReadStreamEvents.unapply(arg)
 
     def apply(
       streamId:       c.EventStream.Id,
@@ -121,8 +115,7 @@ trait CoreCompat {
 
   object ReadAllEvents {
 
-    def unapply(arg: c.ReadAllEvents): Option[(c.Position, Int, c.ReadDirection, Boolean, Boolean)] =
-      c.ReadAllEvents.unapply(arg)
+    def unapply(arg: c.ReadAllEvents) = c.ReadAllEvents.unapply(arg)
 
     def apply(
       fromPosition: c.Position   = c.Position.First,
@@ -152,12 +145,12 @@ trait CoreCompat {
     def delete(streamId: Id, groupName: String): Delete                = Delete(streamId, groupName)
 
     object Create {
-      def unapply(arg: Create): Option[(Id, String, PSS)]                   = PS.Create.unapply(arg)
+      def unapply(arg: Create)                                              = PS.Create.unapply(arg)
       def apply(streamId: Id, groupName: String, settings: PSS = D): Create = PS.Create(streamId, groupName, settings)
     }
 
     object Update {
-      def unapply(arg: Update): Option[(Id, String, PSS)]                   = PS.Update.unapply(arg)
+      def unapply(arg: Update)                                              = PS.Update.unapply(arg)
       def apply(streamId: Id, groupName: String, settings: PSS = D): Update = PS.Update(streamId, groupName, settings)
     }
 
@@ -182,7 +175,7 @@ trait CoreCompat {
   }
 
   object SubscribeTo {
-    def unapply(arg: c.SubscribeTo): Option[(c.EventStream, Boolean)]                         = c.SubscribeTo.unapply(arg)
+    def unapply(arg: c.SubscribeTo)                                                           = c.SubscribeTo.unapply(arg)
     def apply(stream: c.EventStream, resolveLinkTos: Boolean = ResolveLinkTos): c.SubscribeTo = c.SubscribeTo(stream, resolveLinkTos)
   }
 }

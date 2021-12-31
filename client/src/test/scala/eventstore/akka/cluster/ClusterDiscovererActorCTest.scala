@@ -4,8 +4,8 @@ package cluster
 
 import scala.concurrent.duration._
 import eventstore.core.syntax._
-import eventstore.cluster.ClusterSettings
-import eventstore.cluster.GossipSeedsOrDns.GossipSeeds
+import eventstore.core.settings.ClusterSettings
+import eventstore.core.cluster.GossipSeedsOrDns.GossipSeeds
 import ClusterDiscovererActor.{Address, GetAddress}
 
 class ClusterDiscovererActorCTest extends ActorSpec {

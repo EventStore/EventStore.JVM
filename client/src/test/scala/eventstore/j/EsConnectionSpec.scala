@@ -280,7 +280,7 @@ class EsConnectionSpec extends ActorSpec {
 
   private trait TestScope extends ActorScope {
     val underlying = new eventstore.akka.EsConnection(testActor, system)
-    val connection: EsConnection = new EsConnectionImpl(underlying, Settings.Default, system.dispatcher)
+    val connection: EsConnection = new EsConnectionImpl(underlying, akka.Settings.Default, system.dispatcher)
 
     def expect(x: Out, userCredentials: UserCredentials) = Option(userCredentials) match {
       case Some(uc) => expectMsg(x.withCredentials(uc))

@@ -216,7 +216,7 @@ class EsConnectionITest extends ActorSpec {
 
   private trait TestScope extends ActorScope {
 
-    val connection: EsConnection = new EsConnectionImpl(eventstore.akka.EsConnection(system), Settings.Default, system.dispatcher)
+    val connection: EsConnection = new EsConnectionImpl(eventstore.akka.EsConnection(system), akka.Settings.Default, system.dispatcher)
     val eventData = newEventData
     val events = List(eventData).asJava
     val eventsM = List.fill(20)(newEventData).asJava

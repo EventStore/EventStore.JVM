@@ -6,7 +6,7 @@ import core.constants.MaxBatchSize
 class ReadAllEventsForwardITest extends TestConnection {
   sequential
 
-  implicit val direction = ReadDirection.Forward
+  implicit val direction: ReadDirection= ReadDirection.Forward
   val startPosition = Position.First
 
   "read all events forward" should {

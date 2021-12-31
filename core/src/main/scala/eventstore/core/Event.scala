@@ -26,11 +26,6 @@ sealed trait Event extends Ordered[Event] {
 
 object Event {
 
-  implicit class EventOps(val e: Event) extends AnyVal {
-    @deprecated("Use link(eventId)", since = "7.0.0")
-    def link(metadata: Content = Content.Empty): EventData = e.link(uuid.randomUuid, metadata)
-  }
-
   object StreamDeleted {
     def unapply(x: Event): Boolean = cond(x.record) {
       case EventRecord(_, EventNumber.Exact(Long.MaxValue), EventData.StreamDeleted(), _) => true
@@ -121,13 +116,6 @@ object Content {
 
 object EventData {
 
-  @deprecated("Use EventData(eventType, eventId)", since = "7.0.0")
-  def apply(eventType: String): EventData = new EventData(eventType, uuid.randomUuid, Content.Empty, Content.Empty)
-  @deprecated("Use EventData(eventType, eventId, data)", since = "7.0.0")
-  def apply(eventType: String, data: Content): EventData = new EventData(eventType, uuid.randomUuid, data, Content.Empty)
-  @deprecated("Use EventData(eventType, eventId, data, metadata)", since = "7.0.0")
-  def apply(eventType: String, data: Content, metadata: Content): EventData = new EventData(eventType, uuid.randomUuid, data, metadata)
-
   object Json {
 
     def apply(eventType: String, eventId: Uuid, data: String = "", metadata: String = ""): EventData =
@@ -147,9 +135,6 @@ object EventData {
   }
 
   object StreamMetadata {
-
-    @deprecated("Use StreamMetadata(data, eventId)", since = "7.0.0")
-    def apply(data: Content): EventData = apply(data, uuid.randomUuid)
 
     def apply(data: Content, eventId: Uuid): EventData =
       EventData(SystemEventType.metadata, eventId, data)

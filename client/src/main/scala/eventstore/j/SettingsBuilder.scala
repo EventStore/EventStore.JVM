@@ -4,10 +4,10 @@ package j
 import java.net.InetSocketAddress
 import scala.concurrent.duration._
 import eventstore.core.syntax._
-import eventstore.core.settings.ClusterSettings
+import eventstore.core.settings.{ClusterSettings, HttpSettings}
 import eventstore.akka.OverflowStrategy
 import Builder.{RequireMasterSnippet, ResolveLinkTosSnippet}
-import akka.{Settings, HttpSettings}
+import akka.Settings
 import akka.Settings.Default
 
 class SettingsBuilder extends Builder[Settings]

@@ -6,6 +6,7 @@ import _root_.akka.actor.{ActorSystem, Props}
 import eventstore.core.util.uuid.randomUuid
 import eventstore.akka.tcp.ConnectionActor
 import eventstore.akka.TransactionActor._
+import _root_.akka.actor.ActorRef
 
 object StartTransactionExample extends App {
   val system = ActorSystem()
@@ -13,7 +14,7 @@ object StartTransactionExample extends App {
 
   val kickoff = Start(TransactionStart(EventStream.Id("my-stream")))
   val transaction = system.actorOf(TransactionActor.props(connection, kickoff), "transaction")
-  implicit val transactionResult = system.actorOf(Props[TransactionResult](), "result")
+  implicit val transactionResult: ActorRef = system.actorOf(Props[TransactionResult](), "result")
 
   val data = EventData("transaction-event", eventId = randomUuid)
 
