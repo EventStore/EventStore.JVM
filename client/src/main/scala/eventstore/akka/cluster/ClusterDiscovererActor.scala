@@ -177,6 +177,6 @@ private[eventstore] object ClusterDiscovererActor {
   @SerialVersionUID(1L) final case class Address(value: InetSocketAddress)
 
   object Address {
-    def apply(x: MemberInfo): Address = Address(x.externalTcp)
+    def apply(x: MemberInfo): Address = if (x.externalTcp.getPort == 0) Address(x.externalSecureTcp) else Address(x.externalTcp)
   }
 }
