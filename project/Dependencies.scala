@@ -2,7 +2,7 @@ import sbt._
 
 object Dependencies {
 
-  val protobufVersion = "3.19.2"
+  val protobufVersion = "3.19.4"
   val circeVersion    = "0.14.1"
   
   val `ts-config`   = "com.typesafe" %  "config"      % "1.4.1"
