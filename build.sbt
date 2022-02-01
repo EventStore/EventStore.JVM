@@ -8,7 +8,7 @@ lazy val commonSettings = Seq(
 
   organization         := "com.geteventstore",
   scalaVersion         := crossScalaVersions.value.head,
-  crossScalaVersions   := Seq("3.1.0", "2.13.7", "2.12.15"),
+  crossScalaVersions   := Seq("3.1.1", "2.13.7", "2.12.15"),
   releaseCrossBuild    := true,
   licenses             := Seq("BSD 3-Clause" -> url("http://raw.github.com/EventStore/EventStore.JVM/master/LICENSE")),
   homepage             := Some(new URL("http://github.com/EventStore/EventStore.JVM")),
