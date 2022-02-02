@@ -5,7 +5,7 @@ object Dependencies {
   val protobufVersion = "3.19.2"
   val circeVersion    = "0.14.1"
   
-  val `ts-config`   = "com.typesafe" %  "config"      % "1.4.1"
+  val `ts-config`   = "com.typesafe" %  "config"      % "1.4.2"
   val `scodec-bits` = "org.scodec"   %% "scodec-bits" % "1.1.30"
   val circe         = "io.circe" %% "circe-core"      % circeVersion
 
