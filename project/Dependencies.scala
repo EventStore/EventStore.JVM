@@ -12,7 +12,7 @@ object Dependencies {
   // Testing
 
   val circeParser   = "io.circe"   %% "circe-parser" % circeVersion
-  val specs2        = "org.specs2" %% "specs2-core"  % "4.13.1"
+  val specs2        = "org.specs2" %% "specs2-core"  % "4.13.3"
 
   ///
 
