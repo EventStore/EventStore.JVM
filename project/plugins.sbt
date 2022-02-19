@@ -6,6 +6,6 @@ addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "1.1.0")
 addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.9.2")
 addSbtPlugin("org.scoverage" % "sbt-coveralls" % "1.3.1")
 
-addSbtPlugin("io.github.davidgregory084" % "sbt-tpolecat" % "0.1.20")
+addSbtPlugin("io.github.davidgregory084" % "sbt-tpolecat" % "0.1.22")
 addSbtPlugin("com.github.gseitz" % "sbt-protobuf" % "0.6.5")
 libraryDependencies += "com.github.os72" % "protoc-jar" % "3.11.4"
