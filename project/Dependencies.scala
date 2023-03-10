@@ -25,7 +25,7 @@ object Dependencies {
   }
 
   object Sttp {
-    private val version = "3.3.18"
+    private val version = "3.8.13"
     val sttpCore      = "com.softwaremill.sttp.client3" %% "core"           % version
     val sttpOkHttp    = "com.softwaremill.sttp.client3" %% "okhttp-backend" % version
     val sttpCirce     = "com.softwaremill.sttp.client3" %% "circe"          % version
