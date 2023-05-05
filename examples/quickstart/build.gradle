@@ -1,0 +1,57 @@
+
+buildscript {
+    repositories {
+        gradlePluginPortal()
+    }
+    dependencies {
+        classpath 'com.github.johnrengelman:shadow:8.1.1'
+    }
+}
+
+plugins {
+  id 'com.github.johnrengelman.shadow' version '8.1.1'
+  id 'java'
+  id 'application'
+}
+
+apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'java'
+apply plugin: 'application'
+
+
+shadowJar {
+   minimize() 
+   archiveBaseName.set('jvm-tcp-demo-0.0.1-allinone')
+   archiveClassifier.set('')
+   archiveVersion.set('')
+   append 'reference.conf'
+   //append 'version.conf'
+   with jar
+}
+
+mainClassName = 'io.example.EsdbTcpDemo'
+
+
+dependencies {
+    // implementation group: 'com.geteventstore', name: 'eventstore-client-core_3', version: '8.0.1'
+    // implementation group: 'com.geteventstore', name: 'eventstore-client_3', version: '8.0.1'
+
+    implementation group: 'com.geteventstore', name: 'eventstore-client-core_2.13', version: '8.0.1'
+    implementation group: 'com.geteventstore', name: 'eventstore-client_2.13', version: '8.0.1'
+}
+
+test {
+    useJUnitPlatform()
+
+    testLogging {
+        events "PASSED", "SKIPPED", "FAILED"
+    }
+}
+
+repositories {
+
+    mavenCentral()
+}
+
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
