@@ -1,5 +1,12 @@
 # Maven
 target
+.mvn
+
+# Gradle
+.gradle/
+.settings/
+bin/
+build/
 
 #JRebel
 rebel.xml
@@ -49,3 +56,4 @@ EventStore.Net
 .java-version
 
 certs/
+

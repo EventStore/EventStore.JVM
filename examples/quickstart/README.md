@@ -1,7 +1,4 @@
-# EventStoreDb JVM TCP Client Demo - Work In Progress - 
-
-## Build and run instructions
-
+# EventStoreDb JVM TCP Client Test - Plain Old Java 
 
 ## What You Need
 
@@ -20,13 +17,13 @@ docker run --name esdb-node -it -p 2113:2113 -p 1113:1113 eventstore/eventstore:
 Verify that the database is up and running by pointing your web browser to the EventStore dashboard at: http://localhost:2113/
 
 
-If you use Maven, build the JAR file with `./mvn clean package` and then run the JAR file, as follows:
+For Maven, build the JAR file with `./mvn clean package` and then run the JAR file, as follows:
 ```
 java -jar target/jvm-tcp-demo-0.0.1-allinone.jar
 ```
 
 
-If you use Gradle, build the JAR file with `./gradlew build` and then run the JAR file, as follows:
+For Gradle, build the JAR file with `./gradlew build` and then run the JAR file, as follows:
 ```
 java -jar build/libs/jvm-tcp-demo-0.0.1-allinone.jar
 ```
