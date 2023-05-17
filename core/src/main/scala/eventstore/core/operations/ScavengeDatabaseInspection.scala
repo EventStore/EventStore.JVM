@@ -12,6 +12,7 @@ private[eventstore] object ScavengeDatabaseInspection
     val result = error match {
       case InProgress   => ScavengeInProgressException
       case Unauthorized => ScavengeUnauthorizedException
+      case Unrecognized => UnrecognizedException
     }
     Fail(result)
   }

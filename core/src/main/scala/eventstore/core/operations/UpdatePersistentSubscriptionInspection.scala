@@ -16,6 +16,7 @@ private[eventstore] final case class UpdatePersistentSubscriptionInspection(out:
       case AccessDenied => AccessDeniedException(s"Write access denied for stream $streamId")
       case DoesNotExist => InvalidOperationException(s"Subscription group ${out.groupName} on stream $streamId does not exist")
       case e: Error     => ServerErrorException(e.message.getOrElse(e.toString))
+      case Unrecognized => UnrecognizedException
     }
     Fail(result)
   }

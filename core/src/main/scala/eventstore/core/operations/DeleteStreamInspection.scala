@@ -17,6 +17,7 @@ private[eventstore] final case class DeleteStreamInspection(out: DeleteStream)
       case StreamDeleted        => Fail(streamDeletedException)
       case InvalidTransaction   => Fail(InvalidTransactionException)
       case AccessDenied         => Fail(new AccessDeniedException(s"Write access denied for $streamId"))
+      case Unrecognized         => Fail(UnrecognizedException)
     }
   }
 
