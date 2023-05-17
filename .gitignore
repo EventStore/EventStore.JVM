@@ -3,6 +3,7 @@ target
 .mvn
 
 # Gradle
+.gradle
 .gradle/
 .settings/
 bin/
@@ -12,6 +13,7 @@ build/
 rebel.xml
 
 # Idea
+.bsp
 .idea/
 *.iml
 *.ipr
