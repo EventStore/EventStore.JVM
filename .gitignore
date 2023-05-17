@@ -45,7 +45,7 @@ TAGS
 metals.sbt
 
 # BSP
-.bsp/*
+.bsp/
 
 # Mac
 .DS_Store
