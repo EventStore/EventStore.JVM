@@ -15,33 +15,18 @@
   </properties>
 
   <dependencies>
-
-<!--     <dependency>
-        <groupId>com.geteventstore</groupId>
-        <artifactId>eventstore-client-core_3</artifactId>
-        <version>8.0.1</version>
-    </dependency>
-
+<!--     
     <dependency>
         <groupId>com.geteventstore</groupId>
         <artifactId>eventstore-client_3</artifactId>
         <version>8.0.1</version>
-    </dependency> -->
-
-    <dependency>
-        <groupId>com.geteventstore</groupId>
-        <artifactId>eventstore-client-core_2.13</artifactId>
-        <version>8.0.1</version>
-    </dependency>
-
+    </dependency> 
+-->
     <dependency>
         <groupId>com.geteventstore</groupId>
         <artifactId>eventstore-client_2.13</artifactId>
         <version>8.0.1</version>
     </dependency>
-
-    
-
   </dependencies>
 
   <build>
