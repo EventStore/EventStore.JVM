@@ -33,10 +33,8 @@ mainClassName = 'io.example.EsdbTcpDemo'
 
 
 dependencies {
-    // implementation group: 'com.geteventstore', name: 'eventstore-client-core_3', version: '8.0.1'
     // implementation group: 'com.geteventstore', name: 'eventstore-client_3', version: '8.0.1'
 
-    implementation group: 'com.geteventstore', name: 'eventstore-client-core_2.13', version: '8.0.1'
     implementation group: 'com.geteventstore', name: 'eventstore-client_2.13', version: '8.0.1'
 }
 
