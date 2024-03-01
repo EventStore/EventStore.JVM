@@ -11,10 +11,11 @@
   </tr>
   <tr>
     <td><a href="https://eventstore.org">Event Store</a></td>
-    <td>v5.x, v20.x and v21.x are supported</td>    
+    <td>v5.x, v20.x, v21.x, v22.x, and v23.x are supported</td>    
   </tr>
 </table>
 
+**Please note** that TCP protocol is not supported on EventStoreDB v24.2 and higher. Only the versions listed above are compatible.
 
 We have two APIs available:
 
