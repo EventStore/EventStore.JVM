@@ -19,6 +19,7 @@ private[eventstore] final case class WriteEventsInspection(out: WriteEvents)
     case StreamDeleted        => Fail(streamDeleted)
     case InvalidTransaction   => Fail(InvalidTransactionException)
     case AccessDenied         => Fail(accessDenied)
+    case Unrecognized         => Fail(UnrecognizedException)
   }
 
   def accessDenied: AccessDeniedException = AccessDeniedException(

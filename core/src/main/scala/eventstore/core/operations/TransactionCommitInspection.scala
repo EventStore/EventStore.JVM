@@ -19,6 +19,7 @@ private[eventstore] final case class TransactionCommitInspection(out: Transactio
       case StreamDeleted        => Fail(streamDeletedException)
       case InvalidTransaction   => Fail(InvalidTransactionException)
       case AccessDenied         => Fail(AccessDeniedException(s"Write access denied"))
+      case Unrecognized         => Fail(UnrecognizedException)
     }
   }
 

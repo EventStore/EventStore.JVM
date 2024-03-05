@@ -42,6 +42,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
         case StreamDeleted        => failure(E.StreamDeleted)
         case InvalidTransaction   => failure(E.InvalidTransaction)
         case AccessDenied         => failure(E.AccessDenied)
+        case UNRECOGNIZED         => failure(E.Unrecognized)
       }
     }
 
@@ -88,7 +89,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
           metadata = Content(byteString(x.getMetadata), ContentType(x.getMetadataContentType))
         ),
         created = option(
-          x.hasCreatedEpoch, ZonedDateTime.ofInstant(Instant.ofEpochMilli(x.getCreatedEpoch), ZoneId.systemDefault)
+          x.getCreatedEpoch != 0L, ZonedDateTime.ofInstant(Instant.ofEpochMilli(x.getCreatedEpoch), ZoneId.systemDefault)
         )
       )
     }
@@ -129,7 +130,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
       builder.setEventStreamId(x.streamId.streamId)
       builder.setExpectedVersion(expectedVersion(x.expectedVersion))
       builder.addAllEvents(x.events.map(EventDataWriter.toProto(_).build()).asJava)
-      builder.setRequireMaster(x.requireMaster)
+      builder.setRequireLeader(x.requireMaster)
       builder
     }
   }
@@ -145,7 +146,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
       val numbersRange = 
         EventNumber.Range.opt(x.getFirstEventNumber, x.getLastEventNumber)
       
-      val position = if(x.hasCommitPosition && x.hasPreparePosition) { 
+      val position = if(x.getCommitPosition != 0L && x.getPreparePosition != 0L) {
         positionOpt(x.getCommitPosition, x.getPreparePosition) 
       } else None
       
@@ -158,7 +159,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
       val builder = j.DeleteStream.newBuilder()
       builder.setEventStreamId(x.streamId.streamId)
       builder.setExpectedVersion(expectedVersion(x.expectedVersion))
-      builder.setRequireMaster(x.requireMaster)
+      builder.setRequireLeader(x.requireMaster)
       builder.setHardDelete(x.hard)
       builder
     }
@@ -170,7 +171,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
     def parse: Array[Byte] => j.DeleteStreamCompleted = j.DeleteStreamCompleted.parseFrom
     def success(x: j.DeleteStreamCompleted): DeleteStreamCompleted = {
       
-      val position = if(x.hasCommitPosition && x.hasPreparePosition) { 
+      val position = if(x.getCommitPosition != 0L && x.getPreparePosition != 0L) {
         positionOpt(x.getCommitPosition, x.getPreparePosition) 
       } else None
 
@@ -183,7 +184,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
       val builder = j.TransactionStart.newBuilder()
       builder.setEventStreamId(x.streamId.streamId)
       builder.setExpectedVersion(expectedVersion(x.expectedVersion))
-      builder.setRequireMaster(x.requireMaster)
+      builder.setRequireLeader(x.requireMaster)
       builder
     }
   }
@@ -200,7 +201,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
       val builder = j.TransactionWrite.newBuilder()
       builder.setTransactionId(x.transactionId)
       builder.addAllEvents(x.events.map(EventDataWriter.toProto(_).build()).asJava)
-      builder.setRequireMaster(x.requireMaster)
+      builder.setRequireLeader(x.requireMaster)
       builder
     }
   }
@@ -216,7 +217,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
     def toProto(x: TransactionCommit): j.TransactionCommit.Builder = {
       val builder = j.TransactionCommit.newBuilder()
       builder.setTransactionId(x.transactionId)
-      builder.setRequireMaster(x.requireMaster)
+      builder.setRequireLeader(x.requireMaster)
       builder
     }
   }
@@ -230,7 +231,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
       val numbersRange = 
         EventNumber.Range.opt(x.getFirstEventNumber ,x.getLastEventNumber)
 
-      val position = if(x.hasCommitPosition && x.hasPreparePosition) { 
+      val position = if(x.getCommitPosition != 0L && x.getPreparePosition != 0L) {
         positionOpt(x.getCommitPosition, x.getPreparePosition) 
       } else None
 
@@ -244,7 +245,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
       builder.setEventStreamId(x.streamId.streamId)
       builder.setEventNumber(EventNumberConverter.from(x.eventNumber))
       builder.setResolveLinkTos(x.resolveLinkTos)
-      builder.setRequireMaster(x.requireMaster)
+      builder.setRequireLeader(x.requireMaster)
       builder
     }
   }
@@ -262,8 +263,9 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
         case NotFound      => failure(E.EventNotFound)
         case NoStream      => failure(E.StreamNotFound)
         case StreamDeleted => failure(E.StreamDeleted)
-        case Error         => failure(E.Error(message(option(x.hasError, x.getError))))
+        case Error         => failure(E.Error(message(option(!x.getError.isBlank, x.getError))))
         case AccessDenied  => failure(E.AccessDenied)
+        case UNRECOGNIZED => failure(E.Unrecognized)
       }
     }
   }
@@ -275,7 +277,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
       builder.setFromEventNumber(EventNumberConverter.from(x.fromNumber))
       builder.setMaxCount(x.maxCount)
       builder.setResolveLinkTos(x.resolveLinkTos)
-      builder.setRequireMaster(x.requireMaster)
+      builder.setRequireLeader(x.requireMaster)
       builder
     }
   }
@@ -305,8 +307,9 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
         case NoStream      => failure(E.StreamNotFound)
         case StreamDeleted => failure(E.StreamDeleted)
         case NotModified   => this.failure(new IllegalArgumentException("ReadStreamEventsCompleted.NotModified is not supported"))
-        case Error         => failure(E.Error(message(option(x.hasError, x.getError))))
+        case Error         => failure(E.Error(message(option(!x.getError.isBlank, x.getError))))
         case AccessDenied  => failure(E.AccessDenied)
+        case UNRECOGNIZED  => failure(E.Unrecognized)
       }
     }
   }
@@ -325,7 +328,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
       builder.setPreparePosition(preparePosition)
       builder.setMaxCount(x.maxCount)
       builder.setResolveLinkTos(x.resolveLinkTos)
-      builder.setRequireMaster(x.requireMaster)
+      builder.setRequireLeader(x.requireMaster)
       builder
     }
   }
@@ -348,13 +351,14 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
         direction = direction
       )
 
-      val result = if (x.hasResult) x.getResult else Success
+      val result = if (x.getResult != null) x.getResult else Success
 
       result match {
         case Success      => Try(readAllEventsCompleted)
         case NotModified  => this.failure(new IllegalArgumentException("ReadAllEventsCompleted.NotModified is not supported"))
-        case Error        => failure(E.Error(message(option(x.hasError, x.getError))))
+        case Error        => failure(E.Error(message(option(!x.getError.isBlank, x.getError))))
         case AccessDenied => failure(E.AccessDenied)
+        case UNRECOGNIZED => failure(E.Unrecognized)
       }
     }
   }
@@ -406,8 +410,9 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
       x.getResult match {
         case Success       => Try(Ps.CreateCompleted)
         case AlreadyExists => failure(E.AlreadyExists)
-        case Fail          => failure(E.Error(message(option(x.hasReason, x.getReason))))
+        case Fail          => failure(E.Error(message(option(!x.getReason.isBlank, x.getReason))))
         case AccessDenied  => failure(E.AccessDenied)
+        case UNRECOGNIZED  => failure(E.Unrecognized)
       }
     }
   }
@@ -435,8 +440,9 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
       x.getResult match {
         case Success      => Try(Ps.DeleteCompleted)
         case DoesNotExist => failure(E.DoesNotExist)
-        case Fail         => failure(E.Error(message(option(x.hasReason, x.getReason))))
+        case Fail         => failure(E.Error(message(option(!x.getReason.isBlank, x.getReason))))
         case AccessDenied => failure(E.AccessDenied)
+        case UNRECOGNIZED => failure(E.Unrecognized)
       }
     }
   }
@@ -484,8 +490,9 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
       x.getResult match {
         case Success      => Try(Ps.UpdateCompleted)
         case DoesNotExist => failure(E.DoesNotExist)
-        case Fail         => failure(E.Error(message(option(x.hasReason, x.getReason))))
+        case Fail         => failure(E.Error(message(option(!x.getReason.isBlank, x.getReason))))
         case AccessDenied => failure(E.AccessDenied)
+        case UNRECOGNIZED => failure(E.Unrecognized)
       }
     }
   }
@@ -509,7 +516,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
     def fromProto(x: j.PersistentSubscriptionConfirmation): PersistentSubscription.Connected = {
 
       val eventNumber = for {
-        x <- option(x.hasLastEventNumber, x.getLastEventNumber)
+        x <- option(x.getLastEventNumber != 0L, x.getLastEventNumber)
         y <- EventNumber.Exact.opt(x)
       } yield y
 
@@ -577,7 +584,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
       j.SubscriptionConfirmation.parseFrom
 
     def fromProto(x: j.SubscriptionConfirmation): SubscribeCompleted =
-      option(x.hasLastEventNumber, x.getLastEventNumber) match {
+      option(x.getLastEventNumber != 0L, x.getLastEventNumber) match {
         case None => SubscribeToAllCompleted(x.getLastCommitPosition)
         case Some(eventNumber) => SubscribeToStreamCompleted(
           lastCommit = x.getLastCommitPosition,
@@ -600,13 +607,14 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
       import j.SubscriptionDropped.{SubscriptionDropReason => P}
 
       def unsubscribed = Try(Unsubscribed)
-      if (!x.hasReason) unsubscribed
+      if (x.getReason == null) unsubscribed
       else x.getReason match {
         case P.Unsubscribed                  => unsubscribed
         case P.AccessDenied                  => failure(SubscriptionDropped.AccessDenied)
         case P.NotFound                      => failure(SubscriptionDropped.NotFound)
         case P.PersistentSubscriptionDeleted => failure(SubscriptionDropped.PersistentSubscriptionDeleted)
         case P.SubscriberMaxCountReached     => failure(SubscriptionDropped.SubscriberMaxCountReached)
+        case P.UNRECOGNIZED                  => failure(SubscriptionDropped.Unrecognized)
       }
     }
   }
@@ -621,7 +629,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
       import eventstore.core.{ ScavengeError => E }
 
       def scavengeDatabaseResponse = ScavengeDatabaseResponse(
-        option(x.hasScavengeId, x.getScavengeId)
+        option(!x.getScavengeId.isBlank, x.getScavengeId)
       )
 
       def failure(x: ScavengeError) = this.failure(x)
@@ -631,6 +639,7 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
         case Started      => Try(scavengeDatabaseResponse)
         case InProgress   => failure(E.InProgress)
         case Unauthorized => failure(E.Unauthorized)
+        case UNRECOGNIZED => failure(E.Unrecognized)
       }
     }
   }
@@ -640,26 +649,26 @@ trait EventStoreProtoFormats extends DefaultProtoFormats with DefaultFormats {
 
     def parse: Array[Byte] => j.NotHandled = j.NotHandled.parseFrom
 
-    def masterInfo(x: j.NotHandled.MasterInfo): NotHandled.MasterInfo = NotHandled.MasterInfo(
+    private def masterInfo(x: j.NotHandled.LeaderInfo): NotHandled.MasterInfo = NotHandled.MasterInfo(
       tcpAddress = x.getExternalTcpAddress :: x.getExternalTcpPort,
-      httpAddress = x.getExternalHttpAddress :: x.getExternalHttpPort,
+      httpAddress = x.getHttpAddress :: x.getHttpPort,
       tcpSecureAddress = for {
-      h <- option(x.hasExternalSecureTcpAddress, x.getExternalSecureTcpAddress)
-      p <- option(x.hasExternalSecureTcpPort, x.getExternalSecureTcpPort)
+      h <- option(!x.getExternalTcpAddress.isBlank, x.getExternalSecureTcpAddress)
+      p <- option(x.getExternalSecureTcpPort != 0, x.getExternalSecureTcpPort)
     } yield h :: p
     )
 
-    def masterInfo(x: Option[j.NotHandled.MasterInfo]): NotHandled.MasterInfo = {
-      require(x.isDefined, "additionalInfo is not provided for NotHandled.NotMaster")
-      masterInfo(x.get)
+    private def masterInfo(x: com.google.protobuf.ByteString): NotHandled.MasterInfo = {
+      masterInfo(j.NotHandled.LeaderInfo.parseFrom(x))
     }
 
     def fromProto(x: j.NotHandled): NotHandled = {
       val reason = x.getReason match {
         case NotReady   => NotHandled.NotReady
         case TooBusy    => NotHandled.TooBusy
-        case NotMaster  => NotHandled.NotMaster(masterInfo(x.getAdditionalInfo))
+        case NotLeader  => NotHandled.NotMaster(masterInfo(x.getAdditionalInfo))
         case IsReadOnly => NotHandled.IsReadOnly
+        case UNRECOGNIZED => NotHandled.Unrecognized
       }
       NotHandled(reason)
     }

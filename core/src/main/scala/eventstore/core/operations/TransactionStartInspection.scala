@@ -20,6 +20,7 @@ private[eventstore] final case class TransactionStartInspection(out: Transaction
       case StreamDeleted        => Fail(streamDeletedException)
       case InvalidTransaction   => Fail(InvalidTransactionException)
       case AccessDenied         => Fail(AccessDeniedException(s"Write access denied for $streamId"))
+      case Unrecognized         => Fail(UnrecognizedException)
     }
   }
 
