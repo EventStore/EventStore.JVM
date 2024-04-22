@@ -17,6 +17,7 @@ private[eventstore] final case class TransactionWriteInspection(out: Transaction
       case StreamDeleted        => Unexpected
       case InvalidTransaction   => Unexpected
       case AccessDenied         => Fail(AccessDeniedException(s"Write access denied"))
+      case Unrecognized         => Fail(UnrecognizedException)
     }
   }
 }

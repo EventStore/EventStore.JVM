@@ -13,6 +13,7 @@ private[eventstore] final case class CreatePersistentSubscriptionInspection(out:
     val result = error match {
       case AccessDenied  => AccessDeniedException(s"Read access denied for $streamId")
       case AlreadyExists => InvalidOperationException(s"Subscription group ${out.groupName} on stream $streamId already exists")
+      case Unrecognized  => UnrecognizedException
       case e: Error      => ServerErrorException(e.message.getOrElse(e.toString))
     }
     Fail(result)

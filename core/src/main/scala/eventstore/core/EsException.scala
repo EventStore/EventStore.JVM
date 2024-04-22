@@ -30,3 +30,4 @@ object CannotEstablishConnectionException {
 @SerialVersionUID(1L) final case class CommandNotExpectedException(message: String)    extends EsException(message)
 @SerialVersionUID(1L) final case class RetriesLimitReachedException(message: String)   extends EsException(message)
 @SerialVersionUID(1L) final case class InvalidOperationException(message: String)      extends EsException(message)
+@SerialVersionUID(1L) case object UnrecognizedException                                extends EsException("Unrecognized error from the server")

@@ -15,6 +15,7 @@ private[eventstore] final case class ReadEventInspection(out: ReadEvent)
       case StreamDeleted  => StreamDeletedException(s"Read failed due to $streamId has been deleted")
       case e: Error       => ServerErrorException(e.message.getOrElse(e.toString))
       case AccessDenied   => AccessDeniedException(s"Read access denied for $streamId")
+      case Unrecognized   => UnrecognizedException
     }
 
     Fail(result)

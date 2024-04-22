@@ -23,6 +23,7 @@ object OperationError {
   case object StreamDeleted        extends OperationError
   case object InvalidTransaction   extends OperationError
   case object AccessDenied         extends OperationError
+  case object Unrecognized         extends OperationError
 }
 
 sealed trait ReadEventError extends ServerError
@@ -32,6 +33,7 @@ object ReadEventError {
   case object StreamNotFound extends ReadEventError
   case object StreamDeleted  extends ReadEventError
   case object AccessDenied   extends ReadEventError
+  case object Unrecognized   extends ReadEventError
   final case class Error(message: Option[String]) extends ReadEventError {
     override def toString = s"ReadEventError($message)"
   }
@@ -43,6 +45,7 @@ object ReadStreamEventsError {
   case object StreamNotFound extends ReadStreamEventsError
   case object StreamDeleted  extends ReadStreamEventsError
   case object AccessDenied   extends ReadStreamEventsError
+  case object Unrecognized   extends ReadStreamEventsError
   final case class Error(message: Option[String]) extends ReadStreamEventsError {
     override def toString = s"ReadStreamEventsError($message)"
   }
@@ -52,6 +55,7 @@ sealed trait ReadAllEventsError extends ServerError
 
 object ReadAllEventsError {
   case object AccessDenied extends ReadAllEventsError
+  case object Unrecognized extends ReadAllEventsError
   final case class Error(message: Option[String]) extends ReadAllEventsError {
     override def toString = s"ReadAllEventsError($message)"
   }
@@ -68,6 +72,7 @@ object NotHandled {
   case object TooBusy                        extends Reason
   final case class NotMaster(mi: MasterInfo) extends Reason
   case object IsReadOnly                     extends Reason
+  case object Unrecognized                   extends Reason
 
   final case class MasterInfo(
     tcpAddress:       InetSocketAddress,
@@ -87,6 +92,7 @@ object SubscriptionDropped {
   case object NotFound                      extends SubscriptionDropped
   case object PersistentSubscriptionDeleted extends SubscriptionDropped
   case object SubscriberMaxCountReached     extends SubscriptionDropped
+  case object Unrecognized                  extends SubscriptionDropped
 }
 
 sealed trait ScavengeError extends SystemError
@@ -94,6 +100,7 @@ sealed trait ScavengeError extends SystemError
 object ScavengeError {
   case object InProgress   extends ScavengeError
   case object Unauthorized extends ScavengeError
+  case object Unrecognized extends ScavengeError
 }
 
 sealed trait CreatePersistentSubscriptionError extends SystemError
@@ -101,6 +108,7 @@ sealed trait CreatePersistentSubscriptionError extends SystemError
 object CreatePersistentSubscriptionError {
   case object AccessDenied  extends CreatePersistentSubscriptionError
   case object AlreadyExists extends CreatePersistentSubscriptionError
+  case object Unrecognized  extends CreatePersistentSubscriptionError
   final case class Error(message: Option[String]) extends CreatePersistentSubscriptionError {
     override def toString = s"CreatePersistentSubscriptionError($message)"
   }
@@ -111,6 +119,7 @@ sealed trait UpdatePersistentSubscriptionError extends SystemError
 object UpdatePersistentSubscriptionError {
   case object AccessDenied extends UpdatePersistentSubscriptionError
   case object DoesNotExist extends UpdatePersistentSubscriptionError
+  case object Unrecognized extends UpdatePersistentSubscriptionError
   final case class Error(message: Option[String]) extends UpdatePersistentSubscriptionError {
     override def toString = s"UpdatePersistentSubscriptionError($message)"
   }
@@ -121,6 +130,7 @@ sealed trait DeletePersistentSubscriptionError extends SystemError
 object DeletePersistentSubscriptionError {
   case object AccessDenied extends DeletePersistentSubscriptionError
   case object DoesNotExist extends DeletePersistentSubscriptionError
+  case object Unrecognized extends DeletePersistentSubscriptionError
   final case class Error(message: Option[String]) extends DeletePersistentSubscriptionError {
     override def toString = s"DeletePersistentSubscriptionError($message)"
   }
