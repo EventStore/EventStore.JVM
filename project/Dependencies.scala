@@ -32,7 +32,7 @@ object Dependencies {
   }
 
   object Reactive {
-    private val version = "1.0.3"
+    private val version = "1.0.4"
     val streams       = "org.reactivestreams" % "reactive-streams"     % version
     val `streams-tck` = "org.reactivestreams" % "reactive-streams-tck" % version
   }
