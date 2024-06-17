@@ -1,5 +1,7 @@
 > [!WARNING]
-> **DEPRECATION NOTICE**: This project is no longer maintained. We recommend moving to [EventStoreDB-Client-Java](https://github.com/EventStore/EventStoreDB-Client-Java) for ongoing updates and support.
+> **DEPRECATION NOTICE**:
+> * EventStoreDB version 23.10.x is the last OSS version to support the tcp protocol based client.
+> * This project is no longer maintained. We recommend moving to [EventStoreDB-Client-Java](https://github.com/EventStore/EventStoreDB-Client-Java) for ongoing updates and support.
 
 # Event Store JVM Client [![Continuous Integration](https://github.com/EventStore/EventStore.JVM/actions/workflows/ci.yml/badge.svg)](https://github.com/EventStore/EventStore.JVM/actions/workflows/ci.yml) [![Coverage Status](https://coveralls.io/repos/EventStore/EventStore.JVM/badge.svg)](https://coveralls.io/r/EventStore/EventStore.JVM) [![Version](https://img.shields.io/maven-central/v/com.geteventstore/eventstore-client_2.13.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg%3Acom.geteventstore%20AND%20eventstore-client)
 
