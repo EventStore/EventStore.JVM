@@ -6,7 +6,7 @@ object Dependencies {
   val circeVersion    = "0.14.1"
   
   val `ts-config`   = "com.typesafe" %  "config"      % "1.4.1"
-  val `scodec-bits` = "org.scodec"   %% "scodec-bits" % "1.1.30"
+  val `scodec-bits` = "org.scodec"   %% "scodec-bits" % "1.1.38"
   val circe         = "io.circe" %% "circe-core"      % circeVersion
 
   // Testing
